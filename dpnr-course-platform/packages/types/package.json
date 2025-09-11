@@ -1,0 +1,7 @@
+{
+  "name": "@dpnr/types",
+  "version": "0.1.0",
+  "private": true,
+  "types": "index.ts"
+}
+

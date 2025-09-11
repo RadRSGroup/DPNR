@@ -1,0 +1,15 @@
+{
+  "name": "dpnr-course-platform",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run -w @dpnr/web build && npm run -w @dpnr/admin build",
+    "dev": "npm run -w @dpnr/web dev",
+    "lint": "npm run -w @dpnr/web lint"
+  }
+}
+

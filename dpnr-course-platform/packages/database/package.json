@@ -1,0 +1,16 @@
+{
+  "name": "@dpnr/database",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/client.ts",
+  "scripts": {
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.19.1"
+  },
+  "devDependencies": {
+    "prisma": "^5.19.1"
+  }
+}
