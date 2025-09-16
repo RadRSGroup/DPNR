@@ -17,10 +17,10 @@ export default async function Footer() {
         <div>
           <div className="text-sm font-medium mb-2">{f.navigate || 'Navigate'}</div>
           <ul className="text-sm text-gray-400 space-y-1">
-            <li><a href="/about" className="hover:text-white">About</a></li>
-            <li><a href="/course" className="hover:text-white">Courses</a></li>
-            <li><a href="/library" className="hover:text-white">Library</a></li>
-            <li><a href="/shop" className="hover:text-white">Shop</a></li>
+            <li><a href="/about" className="hover:text-white">{h.about || "About"}</a></li>
+            <li><a href="/course" className="hover:text-white">{h.course || "Course"}</a></li>
+            <li><a href="/library" className="hover:text-white">{h.library || "Library"}</a></li>
+            <li><a href="/shop" className="hover:text-white">{h.shop || "Shop"}</a></li>
           </ul>
         </div>
         <div>

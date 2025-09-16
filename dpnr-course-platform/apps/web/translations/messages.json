@@ -72,19 +72,23 @@
       "login": "התחברות",
       "logout": "התנתקות"
     },
+    "component_courses_grid": {
+      "Our Courses": "הקורסים שלנו",
+      "Hands-on sessions designed for real outcomes": "סביבה אינטימית, תוצאות מדהימות"
+    },
     "shopStrip": {
       "title": "חומרים נבחרים",
       "subtitle": "שפר את הלמידה עם משאבים מוקפדים",
-      "item1_title": "חוברת עבודה למנהיגות",
+      "item1_title": "ספר הקורס",
       "item1_blurb": "תרגילים ומסגרות עבודה",
-      "item2_title": "יומן מיינדפולנס",
+      "item2_title": "חיי DPNR 360",
       "item2_blurb": "הנחיות יומיות",
-      "item3_title": "פלאנר פרודוקטיביות",
+      "item3_title": "אימון אישי",
       "item3_blurb": "מערכת תכנון ל‑90 יום"
     },
     "testimonials": {
       "title": "מה אומרים הלומדים",
-      "subtitle": "הערות קצרות וכנות מהקבוצות האחרונות",
+      "subtitle": "מה אתה תהפוך להיות?",
       "role": "לומד/ת"
     },
     "footer": {
@@ -96,4 +100,3 @@
     "alt": { "sign_in": "התחברות", "materials": "חומרים", "hero": "תמונת גיבור" }
   }
 }
-
