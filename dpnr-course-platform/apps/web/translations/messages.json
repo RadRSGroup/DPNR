@@ -5,11 +5,11 @@
       "hero_sub": "Explore your inner world with DPNR.",
       "cta_dashboard": "User Area",
       "cta_login": "Login",
-      "band1_title": "Secure, simple sign‑in",
+      "band1_title": "New 2025 Class Registration Open",
       "band1_copy": "Claim your seat and begin your transformation.",
       "band2_title": "Course Materials",
       "band2_copy": "What is DPNR?",
-      "cta_browse_library": "Browse library",
+      "cta_browse_library": "Browse Content library",
       "band3_title": "Get started",
       "band3_copy": "Create an account, enroll, and access course materials.",
       "cta_register": "Register",
@@ -27,7 +27,7 @@
     "shopStrip": {
       "title": "Featured materials",
       "subtitle": "Enhance learning with curated resources",
-      "item1_title": "Leadership Workbook",
+      "item1_title": "Course Workbook",
       "item1_blurb": "Exercises and frameworks",
       "item2_title": "Mindfulness Journal",
       "item2_blurb": "Daily prompts",
@@ -35,9 +35,9 @@
       "item3_blurb": "90‑day planning system"
     },
     "testimonials": {
-      "title": "What learners say",
-      "subtitle": "Short, honest notes from recent cohorts",
-      "role": "Learner",
+      "title": "What DPNRs say",
+      "subtitle": "Participants transform. What will you become?",
+      "role": "DPNR",
       "items": [
         { "name": "Dana", "quote": "The sessions were focused and practical. I saw results fast." },
         { "name": "Eli", "quote": "Clear structure and great materials. Highly recommended." },
@@ -56,9 +56,10 @@
     "landing": {
       "hero_title": "YOU are the Most Important Resource in the World",
       "hero_sub": "Explore your inner world with DPNR.",
-      "cta_dashboard": "Dashboard",
-      "cta_login": "Login",
-      "band1_title": "התחברות מאובטחת ופשוטה",
+      "cta_dashboard": "אזור משתמש",
+      "cta_login": "התחברות",
+      "sign_in": "התחברות",
+      "band1_title": "פתוחה הרשמה לכיתה חדשה 2025",
       "band1_copy": "תבע את המקום שלך והתחל בטרנספורמציה שלך.",
       "band2_title": "חומרי קורס",
       "band2_copy": "מהו DPNR?",
@@ -84,17 +85,17 @@
     "shopStrip": {
       "title": "חומרים נבחרים",
       "subtitle": "שפר את הלמידה עם משאבים מוקפדים",
-      "item1_title": "ספר הקורס",
+      "item1_title": "חוברת הקורס",
       "item1_blurb": "תרגילים ומסגרות עבודה",
-      "item2_title": "חיי DPNR 360",
+      "item2_title": "יומן מיינדפולנס",
       "item2_blurb": "הנחיות יומיות",
-      "item3_title": "אימון אישי",
+      "item3_title": "תכנון פרודוקטיביות",
       "item3_blurb": "מערכת תכנון ל‑90 יום"
     },
     "testimonials": {
-      "title": "מה אומרים הלומדים",
-      "subtitle": "מה אתה תהפוך להיות?",
-      "role": "לומד/ת",
+      "title": "מה אומרים ה-DPNRs",
+      "subtitle": "משתתפים משתנים. מה אתה תהפוך להיות?",
+      "role": "DPNR",
       "items": [
         { "name": "דנה", "quote": "המפגשים היו ממוקדים ומעשיים. ראיתי תוצאות מהר." },
         { "name": "אלי", "quote": "מבנה ברור וחומרים מעולים. ממליץ בחום." },

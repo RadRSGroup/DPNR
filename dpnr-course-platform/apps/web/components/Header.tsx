@@ -44,8 +44,9 @@ export default function Header() {
   }, [currentLocale]);
   const labels = (messages as any)[locale]?.header || (messages as any).en.header;
   function isLocalizable(path: string) {
-    // Only keep same-path navigation for known public routes
-    const allowed = new Set(['/','/about','/course','/library','/shop','/new']);
+    // Only keep same-path navigation for known public routes.
+    // Note: '/new' is intentionally excluded because '/{locale}/new' does not have a route.
+    const allowed = new Set(['/','/about','/course','/library','/shop']);
     return allowed.has(path);
   }
   function changeLocale(next: string) {
