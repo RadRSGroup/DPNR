@@ -1,4 +1,7 @@
-export async function POST(_: Request, context: { params: { id: string } }) {
-  const { id } = context.params;
+export async function POST(
+  _: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
   return Response.json({ enrolled: true, courseId: id }, { status: 202 });
 }
