@@ -1,4 +1,5 @@
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
+import messages from '../../translations/messages.json';
 
 async function getCourses() {
   const h = await headers();
@@ -12,13 +13,17 @@ async function getCourses() {
 
 export default async function CoursesGrid() {
   const { courses } = await getCourses();
+  const locale = (await cookies()).get('NEXT_LOCALE')?.value === 'he' ? 'he' : 'en';
+  const dict: any = (messages as any)[locale];
+  const title: string = dict.component_courses_grid?.["Our Courses"] || 'Our Courses';
+  const subtitle: string = dict.component_courses_grid?.["Hands-on sessions designed for real outcomes"] || 'Hands-on sessions designed for real outcomes';
   if (!courses?.length) return null;
   return (
     <section className="w-full bg-background">
       <div className="mx-auto max-w-[1200px] px-6 py-24 md:py-32">
         <div className="text-center mb-12">
-          <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>Our Courses</h2>
-          <p className="mt-3 text-muted-foreground">Hands-on sessions designed for real outcomes</p>
+          <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>{title}</h2>
+          <p className="mt-3 text-muted-foreground">{subtitle}</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {courses.map((c: any) => (

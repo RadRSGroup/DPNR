@@ -1,15 +1,23 @@
-export default function Testimonials() {
+import { cookies } from 'next/headers';
+import messages from '../../translations/messages.json';
+
+export default async function Testimonials() {
+  const locale = (await cookies()).get('NEXT_LOCALE')?.value === 'he' ? 'he' : 'en';
+  const dict: any = (messages as any)[locale];
+  const title: string = dict.testimonials?.title || 'What learners say';
+  const subtitle: string = dict.testimonials?.subtitle || 'Short, honest notes from recent cohorts';
+  const role: string = dict.testimonials?.role || 'Learner';
   const items = [
-    { name: 'Dana', role: 'Learner', img: '/user-dana.jpg', quote: 'The sessions were focused and practical. I saw results fast.' },
-    { name: 'Eli', role: 'Learner', img: '/user-eli.jpg', quote: 'Clear structure and great materials. Highly recommended.' },
-    { name: 'Noa', role: 'Learner', img: '/user-noa.jpg', quote: 'Exactly the push I needed to level up.' },
+    { name: 'Dana', role, img: '/user-dana.jpg', quote: 'The sessions were focused and practical. I saw results fast.' },
+    { name: 'Eli', role, img: '/user-eli.jpg', quote: 'Clear structure and great materials. Highly recommended.' },
+    { name: 'Noa', role, img: '/user-noa.jpg', quote: 'Exactly the push I needed to level up.' },
   ];
   return (
     <section className="w-full bg-background">
       <div className="mx-auto max-w-[1200px] px-6 py-16 md:py-24">
         <div className="text-center mb-10">
-          <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>What learners say</h2>
-          <p className="mt-3 text-muted-foreground">Short, honest notes from recent cohorts</p>
+          <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>{title}</h2>
+          <p className="mt-3 text-muted-foreground">{subtitle}</p>
         </div>
         <div className="grid md:grid-cols-3 gap-6">
           {items.map((t, i) => (
@@ -29,4 +37,3 @@ export default function Testimonials() {
     </section>
   );
 }
-

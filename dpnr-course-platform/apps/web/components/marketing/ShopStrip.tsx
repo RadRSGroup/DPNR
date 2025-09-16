@@ -1,17 +1,23 @@
+import { cookies } from 'next/headers';
+import messages from '../../translations/messages.json';
+
 type Item = { img: string; title: string; blurb: string; href: string };
 
-export default function ShopStrip() {
+export default async function ShopStrip() {
+  const locale = (await cookies()).get('NEXT_LOCALE')?.value === 'he' ? 'he' : 'en';
+  const dict: any = (messages as any)[locale];
+  const t = dict.shopStrip || {};
   const items: Item[] = [
-    { img: '/shop-1.jpg', title: 'Leadership Workbook', blurb: 'Exercises and frameworks', href: '/shop' },
-    { img: '/shop-2.jpg', title: 'Mindfulness Journal', blurb: 'Daily prompts', href: '/shop' },
-    { img: '/shop-3.jpg', title: 'Productivity Planner', blurb: '90‑day planning system', href: '/shop' },
+    { img: '/shop-1.jpg', title: t.item1_title || 'Leadership Workbook', blurb: t.item1_blurb || 'Exercises and frameworks', href: '/shop' },
+    { img: '/shop-2.jpg', title: t.item2_title || 'Mindfulness Journal', blurb: t.item2_blurb || 'Daily prompts', href: '/shop' },
+    { img: '/shop-3.jpg', title: t.item3_title || 'Productivity Planner', blurb: t.item3_blurb || '90‑day planning system', href: '/shop' },
   ];
   return (
     <section className="w-full bg-gray-50">
       <div className="mx-auto max-w-[1200px] px-6 py-16 md:py-24">
         <div className="text-center mb-10">
-          <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>Featured materials</h2>
-          <p className="mt-3 text-muted-foreground">Enhance learning with curated resources</p>
+          <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>{t.title || 'Featured materials'}</h2>
+          <p className="mt-3 text-muted-foreground">{t.subtitle || 'Enhance learning with curated resources'}</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {items.map((it, i) => (
@@ -30,4 +36,3 @@ export default function ShopStrip() {
     </section>
   );
 }
-

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "./ui/button";
 import { ThemeToggle } from "./ThemeToggle";
+import messages from "../translations/messages.json";
 
 export default function Header() {
   const router = useRouter();
@@ -32,14 +33,19 @@ export default function Header() {
     return { locale: null as string | null, rest: path || '/' };
   }
   const { locale: currentLocale, rest } = splitPath(pathname || '/');
-  const locale = currentLocale || 'en';
+  const [locale, setLocale] = useState<string>(currentLocale || 'en');
   const prefix = currentLocale ? `/${locale}` : '';
-  const labels = locale === 'he'
-    ? { about: 'אודות', course: 'קורס', library: 'ספרייה', shop: 'חנות', dashboard: 'לוח בקרה', login: 'התחברות', logout: 'התנתקות' }
-    : { about: 'About', course: 'Course', library: 'Library', shop: 'Shop', dashboard: 'Dashboard', login: 'Login', logout: 'Logout' };
+  useEffect(() => {
+    try {
+      const match = document.cookie.match(/(?:^|; )NEXT_LOCALE=([^;]+)/);
+      const cookieLoc = match ? decodeURIComponent(match[1]) : null;
+      setLocale(cookieLoc === 'he' ? 'he' : (currentLocale || 'en'));
+    } catch {}
+  }, [currentLocale]);
+  const labels = (messages as any)[locale]?.header || (messages as any).en.header;
   function isLocalizable(path: string) {
     // Only keep same-path navigation for known public routes
-    const allowed = new Set(['/','/about','/course','/library','/shop','/new','/classic']);
+    const allowed = new Set(['/','/about','/course','/library','/shop','/new']);
     return allowed.has(path);
   }
   function changeLocale(next: string) {

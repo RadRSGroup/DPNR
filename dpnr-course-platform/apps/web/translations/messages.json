@@ -1,0 +1,99 @@
+{
+  "en": {
+    "landing": {
+      "hero_title": "YOU are the Most Important Resource in the World",
+      "hero_sub": "Explore your inner world with DPNR.",
+      "cta_dashboard": "User Area",
+      "cta_login": "Login",
+      "band1_title": "Secure, simple sign‑in",
+      "band1_copy": "Claim your seat and begin your transformation.",
+      "band2_title": "Course Materials",
+      "band2_copy": "What is DPNR?",
+      "cta_browse_library": "Browse library",
+      "band3_title": "Get started",
+      "band3_copy": "Create an account, enroll, and access course materials.",
+      "cta_register": "Register",
+      "cta_about": "About"
+    },
+    "header": {
+      "about": "About",
+      "course": "Course",
+      "library": "Library",
+      "shop": "Shop",
+      "dashboard": "Dashboard",
+      "login": "Login",
+      "logout": "Logout"
+    },
+    "shopStrip": {
+      "title": "Featured materials",
+      "subtitle": "Enhance learning with curated resources",
+      "item1_title": "Leadership Workbook",
+      "item1_blurb": "Exercises and frameworks",
+      "item2_title": "Mindfulness Journal",
+      "item2_blurb": "Daily prompts",
+      "item3_title": "Productivity Planner",
+      "item3_blurb": "90‑day planning system"
+    },
+    "testimonials": {
+      "title": "What learners say",
+      "subtitle": "Short, honest notes from recent cohorts",
+      "role": "Learner"
+    },
+    "footer": {
+      "navigate": "Navigate",
+      "contact": "Contact",
+      "email": "info@dpnr.local",
+      "tagline": "Practical, in-person courses and materials."
+    },
+    "alt": { "sign_in": "Sign in", "materials": "Materials", "hero": "Hero" }
+  },
+  "he": {
+    "landing": {
+      "hero_title": "YOU are the Most Important Resource in the World",
+      "hero_sub": "Explore your inner world with DPNR.",
+      "cta_dashboard": "Dashboard",
+      "cta_login": "Login",
+      "band1_title": "התחברות מאובטחת ופשוטה",
+      "band1_copy": "תבע את המקום שלך והתחל בטרנספורמציה שלך.",
+      "band2_title": "חומרי קורס",
+      "band2_copy": "מהו DPNR?",
+      "cta_browse_library": "עיון בספרייה",
+      "band3_title": "התחל עכשיו",
+      "band3_copy": "צור חשבון, הירשם וקבל גישה לחומרי הקורס.",
+      "cta_register": "הרשמה",
+      "cta_about": "אודות"
+    },
+    "header": {
+      "about": "אודות",
+      "course": "קורס",
+      "library": "ספרייה",
+      "shop": "חנות",
+      "dashboard": "לוח בקרה",
+      "login": "התחברות",
+      "logout": "התנתקות"
+    },
+    "shopStrip": {
+      "title": "חומרים נבחרים",
+      "subtitle": "שפר את הלמידה עם משאבים מוקפדים",
+      "item1_title": "חוברת עבודה למנהיגות",
+      "item1_blurb": "תרגילים ומסגרות עבודה",
+      "item2_title": "יומן מיינדפולנס",
+      "item2_blurb": "הנחיות יומיות",
+      "item3_title": "פלאנר פרודוקטיביות",
+      "item3_blurb": "מערכת תכנון ל‑90 יום"
+    },
+    "testimonials": {
+      "title": "מה אומרים הלומדים",
+      "subtitle": "הערות קצרות וכנות מהקבוצות האחרונות",
+      "role": "לומד/ת"
+    },
+    "footer": {
+      "navigate": "ניווט",
+      "contact": "יצירת קשר",
+      "email": "info@dpnr.local",
+      "tagline": "קורסים פרונטליים וחומרים מעשיים."
+    },
+    "alt": { "sign_in": "התחברות", "materials": "חומרים", "hero": "תמונת גיבור" }
+  }
+}
+

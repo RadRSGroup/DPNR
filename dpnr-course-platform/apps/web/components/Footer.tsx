@@ -1,14 +1,21 @@
-export default function Footer() {
+import { cookies } from 'next/headers';
+import messages from '../translations/messages.json';
+
+export default async function Footer() {
   const year = new Date().getFullYear();
+  const locale = (await cookies()).get('NEXT_LOCALE')?.value === 'he' ? 'he' : 'en';
+  const dict: any = (messages as any)[locale];
+  const f = dict.footer || {};
+  const h = dict.header || {};
   return (
     <footer className="bg-gray-900 text-white">
       <div className="mx-auto max-w-[1200px] px-6 py-12 grid gap-8 md:grid-cols-3">
         <div>
           <a href="/" className="font-semibold text-primary">DPNR</a>
-          <p className="text-gray-400 mt-3 text-sm">Practical, in-person courses and materials.</p>
+          <p className="text-gray-400 mt-3 text-sm">{f.tagline || 'Practical, in-person courses and materials.'}</p>
         </div>
         <div>
-          <div className="text-sm font-medium mb-2">Navigate</div>
+          <div className="text-sm font-medium mb-2">{f.navigate || 'Navigate'}</div>
           <ul className="text-sm text-gray-400 space-y-1">
             <li><a href="/about" className="hover:text-white">About</a></li>
             <li><a href="/course" className="hover:text-white">Courses</a></li>
@@ -17,9 +24,9 @@ export default function Footer() {
           </ul>
         </div>
         <div>
-          <div className="text-sm font-medium mb-2">Contact</div>
+          <div className="text-sm font-medium mb-2">{f.contact || 'Contact'}</div>
           <ul className="text-sm text-gray-400 space-y-1">
-            <li><a href="mailto:info@dpnr.local" className="hover:text-white">info@dpnr.local</a></li>
+            <li><a href={`mailto:${f.email || 'info@dpnr.local'}`} className="hover:text-white">{f.email || 'info@dpnr.local'}</a></li>
           </ul>
         </div>
       </div>
@@ -29,4 +36,3 @@ export default function Footer() {
     </footer>
   );
 }
-

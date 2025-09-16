@@ -5,31 +5,32 @@ import CoursesGrid from "../../components/marketing/CoursesGrid";
 import Testimonials from "../../components/marketing/Testimonials";
 import ShopStrip from "../../components/marketing/ShopStrip";
 import Footer from "../../components/Footer";
-import heMap from "../../translations/text-mappings.he.json";
+import messages from "../../translations/messages.json";
 
 export default async function NewLanding() {
-  const c = await cookies();
-  const isHe = c.get('NEXT_LOCALE')?.value === 'he';
-  const t = (s: string) => (isHe ? (heMap.page_new_landing?.[s] ?? s) : s);
+  const locale = (await cookies()).get('NEXT_LOCALE')?.value === 'he' ? 'he' : 'en';
+  const dict: any = (messages as any)[locale];
+  const landing = dict.landing;
+  const heroEn: any = (messages as any).en.landing; // Hero always in English
   return (
     <main>
       <Hero
-        title={t("YOU are the Most Important Resource in the World")}
-        subtitle={t("Explore your inner world with DPNR.")}
-        primary={{ href: "/dashboard", label: t("Dashboard") }}
-        secondary={{ href: "/auth/login", label: t("Login") }}
+        title={heroEn.hero_title}
+        subtitle={heroEn.hero_sub}
+        primary={{ href: "/dashboard", label: heroEn.cta_dashboard }}
+        secondary={{ href: "/auth/login", label: heroEn.cta_login }}
         imageSrc="/hero-portal.png"
-        invert
+        stacked
       />
 
       {/* Band 1 */}
       <section className="w-full bg-background">
         <div className="mx-auto max-w-[1200px] px-6 py-24 md:py-32 grid md:grid-cols-2 gap-10 items-center">
           <div>
-            <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>{t("Secure, simple sign‑in")}</h2>
-            <p className="mt-3 text-muted-foreground">{t("Claim your seat and begin your transformation.")}</p>
+            <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>{landing.band1_title}</h2>
+            <p className="mt-3 text-muted-foreground">{landing.band1_copy}</p>
             <div className="mt-6">
-              <Link href="/auth/login" className="underline">{t("Sign in")}</Link>
+              <Link href="/auth/login" className="underline">{landing.sign_in}</Link>
             </div>
           </div>
           <div className="rounded-xl overflow-hidden aspect-[16/10]">
@@ -42,10 +43,10 @@ export default async function NewLanding() {
       <section className="w-full bg-black text-white">
         <div className="mx-auto max-w-[1200px] px-6 py-24 md:py-32 grid md:grid-cols-2 gap-10 items-center">
           <div className="order-last md:order-first">
-            <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>{t("Course Materials")}</h2>
-            <p className="mt-3 text-white/70">{t("What is DPNR?")}</p>
+            <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>{landing.band2_title}</h2>
+            <p className="mt-3 text-white/70">{landing.band2_copy}</p>
             <div className="mt-6">
-              <Link href="/library" className="underline">{t("Browse library")}</Link>
+              <Link href="/library" className="underline">{landing.cta_browse_library}</Link>
             </div>
           </div>
           <div className="rounded-xl overflow-hidden aspect-[16/10]">
@@ -66,11 +67,11 @@ export default async function NewLanding() {
       {/* Band 3 */}
       <section className="w-full bg-background">
         <div className="mx-auto max-w-[1200px] px-6 py-24 md:py-32 text-center">
-          <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>{t("Get started")}</h2>
-          <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">{t("Create an account, enroll, and access course materials.")}</p>
+          <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>{landing.band3_title}</h2>
+          <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">{landing.band3_copy}</p>
           <div className="mt-6 flex items-center justify-center gap-4">
-            <Link href="/auth/register" className="px-5 py-2.5 rounded-full bg-primary text-primary-foreground">{t("Register")}</Link>
-            <Link href="/about" className="px-5 py-2.5 rounded-full border border-input hover:bg-muted">{t("About")}</Link>
+            <Link href="/auth/register" className="px-5 py-2.5 rounded-full bg-primary text-primary-foreground">{landing.cta_register}</Link>
+            <Link href="/about" className="px-5 py-2.5 rounded-full border border-input hover:bg-muted">{landing.cta_about}</Link>
           </div>
         </div>
       </section>
