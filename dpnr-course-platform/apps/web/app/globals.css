@@ -4,3 +4,64 @@
 
 html, body { height: 100%; }
 
+@layer base {
+  html { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, Segoe UI, Roboto, Arial, sans-serif; }
+
+  /* Fluid type helpers */
+  :root {
+    --fluid-h1: clamp(40px, 7vw, 72px);
+    --fluid-h2: clamp(28px, 4.5vw, 44px);
+  }
+  /* Hebrew font stack for RTL content */
+  :root[dir="rtl"],
+  html[dir="rtl"] {
+    font-family: "Noto Sans Hebrew", "Arial Hebrew", Tahoma, Arial, sans-serif;
+  }
+  :root {
+    /* Light theme (HSL) */
+    --background: 0 0% 100%;
+    --foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 262 83% 58%;
+
+    /* Brand palette (violet) */
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 262 22% 96%;
+    --secondary-foreground: 262 47% 32%;
+    --accent: 262 83% 96%;
+    --accent-foreground: 262 47% 32%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 262 83% 70%;
+
+    --primary: 262 83% 70%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 262 22% 20%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 262 32% 22%;
+    --accent-foreground: 0 0% 100%;
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Mixed LTR/RTL content: enforce proper bidi resolution */
+.content-mixed {
+  unicode-bidi: plaintext;
+}

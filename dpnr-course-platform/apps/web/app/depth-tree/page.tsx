@@ -1,0 +1,209 @@
+'use client';
+
+import React, { Suspense, useRef, useMemo } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useTexture, OrbitControls, ScrollControls, Scroll, Html, Points, PointMaterial } from '@react-three/drei';
+import * as THREE from 'three';
+
+function DisplacementTree() {
+  const meshRef = useRef<THREE.Mesh>(null);
+  
+  // Load both the color texture and the depth map
+  const [colorMap, displacementMap] = useTexture([
+    '/tree-color.png',
+    '/tree-depth.png' 
+  ]);
+
+  // Gentle animation
+  useFrame((state) => {
+    if (meshRef.current) {
+      const time = state.clock.getElapsedTime();
+      // Subtle breathing effect
+      meshRef.current.material.displacementScale = 1.2 + Math.sin(time * 0.5) * 0.1;
+      // Very gentle rotation
+      meshRef.current.rotation.z = Math.sin(time * 0.2) * 0.02;
+    }
+  });
+
+  return (
+    <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]}>
+      {/* High-detail plane for smooth displacement */}
+      <planeGeometry args={[12, 12, 256, 256]} />
+      <meshStandardMaterial
+        map={colorMap}
+        displacementMap={displacementMap}
+        displacementScale={1.2}
+        roughness={0.8}
+        metalness={0.1}
+      />
+    </mesh>
+  );
+}
+
+function MagicalButterflies({ count = 30 }) {
+  const pointsRef = useRef<THREE.Points>(null);
+  
+  // Generate butterfly positions
+  const positions = useMemo(() => {
+    const temp = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const i3 = i * 3;
+      temp[i3] = (Math.random() - 0.5) * 15;     // x
+      temp[i3 + 1] = Math.random() * 8 + 1;       // y
+      temp[i3 + 2] = (Math.random() - 0.5) * 15;  // z
+    }
+    return temp;
+  }, [count]);
+
+  // Animate butterflies
+  useFrame((state) => {
+    if (pointsRef.current) {
+      const time = state.clock.getElapsedTime();
+      const positions = pointsRef.current.geometry.attributes.position.array as Float32Array;
+      
+      for (let i = 0; i < count; i++) {
+        const i3 = i * 3;
+        const originalX = positions[i3];
+        const originalY = positions[i3 + 1];
+        const originalZ = positions[i3 + 2];
+        
+        // Floating motion
+        positions[i3] = originalX + Math.sin(time + i * 0.1) * 0.5;
+        positions[i3 + 1] = originalY + Math.sin(time * 0.7 + i * 0.2) * 0.3;
+        positions[i3 + 2] = originalZ + Math.cos(time + i * 0.15) * 0.5;
+      }
+      
+      pointsRef.current.geometry.attributes.position.needsUpdate = true;
+    }
+  });
+
+  return (
+    <Points ref={pointsRef} positions={positions} stride={3} frustumCulled={false}>
+      <PointMaterial
+        transparent
+        color="#ffeeaa"
+        size={0.15}
+        sizeAttenuation={true}
+        depthWrite={false}
+      />
+    </Points>
+  );
+}
+
+function CameraController() {
+  const { camera } = useThree();
+  
+  useFrame(() => {
+    // Gentle automatic camera movement
+    const time = Date.now() * 0.0005;
+    const targetX = Math.cos(time) * 0.5;
+    const targetZ = 8 + Math.sin(time) * 0.5;
+    
+    // Smooth interpolation
+    camera.position.x += (targetX - camera.position.x) * 0.02;
+    camera.position.z += (targetZ - camera.position.z) * 0.02;
+    camera.lookAt(0, 0, 0);
+  });
+  
+  return null;
+}
+
+export default function DepthTreeScene() {
+  return (
+    <div className="relative w-full h-screen bg-gradient-to-b from-amber-50 via-green-50 to-emerald-100">
+      <Canvas
+        camera={{ position: [0, 4, 8], fov: 60 }}
+        style={{ width: '100%', height: '100%' }}
+      >
+        <Suspense fallback={null}>
+          {/* Warm, mystical lighting */}
+          <ambientLight intensity={0.6} color="#fff8e1" />
+          <directionalLight 
+            position={[5, 10, 5]} 
+            intensity={0.8} 
+            color="#ffd54f"
+            castShadow
+            shadow-mapSize={[1024, 1024]}
+          />
+          <pointLight position={[-5, 5, -5]} intensity={0.4} color="#ffcc80" />
+
+          <ScrollControls pages={3} damping={0.1}>
+            <Scroll html>
+              {/* Title overlay */}
+              <div className="absolute top-16 left-1/2 -translate-x-1/2 z-10">
+                <div className="bg-white/25 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/30 text-center">
+                  <h1 className="text-4xl font-bold text-emerald-800 mb-3">The Living Tree</h1>
+                  <p className="text-lg text-emerald-700">3D Displacement-Mapped from Depth</p>
+                  <p className="text-sm text-emerald-600 mt-2">Scroll to explore • Drag to rotate</p>
+                </div>
+              </div>
+              
+              {/* Info panels */}
+              <div className="absolute top-[150vh] left-16 max-w-md">
+                <div className="bg-white/30 backdrop-blur-xl p-6 rounded-2xl shadow-xl border border-white/40">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-3">🌳 Depth Mapping</h2>
+                  <p className="text-gray-700">
+                    This tree is rendered using displacement mapping, where a depth map 
+                    pushes and pulls vertices to create true 3D geometry from a 2D image.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="absolute top-[250vh] right-16 max-w-md">
+                <div className="bg-white/30 backdrop-blur-xl p-6 rounded-2xl shadow-xl border border-white/40">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-3">🦋 Living Magic</h2>
+                  <p className="text-gray-700">
+                    Butterflies dance around the mystical tree, bringing life to this 
+                    enchanted grove where 2D art becomes 3D reality.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="w-full h-[300vh]" />
+            </Scroll>
+            
+            {/* 3D Scene Elements */}
+            <DisplacementTree />
+            <MagicalButterflies count={25} />
+            
+            {/* Auto camera movement */}
+            <CameraController />
+          </ScrollControls>
+          
+          {/* Manual camera controls */}
+          <OrbitControls 
+            enablePan={true}
+            enableZoom={true}
+            enableRotate={true}
+            minDistance={3}
+            maxDistance={20}
+            maxPolarAngle={Math.PI / 1.5}
+          />
+        </Suspense>
+      </Canvas>
+      
+      {/* UI Controls */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
+        <div className="bg-white/20 backdrop-blur-xl p-4 rounded-2xl shadow-lg border border-white/30 text-center">
+          <p className="text-emerald-800 font-medium mb-2">✨ Interactive 3D Tree</p>
+          <div className="flex gap-4 text-sm text-emerald-700">
+            <span>🖱️ Drag: Rotate</span>
+            <span>📜 Scroll: Zoom</span>
+            <span>🎭 Auto: Gentle Motion</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Technical info */}
+      <div className="absolute top-8 right-8 z-10">
+        <div className="bg-black/20 backdrop-blur-lg p-4 rounded-xl text-white/80 text-sm">
+          <p className="font-bold mb-1">🔧 Tech Stack</p>
+          <p>• Displacement Mapping</p>
+          <p>• 256x256 Subdivisions</p>
+          <p>• Dynamic Butterflies</p>
+          <p>• Scroll Controls</p>
+        </div>
+      </div>
+    </div>
+  );
+}

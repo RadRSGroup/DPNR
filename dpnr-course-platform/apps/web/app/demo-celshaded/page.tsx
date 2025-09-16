@@ -1,0 +1,45 @@
+'use client';
+
+import dynamic from 'next/dynamic';
+import React from 'react';
+
+// Dynamic import to avoid SSR issues with Three.js
+const CelShadedScene = dynamic(
+  () => import('../../components/3dplan_alt').then((mod) => mod.CelShadedScene),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-green-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading magical cel-shaded world...</p>
+        </div>
+      </div>
+    ),
+  }
+);
+
+export default function CelShadedDemo() {
+  return (
+    <div className="w-full h-screen bg-gradient-to-br from-sky-200 to-emerald-200">
+      <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-sm rounded-lg p-4 shadow-lg max-w-sm">
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">Cel-Shaded Tree Scene</h1>
+        <p className="text-sm text-gray-600 mb-3">
+          A beautiful 3D scene inspired by treephoto.jpeg with cel-shading effects, floating butterflies, and atmospheric lighting.
+        </p>
+        <div className="text-xs text-gray-500 space-y-1">
+          <p>• Drag to rotate the camera</p>
+          <p>• Scroll to zoom in/out</p>
+          <p>• Performance adapts automatically</p>
+        </div>
+      </div>
+      
+      <CelShadedScene 
+        className="w-full h-full"
+        enableControls={true}
+        autoRotate={false}
+        performanceMode="high"
+      />
+    </div>
+  );
+}

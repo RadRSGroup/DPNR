@@ -1,0 +1,60 @@
+'use client';
+
+import React, { Suspense } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Environment } from '@react-three/drei';
+import { SimpleCelTree } from '../../components/3dplan_alt/SimpleCelTree';
+
+export default function SimpleTreeDemo() {
+  return (
+    <div className="w-full h-screen bg-gradient-to-b from-sky-300 to-emerald-200">
+      <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-sm rounded-lg p-4 shadow-lg">
+        <h1 className="text-xl font-bold text-gray-800 mb-2">Simple Cel-Shaded Tree</h1>
+        <p className="text-sm text-gray-600 mb-2">
+          Fixed shader version - no conflicts
+        </p>
+        <div className="text-xs text-gray-500">
+          <p>• Drag to rotate</p>
+          <p>• Scroll to zoom</p>
+        </div>
+      </div>
+      
+      <Canvas
+        camera={{ position: [4, 3, 4], fov: 50 }}
+        shadows
+      >
+        <Suspense fallback={null}>
+          {/* Lighting */}
+          <ambientLight intensity={0.4} />
+          <directionalLight 
+            position={[5, 8, 5]} 
+            intensity={1} 
+            castShadow
+            shadow-mapSize={[1024, 1024]}
+          />
+          
+          {/* Simple environment */}
+          <Environment preset="park" />
+          
+          {/* The cel-shaded tree */}
+          <SimpleCelTree position={[0, -2, 0]} scale={1.2} />
+          
+          {/* Ground */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.5, 0]} receiveShadow>
+            <planeGeometry args={[20, 20]} />
+            <meshLambertMaterial color="#4a7c4a" />
+          </mesh>
+          
+          {/* Camera controls */}
+          <OrbitControls 
+            enableDamping
+            dampingFactor={0.05}
+            minDistance={2}
+            maxDistance={15}
+            maxPolarAngle={Math.PI / 1.8}
+          />
+        </Suspense>
+      </Canvas>
+    </div>
+  );
+}

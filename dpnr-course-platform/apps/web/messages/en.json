@@ -1,0 +1,27 @@
+{
+  "landing": {
+    "hero": {
+      "title": "Learn. Build. Ship.",
+      "subtitle": "In‑person courses with practical materials and a focused community.",
+      "ctaPrimary": "Dashboard",
+      "ctaSecondary": "Login"
+    },
+    "band1": {
+      "title": "Secure, simple sign‑in",
+      "copy": "Cognito authentication with server sessions and CSRF protection.",
+      "link": "Sign in"
+    },
+    "band2": {
+      "title": "Your materials, organized",
+      "copy": "A library of videos and downloads gated by enrollment.",
+      "link": "Browse library"
+    },
+    "band3": {
+      "title": "Get started",
+      "copy": "Create an account, enroll, and access course materials.",
+      "ctaPrimary": "Register",
+      "ctaSecondary": "About"
+    }
+  }
+}
+

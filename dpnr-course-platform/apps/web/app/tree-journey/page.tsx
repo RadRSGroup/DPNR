@@ -1,0 +1,349 @@
+'use client';
+
+import React, { Suspense, useRef, useMemo, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useTexture, ScrollControls, useScroll, Scroll, Points, PointMaterial } from '@react-three/drei';
+import * as THREE from 'three';
+
+// Camera positions for each section of the tree
+const CAMERA_WAYPOINTS = [
+  {
+    // 0: Full tree view (starting position)
+    position: new THREE.Vector3(0, 0, 10),
+    target: new THREE.Vector3(0, 0, 0),
+    fov: 60,
+    name: 'full-tree'
+  },
+  {
+    // 1: Roots - focus on bottom of tree
+    position: new THREE.Vector3(2, -3, 8),
+    target: new THREE.Vector3(0, -4, 0),
+    fov: 70,
+    name: 'roots'
+  },
+  {
+    // 2: Trunk - center focus, closer
+    position: new THREE.Vector3(-3, 0, 6),
+    target: new THREE.Vector3(0, 0, 0),
+    fov: 50,
+    name: 'trunk'
+  },
+  {
+    // 3: Branches - slight angle to see structure
+    position: new THREE.Vector3(4, 2, 7),
+    target: new THREE.Vector3(0, 1, 0),
+    fov: 55,
+    name: 'branches'
+  },
+  {
+    // 4: Leaves/Canopy - focus on top of tree
+    position: new THREE.Vector3(0, 4, 9),
+    target: new THREE.Vector3(0, 3, 0),
+    fov: 45,
+    name: 'leaves'
+  }
+];
+
+function ScrollCamera() {
+  const { camera } = useThree();
+  const scroll = useScroll();
+  
+  useFrame(() => {
+    // Get scroll progress (0 to 1)
+    const progress = scroll.offset;
+    
+    // Calculate which waypoints we're between
+    const scaledProgress = progress * (CAMERA_WAYPOINTS.length - 1);
+    const currentIndex = Math.floor(Math.max(0, Math.min(scaledProgress, CAMERA_WAYPOINTS.length - 1)));
+    const nextIndex = Math.min(currentIndex + 1, CAMERA_WAYPOINTS.length - 1);
+    const localProgress = Math.max(0, Math.min(1, scaledProgress - currentIndex));
+    
+    // Smooth easing function
+    const easeInOutCubic = (t: number) => {
+      return t < 0.5 
+        ? 4 * t * t * t 
+        : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    };
+    
+    const easedProgress = easeInOutCubic(localProgress);
+    
+    // Get current and next waypoints with safety checks
+    const current = CAMERA_WAYPOINTS[currentIndex];
+    const next = CAMERA_WAYPOINTS[nextIndex];
+    
+    // Safety check to ensure waypoints exist
+    if (!current || !next || !current.position || !next.position) {
+      return;
+    }
+    
+    // Interpolate camera position
+    camera.position.lerpVectors(current.position, next.position, easedProgress);
+    
+    // Interpolate look-at target
+    const currentTarget = current.target.clone();
+    const nextTarget = next.target.clone();
+    const interpolatedTarget = new THREE.Vector3().lerpVectors(
+      currentTarget,
+      nextTarget,
+      easedProgress
+    );
+    camera.lookAt(interpolatedTarget);
+    
+    // Interpolate FOV
+    camera.fov = THREE.MathUtils.lerp(current.fov, next.fov, easedProgress);
+    camera.updateProjectionMatrix();
+  });
+  
+  return null;
+}
+
+function DisplacementTree() {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const scroll = useScroll();
+  
+  // Load textures
+  const [colorMap, displacementMap] = useTexture([
+    '/tree-color.png',
+    '/tree-depth.png' 
+  ]);
+
+  useFrame((state) => {
+    if (meshRef.current) {
+      const time = state.clock.getElapsedTime();
+      const scrollProgress = scroll.offset;
+      
+      // Vary displacement based on scroll - more pronounced at certain sections
+      const baseDisplacement = 1.2;
+      const scrollModifier = 1 + Math.sin(scrollProgress * Math.PI) * 0.3;
+      const material = meshRef.current.material as THREE.MeshStandardMaterial;
+      material.displacementScale = 
+        baseDisplacement * scrollModifier + Math.sin(time * 0.5) * 0.1;
+      
+      // Gentle rotation that changes with scroll
+      meshRef.current.rotation.z = Math.sin(time * 0.2) * 0.02 * (1 - scrollProgress);
+      
+      // Subtle wind effect on leaves (stronger at top)
+      if (scrollProgress > 0.7) {
+        meshRef.current.rotation.x = Math.sin(time * 0.8) * 0.01;
+      }
+    }
+  });
+
+  return (
+    <mesh ref={meshRef} rotation={[0, 0, 0]} position={[0, 0, 0]}>
+      <planeGeometry args={[12, 12, 256, 256]} />
+      <meshStandardMaterial
+        map={colorMap}
+        displacementMap={displacementMap}
+        displacementScale={1.2}
+        roughness={0.8}
+        metalness={0.1}
+        side={THREE.DoubleSide}
+      />
+    </mesh>
+  );
+}
+
+function AdaptiveButterflies({ count = 30 }) {
+  const pointsRef = useRef<THREE.Points>(null);
+  const scroll = useScroll();
+  const basePositions = useRef<Float32Array>();
+  
+  // Generate initial positions
+  const positions = useMemo(() => {
+    const temp = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const i3 = i * 3;
+      // Distribute butterflies around tree at different heights
+      const angle = (i / count) * Math.PI * 2;
+      const radius = 2 + Math.random() * 4;
+      const height = Math.random() * 10 - 2; // From roots to canopy
+      
+      temp[i3] = Math.cos(angle) * radius;
+      temp[i3 + 1] = height;
+      temp[i3 + 2] = Math.sin(angle) * radius;
+    }
+    basePositions.current = temp.slice();
+    return temp;
+  }, [count]);
+
+  useFrame((state) => {
+    if (pointsRef.current && basePositions.current) {
+      const time = state.clock.getElapsedTime();
+      const scrollProgress = scroll.offset;
+      const positions = pointsRef.current.geometry.attributes.position.array as Float32Array;
+      
+      for (let i = 0; i < count; i++) {
+        const i3 = i * 3;
+        const baseX = basePositions.current[i3];
+        const baseY = basePositions.current[i3 + 1];
+        const baseZ = basePositions.current[i3 + 2];
+        
+        // Butterflies behavior changes based on scroll section
+        let behaviorX = 0, behaviorY = 0, behaviorZ = 0;
+        
+        if (scrollProgress < 0.25) {
+          // Full view - gentle floating
+          behaviorX = Math.sin(time + i * 0.1) * 0.5;
+          behaviorY = Math.sin(time * 0.7 + i * 0.2) * 0.3;
+          behaviorZ = Math.cos(time + i * 0.15) * 0.5;
+        } else if (scrollProgress < 0.5) {
+          // Roots - butterflies settle lower
+          behaviorX = Math.sin(time * 0.3 + i * 0.1) * 0.2;
+          behaviorY = -Math.abs(Math.sin(time * 0.5 + i * 0.2)) * 2;
+          behaviorZ = Math.cos(time * 0.3 + i * 0.15) * 0.2;
+        } else if (scrollProgress < 0.75) {
+          // Trunk/Branches - spiral upward
+          const spiralAngle = time + i * 0.2;
+          behaviorX = Math.cos(spiralAngle) * 2;
+          behaviorY = (time * 0.5) % 8;
+          behaviorZ = Math.sin(spiralAngle) * 2;
+        } else {
+          // Canopy - energetic movement
+          behaviorX = Math.sin(time * 1.5 + i * 0.1) * 1;
+          behaviorY = Math.sin(time + i * 0.2) * 0.5 + 5;
+          behaviorZ = Math.cos(time * 1.5 + i * 0.15) * 1;
+        }
+        
+        positions[i3] = baseX + behaviorX;
+        positions[i3 + 1] = baseY + behaviorY;
+        positions[i3 + 2] = baseZ + behaviorZ;
+      }
+      
+      pointsRef.current.geometry.attributes.position.needsUpdate = true;
+    }
+  });
+
+  return (
+    <Points ref={pointsRef} positions={positions} stride={3} frustumCulled={false}>
+      <PointMaterial
+        transparent
+        color="#ffeeaa"
+        size={0.15}
+        sizeAttenuation={true}
+        depthWrite={false}
+      />
+    </Points>
+  );
+}
+
+// Section content overlays
+function ScrollContent() {
+  return (
+    <Scroll html>
+      {/* Full Tree Introduction */}
+      <div className="w-screen h-screen flex items-center justify-center">
+        <div className="max-w-2xl mx-auto p-8">
+          <div className="bg-white/20 backdrop-blur-2xl p-8 rounded-3xl shadow-2xl border border-white/30 text-center">
+            <h1 className="text-5xl font-bold text-emerald-800 mb-4">The Living Tree</h1>
+            <p className="text-xl text-emerald-700 mb-2">A Journey Through Life</p>
+            <p className="text-emerald-600">Scroll to explore from roots to crown</p>
+            <div className="mt-6 animate-bounce">
+              <svg className="w-6 h-6 mx-auto text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Roots Section */}
+      <div className="w-screen h-screen flex items-center">
+        <div className="max-w-md ml-16">
+          <div className="bg-gradient-to-br from-amber-900/30 to-amber-800/20 backdrop-blur-xl p-6 rounded-2xl shadow-xl border border-amber-900/20">
+            <h2 className="text-3xl font-bold text-amber-900 mb-3">The Roots</h2>
+            <p className="text-amber-800 leading-relaxed">
+              Deep beneath the surface, ancient roots spread through earth and time, 
+              drawing wisdom from the soil of ages past. Here begins our foundation.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Trunk Section */}
+      <div className="w-screen h-screen flex items-center justify-end">
+        <div className="max-w-md mr-16">
+          <div className="bg-gradient-to-br from-amber-700/30 to-amber-600/20 backdrop-blur-xl p-6 rounded-2xl shadow-xl border border-amber-700/20">
+            <h2 className="text-3xl font-bold text-amber-800 mb-3">The Trunk</h2>
+            <p className="text-amber-700 leading-relaxed">
+              Strong and steady, the trunk carries the stories of countless seasons. 
+              Each ring marks a year of growth, resilience, and quiet strength.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Branches Section */}
+      <div className="w-screen h-screen flex items-center">
+        <div className="max-w-md ml-16">
+          <div className="bg-gradient-to-br from-green-700/30 to-green-600/20 backdrop-blur-xl p-6 rounded-2xl shadow-xl border border-green-700/20">
+            <h2 className="text-3xl font-bold text-green-800 mb-3">The Branches</h2>
+            <p className="text-green-700 leading-relaxed">
+              Reaching outward in every direction, branches create pathways of possibility. 
+              Each fork represents a choice, each twist tells of adaptation.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Leaves Section */}
+      <div className="w-screen h-screen flex items-center justify-center">
+        <div className="max-w-2xl mx-auto p-8">
+          <div className="bg-gradient-to-br from-emerald-600/30 to-green-500/20 backdrop-blur-xl p-8 rounded-3xl shadow-xl border border-emerald-600/20 text-center">
+            <h2 className="text-4xl font-bold text-emerald-800 mb-4">The Canopy</h2>
+            <p className="text-emerald-700 leading-relaxed text-lg">
+              At the crown, thousands of leaves dance in the wind, each one breathing life 
+              into the world. Here at the top, we touch the sky and understand the full 
+              majesty of growth.
+            </p>
+          </div>
+        </div>
+      </div>
+    </Scroll>
+  );
+}
+
+export default function TreeJourney() {
+  return (
+    <div className="relative w-full h-screen bg-gradient-to-b from-amber-50 via-green-50 to-emerald-100">
+      <Canvas
+        camera={{ position: [0, 0, 10], fov: 60 }}
+        style={{ width: '100%', height: '100%' }}
+      >
+        <Suspense fallback={null}>
+          {/* Adaptive lighting that changes with scroll */}
+          <ambientLight intensity={0.6} color="#fff8e1" />
+          <directionalLight 
+            position={[5, 10, 5]} 
+            intensity={0.8} 
+            color="#ffd54f"
+            castShadow
+          />
+          <pointLight position={[-5, 5, -5]} intensity={0.4} color="#ffcc80" />
+
+          {/* 5 pages for 5 sections */}
+          <ScrollControls pages={5} damping={0.1}>
+            <ScrollCamera />
+            <ScrollContent />
+            
+            {/* 3D Scene Elements */}
+            <DisplacementTree />
+            <AdaptiveButterflies count={25} />
+          </ScrollControls>
+        </Suspense>
+      </Canvas>
+      
+      {/* Progress indicator */}
+      <div className="fixed right-8 top-1/2 -translate-y-1/2 z-20">
+        <div className="flex flex-col gap-2">
+          {['Full', 'Roots', 'Trunk', 'Branches', 'Canopy'].map((label, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-600/30" />
+              <span className="text-xs text-emerald-700 opacity-60">{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

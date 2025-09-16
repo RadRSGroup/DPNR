@@ -9,7 +9,9 @@
   "scripts": {
     "build": "npm run -w @dpnr/web build && npm run -w @dpnr/admin build",
     "dev": "npm run -w @dpnr/web dev",
-    "lint": "npm run -w @dpnr/web lint"
+    "dev:prepare": "npm run -w @dpnr/database prisma:generate && npm run -w @dpnr/web dev",
+    "setup": "cp apps/web/.env.local.example apps/web/.env.local 2>/dev/null || true && npm install",
+    "lint": "npm run -w @dpnr/web lint",
+    "postinstall": "npm run -w @dpnr/database prisma:generate"
   }
 }
-

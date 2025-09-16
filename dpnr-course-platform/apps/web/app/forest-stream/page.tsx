@@ -1,0 +1,23 @@
+import ForestStreamHero from '../../components/ForestStreamHero';
+
+export const dynamic = 'force-static';
+
+export default function Page() {
+  return (
+    <main className="p-0 space-y-8">
+      <div className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
+      <ForestStreamHero src="/images/forest_stream.jpg" priority className="rounded-none md:rounded-2xl">
+        <h2 className="text-3xl md:text-5xl font-light">Roots By The Stream</h2>
+        <p className="mt-2 text-white/90 max-w-xl">
+          Simple, responsive hero with minimal overhead. Parallax enhances desktop, while mobile stays static and fast.
+        </p>
+      </ForestStreamHero>
+      </div>
+      <div className="mx-auto max-w-6xl px-6">
+      <p className="text-sm text-muted-foreground">
+        Tip: Replace the image at <code className="font-mono">apps/web/public/images/forest_stream.jpg</code> with another photo to update this hero.
+      </p>
+      </div>
+    </main>
+  );
+}

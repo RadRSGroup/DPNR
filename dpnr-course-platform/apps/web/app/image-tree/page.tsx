@@ -1,0 +1,45 @@
+'use client';
+
+import React, { Suspense } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
+import { ImageBasedTree } from '../../components/3dplan_alt/ImageBasedTree';
+
+export default function ImageTreeDemo() {
+  return (
+    <div className="w-full h-screen bg-gradient-to-b from-amber-100 to-green-100">
+      <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-sm rounded-lg p-4 shadow-lg">
+        <h1 className="text-xl font-bold text-gray-800 mb-2">Image-Based Tree</h1>
+        <p className="text-sm text-gray-600 mb-2">
+          Using the actual treephoto.jpeg in 3D space
+        </p>
+        <div className="text-xs text-gray-500">
+          <p>• Drag to rotate around the tree</p>
+          <p>• Scroll to zoom in/out</p>
+          <p>• Hover for subtle interaction</p>
+        </div>
+      </div>
+      
+      <Canvas
+        camera={{ position: [0, 0, 8], fov: 50 }}
+      >
+        <Suspense fallback={null}>
+          {/* Soft ambient lighting */}
+          <ambientLight intensity={0.8} />
+          
+          {/* The actual tree photo in 3D */}
+          <ImageBasedTree position={[0, 0, 0]} scale={1.5} />
+          
+          {/* Camera controls */}
+          <OrbitControls 
+            enableDamping
+            dampingFactor={0.05}
+            minDistance={4}
+            maxDistance={20}
+            maxPolarAngle={Math.PI / 1.5}
+          />
+        </Suspense>
+      </Canvas>
+    </div>
+  );
+}
