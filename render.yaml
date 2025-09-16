@@ -3,6 +3,7 @@ services:
     name: dpnr-web
     env: node
     branch: dpnr_course_site
+    rootDir: dpnr-course-platform
     buildCommand: npm ci && npm run -w @dpnr/web build
     startCommand: npm run -w @dpnr/web start
     autoDeploy: true
