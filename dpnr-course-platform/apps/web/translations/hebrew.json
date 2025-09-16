@@ -1,0 +1,58 @@
+{
+  "hero": {
+    "title": "אתה המשאב הכי חשוב בעולם",
+    "subtitle": "גלה את העולם הפנימי שלך עם DPNR.",
+    "dashboard_button": "לוח בקרה",
+    "login_button": "התחברות"
+  },
+  "navigation": {
+    "sign_in": "התחברות",
+    "register": "הרשמה",
+    "about": "אודות",
+    "dashboard": "לוח בקרה",
+    "library": "ספרייה",
+    "browse_library": "עיון בספרייה"
+  },
+  "landing_page": {
+    "secure_signin_title": "התחברות מאובטחת ופשוטה",
+    "secure_signin_subtitle": "תבע את המקום שלך והתחל בטרנספורמציה שלך.",
+    "course_materials_title": "חומרי קורס",
+    "course_materials_subtitle": "מהו DPNR?",
+    "get_started_title": "התחל עכשיו",
+    "get_started_subtitle": "צור חשבון, הירשם לקורס וקבל גישה לחומרי הקורס.",
+    "sign_in_alt": "התחברות",
+    "materials_alt": "חומרים"
+  },
+  "courses": {
+    "section_title": "הקורסים שלנו",
+    "section_subtitle": "מפגשים מעשיים שתוכננו לתוצאות אמיתיות"
+  },
+  "testimonials": {
+    "section_title": "מה אומרים הלומדים",
+    "section_subtitle": "הערות קצרות וכנות מהקבוצות האחרונות",
+    "learner_role": "לומד",
+    "testimonial_dana": "המפגשים היו ממוקדים ומעשיים. ראיתי תוצאות מהר.",
+    "testimonial_eli": "מבנה ברור וחומרים מעולים. ממליץ בחום.",
+    "testimonial_noa": "בדיוק הדחיפה שהייתי צריכה כדי להתקדם לרמה הבאה."
+  },
+  "shop": {
+    "section_title": "חומרים נבחרים",
+    "section_subtitle": "שפר את הלמידה עם משאבים מוקפדים",
+    "leadership_workbook_title": "חוברת עבודה למנהיגות",
+    "leadership_workbook_description": "תרגילים ומסגרות עבודה",
+    "mindfulness_journal_title": "יומן מיינדפולנס",
+    "mindfulness_journal_description": "הנחיות יומיות",
+    "productivity_planner_title": "פלאנר פרודוקטיביות",
+    "productivity_planner_description": "מערכת תכנון ל-90 יום"
+  },
+  "common": {
+    "loading": "טוען...",
+    "error": "שגיאה",
+    "try_again": "נסה שוב"
+  },
+  "alt_text": {
+    "hero_image": "תמונת גיבור",
+    "course_image": "תמונת קורס",
+    "user_avatar": "תמונת משתמש"
+  }
+}

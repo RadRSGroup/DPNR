@@ -20,7 +20,7 @@ export default async function CoursesGrid() {
           <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>Our Courses</h2>
           <p className="mt-3 text-muted-foreground">Hands-on sessions designed for real outcomes</p>
         </div>
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {courses.map((c: any) => (
             <a key={c.id} href="/course" className="group bg-white rounded-lg overflow-hidden shadow-md border transition duration-300 hover:-translate-y-1">
               <div className="p-5">
@@ -37,4 +37,3 @@ export default async function CoursesGrid() {
     </section>
   );
 }
-

@@ -1,0 +1,54 @@
+{
+  "page_new_landing": {
+    "YOU are the Most Important Resource in the World": "אתה המשאב הכי חשוב בעולם",
+    "Explore your inner world with DPNR.": "גלה את העולם הפנימי שלך עם DPNR.",
+    "Get Started": "לוח בקרה",
+    "Login": "התחברות",
+    "Take a Journey Inside Yourself": "התחברות מאובטחת ופשוטה",
+    "Claim your seat and begin your transformation.": "תבע את המקום שלך והתחל בטרנספורמציה שלך.",
+    "Sign in": "התחברות",
+    "Start Your Lifelong Journey of Growth": "חומרי קורס",
+    "What is DPNR?": "מהו DPNR?",
+    "Browse library": "עיון בספרייה",
+    "Get started": "התחל עכשיו",
+    "Create an account, enroll, and access course materials.": "צור חשבון, הירשם לקורס וקבל גישה לחומרי הקורס.",
+    "Register": "הרשמה",
+    "About": "אודות"
+  },
+  "component_courses_grid": {
+    "Our Courses": "הקורסים שלנו",
+    "Intimate Setting, Unbelievable Results": "מפגשים מעשיים שתוכננו לתוצאות אמיתיות"
+  },
+  "component_shop_strip": {
+    "Course Textbook": "חומרים נבחרים",
+    "DPNR Life 360": "שפר את הלמידה עם משאבים מוקפדים",
+    "One-on-One Coaching": "חוברת עבודה למנהיגות",
+    "Exercises and frameworks": "תרגילים ומסגרות עבודה",
+    "Mindfulness Journal": "יומן מיינדפולנס",
+    "Daily prompts": "הנחיות יומיות",
+    "Productivity Planner": "פלאנר פרודוקטיביות",
+    "90‑day planning system": "מערכת תכנון ל-90 יום"
+  },
+  "component_testimonials": {
+    "What learners say": "מה אומרים הלומדים",
+    "What Will YOU Become?": "הערות קצרות וכנות מהקבוצות האחרונות",
+    "DPNR": "לומד",
+    "I came to DPNR in Pain, I Learned That I am Priceless.": "המפגשים היו ממוקדים ומעשיים. ראיתי תוצאות מהר.",
+    "What Can I say? DPNR Changed My Life.": "מבנה ברור וחומרים מעולים. ממליץ בחום.",
+    "Exactly the push I needed to level up.": "בדיוק הדחיפה שהייתי צריכה כדי להתקדם לרמה הבאה."
+  },
+  "alt_text_translations": {
+    "Sign in": "התחברות",
+    "Materials": "חומרים",
+    "Hero": "תמונת גיבור"
+  },
+  "navigation_urls": {
+    "/dashboard": "/dashboard",
+    "/auth/login": "/auth/login",
+    "/library": "/library",
+    "/auth/register": "/auth/register",
+    "/about": "/about",
+    "/course": "/course",
+    "/shop": "/shop"
+  }
+}

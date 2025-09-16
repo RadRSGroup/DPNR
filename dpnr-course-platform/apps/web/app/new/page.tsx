@@ -1,17 +1,27 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import Hero from "../../components/marketing/Hero";
 import CoursesGrid from "../../components/marketing/CoursesGrid";
 import Testimonials from "../../components/marketing/Testimonials";
+import ShopStrip from "../../components/marketing/ShopStrip";
+import Footer from "../../components/Footer";
+import heMap from "../../translations/text-mappings.he.json";
+import ShopStrip from "../../components/marketing/ShopStrip";
+import Footer from "../../components/Footer";
 
-export default function NewLanding() {
+export default async function NewLanding() {
+  const c = await cookies();
+  const isHe = c.get('NEXT_LOCALE')?.value === 'he';
+  const t = (s: string) => (isHe ? (heMap.page_new_landing?.[s] ?? s) : s);
   return (
     <main>
       <Hero
-        title="You are the MOST Important Resource in the World."
+        title="YOU are the Most Important Resource in the World"
         subtitle="Explore your inner world with DPNR."
         primary={{ href: "/dashboard", label: "Dashboard" }}
         secondary={{ href: "/auth/login", label: "Login" }}
         imageSrc="/hero-portal.png"
+        invert
       />
 
       {/* Band 1 */}
@@ -25,7 +35,7 @@ export default function NewLanding() {
             </div>
           </div>
           <div className="rounded-xl overflow-hidden aspect-[16/10]">
-            <img src="/course-1.jpg" alt="Sign in" className="w-full h-full object-cover" />
+            <img src="/course-1.jpg" alt="Sign in" loading="lazy" className="w-full h-full object-cover" />
           </div>
         </div>
       </section>
@@ -41,7 +51,7 @@ export default function NewLanding() {
             </div>
           </div>
           <div className="rounded-xl overflow-hidden aspect-[16/10]">
-            <img src="/course-2.jpg" alt="Materials" className="w-full h-full object-cover" />
+            <img src="/course-2.jpg" alt="Materials" loading="lazy" className="w-full h-full object-cover" />
           </div>
         </div>
       </section>
@@ -51,6 +61,9 @@ export default function NewLanding() {
 
       {/* Testimonials */}
       <Testimonials />
+
+      {/* Shop preview */}
+      <ShopStrip />
 
       {/* Band 3 */}
       <section className="w-full bg-background">
@@ -63,6 +76,8 @@ export default function NewLanding() {
           </div>
         </div>
       </section>
+
+      <Footer />
     </main>
   );
 }
