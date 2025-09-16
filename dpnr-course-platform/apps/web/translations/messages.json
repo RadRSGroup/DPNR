@@ -37,7 +37,12 @@
     "testimonials": {
       "title": "What learners say",
       "subtitle": "Short, honest notes from recent cohorts",
-      "role": "Learner"
+      "role": "Learner",
+      "items": [
+        { "name": "Dana", "quote": "The sessions were focused and practical. I saw results fast." },
+        { "name": "Eli", "quote": "Clear structure and great materials. Highly recommended." },
+        { "name": "Noa", "quote": "Exactly the push I needed to level up." }
+      ]
     },
     "footer": {
       "navigate": "Navigate",
@@ -89,7 +94,12 @@
     "testimonials": {
       "title": "מה אומרים הלומדים",
       "subtitle": "מה אתה תהפוך להיות?",
-      "role": "לומד/ת"
+      "role": "לומד/ת",
+      "items": [
+        { "name": "דנה", "quote": "המפגשים היו ממוקדים ומעשיים. ראיתי תוצאות מהר." },
+        { "name": "אלי", "quote": "מבנה ברור וחומרים מעולים. ממליץ בחום." },
+        { "name": "נועה", "quote": "בדיוק הדחיפה שהייתי צריכה כדי להתקדם לרמה הבאה." }
+      ]
     },
     "footer": {
       "navigate": "ניווט",
