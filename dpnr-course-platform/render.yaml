@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: dpnr-web
+    env: node
+    branch: dpnr_course_site
+    rootDir: apps/web
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # Add your runtime env here or in the Render dashboard.
+      # Example:
+      # - key: NEXT_PUBLIC_SITE_URL
+      #   value: https://dpnr.onrender.com
