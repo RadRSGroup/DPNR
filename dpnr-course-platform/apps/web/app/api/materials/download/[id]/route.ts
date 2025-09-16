@@ -3,7 +3,7 @@ import { getIronSession } from 'iron-session';
 import prisma from '@dpnr/database/src/client';
 import { sessionOptions, type AppSession } from '../../../../../lib/session';
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(_: Request, context: { params: { id: string } }) {
   const c = await cookies();
   const session = await getIronSession<AppSession>(c, sessionOptions);
   const userSession = session.user;
@@ -12,7 +12,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   }
 
   const material = await prisma.material.findUnique({
-    where: { id: params.id },
+    where: { id: context.params.id },
     select: { id: true, title: true, isPublic: true, courseId: true, url: true },
   });
   if (!material) {

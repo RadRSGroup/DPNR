@@ -1,3 +1,4 @@
-export async function GET(_: Request, { params }: { params: { id: string } }) {
-  return Response.json({ id: params.id, status: 'OPEN' }, { status: 200 });
+export async function GET(_: Request, context: { params: { id: string } }) {
+  const { id } = context.params;
+  return Response.json({ id, status: 'OPEN' }, { status: 200 });
 }
