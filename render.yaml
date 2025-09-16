@@ -3,9 +3,8 @@ services:
     name: dpnr-web
     env: node
     branch: dpnr_course_site
-    rootDir: dpnr-course-platform/apps/web
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start
+    buildCommand: npm ci && npm run -w @dpnr/web build
+    startCommand: npm run -w @dpnr/web start
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
