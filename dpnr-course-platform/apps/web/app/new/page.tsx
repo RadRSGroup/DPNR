@@ -1,23 +1,18 @@
 import Link from "next/link";
+import Hero from "../../components/marketing/Hero";
+import CoursesGrid from "../../components/marketing/CoursesGrid";
+import Testimonials from "../../components/marketing/Testimonials";
 
 export default function NewLanding() {
   return (
     <main>
-      {/* Full‑bleed black hero */}
-      <section className="relative w-full bg-black text-white">
-        <div className="mx-auto max-w-[1200px] px-6 py-[18vh] text-center">
-          <h1 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h1)' }}>
-            You are the MOST Important Resource in the World.
-                  </h1>
-          <p className="mt-4 text-white/80 max-w-2xl mx-auto">
-            Explore your Inner world with DPNR.
-          </p>
-          <div className="mt-8 flex items-center justify-center gap-4">
-            <Link href="/dashboard" className="px-5 py-2.5 rounded-full bg-white text-black hover:opacity-90">Dashboard</Link>
-            <Link href="/auth/login" className="px-5 py-2.5 rounded-full border border-white/40 hover:bg-white/10">Login</Link>
-          </div>
-        </div>
-      </section>
+      <Hero
+        title="You are the MOST Important Resource in the World."
+        subtitle="Explore your inner world with DPNR."
+        primary={{ href: "/dashboard", label: "Dashboard" }}
+        secondary={{ href: "/auth/login", label: "Login" }}
+        imageSrc="/hero-portal.png"
+      />
 
       {/* Band 1 */}
       <section className="w-full bg-background">
@@ -29,7 +24,9 @@ export default function NewLanding() {
               <Link href="/auth/login" className="underline">Sign in</Link>
             </div>
           </div>
-          <div className="rounded-xl bg-muted aspect-[16/10]" />
+          <div className="rounded-xl overflow-hidden aspect-[16/10]">
+            <img src="/course-1.jpg" alt="Sign in" className="w-full h-full object-cover" />
+          </div>
         </div>
       </section>
 
@@ -43,9 +40,17 @@ export default function NewLanding() {
               <Link href="/library" className="underline">Browse library</Link>
             </div>
           </div>
-          <div className="rounded-xl bg-white/10 aspect-[16/10]" />
+          <div className="rounded-xl overflow-hidden aspect-[16/10]">
+            <img src="/course-2.jpg" alt="Materials" className="w-full h-full object-cover" />
+          </div>
         </div>
       </section>
+
+      {/* Dynamic courses preview */}
+      <CoursesGrid />
+
+      {/* Testimonials */}
+      <Testimonials />
 
       {/* Band 3 */}
       <section className="w-full bg-background">
@@ -61,4 +66,3 @@ export default function NewLanding() {
     </main>
   );
 }
-
