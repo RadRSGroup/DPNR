@@ -3,9 +3,7 @@ import { getIronSession } from 'iron-session';
 import prisma from '@dpnr/database/src/client';
 import { sessionOptions, type AppSession } from '../../../../lib/session';
 
-type Params = { params: { courseId: string } };
-
-export async function GET(_: Request, { params }: Params) {
+export async function GET(_: Request, { params }: { params: { courseId: string } }) {
   const courseId = params.courseId;
   const c = await cookies();
   const session = await getIronSession<AppSession>(c, sessionOptions);

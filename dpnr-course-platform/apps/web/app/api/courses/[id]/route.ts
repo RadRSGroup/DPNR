@@ -1,6 +1,3 @@
-type Params = { params: { id: string } };
-
-export async function GET(_: Request, { params }: Params) {
+export async function GET(_: Request, { params }: { params: { id: string } }) {
   return Response.json({ id: params.id, title: 'TBD' }, { status: 200 });
 }
-
