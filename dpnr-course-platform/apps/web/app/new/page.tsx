@@ -6,8 +6,6 @@ import Testimonials from "../../components/marketing/Testimonials";
 import ShopStrip from "../../components/marketing/ShopStrip";
 import Footer from "../../components/Footer";
 import heMap from "../../translations/text-mappings.he.json";
-import ShopStrip from "../../components/marketing/ShopStrip";
-import Footer from "../../components/Footer";
 
 export default async function NewLanding() {
   const c = await cookies();
@@ -16,10 +14,10 @@ export default async function NewLanding() {
   return (
     <main>
       <Hero
-        title="YOU are the Most Important Resource in the World"
-        subtitle="Explore your inner world with DPNR."
-        primary={{ href: "/dashboard", label: "Dashboard" }}
-        secondary={{ href: "/auth/login", label: "Login" }}
+        title={t("YOU are the Most Important Resource in the World")}
+        subtitle={t("Explore your inner world with DPNR.")}
+        primary={{ href: "/dashboard", label: t("Dashboard") }}
+        secondary={{ href: "/auth/login", label: t("Login") }}
         imageSrc="/hero-portal.png"
         invert
       />
@@ -28,10 +26,10 @@ export default async function NewLanding() {
       <section className="w-full bg-background">
         <div className="mx-auto max-w-[1200px] px-6 py-24 md:py-32 grid md:grid-cols-2 gap-10 items-center">
           <div>
-            <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>Secure, simple sign‑in</h2>
-            <p className="mt-3 text-muted-foreground">Claim your seat and begin your transformation.</p>
+            <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>{t("Secure, simple sign‑in")}</h2>
+            <p className="mt-3 text-muted-foreground">{t("Claim your seat and begin your transformation.")}</p>
             <div className="mt-6">
-              <Link href="/auth/login" className="underline">Sign in</Link>
+              <Link href="/auth/login" className="underline">{t("Sign in")}</Link>
             </div>
           </div>
           <div className="rounded-xl overflow-hidden aspect-[16/10]">
@@ -44,10 +42,10 @@ export default async function NewLanding() {
       <section className="w-full bg-black text-white">
         <div className="mx-auto max-w-[1200px] px-6 py-24 md:py-32 grid md:grid-cols-2 gap-10 items-center">
           <div className="order-last md:order-first">
-            <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>Course Materials</h2>
-            <p className="mt-3 text-white/70">What is DPNR?</p>
+            <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>{t("Course Materials")}</h2>
+            <p className="mt-3 text-white/70">{t("What is DPNR?")}</p>
             <div className="mt-6">
-              <Link href="/library" className="underline">Browse library</Link>
+              <Link href="/library" className="underline">{t("Browse library")}</Link>
             </div>
           </div>
           <div className="rounded-xl overflow-hidden aspect-[16/10]">
@@ -68,11 +66,11 @@ export default async function NewLanding() {
       {/* Band 3 */}
       <section className="w-full bg-background">
         <div className="mx-auto max-w-[1200px] px-6 py-24 md:py-32 text-center">
-          <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>Get started</h2>
-          <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">Create an account, enroll, and access course materials.</p>
+          <h2 className="font-semibold tracking-tight" style={{ fontSize: 'var(--fluid-h2)' }}>{t("Get started")}</h2>
+          <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">{t("Create an account, enroll, and access course materials.")}</p>
           <div className="mt-6 flex items-center justify-center gap-4">
-            <Link href="/auth/register" className="px-5 py-2.5 rounded-full bg-primary text-primary-foreground">Register</Link>
-            <Link href="/about" className="px-5 py-2.5 rounded-full border border-input hover:bg-muted">About</Link>
+            <Link href="/auth/register" className="px-5 py-2.5 rounded-full bg-primary text-primary-foreground">{t("Register")}</Link>
+            <Link href="/about" className="px-5 py-2.5 rounded-full border border-input hover:bg-muted">{t("About")}</Link>
           </div>
         </div>
       </section>
