@@ -1,9 +1,4 @@
-import { Suspense } from 'react';
 import Link from 'next/link';
-
-interface PageProps {
-  searchParams: { orderId?: string };
-}
 
 function SuccessContent({ orderId }: { orderId: string | undefined }) {
   return (
@@ -49,10 +44,12 @@ function SuccessContent({ orderId }: { orderId: string | undefined }) {
   );
 }
 
-export default function PaymentSuccessPage({ searchParams }: PageProps) {
-  return (
-    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
-      <SuccessContent orderId={searchParams.orderId} />
-    </Suspense>
-  );
+export default async function PaymentSuccessPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const orderId = Array.isArray(sp.orderId) ? sp.orderId[0] : sp.orderId;
+  return <SuccessContent orderId={orderId} />;
 }

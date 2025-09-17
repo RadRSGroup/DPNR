@@ -1,9 +1,4 @@
-import { Suspense } from 'react';
 import Link from 'next/link';
-
-interface PageProps {
-  searchParams: { orderId?: string; error?: string };
-}
 
 function FailureContent({ orderId, error }: { orderId: string | undefined; error: string | undefined }) {
   const decodedError = error ? decodeURIComponent(error) : 'Payment was not completed';
@@ -64,10 +59,13 @@ function FailureContent({ orderId, error }: { orderId: string | undefined; error
   );
 }
 
-export default function PaymentFailurePage({ searchParams }: PageProps) {
-  return (
-    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
-      <FailureContent orderId={searchParams.orderId} error={searchParams.error} />
-    </Suspense>
-  );
+export default async function PaymentFailurePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const orderId = Array.isArray(sp.orderId) ? sp.orderId[0] : sp.orderId;
+  const error = Array.isArray(sp.error) ? sp.error[0] : sp.error;
+  return <FailureContent orderId={orderId} error={error} />;
 }
