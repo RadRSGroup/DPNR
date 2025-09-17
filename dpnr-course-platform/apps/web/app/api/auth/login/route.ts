@@ -45,8 +45,9 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Invalid token' }, { status: 401 });
   }
 
-  // Create session using App Router cookies()
-  const session = await getIronSession<AppSession>(cookies(), sessionOptions);
+  // Create session using App Router cookies() (Next 15 returns a Promise)
+  const c = await cookies();
+  const session = await getIronSession<AppSession>(c, sessionOptions);
   session.user = { id: cognitoId, email };
   await session.save();
 

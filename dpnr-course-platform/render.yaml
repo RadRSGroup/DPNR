@@ -3,14 +3,17 @@ services:
     name: dpnr-web
     env: node
     branch: dpnr_course_site
-    rootDir: apps/web
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start
+    # Remove rootDir - work from monorepo root
+    buildCommand: npm ci && npm run build --workspace=@dpnr/web
+    startCommand: npm run start --workspace=@dpnr/web
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
         value: "20"
-      # Add your runtime env here or in the Render dashboard.
-      # Example:
-      # - key: NEXT_PUBLIC_SITE_URL
-      #   value: https://dpnr.onrender.com
+      # Add your NEXT_PUBLIC_ variables here or via dashboard
+      - key: NEXT_PUBLIC_URL
+        value: https://dpnr-web.onrender.com
+      - key: NEXT_PUBLIC_USER_POOL_ID
+        value: il-central-1_tGk7FgEQk
+      - key: NEXT_PUBLIC_CLIENT_ID
+        value: 39vgapcn2tqlv3cn4fp9nlfgq1
