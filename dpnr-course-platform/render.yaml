@@ -3,9 +3,9 @@ services:
     name: dpnr-web
     env: node
     branch: dpnr_course_site
-    # Remove rootDir - work from monorepo root
-    buildCommand: npm ci && npm run build --workspace=@dpnr/web
-    startCommand: npm run start --workspace=@dpnr/web
+    rootDir: dpnr-course-platform
+    buildCommand: npm install && npm ls react react-dom && node -v && npm -v && npm run -w @dpnr/web build
+    startCommand: npm run -w @dpnr/web start
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
