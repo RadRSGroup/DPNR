@@ -24,6 +24,19 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "components/3d/**",
+    "components/3dplan_alt/**",
+    "app/beautiful-grove/**",
+    "app/deeper-tree-journey/**",
+    "app/demo-celshaded/**",
+    "app/depth-tree/**",
+    "app/forest-stream/**",
+    "app/image-tree/**",
+    "app/mystical-grove/**",
+    "app/simple-tree/**",
+    "app/smooth-tree/**",
+    "app/tree-journey/**",
+    "app/tree-sprite/**"
   ]
 }
