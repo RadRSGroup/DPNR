@@ -6,6 +6,10 @@
     "apps/*",
     "packages/*"
   ],
+  "overrides": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
   "scripts": {
     "build": "npm run -w @dpnr/web build && npm run -w @dpnr/admin build",
     "dev": "npm run -w @dpnr/web dev",

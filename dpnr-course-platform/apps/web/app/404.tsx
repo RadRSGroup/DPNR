@@ -1,5 +1,5 @@
 export const runtime = 'nodejs';
-export default function NotFound() {
+export default function FourOhFour() {
   return (
     <main className="p-8 max-w-3xl mx-auto text-center">
       <h1 className="text-2xl font-semibold">404 - Page Not Found</h1>

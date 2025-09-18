@@ -1,21 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
 import { Button } from "./ui/button";
 import { ThemeToggle } from "./ThemeToggle";
 import messages from "../translations/messages.json";
 
 export default function Header() {
-  const router = useRouter();
-  const pathname = usePathname();
 
   async function logout() {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/");
+      if (typeof window !== 'undefined') window.location.href = "/";
     } catch (e) {
-      router.push("/");
+      if (typeof window !== 'undefined') window.location.href = "/";
     }
   }
 
@@ -32,16 +29,27 @@ export default function Header() {
     }
     return { locale: null as string | null, rest: path || '/' };
   }
-  const { locale: currentLocale, rest } = splitPath(pathname || '/');
-  const [locale, setLocale] = useState<string>(currentLocale || 'en');
-  const prefix = currentLocale ? `/${locale}` : '';
+  const [restPath, setRestPath] = useState<string>("/");
+  const [hasLocalePrefix, setHasLocalePrefix] = useState<boolean>(false);
+  const [locale, setLocale] = useState<string>('en');
+  const prefix = hasLocalePrefix ? `/${locale}` : '';
   useEffect(() => {
+    // Derive locale and rest of the path on the client to avoid router context
     try {
-      const match = document.cookie.match(/(?:^|; )NEXT_LOCALE=([^;]+)/);
+      const path = typeof window !== 'undefined' ? window.location.pathname : '/';
+      const { locale: currentLocale, rest } = splitPath(path || '/');
+      setHasLocalePrefix(!!currentLocale);
+      setRestPath(rest);
+      // Initialize locale from cookie or path
+      const match = typeof document !== 'undefined' ? document.cookie.match(/(?:^|; )NEXT_LOCALE=([^;]+)/) : null;
       const cookieLoc = match ? decodeURIComponent(match[1]) : null;
       setLocale(cookieLoc === 'he' ? 'he' : (currentLocale || 'en'));
-    } catch {}
-  }, [currentLocale]);
+    } catch {
+      setHasLocalePrefix(false);
+      setRestPath('/');
+      setLocale('en');
+    }
+  }, []);
   const labels = (messages as any)[locale]?.header || (messages as any).en.header;
   function isLocalizable(path: string) {
     // Only keep same-path navigation for known public routes.
@@ -50,18 +58,18 @@ export default function Header() {
     return allowed.has(path);
   }
   function changeLocale(next: string) {
-    try { document.cookie = `NEXT_LOCALE=${next}; Path=/; Max-Age=31536000`; } catch {}
-    if (isLocalizable(rest)) {
-      const target = `/${next}${rest === '/' ? '' : rest}`;
-      router.push(target);
+    try { if (typeof document !== 'undefined') document.cookie = `NEXT_LOCALE=${next}; Path=/; Max-Age=31536000`; } catch {}
+    if (isLocalizable(restPath)) {
+      const target = `/${next}${restPath === '/' ? '' : restPath}`;
+      if (typeof window !== 'undefined') window.location.href = target;
     } else {
-      // Stay on current route (e.g., /dashboard, /auth/*). UI may localize later via provider.
-      router.refresh();
+      // For non-localizable paths, just reload to let middleware/app handle it
+      if (typeof window !== 'undefined') window.location.reload();
     }
   }
 
   // Prevent hydration mismatch by not rendering dynamic content until mounted
-  const isDashboard = mounted && pathname?.startsWith("/dashboard");
+  const isDashboard = mounted && typeof window !== 'undefined' && window.location.pathname.startsWith("/dashboard");
 
   return (
     <header className="fixed top-0 inset-x-0 z-50 w-full border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60">

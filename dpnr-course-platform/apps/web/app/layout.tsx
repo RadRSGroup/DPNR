@@ -1,7 +1,6 @@
 import "./globals.css";
 import Header from "../components/Header";
-import React from "react";
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: any }) {
   const lang = 'en';
   const dir = 'ltr';
   return (
