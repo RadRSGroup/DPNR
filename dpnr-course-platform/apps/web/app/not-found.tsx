@@ -1,4 +1,3 @@
-export const runtime = 'nodejs';
 export default function NotFound() {
   return (
     <main className="p-8 max-w-3xl mx-auto text-center">
