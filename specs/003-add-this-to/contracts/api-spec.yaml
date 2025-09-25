@@ -1,0 +1,444 @@
+openapi: 3.0.0
+info:
+  title: DPNR Course Landing Page API
+  version: 1.0.0
+  description: API for DPNR personal development course enrollment and management
+
+servers:
+  - url: https://api.be-dpnr.com/v1
+    description: Production server
+  - url: http://localhost:3001/v1
+    description: Development server
+
+security:
+  - BearerAuth: []
+
+paths:
+  /cohorts/current:
+    get:
+      summary: Get current cohort information
+      tags: [Cohorts]
+      security: []
+      responses:
+        '200':
+          description: Current cohort details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cohort'
+        '404':
+          description: No active cohort found
+
+  /enrollments:
+    post:
+      summary: Create new enrollment
+      tags: [Enrollments]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollmentRequest'
+      responses:
+        '201':
+          description: Enrollment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentResponse'
+        '400':
+          description: Invalid enrollment data
+        '409':
+          description: Cohort is full
+
+  /enrollments/{id}/payment:
+    post:
+      summary: Process payment for enrollment
+      tags: [Enrollments, Payments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '200':
+          description: Payment processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          description: Payment failed
+        '404':
+          description: Enrollment not found
+
+  /consultations:
+    post:
+      summary: Request enrollment consultation
+      tags: [Consultations]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultationRequest'
+      responses:
+        '201':
+          description: Consultation request created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsultationResponse'
+        '400':
+          description: Invalid request data
+        '429':
+          description: Rate limit exceeded
+
+  /users/profile:
+    get:
+      summary: Get authenticated user profile
+      tags: [Users]
+      responses:
+        '200':
+          description: User profile data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Not authenticated
+
+    patch:
+      summary: Update user profile
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Profile updated successfully
+        '400':
+          description: Invalid update data
+        '401':
+          description: Not authenticated
+
+  /users/data-export:
+    get:
+      summary: Export user data for GDPR compliance
+      tags: [Users, Privacy]
+      responses:
+        '200':
+          description: User data export
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataExport'
+        '401':
+          description: Not authenticated
+
+  /users/delete:
+    post:
+      summary: Request account deletion
+      tags: [Users, Privacy]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                confirmEmail:
+                  type: string
+                reason:
+                  type: string
+      responses:
+        '202':
+          description: Deletion request accepted
+        '400':
+          description: Email confirmation failed
+        '401':
+          description: Not authenticated
+
+  /privacy/consent:
+    post:
+      summary: Record privacy consent
+      tags: [Privacy]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentRequest'
+      responses:
+        '201':
+          description: Consent recorded
+        '400':
+          description: Invalid consent data
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Cohort:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        maxCapacity:
+          type: integer
+        currentEnrollment:
+          type: integer
+        status:
+          type: string
+          enum: [upcoming, open_enrollment, full, in_progress, completed]
+        location:
+          type: string
+        schedule:
+          type: string
+
+    EnrollmentRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - phone
+        - paymentPlan
+        - questionnaire
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        preferredLanguage:
+          type: string
+          enum: [he, en]
+        paymentPlan:
+          type: string
+          enum: [full, 5, 12]
+        questionnaire:
+          $ref: '#/components/schemas/Questionnaire'
+
+    Questionnaire:
+      type: object
+      required:
+        - motivation
+        - previousExperience
+        - expectations
+        - agreedToTerms
+        - agreedToPrivacy
+        - marketingConsent
+      properties:
+        motivation:
+          type: string
+          minLength: 10
+        previousExperience:
+          type: boolean
+        expectations:
+          type: string
+        referralSource:
+          type: string
+        specialNeeds:
+          type: string
+        agreedToTerms:
+          type: boolean
+        agreedToPrivacy:
+          type: boolean
+        marketingConsent:
+          type: boolean
+
+    EnrollmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        paymentUrl:
+          type: string
+          description: Redirect URL for payment processing
+
+    PaymentRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: Payment token from Tranzila
+        saveCard:
+          type: boolean
+
+    PaymentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        transactionId:
+          type: string
+        amount:
+          type: number
+        nextInstallmentDate:
+          type: string
+          format: date
+
+    ConsultationRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - phone
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        preferredLanguage:
+          type: string
+          enum: [he, en]
+        preferredTimeSlot:
+          type: string
+        message:
+          type: string
+
+    ConsultationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        message:
+          type: string
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        preferredLanguage:
+          type: string
+        enrollments:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserEnrollment'
+
+    UserEnrollment:
+      type: object
+      properties:
+        cohortName:
+          type: string
+        status:
+          type: string
+        enrollmentDate:
+          type: string
+          format: date
+        progress:
+          type: integer
+          description: Percentage completed
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        preferredLanguage:
+          type: string
+          enum: [he, en]
+
+    DataExport:
+      type: object
+      properties:
+        userData:
+          $ref: '#/components/schemas/UserProfile'
+        enrollments:
+          type: array
+          items:
+            type: object
+        payments:
+          type: array
+          items:
+            type: object
+        consents:
+          type: array
+          items:
+            type: object
+        exportDate:
+          type: string
+          format: date-time
+
+    ConsentRequest:
+      type: object
+      required:
+        - consentType
+        - granted
+      properties:
+        consentType:
+          type: string
+          enum: [privacy_policy, terms_of_service, marketing_emails, analytics_cookies]
+        granted:
+          type: boolean
+        version:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object

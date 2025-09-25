@@ -1,0 +1,289 @@
+# DPNR Production Monitoring Configuration
+# Configure this file with your actual monitoring service
+
+version: '1.0'
+project: 'dpnr-registration'
+environment: 'production'
+
+# Health Check Endpoints
+health_checks:
+  frontend:
+    url: 'https://be-dpnr.com'
+    method: 'GET'
+    expected_status: 200
+    timeout: 10
+    interval: 60 # seconds
+
+  api_health:
+    url: 'https://api.be-dpnr.com/v1/health'
+    method: 'GET'
+    expected_status: 200
+    timeout: 5
+    interval: 30
+    headers:
+      User-Agent: 'DPNR-HealthCheck/1.0'
+
+  database:
+    url: 'https://api.be-dpnr.com/v1/db-check'
+    method: 'GET'
+    expected_status: 200
+    timeout: 15
+    interval: 120
+
+  api_ready:
+    url: 'https://api.be-dpnr.com/v1/ready'
+    method: 'GET'
+    expected_status: 200
+    timeout: 5
+    interval: 30
+
+# Performance Monitoring
+performance:
+  response_time_thresholds:
+    frontend: 3000ms    # Page load time
+    api: 500ms          # API response time
+    database: 1000ms    # Database query time
+
+  error_rate_thresholds:
+    critical: 5%        # Trigger immediate alert
+    warning: 1%         # Monitor closely
+
+  availability_targets:
+    frontend: 99.9%     # Monthly uptime
+    api: 99.9%          # Monthly uptime
+    database: 99.95%    # Monthly uptime
+
+# Alert Configuration
+alerts:
+  channels:
+    slack:
+      webhook_url: '${SLACK_WEBHOOK_URL}'
+      channel: '#dpnr-alerts'
+
+    email:
+      smtp_host: '${SMTP_HOST}'
+      smtp_port: 587
+      from: 'alerts@be-dpnr.com'
+      to:
+        - 'devops@be-dpnr.com'
+        - 'dev@be-dpnr.com'
+
+  rules:
+    # Critical Alerts
+    - name: 'Frontend Down'
+      condition: 'health_checks.frontend.status != 200'
+      severity: 'critical'
+      channels: ['slack', 'email']
+
+    - name: 'API Down'
+      condition: 'health_checks.api_health.status != 200'
+      severity: 'critical'
+      channels: ['slack', 'email']
+
+    - name: 'Database Connection Failed'
+      condition: 'health_checks.database.status != 200'
+      severity: 'critical'
+      channels: ['slack', 'email']
+
+    - name: 'High Error Rate'
+      condition: 'error_rate > 5%'
+      severity: 'critical'
+      channels: ['slack', 'email']
+
+    # Warning Alerts
+    - name: 'Slow Response Time - Frontend'
+      condition: 'performance.frontend.response_time > 3000'
+      severity: 'warning'
+      channels: ['slack']
+
+    - name: 'Slow Response Time - API'
+      condition: 'performance.api.response_time > 500'
+      severity: 'warning'
+      channels: ['slack']
+
+    - name: 'Elevated Error Rate'
+      condition: 'error_rate > 1% AND error_rate <= 5%'
+      severity: 'warning'
+      channels: ['slack']
+
+# Metrics Collection
+metrics:
+  application:
+    - name: 'enrollment_submissions'
+      type: 'counter'
+      description: 'Number of enrollment form submissions'
+
+    - name: 'payment_transactions'
+      type: 'counter'
+      description: 'Number of payment transactions attempted'
+
+    - name: 'consultation_requests'
+      type: 'counter'
+      description: 'Number of consultation requests'
+
+    - name: 'user_registrations'
+      type: 'counter'
+      description: 'Number of new user registrations'
+
+  system:
+    - name: 'memory_usage'
+      type: 'gauge'
+      description: 'Memory usage percentage'
+
+    - name: 'cpu_usage'
+      type: 'gauge'
+      description: 'CPU usage percentage'
+
+    - name: 'database_connections'
+      type: 'gauge'
+      description: 'Active database connections'
+
+    - name: 'request_rate'
+      type: 'gauge'
+      description: 'Requests per minute'
+
+# Dashboard Configuration
+dashboards:
+  overview:
+    name: 'DPNR Production Overview'
+    panels:
+      - title: 'System Health'
+        type: 'status'
+        queries:
+          - 'health_checks.frontend.status'
+          - 'health_checks.api_health.status'
+          - 'health_checks.database.status'
+
+      - title: 'Response Times'
+        type: 'graph'
+        queries:
+          - 'performance.frontend.response_time'
+          - 'performance.api.response_time'
+          - 'performance.database.response_time'
+
+      - title: 'Error Rates'
+        type: 'graph'
+        queries:
+          - 'error_rate.frontend'
+          - 'error_rate.api'
+
+      - title: 'Business Metrics'
+        type: 'graph'
+        queries:
+          - 'enrollment_submissions'
+          - 'payment_transactions'
+          - 'user_registrations'
+
+  performance:
+    name: 'DPNR Performance Metrics'
+    panels:
+      - title: 'System Resources'
+        type: 'graph'
+        queries:
+          - 'memory_usage'
+          - 'cpu_usage'
+
+      - title: 'Database Performance'
+        type: 'graph'
+        queries:
+          - 'database_connections'
+          - 'database_query_time'
+
+      - title: 'Request Patterns'
+        type: 'graph'
+        queries:
+          - 'request_rate'
+          - 'concurrent_users'
+
+# Logging Configuration
+logging:
+  level: 'warn' # production log level
+  retention: 30 # days
+  max_file_size: '20MB'
+
+  structured_logging:
+    format: 'json'
+    fields:
+      - timestamp
+      - level
+      - message
+      - user_id
+      - request_id
+      - ip_address
+
+  error_tracking:
+    service: 'sentry'
+    dsn: '${SENTRY_DSN}'
+    environment: 'production'
+    sample_rate: 1.0
+
+# Security Monitoring
+security:
+  rate_limiting:
+    monitor: true
+    alert_threshold: 80 # % of limit reached
+
+  failed_auth_attempts:
+    monitor: true
+    alert_threshold: 10 # failures per minute
+
+  suspicious_activity:
+    monitor: true
+    patterns:
+      - multiple_ip_same_user
+      - rapid_password_attempts
+      - unusual_request_patterns
+
+# Backup Monitoring
+backups:
+  database:
+    schedule: '0 2 * * *' # Daily at 2 AM
+    retention: 30 # days
+    monitor: true
+
+  application_logs:
+    schedule: '0 1 * * 0' # Weekly on Sunday at 1 AM
+    retention: 90 # days
+    monitor: true
+
+# Integration Configuration
+integrations:
+  vercel:
+    api_token: '${VERCEL_TOKEN}'
+    team_id: '${VERCEL_ORG_ID}'
+    project_id: '${VERCEL_PROJECT_ID}'
+
+  railway:
+    api_token: '${RAILWAY_TOKEN}'
+    service_id: '${RAILWAY_SERVICE_ID}'
+
+  supabase:
+    project_id: '${SUPABASE_PROJECT_ID}'
+    api_key: '${SUPABASE_API_KEY}'
+
+  aws:
+    region: 'il-central-1'
+    access_key: '${AWS_ACCESS_KEY_ID}'
+    secret_key: '${AWS_SECRET_ACCESS_KEY}'
+
+# Maintenance Windows
+maintenance:
+  preferred_time: '02:00-04:00 UTC' # Low traffic window
+  notification_lead_time: '24h' # Advance notice
+  max_duration: '2h' # Maximum maintenance window
+
+# Disaster Recovery
+disaster_recovery:
+  rto: '15m' # Recovery Time Objective
+  rpo: '1h'  # Recovery Point Objective
+
+  backup_locations:
+    - 'primary_region'
+    - 'secondary_region'
+
+  failover:
+    automatic: false # Manual approval required
+    criteria:
+      - 'downtime > 15m'
+      - 'error_rate > 50%'
+      - 'database_unreachable > 5m'

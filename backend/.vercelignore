@@ -1,0 +1,13 @@
+src/
+tests/
+*.md
+*.log
+.env
+.env.example
+.env.bak
+node_modules/.cache
+*.test.js
+*.spec.js
+coverage/
+.nyc_output
+*.tsbuildinfo

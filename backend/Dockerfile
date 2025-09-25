@@ -1,24 +1,36 @@
-FROM python:3.9-slim
+# Use official Node.js runtime as base image
+FROM node:18-alpine
 
+# Set working directory
 WORKDIR /app
 
-COPY requirements.txt .
+# Install dependencies needed for Prisma and build
+RUN apk add --no-cache openssl
 
-RUN apt-get update && apt-get install -y \
-    gcc \
-    python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+COPY .ts-node.json ./
+COPY fix-build.js ./
 
-RUN pip install --no-cache-dir -r requirements.txt
+# Install dependencies
+RUN npm ci --only=production
 
-COPY . .
+# Copy source code and built dist
+COPY dist/ ./dist/
+COPY prisma/ ./prisma/
+COPY .env.production ./.env
+COPY start-production.js ./
 
-EXPOSE 8000
+# Generate Prisma client
+RUN npx prisma generate
 
-# Create entrypoint script
-RUN echo '#!/bin/sh\n\
-alembic upgrade head\n\
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload' > /app/entrypoint.sh \
-    && chmod +x /app/entrypoint.sh
+# Expose port
+EXPOSE 3001
 
-CMD ["/app/entrypoint.sh"] 
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+
+# Start the application
+CMD ["npm", "start"] 

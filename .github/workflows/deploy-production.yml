@@ -1,0 +1,348 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+    inputs:
+      deploy_frontend:
+        description: 'Deploy frontend'
+        required: false
+        default: 'true'
+        type: boolean
+      deploy_backend:
+        description: 'Deploy backend'
+        required: false
+        default: 'true'
+        type: boolean
+      run_migrations:
+        description: 'Run database migrations'
+        required: false
+        default: 'true'
+        type: boolean
+
+env:
+  NODE_VERSION: '18.x'
+  FRONTEND_DIR: './frontend'
+  BACKEND_DIR: './backend'
+
+jobs:
+  # Security and validation checks
+  security-checks:
+    name: Security & Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd ${{ env.FRONTEND_DIR }} && npm ci
+          cd ../${{ env.BACKEND_DIR }} && npm ci
+
+      - name: Run security audit
+        run: |
+          cd ${{ env.FRONTEND_DIR }} && npm audit --audit-level high
+          cd ../${{ env.BACKEND_DIR }} && npm audit --audit-level high
+
+      - name: Lint frontend
+        run: cd ${{ env.FRONTEND_DIR }} && npm run lint
+
+      - name: Lint backend
+        run: cd ${{ env.BACKEND_DIR }} && npm run lint
+
+      - name: Type check frontend
+        run: cd ${{ env.FRONTEND_DIR }} && npm run type-check
+
+      - name: Type check backend
+        run: cd ${{ env.BACKEND_DIR }} && npm run type-check
+
+  # Test suite
+  test-suite:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    needs: security-checks
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: dpnr_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd ${{ env.FRONTEND_DIR }} && npm ci
+          cd ../${{ env.BACKEND_DIR }} && npm ci
+
+      - name: Setup test database
+        env:
+          DATABASE_URL: postgresql://postgres:testpass@localhost:5432/dpnr_test
+        run: |
+          cd ${{ env.BACKEND_DIR }}
+          npx prisma migrate deploy
+          npx prisma generate
+
+      - name: Run backend tests
+        env:
+          DATABASE_URL: postgresql://postgres:testpass@localhost:5432/dpnr_test
+          NODE_ENV: test
+        run: cd ${{ env.BACKEND_DIR }} && npm run test:ci
+
+      - name: Run frontend tests
+        env:
+          NODE_ENV: test
+        run: cd ${{ env.FRONTEND_DIR }} && npm run test:ci
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          flags: unittests
+          directory: ./coverage
+
+  # Build applications
+  build:
+    name: Build Applications
+    runs-on: ubuntu-latest
+    needs: [security-checks, test-suite]
+    outputs:
+      frontend-build-success: ${{ steps.frontend-build.outcome == 'success' }}
+      backend-build-success: ${{ steps.backend-build.outcome == 'success' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install frontend dependencies
+        run: cd ${{ env.FRONTEND_DIR }} && npm ci
+
+      - name: Build frontend
+        id: frontend-build
+        env:
+          NODE_ENV: production
+          BUILD_EXPORT: 'true'
+        run: |
+          cd ${{ env.FRONTEND_DIR }}
+          cp .env.production .env.local
+          npm run build
+
+      - name: Install backend dependencies
+        run: cd ${{ env.BACKEND_DIR }} && npm ci --only=production
+
+      - name: Build backend
+        id: backend-build
+        env:
+          NODE_ENV: production
+        run: |
+          cd ${{ env.BACKEND_DIR }}
+          cp .env.production .env
+          npm run prisma:generate
+          npm run build
+
+      - name: Archive frontend build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: ${{ env.FRONTEND_DIR }}/out
+          retention-days: 30
+
+      - name: Archive backend build
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: |
+            ${{ env.BACKEND_DIR }}/dist
+            ${{ env.BACKEND_DIR }}/package.json
+            ${{ env.BACKEND_DIR }}/package-lock.json
+            ${{ env.BACKEND_DIR }}/prisma
+          retention-days: 30
+
+  # Database migration
+  migrate-database:
+    name: Database Migration
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event.inputs.run_migrations != 'false'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: '${{ env.BACKEND_DIR }}/package-lock.json'
+
+      - name: Install backend dependencies
+        run: cd ${{ env.BACKEND_DIR }} && npm ci
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          cd ${{ env.BACKEND_DIR }}
+          echo "DATABASE_URL=$DATABASE_URL" > .env.production
+          npm run db:deploy:prod
+          npm run validate:prod:ci
+
+  # Deploy frontend to Vercel
+  deploy-frontend:
+    name: Deploy Frontend to Vercel
+    runs-on: ubuntu-latest
+    needs: [build, migrate-database]
+    if: github.event.inputs.deploy_frontend != 'false'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: ${{ env.FRONTEND_DIR }}/out
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ${{ env.FRONTEND_DIR }}
+          vercel-args: '--prod'
+          scope: ${{ secrets.VERCEL_ORG_ID }}
+
+  # Deploy backend to Railway
+  deploy-backend:
+    name: Deploy Backend to Railway
+    runs-on: ubuntu-latest
+    needs: [build, migrate-database]
+    if: github.event.inputs.deploy_backend != 'false'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download backend build
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-build
+          path: ${{ env.BACKEND_DIR }}
+
+      - name: Deploy to Railway
+        uses: bervProject/railway-deploy@v1.3.0
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          service: ${{ secrets.RAILWAY_SERVICE_ID }}
+          detach: false
+
+  # Post-deployment health checks
+  health-checks:
+    name: Post-Deployment Health Checks
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend]
+    if: always() && (needs.deploy-frontend.result == 'success' || needs.deploy-backend.result == 'success')
+    steps:
+      - name: Wait for deployment propagation
+        run: sleep 60
+
+      - name: Check frontend health
+        run: |
+          for i in {1..5}; do
+            if curl -f -s --max-time 30 "https://be-dpnr.com"; then
+              echo "✅ Frontend is accessible"
+              break
+            else
+              echo "⏳ Attempt $i failed, retrying in 30s..."
+              sleep 30
+            fi
+          done
+
+      - name: Check API health
+        run: |
+          for i in {1..5}; do
+            if curl -f -s --max-time 30 "https://api.be-dpnr.com/v1/health"; then
+              echo "✅ API is healthy"
+              break
+            else
+              echo "⏳ Attempt $i failed, retrying in 30s..."
+              sleep 30
+            fi
+          done
+
+      - name: Run integration tests
+        run: |
+          # Add integration tests here
+          echo "🧪 Integration tests would run here"
+
+  # Notify deployment result
+  notify:
+    name: Deployment Notification
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend, health-checks]
+    if: always()
+    steps:
+      - name: Deployment Success Notification
+        if: needs.deploy-frontend.result == 'success' && needs.deploy-backend.result == 'success'
+        run: |
+          echo "🎉 Deployment successful!"
+          echo "Frontend: https://be-dpnr.com"
+          echo "API: https://api.be-dpnr.com/v1"
+
+      - name: Deployment Failure Notification
+        if: needs.deploy-frontend.result == 'failure' || needs.deploy-backend.result == 'failure'
+        run: |
+          echo "❌ Deployment failed!"
+          echo "Please check the logs and take corrective action."
+          exit 1
+
+  # Cleanup
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend, health-checks]
+    if: always()
+    steps:
+      - name: Clean up artifacts
+        uses: geekyeggo/delete-artifact@v2
+        with:
+          name: |
+            frontend-build
+            backend-build
+          failOnError: false

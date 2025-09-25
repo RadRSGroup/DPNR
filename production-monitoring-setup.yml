@@ -1,0 +1,315 @@
+# DPNR Production Monitoring Configuration
+# Version: 1.0.0
+# Last Updated: 2025-01-22
+
+# Application Performance Monitoring (APM)
+apm:
+  sentry:
+    enabled: true
+    environment: production
+    release_tracking: true
+    performance_monitoring: true
+    error_reporting: true
+    sample_rate: 1.0
+    traces_sample_rate: 0.1
+    profiles_sample_rate: 0.1
+    integrations:
+      - express
+      - postgres
+      - prisma
+      - http
+    filters:
+      - ignore_health_checks: true
+      - ignore_static_assets: true
+
+  newrelic:
+    enabled: false # Set to true if using New Relic
+    environment: production
+    app_name: "DPNR Course Registration Platform"
+    license_key: "${NEW_RELIC_LICENSE_KEY}"
+
+# Infrastructure Monitoring
+infrastructure:
+  uptime_monitoring:
+    pingdom:
+      enabled: false
+      endpoints:
+        - name: "Frontend"
+          url: "https://be-dpnr.com"
+          check_interval: 60 # seconds
+        - name: "API Health"
+          url: "https://api.be-dpnr.com/health"
+          check_interval: 60
+        - name: "Registration API"
+          url: "https://api.be-dpnr.com/v1/enrollments"
+          check_interval: 300
+
+    uptimerobot:
+      enabled: true # Free tier available
+      monitors:
+        - name: "DPNR Frontend"
+          url: "https://be-dpnr.com"
+          type: "http"
+          interval: 300 # 5 minutes
+        - name: "DPNR API"
+          url: "https://api.be-dpnr.com/health"
+          type: "http"
+          interval: 300
+
+# Database Monitoring
+database:
+  performance_insights:
+    enabled: true # If using AWS RDS
+    retention_period: 7 # days
+
+  query_monitoring:
+    slow_query_log: true
+    long_query_time: 2.0 # seconds
+    log_queries_not_using_indexes: true
+
+  connection_monitoring:
+    max_connections: 100
+    connection_pool_size: 10
+    alert_threshold: 80 # percent
+
+# Application Metrics
+metrics:
+  business_metrics:
+    - name: "daily_registrations"
+      description: "Number of course registrations per day"
+      type: "counter"
+      labels: ["cohort", "payment_plan"]
+
+    - name: "payment_success_rate"
+      description: "Payment processing success rate"
+      type: "gauge"
+      labels: ["payment_method", "amount_range"]
+
+    - name: "consultation_bookings"
+      description: "Number of consultation bookings"
+      type: "counter"
+      labels: ["consultation_type"]
+
+    - name: "user_engagement"
+      description: "User activity metrics"
+      type: "histogram"
+      labels: ["action_type", "user_segment"]
+
+  technical_metrics:
+    - name: "api_response_time"
+      description: "API endpoint response times"
+      type: "histogram"
+      labels: ["endpoint", "method", "status_code"]
+
+    - name: "database_query_duration"
+      description: "Database query execution time"
+      type: "histogram"
+      labels: ["query_type", "table"]
+
+    - name: "email_delivery_rate"
+      description: "Email delivery success rate"
+      type: "gauge"
+      labels: ["email_type"]
+
+    - name: "authentication_events"
+      description: "User authentication events"
+      type: "counter"
+      labels: ["event_type", "provider"]
+
+# Alerting Configuration
+alerts:
+  error_rate:
+    - name: "High Error Rate"
+      condition: "error_rate > 5%" # 5% error rate
+      duration: "5m"
+      severity: "critical"
+      channels: ["email", "slack"]
+
+  response_time:
+    - name: "Slow API Response"
+      condition: "p95_response_time > 2000ms"
+      duration: "10m"
+      severity: "warning"
+      channels: ["email"]
+
+  uptime:
+    - name: "Service Down"
+      condition: "uptime < 99%"
+      duration: "1m"
+      severity: "critical"
+      channels: ["email", "slack", "sms"]
+
+  business:
+    - name: "Low Registration Rate"
+      condition: "daily_registrations < 1"
+      duration: "1d"
+      severity: "warning"
+      channels: ["email"]
+
+    - name: "Payment Failures"
+      condition: "payment_success_rate < 95%"
+      duration: "15m"
+      severity: "critical"
+      channels: ["email", "slack"]
+
+# Log Management
+logging:
+  level: "info"
+  structured: true
+  format: "json"
+
+  retention:
+    application_logs: "30d"
+    access_logs: "90d"
+    error_logs: "365d"
+
+  aggregation:
+    cloudwatch:
+      enabled: true # If using AWS
+      log_groups:
+        - "/dpnr/frontend"
+        - "/dpnr/backend"
+        - "/dpnr/database"
+
+    elasticsearch:
+      enabled: false
+      index_pattern: "dpnr-logs-*"
+      retention_days: 30
+
+# Security Monitoring
+security:
+  authentication_monitoring:
+    failed_login_threshold: 5
+    failed_login_window: "10m"
+    alert_on_suspicious_activity: true
+
+  rate_limiting_monitoring:
+    track_rate_limit_hits: true
+    alert_on_abuse: true
+
+  vulnerability_scanning:
+    dependabot: true
+    snyk: true
+    automated_updates: true
+
+# Performance Monitoring
+performance:
+  web_vitals:
+    - core_web_vitals: true
+    - largest_contentful_paint: "<2.5s"
+    - first_input_delay: "<100ms"
+    - cumulative_layout_shift: "<0.1"
+
+  api_performance:
+    - response_time_p50: "<500ms"
+    - response_time_p95: "<2000ms"
+    - response_time_p99: "<5000ms"
+    - throughput: ">100 req/min"
+
+# Notification Channels
+notifications:
+  email:
+    enabled: true
+    recipients:
+      - "admin@be-dpnr.com"
+      - "tech@be-dpnr.com"
+
+  slack:
+    enabled: false
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+    channel: "#dpnr-alerts"
+
+  sms:
+    enabled: false
+    provider: "twilio"
+    recipients:
+      - "+972XXXXXXXXX"
+
+# Health Check Endpoints
+health_checks:
+  application:
+    - endpoint: "/health"
+      expected_status: 200
+      timeout: 5000ms
+      interval: 30s
+
+  database:
+    - endpoint: "/health/database"
+      expected_status: 200
+      timeout: 10000ms
+      interval: 60s
+
+  external_services:
+    - name: "AWS Cognito"
+      endpoint: "/health/cognito"
+      expected_status: 200
+      timeout: 5000ms
+      interval: 300s
+
+    - name: "Tranzila Payment Gateway"
+      endpoint: "/health/payments"
+      expected_status: 200
+      timeout: 10000ms
+      interval: 300s
+
+# Dashboard Configuration
+dashboards:
+  main_dashboard:
+    - title: "DPNR Platform Overview"
+    - metrics:
+        - user_registrations
+        - payment_success_rate
+        - api_response_times
+        - error_rates
+        - uptime_percentage
+
+  business_dashboard:
+    - title: "Business Metrics"
+    - metrics:
+        - daily_registrations
+        - revenue_metrics
+        - conversion_rates
+        - consultation_bookings
+
+  technical_dashboard:
+    - title: "Technical Performance"
+    - metrics:
+        - api_performance
+        - database_performance
+        - infrastructure_usage
+        - error_tracking
+
+# Backup and Recovery Monitoring
+backup_monitoring:
+  database_backups:
+    schedule: "0 2 * * *" # Daily at 2 AM
+    retention: "30d"
+    verification: true
+
+  application_backups:
+    schedule: "0 3 * * 0" # Weekly on Sunday at 3 AM
+    retention: "90d"
+
+# Cost Monitoring
+cost_monitoring:
+  aws_billing_alerts:
+    - threshold: "$100"
+      period: "monthly"
+    - threshold: "$500"
+      period: "monthly"
+
+  resource_optimization:
+    unused_resources: true
+    rightsizing_recommendations: true
+
+# Compliance and Audit
+compliance:
+  gdpr_monitoring:
+    data_access_logs: true
+    deletion_request_tracking: true
+    consent_tracking: true
+
+  audit_logging:
+    admin_actions: true
+    data_modifications: true
+    payment_transactions: true

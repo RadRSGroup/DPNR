@@ -1,0 +1,403 @@
+openapi: 3.0.3
+info:
+  title: DPNR Authentication API
+  description: AWS Cognito integration API for DPNR course registration platform
+  version: 1.0.0
+  contact:
+    name: DPNR Development Team
+    email: dev@dpnr.com
+
+servers:
+  - url: https://api.dpnr.com/v1
+    description: Production API
+  - url: http://localhost:3001/v1
+    description: Development API
+
+security:
+  - CognitoBearerAuth: []
+
+components:
+  securitySchemes:
+    CognitoBearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token
+
+  schemas:
+    User:
+      type: object
+      required:
+        - id
+        - cognitoId
+        - email
+        - firstName
+        - lastName
+        - preferredLanguage
+        - role
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Internal user ID
+        cognitoId:
+          type: string
+          format: uuid
+          description: AWS Cognito user ID (sub claim)
+        email:
+          type: string
+          format: email
+          description: User email address
+        firstName:
+          type: string
+          minLength: 2
+          maxLength: 50
+          description: User first name
+        lastName:
+          type: string
+          minLength: 2
+          maxLength: 50
+          description: User last name
+        phone:
+          type: string
+          pattern: '^(\+972|0)(5[0-9])[0-9]{7}$'
+          description: Israeli phone number
+        preferredLanguage:
+          type: string
+          enum: [he, en]
+          description: User preferred language
+        role:
+          type: string
+          enum: [student, admin, instructor]
+          description: User role
+        emailVerified:
+          type: boolean
+          description: Email verification status from Cognito
+        phoneVerified:
+          type: boolean
+          description: Phone verification status from Cognito
+        mfaEnabled:
+          type: boolean
+          description: MFA enablement status
+        lastLoginAt:
+          type: string
+          format: date-time
+          description: Last login timestamp
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AuthError:
+      type: object
+      required:
+        - code
+        - message
+        - timestamp
+      properties:
+        code:
+          type: string
+          description: Error code
+          enum:
+            - INVALID_TOKEN
+            - TOKEN_EXPIRED
+            - USER_NOT_FOUND
+            - ACCESS_DENIED
+            - COGNITO_ERROR
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error details
+        timestamp:
+          type: string
+          format: date-time
+
+    LoginRequest:
+      type: object
+      required:
+        - redirectUri
+      properties:
+        redirectUri:
+          type: string
+          format: uri
+          description: Redirect URI after authentication
+        language:
+          type: string
+          enum: [he, en]
+          default: he
+          description: UI language preference
+        state:
+          type: string
+          description: Optional state parameter for CSRF protection
+
+    LoginResponse:
+      type: object
+      required:
+        - authorizationUrl
+        - state
+      properties:
+        authorizationUrl:
+          type: string
+          format: uri
+          description: Cognito hosted UI authorization URL
+        state:
+          type: string
+          description: State parameter for validation
+
+    TokenExchangeRequest:
+      type: object
+      required:
+        - code
+        - state
+      properties:
+        code:
+          type: string
+          description: Authorization code from Cognito
+        state:
+          type: string
+          description: State parameter validation
+
+    TokenResponse:
+      type: object
+      required:
+        - accessToken
+        - idToken
+        - tokenType
+        - expiresIn
+      properties:
+        accessToken:
+          type: string
+          description: Cognito access token
+        idToken:
+          type: string
+          description: Cognito ID token
+        refreshToken:
+          type: string
+          description: Refresh token
+        tokenType:
+          type: string
+          enum: [Bearer]
+        expiresIn:
+          type: integer
+          description: Token expiration in seconds
+
+    UserProfile:
+      type: object
+      required:
+        - user
+        - preferences
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        preferences:
+          type: object
+          properties:
+            language:
+              type: string
+              enum: [he, en]
+            timezone:
+              type: string
+            notifications:
+              type: object
+              properties:
+                email:
+                  type: boolean
+                sms:
+                  type: boolean
+
+paths:
+  /auth/login:
+    post:
+      summary: Initiate Cognito OAuth login
+      description: Generates Cognito hosted UI authorization URL
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authorization URL generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+
+  /auth/callback:
+    post:
+      summary: Handle OAuth callback
+      description: Exchange authorization code for JWT tokens
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenExchangeRequest'
+      responses:
+        '200':
+          description: Token exchange successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Invalid authorization code or state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+
+  /auth/profile:
+    get:
+      summary: Get authenticated user profile
+      description: Returns current user information from JWT token
+      tags: [Authentication]
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+
+  /auth/refresh:
+    post:
+      summary: Refresh JWT tokens
+      description: Use refresh token to get new access tokens
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  description: Valid refresh token
+      responses:
+        '200':
+          description: Tokens refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+
+  /auth/logout:
+    post:
+      summary: Logout user
+      description: Invalidate JWT tokens and clear session
+      tags: [Authentication]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                redirectUri:
+                  type: string
+                  format: uri
+                  description: Redirect URI after logout
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                  - logoutUrl
+                properties:
+                  message:
+                    type: string
+                    example: "Successfully logged out"
+                  logoutUrl:
+                    type: string
+                    format: uri
+                    description: Cognito logout URL
+        '401':
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+
+  /auth/verify:
+    get:
+      summary: Verify JWT token
+      description: Validate JWT token without returning user data
+      tags: [Authentication]
+      responses:
+        '200':
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - valid
+                  - exp
+                properties:
+                  valid:
+                    type: boolean
+                    example: true
+                  exp:
+                    type: integer
+                    description: Token expiration timestamp
+                  sub:
+                    type: string
+                    description: Cognito user ID
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+
+tags:
+  - name: Authentication
+    description: AWS Cognito authentication operations

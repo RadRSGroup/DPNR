@@ -1,0 +1,799 @@
+openapi: 3.0.3
+info:
+  title: DPNR Landing Page API
+  version: 1.0.0
+  description: API for DPNR course registration, enrollment, and user management
+  contact:
+    email: Lital2923@gmail.com
+  license:
+    name: DPNR LTD
+    url: https://www.BE-DPNR.com
+
+servers:
+  - url: https://api.be-dpnr.com/v1
+    description: Production server
+  - url: http://localhost:3001/api/v1
+    description: Development server
+
+tags:
+  - name: cohorts
+    description: Course cohort management
+  - name: enrollments
+    description: Student enrollment operations
+  - name: consultations
+    description: Consultation request handling
+  - name: payments
+    description: Payment processing
+  - name: users
+    description: User profile management
+  - name: privacy
+    description: GDPR compliance operations
+
+paths:
+  # Cohort Management
+  /cohorts/current:
+    get:
+      tags: [cohorts]
+      summary: Get current cohort information
+      description: Returns the currently active cohort for enrollment
+      responses:
+        '200':
+          description: Current cohort details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CohortResponse'
+        '404':
+          description: No active cohort found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /cohorts/{cohortId}/capacity:
+    get:
+      tags: [cohorts]
+      summary: Get real-time cohort capacity
+      description: Returns current enrollment count and availability
+      parameters:
+        - name: cohortId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Capacity information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapacityResponse'
+
+  # Enrollment Management
+  /enrollments:
+    post:
+      tags: [enrollments]
+      summary: Create new enrollment
+      description: Submit enrollment application with questionnaire
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollmentRequest'
+      responses:
+        '201':
+          description: Enrollment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentResponse'
+        '400':
+          description: Invalid enrollment data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Cohort at capacity or duplicate enrollment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /enrollments/{enrollmentId}:
+    get:
+      tags: [enrollments]
+      summary: Get enrollment details
+      description: Retrieve specific enrollment information
+      parameters:
+        - name: enrollmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - CognitoAuth: []
+      responses:
+        '200':
+          description: Enrollment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentResponse'
+        '404':
+          description: Enrollment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags: [enrollments]
+      summary: Update enrollment
+      description: Modify enrollment details or status
+      parameters:
+        - name: enrollmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollmentUpdateRequest'
+      security:
+        - CognitoAuth: []
+      responses:
+        '200':
+          description: Enrollment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentResponse'
+
+  # Payment Processing
+  /enrollments/{enrollmentId}/payment:
+    post:
+      tags: [payments]
+      summary: Process enrollment payment
+      description: Initiate payment through Tranzila gateway
+      parameters:
+        - name: enrollmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '200':
+          description: Payment initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          description: Invalid payment data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /payments/{paymentId}/status:
+    get:
+      tags: [payments]
+      summary: Get payment status
+      description: Check current payment transaction status
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - CognitoAuth: []
+      responses:
+        '200':
+          description: Payment status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentStatusResponse'
+
+  # Consultation Requests
+  /consultations:
+    post:
+      tags: [consultations]
+      summary: Request consultation call
+      description: Submit request for enrollment consultation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultationRequest'
+      responses:
+        '201':
+          description: Consultation request submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsultationResponse'
+        '400':
+          description: Invalid consultation data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # User Management
+  /users/profile:
+    get:
+      tags: [users]
+      summary: Get user profile
+      description: Retrieve authenticated user's profile information
+      security:
+        - CognitoAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags: [users]
+      summary: Update user profile
+      description: Modify user profile information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdateRequest'
+      security:
+        - CognitoAuth: []
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+
+  # GDPR Compliance
+  /users/data-export:
+    get:
+      tags: [privacy]
+      summary: Export user data
+      description: Generate comprehensive data export for GDPR compliance
+      security:
+        - CognitoAuth: []
+      responses:
+        '200':
+          description: User data export
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataExportResponse'
+
+  /users/delete:
+    post:
+      tags: [privacy]
+      summary: Request account deletion
+      description: Initiate account deletion process (30-day retention)
+      security:
+        - CognitoAuth: []
+      responses:
+        '200':
+          description: Deletion request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletionResponse'
+
+  /privacy/consent:
+    post:
+      tags: [privacy]
+      summary: Record privacy consent
+      description: Track user consent for GDPR compliance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentRequest'
+      responses:
+        '201':
+          description: Consent recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentResponse'
+
+components:
+  securitySchemes:
+    CognitoAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token
+
+  schemas:
+    # Core Entities
+    CohortResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "December 2025 Cohort"
+        startDate:
+          type: string
+          format: date
+          example: "2025-12-01"
+        endDate:
+          type: string
+          format: date
+          example: "2026-04-30"
+        maxCapacity:
+          type: integer
+          example: 20
+        currentEnrollment:
+          type: integer
+          example: 15
+        status:
+          type: string
+          enum: [upcoming, open_enrollment, full, in_progress, completed]
+        location:
+          type: string
+          example: "Mazkeret Batya"
+        schedule:
+          type: string
+          example: "Weekly evenings, 1.5-2 hours"
+        pricing:
+          $ref: '#/components/schemas/CohortPricing'
+
+    CohortPricing:
+      type: object
+      properties:
+        fullPayment:
+          type: number
+          example: 6400
+        fiveInstallments:
+          type: number
+          example: 1360
+        twelveInstallments:
+          type: number
+          example: 580
+        currency:
+          type: string
+          example: "ILS"
+
+    CapacityResponse:
+      type: object
+      properties:
+        cohortId:
+          type: string
+          format: uuid
+        maxCapacity:
+          type: integer
+          example: 20
+        currentEnrollment:
+          type: integer
+          example: 15
+        spotsAvailable:
+          type: integer
+          example: 5
+        status:
+          type: string
+          enum: [available, limited, full]
+        waitlistSize:
+          type: integer
+          example: 0
+
+    EnrollmentRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - phone
+        - cohortId
+        - paymentPlan
+        - questionnaire
+      properties:
+        firstName:
+          type: string
+          minLength: 2
+          maxLength: 50
+          example: "שרה"
+        lastName:
+          type: string
+          minLength: 2
+          maxLength: 50
+          example: "כהן"
+        email:
+          type: string
+          format: email
+          example: "sarah.cohen@example.com"
+        phone:
+          type: string
+          pattern: '^(\+972|0)5[0-9]-?[0-9]{7}$'
+          example: "050-1234567"
+        cohortId:
+          type: string
+          format: uuid
+        paymentPlan:
+          type: string
+          enum: [full, five_installments, twelve_installments]
+        preferredLanguage:
+          type: string
+          enum: [he, en]
+          default: he
+        questionnaire:
+          $ref: '#/components/schemas/QuestionnaireData'
+
+    QuestionnaireData:
+      type: object
+      required:
+        - motivation
+        - previousExperience
+        - expectations
+        - agreedToTerms
+        - agreedToPrivacy
+      properties:
+        motivation:
+          type: string
+          minLength: 20
+          maxLength: 1000
+          example: "אני רוצה לפתח את עצמי ולמצוא את הייעוד שלי"
+        previousExperience:
+          type: boolean
+          example: false
+        expectations:
+          type: string
+          minLength: 10
+          maxLength: 500
+          example: "אני מצפה ללמוד כלים לשינוי והתפתחות אישית"
+        referralSource:
+          type: string
+          maxLength: 200
+          example: "חברה המליצה"
+        specialNeeds:
+          type: string
+          maxLength: 500
+        agreedToTerms:
+          type: boolean
+          example: true
+        agreedToPrivacy:
+          type: boolean
+          example: true
+        marketingConsent:
+          type: boolean
+          example: false
+
+    EnrollmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        cohortId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending_payment, active, completed, cancelled, refunded]
+        paymentPlan:
+          type: string
+          enum: [full, five_installments, twelve_installments]
+        totalAmount:
+          type: number
+          example: 6400
+        paidAmount:
+          type: number
+          example: 0
+        enrollmentDate:
+          type: string
+          format: date-time
+        questionnaire:
+          $ref: '#/components/schemas/QuestionnaireData'
+        cohort:
+          $ref: '#/components/schemas/CohortResponse'
+
+    EnrollmentUpdateRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [cancelled]
+        questionnaire:
+          $ref: '#/components/schemas/QuestionnaireData'
+
+    PaymentRequest:
+      type: object
+      required:
+        - amount
+        - installmentNumber
+      properties:
+        amount:
+          type: number
+          minimum: 1
+          example: 6400
+        installmentNumber:
+          type: integer
+          minimum: 1
+          maximum: 12
+          example: 1
+        returnUrl:
+          type: string
+          format: uri
+          example: "https://www.be-dpnr.com/payment/success"
+        cancelUrl:
+          type: string
+          format: uri
+          example: "https://www.be-dpnr.com/payment/cancel"
+
+    PaymentResponse:
+      type: object
+      properties:
+        paymentId:
+          type: string
+          format: uuid
+        tranzilaUrl:
+          type: string
+          format: uri
+          description: Redirect URL for Tranzila payment page
+        amount:
+          type: number
+          example: 6400
+        currency:
+          type: string
+          example: "ILS"
+        expiresAt:
+          type: string
+          format: date-time
+          description: Payment session expiration
+
+    PaymentStatusResponse:
+      type: object
+      properties:
+        paymentId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, success, failed, refunded]
+        amount:
+          type: number
+          example: 6400
+        tranzilaReference:
+          type: string
+          example: "TRZ123456789"
+        installmentNumber:
+          type: integer
+          example: 1
+        processedAt:
+          type: string
+          format: date-time
+        failureReason:
+          type: string
+
+    ConsultationRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - phone
+        - preferredLanguage
+      properties:
+        firstName:
+          type: string
+          minLength: 2
+          maxLength: 50
+        lastName:
+          type: string
+          minLength: 2
+          maxLength: 50
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          pattern: '^(\+972|0)5[0-9]-?[0-9]{7}$'
+        preferredLanguage:
+          type: string
+          enum: [he, en]
+          default: he
+        preferredTimeSlot:
+          type: string
+          maxLength: 200
+          example: "בוקר או אחר הצהריים"
+        message:
+          type: string
+          maxLength: 1000
+          example: "יש לי שאלות על התוכן של הקורס"
+
+    ConsultationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [new, contacted, scheduled, completed, cancelled]
+        submittedAt:
+          type: string
+          format: date-time
+        message:
+          type: string
+          example: "בקשתך התקבלה בהצלחה. ניצור קשר תוך 24 שעות"
+
+    UserProfileResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        preferredLanguage:
+          type: string
+          enum: [he, en]
+        role:
+          type: string
+          enum: [student, admin, instructor]
+        enrollments:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnrollmentResponse'
+
+    UserProfileUpdateRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 2
+          maxLength: 50
+        lastName:
+          type: string
+          minLength: 2
+          maxLength: 50
+        phone:
+          type: string
+          pattern: '^(\+972|0)5[0-9]-?[0-9]{7}$'
+        preferredLanguage:
+          type: string
+          enum: [he, en]
+
+    ConsentRequest:
+      type: object
+      required:
+        - consentType
+        - granted
+        - version
+      properties:
+        consentType:
+          type: string
+          enum: [privacy_policy, terms_of_service, marketing_emails, analytics_cookies]
+        granted:
+          type: boolean
+        version:
+          type: string
+          example: "1.0"
+        ipAddress:
+          type: string
+          format: ipv4
+        userAgent:
+          type: string
+
+    ConsentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        consentType:
+          type: string
+          enum: [privacy_policy, terms_of_service, marketing_emails, analytics_cookies]
+        granted:
+          type: boolean
+        version:
+          type: string
+        recordedAt:
+          type: string
+          format: date-time
+
+    DataExportResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        exportedAt:
+          type: string
+          format: date-time
+        profile:
+          $ref: '#/components/schemas/UserProfileResponse'
+        enrollments:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnrollmentResponse'
+        consultations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsultationResponse'
+        consents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsentResponse'
+
+    DeletionResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        requestedAt:
+          type: string
+          format: date-time
+        effectiveAt:
+          type: string
+          format: date-time
+          description: "Date when deletion will be permanent (30 days)"
+        message:
+          type: string
+          example: "חשבונך יימחק לצמיתות תוך 30 יום"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          example: "Required field missing"
+        details:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+          example: "/api/v1/enrollments"

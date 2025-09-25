@@ -1,0 +1,135 @@
+{
+  "navigation": {
+    "home": "Home",
+    "courses": "Courses",
+    "about": "About",
+    "contact": "Contact",
+    "login": "Login",
+    "register": "Register",
+    "dashboard": "Dashboard",
+    "enrollment": "Enrollment",
+    "consultation": "Consultation",
+    "admin": "Admin"
+  },
+  "userMenu": {
+    "profile": "Profile",
+    "settings": "Settings",
+    "privacy": "Privacy",
+    "logout": "Logout"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "welcome": "Welcome"
+  },
+  "footer": {
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "contact": "Contact",
+    "copyright": "All rights reserved to DPNR"
+  },
+  "accessibility": {
+    "toggleMenu": "Toggle menu",
+    "toggleUserMenu": "Toggle user menu",
+    "toggleLocale": "Change language",
+    "toggleTheme": "Toggle theme"
+  },
+  "landing": {
+    "title": "DPNR Personal Development Program",
+    "subtitle": "Transform your life through proven methodologies and expert guidance",
+    "hero": {
+      "title": "Personal & Professional Development Program",
+      "subtitle": "Join a unique program that will empower you to achieve your goals and fulfill your dreams",
+      "description": "A comprehensive program combining practical tools, personal guidance, and supportive community for deep personal and professional development",
+      "cta": "Enroll Now",
+      "learnMore": "Learn More",
+      "watchVideo": "Watch Video"
+    },
+    "cohort": {
+      "title": "Current Cohort",
+      "startDate": "Start Date",
+      "location": "Location",
+      "schedule": "Schedule",
+      "spotsAvailable": "Spots Available",
+      "noActiveCohort": "No active cohort at the moment"
+    },
+    "features": {
+      "title": "What You'll Get",
+      "items": [
+        {
+          "title": "Professional Personal Guidance",
+          "description": "Close guidance from experienced mentors throughout the journey"
+        },
+        {
+          "title": "Practical & Innovative Tools",
+          "description": "Proven methods for personal and professional development"
+        },
+        {
+          "title": "Supportive Community",
+          "description": "Connection to a community of like-minded people"
+        },
+        {
+          "title": "Personalized Content",
+          "description": "Curriculum adapted to your personal needs"
+        }
+      ]
+    },
+    "testimonials": {
+      "title": "What Participants Say",
+      "items": [
+        {
+          "name": "Sarah Cohen",
+          "text": "This program changed my life. I received practical tools that help me every day.",
+          "role": "Entrepreneur & Project Manager"
+        },
+        {
+          "name": "David Levy",
+          "text": "The personal guidance and wonderful community helped me reach places I never dreamed of.",
+          "role": "Tech Company Manager"
+        }
+      ]
+    },
+    "pricing": {
+      "title": "Pricing & Payments",
+      "fullPayment": "Full Payment",
+      "installments5": "5 Installments",
+      "installments12": "12 Installments",
+      "priceLabel": "₪6,400",
+      "includes": "Includes",
+      "features": [
+        "12 Group Sessions",
+        "3 Personal Meetings",
+        "Digital Learning Materials",
+        "Digital Community Access",
+        "Certificate of Completion"
+      ]
+    },
+    "consultation": {
+      "title": "Free Consultation",
+      "description": "Schedule a free consultation to understand if the program is right for you",
+      "bookConsultation": "Book Consultation"
+    }
+  },
+  "enrollment": {
+    "title": "Course Enrollment",
+    "spots_remaining": "{count} spots remaining",
+    "form": {
+      "personal_info": "Personal Information",
+      "first_name": "First Name",
+      "last_name": "Last Name",
+      "email": "Email Address",
+      "phone": "Phone Number",
+      "payment_plan": "Payment Plan",
+      "submit": "Complete Enrollment"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Try Again",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "back": "Back",
+    "next": "Next"
+  }
+}
