@@ -1253,12 +1253,21 @@ a:hover {
         --spacing-xl: 4rem;
     }
 
-    .nav-links {
-        display: none;
-    }
-
     .nav-container {
         padding: 0 1rem;
+    }
+
+    .nav-links {
+        gap: 1rem;
+        font-size: 0.85rem;
+    }
+
+    .nav-links a {
+        font-size: 0.85rem;
+    }
+
+    .nav-cta {
+        padding: 0.4rem 1rem;
     }
 
     .hero-metrics {
