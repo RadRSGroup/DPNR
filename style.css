@@ -487,9 +487,8 @@ a:hover {
     margin-bottom: 1rem;
 }
 
-.problem-card.highlight-card {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
-    border: 1px solid var(--accent-primary);
+.problem-card.highlight-card h3 {
+    color: var(--accent-gold);
 }
 
 /* ===================================
