@@ -783,14 +783,20 @@ a:hover {
     margin-bottom: 1.5rem;
 }
 
+.milestone-users {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
 .milestone-bar {
     width: 100%;
     max-height: 200px;
     background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
     border-radius: 8px;
-    margin: 1.5rem 0;
+    margin: 1rem 0;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: center;
     padding: 1rem;
     position: relative;
@@ -800,11 +806,6 @@ a:hover {
     font-size: 1.25rem;
     font-weight: 700;
     color: white;
-}
-
-.milestone-users {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
 }
 
 /* ===================================
@@ -1257,6 +1258,10 @@ a:hover {
         display: none;
     }
 
+    .nav-container {
+        padding: 0 1rem;
+    }
+
     .hero-metrics {
         flex-direction: column;
         gap: 1.5rem;
@@ -1264,6 +1269,14 @@ a:hover {
 
     .metric-divider {
         display: none;
+    }
+
+    .metric-value {
+        font-size: 1.5rem;
+    }
+
+    .hero-card {
+        padding: 1.5rem;
     }
 
     .features-grid,
@@ -1288,12 +1301,28 @@ a:hover {
         height: 150px;
     }
 
+    .pie-total {
+        font-size: 2rem;
+    }
+
     .ask-highlights {
         grid-template-columns: 1fr;
     }
 
     .footer-content {
         flex-direction: column;
+    }
+
+    .milestone-bar {
+        max-height: 120px;
+    }
+
+    .problem-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .section-subtitle {
+        font-size: 1rem;
     }
 }
 
@@ -1313,5 +1342,32 @@ a:hover {
     .philosophy-quote {
         font-size: 1.125rem;
         padding-left: 1rem;
+    }
+
+    .milestone-bar {
+        max-height: 100px;
+        min-height: 60px;
+    }
+
+    .milestone-value {
+        font-size: 1rem;
+    }
+
+    .metric-card .metric-number {
+        font-size: 2.5rem;
+    }
+
+    .metric-card .metric-prefix,
+    .metric-card .metric-suffix {
+        font-size: 1.5rem;
+    }
+
+    .econ-value {
+        font-size: 2rem;
+    }
+
+    .problem-icon,
+    .metric-icon {
+        font-size: 2rem;
     }
 }
