@@ -129,6 +129,7 @@ a:hover {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    margin-right: 3rem;
 }
 
 .nav-links {
@@ -1254,20 +1255,26 @@ a:hover {
     }
 
     .nav-container {
-        padding: 0 1rem;
+        padding: 0 0.75rem;
+    }
+
+    .nav-logo {
+        margin-right: 1.5rem;
+        font-size: 1.25rem;
     }
 
     .nav-links {
-        gap: 1rem;
-        font-size: 0.85rem;
+        gap: 0.5rem;
+        font-size: 0.75rem;
     }
 
     .nav-links a {
-        font-size: 0.85rem;
+        font-size: 0.75rem;
     }
 
     .nav-cta {
-        padding: 0.4rem 1rem;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.75rem;
     }
 
     .hero-metrics {
