@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: dpnr-decision-room
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: PORT
+        value: 3000
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GROW_PLAN_ID_CORE
+        sync: false
+      - key: GROW_PLAN_ID_PRO
+        sync: false
+      - key: GROW_SECRET_KEY
+        sync: false
+      - key: GROW_WEBHOOK_SECRET
+        sync: false
