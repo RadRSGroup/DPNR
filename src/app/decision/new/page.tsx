@@ -101,7 +101,7 @@ function NewDecisionContent() {
   }
 
   if (introStep === 0) {
-    return <MomentScreen onNext={() => setIntroStep(null)} />
+    return <MomentScreen onNext={() => setIntroStep(null)} onBack={() => setIntroStep(-1)} />
   }
 
   function update(patch: Partial<DecisionState>) {

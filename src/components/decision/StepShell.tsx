@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { STEP_LABELS, TOTAL_STEPS } from '@/lib/types'
 import { useAI } from '@/lib/useAI'
 
@@ -20,6 +21,7 @@ export default function StepShell({
   onSkip,
   minutesLeft = 27,
 }: StepShellProps) {
+  const router = useRouter()
   const [infoOpen, setInfoOpen] = useState(false)
   const [infoText, setInfoText] = useState<string | null>(null)
   const { callAI, loading: aiLoading } = useAI()
@@ -44,7 +46,7 @@ export default function StepShell({
       {/* Top bar */}
       <div className="flex items-center justify-between px-5 pt-14 pb-2">
         <button
-          onClick={onBack}
+          onClick={() => router.push('/dashboard')}
           className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white text-lg"
         >
           ✕
@@ -99,17 +101,27 @@ export default function StepShell({
       <div className="flex items-center justify-between px-5 pb-8 pt-2">
         <button
           onClick={onBack}
-          className="px-5 py-3 rounded-2xl border border-white/20 text-white/60 hover:text-white hover:border-white/40 text-sm transition-colors"
+          disabled={!onBack}
+          className="w-12 h-12 flex items-center justify-center rounded-full border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-20 transition-all"
+          aria-label="Back"
         >
-          Back
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M11 4L6 9L11 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </button>
-        {onSkip && (
+
+        {onSkip ? (
           <button
             onClick={onSkip}
-            className="text-white/40 hover:text-white/60 text-sm transition-colors"
+            className="w-12 h-12 flex items-center justify-center rounded-full border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-all"
+            aria-label="Next"
           >
-            Skip
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M7 4L12 9L7 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </button>
+        ) : (
+          <div className="w-12 h-12" />
         )}
       </div>
 
