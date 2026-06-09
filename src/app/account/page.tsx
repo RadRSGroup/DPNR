@@ -183,8 +183,7 @@ export default function AccountPage() {
         {/* Sign out */}
         <button
           onClick={async () => {
-            const supabase = createClient()
-            await supabase.auth.signOut({ scope: 'local' })
+            await fetch('/api/auth/signout', { method: 'POST' })
             window.location.href = '/login'
           }}
           className="w-full py-3.5 rounded-2xl border border-white/10 text-white/40 hover:text-white/60 hover:border-white/20 text-sm transition-all"
