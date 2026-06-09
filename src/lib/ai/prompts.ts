@@ -62,6 +62,14 @@ Return 3–6 needs that are most relevant to this option — do not invent other
     user: `Option ${optionLabel}: "${optionText}"`,
   }),
 
+  stepInfo: (step: number, stepLabel: string, decisionTitle: string) => ({
+    system: `You are a guide walking someone through a structured decision-making process.
+Explain what happens in this step in 2–3 warm, plain sentences.
+Focus on what the person will do and why it matters for their clarity.
+No jargon, no bullet points, no headers. Conversational and human.`,
+    user: `Step ${step}: ${stepLabel}\nDecision: "${decisionTitle}"`,
+  }),
+
   futureProjection: (optionLabel: string, optionText: string) => ({
     system: `For someone considering this option, generate 4–5 realistic emotional/life states
 they might feel in one year if they chose it.

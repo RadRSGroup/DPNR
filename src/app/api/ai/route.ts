@@ -75,6 +75,13 @@ export async function POST(req: Request) {
         tokensUsed = r.tokensUsed
         break
       }
+      case 'step_info': {
+        const p = prompts.stepInfo(params.step as number, params.stepLabel as string, params.decisionTitle as string)
+        const r = await aiCall(p.system, p.user)
+        result = { info: r.text }
+        tokensUsed = r.tokensUsed
+        break
+      }
       case 'future_projection': {
         const p = prompts.futureProjection(params.optionLabel, params.optionText)
         const r = await aiCallJSON<{ statements: string[] }>(p.system, p.user)

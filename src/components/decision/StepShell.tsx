@@ -1,6 +1,7 @@
 'use client'
+import { useState } from 'react'
 import { STEP_LABELS, TOTAL_STEPS } from '@/lib/types'
-import { useRouter } from 'next/navigation'
+import { useAI } from '@/lib/useAI'
 
 interface StepShellProps {
   step: number
@@ -19,27 +20,37 @@ export default function StepShell({
   onSkip,
   minutesLeft = 27,
 }: StepShellProps) {
-  const router = useRouter()
+  const [infoOpen, setInfoOpen] = useState(false)
+  const [infoText, setInfoText] = useState<string | null>(null)
+  const { callAI, loading: aiLoading } = useAI()
+
+  async function handleInfo() {
+    setInfoOpen(true)
+    if (infoText) return
+    const res = await callAI<{ info: string }>('step_info', {
+      step,
+      stepLabel: STEP_LABELS[step],
+      decisionTitle: decisionTitle || 'your decision',
+    })
+    if (res?.info) setInfoText(res.info)
+  }
 
   return (
     <div className="relative min-h-screen flex flex-col bg-[#0a0a0f] overflow-hidden max-w-[393px] mx-auto">
       {/* Galaxy background */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
-      {/* Subtle noise texture overlay */}
-      <div className="absolute inset-0 opacity-[0.03] bg-[url('/noise.png')] -z-10" />
 
       {/* Top bar */}
       <div className="flex items-center justify-between px-5 pt-14 pb-2">
         <button
-          onClick={() => router.back()}
+          onClick={onBack}
           className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white text-lg"
         >
           ✕
         </button>
 
         <div className="flex items-center gap-2">
-          {/* Avatar / AI icon */}
           <div className="w-6 h-6 rounded-full bg-purple-500/40 flex items-center justify-center text-xs">
             ✦
           </div>
@@ -47,8 +58,10 @@ export default function StepShell({
           <span className="text-white/30 text-xs">{minutesLeft} min</span>
         </div>
 
-        {/* Info */}
-        <button className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white/60 text-sm">
+        <button
+          onClick={handleInfo}
+          className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white/60 text-sm"
+        >
           ?
         </button>
       </div>
@@ -58,12 +71,12 @@ export default function StepShell({
         {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
           <div
             key={i}
-            className={`h-1 rounded-full transition-all duration-300 ${
+            className={`h-1.5 rounded-full transition-all duration-500 ${
               i + 1 < step
-                ? 'bg-purple-400 w-4'
+                ? 'bg-purple-400 w-5'
                 : i + 1 === step
-                ? 'bg-purple-400 w-6 glow-pulse'
-                : 'bg-white/20 w-4'
+                ? 'bg-purple-300 w-8 shadow-[0_0_6px_rgba(167,139,250,0.8)]'
+                : 'bg-white/15 w-4'
             }`}
           />
         ))}
@@ -99,6 +112,42 @@ export default function StepShell({
           </button>
         )}
       </div>
+
+      {/* Info modal */}
+      {infoOpen && (
+        <div
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50 pb-8 px-5"
+          onClick={() => setInfoOpen(false)}
+        >
+          <div
+            className="w-full bg-[#1a0826] border border-purple-700/40 rounded-3xl p-6 space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-purple-300 text-xs uppercase tracking-widest">
+                Step {String(step).padStart(2, '0')} · {STEP_LABELS[step]}
+              </p>
+              <button
+                onClick={() => setInfoOpen(false)}
+                className="text-white/30 hover:text-white/60 text-lg transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            {aiLoading && !infoText ? (
+              <div className="flex items-center gap-2 text-white/40 text-sm">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+                Generating guidance…
+              </div>
+            ) : (
+              <p className="text-white/70 text-sm leading-relaxed">{infoText ?? '—'}</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

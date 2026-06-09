@@ -184,8 +184,8 @@ export default function AccountPage() {
         <button
           onClick={async () => {
             const supabase = createClient()
-            await supabase.auth.signOut()
-            router.push('/login')
+            await supabase.auth.signOut({ scope: 'local' })
+            window.location.href = '/login'
           }}
           className="w-full py-3.5 rounded-2xl border border-white/10 text-white/40 hover:text-white/60 hover:border-white/20 text-sm transition-all"
         >
