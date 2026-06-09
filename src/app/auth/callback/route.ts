@@ -4,10 +4,12 @@ import { NextRequest, NextResponse } from 'next/server'
 const CONSENT_VERSION = '2026-06'
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url)
+  const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/dashboard'
   const grantConsent = searchParams.get('consent') === '1'
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? request.nextUrl.origin
 
   if (code) {
     const supabase = await createClient()
@@ -28,9 +30,9 @@ export async function GET(request: NextRequest) {
             .eq('user_id', user.id)
         }
       }
-      return NextResponse.redirect(`${origin}${next}`)
+      return NextResponse.redirect(`${siteUrl}${next}`)
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
+  return NextResponse.redirect(`${siteUrl}/login?error=auth_callback_failed`)
 }
