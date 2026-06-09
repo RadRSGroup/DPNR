@@ -44,18 +44,39 @@ export default function WelcomeScreen({ userName, onNext }: Props) {
 
           {/* Human figure */}
           <div className="flex justify-center py-2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(200,150,80,0.2)_0%,_transparent_70%)]" />
-              <svg viewBox="0 0 60 84" className="w-20 h-28 opacity-75" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="30" cy="9" r="7" stroke="#c8a060" strokeWidth="1.2" />
-                <line x1="30" y1="16" x2="30" y2="50" stroke="#c8a060" strokeWidth="1.2" />
-                <line x1="30" y1="26" x2="10" y2="40" stroke="#c8a060" strokeWidth="1.2" />
-                <line x1="30" y1="26" x2="50" y2="40" stroke="#c8a060" strokeWidth="1.2" />
-                <line x1="30" y1="50" x2="17" y2="74" stroke="#c8a060" strokeWidth="1.2" />
-                <line x1="30" y1="50" x2="43" y2="74" stroke="#c8a060" strokeWidth="1.2" />
-                <circle cx="30" cy="32" r="5" fill="rgba(200,160,80,0.25)" />
-                <circle cx="30" cy="32" r="2.5" fill="rgba(230,190,110,0.85)" />
-                <circle cx="30" cy="32" r="1" fill="#fff8e8" />
+            <div className="relative w-28 h-36">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_60%,_rgba(200,150,80,0.18)_0%,_transparent_70%)]" />
+              <svg viewBox="0 0 80 120" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Head */}
+                <ellipse cx="40" cy="12" rx="9" ry="11" stroke="#c8a060" strokeWidth="1.2" />
+                {/* Neck */}
+                <path d="M36 22 Q40 26 44 22" stroke="#c8a060" strokeWidth="1.2" />
+                {/* Shoulders */}
+                <path d="M44 26 Q52 24 58 28" stroke="#c8a060" strokeWidth="1.2" />
+                <path d="M36 26 Q28 24 22 28" stroke="#c8a060" strokeWidth="1.2" />
+                {/* Torso */}
+                <path d="M36 26 Q34 42 35 56" stroke="#c8a060" strokeWidth="1.2" />
+                <path d="M44 26 Q46 42 45 56" stroke="#c8a060" strokeWidth="1.2" />
+                {/* Chest across */}
+                <path d="M36 34 Q40 36 44 34" stroke="#c8a060" strokeWidth="0.8" opacity="0.6" />
+                {/* Hips */}
+                <path d="M35 56 Q40 60 45 56" stroke="#c8a060" strokeWidth="1.2" />
+                {/* Left arm */}
+                <path d="M22 28 Q18 38 16 50" stroke="#c8a060" strokeWidth="1.2" />
+                <path d="M16 50 Q14 58 15 64" stroke="#c8a060" strokeWidth="1.1" />
+                {/* Right arm */}
+                <path d="M58 28 Q62 38 64 50" stroke="#c8a060" strokeWidth="1.2" />
+                <path d="M64 50 Q66 58 65 64" stroke="#c8a060" strokeWidth="1.1" />
+                {/* Left leg */}
+                <path d="M37 56 Q34 72 32 88" stroke="#c8a060" strokeWidth="1.2" />
+                <path d="M32 88 Q30 100 31 110" stroke="#c8a060" strokeWidth="1.1" />
+                {/* Right leg */}
+                <path d="M43 56 Q46 72 48 88" stroke="#c8a060" strokeWidth="1.2" />
+                <path d="M48 88 Q50 100 49 110" stroke="#c8a060" strokeWidth="1.1" />
+                {/* Heart / energy center glow */}
+                <circle cx="40" cy="38" r="4" fill="rgba(200,160,80,0.15)" />
+                <circle cx="40" cy="38" r="2" fill="rgba(230,190,110,0.6)" />
+                <circle cx="40" cy="38" r="1" fill="#fff8e8" />
               </svg>
             </div>
           </div>
