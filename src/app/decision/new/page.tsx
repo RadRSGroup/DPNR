@@ -1,6 +1,8 @@
 'use client'
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import WelcomeScreen from '@/components/decision/WelcomeScreen'
+import MomentScreen from '@/components/decision/MomentScreen'
 import Step01 from '@/components/decision/Step01'
 import Step02 from '@/components/decision/Step02'
 import Step03 from '@/components/decision/Step03'
@@ -30,9 +32,22 @@ function NewDecisionContent() {
   const params = useSearchParams()
   const resumeId = params.get('resume')
 
+  const [introStep, setIntroStep] = useState<-1 | 0 | null>(resumeId ? null : -1)
+  const [userName, setUserName] = useState('')
   const [state, setState] = useState<DecisionState>(INITIAL_STATE)
   const [optionIds, setOptionIds] = useState<{ idA?: string; idB?: string }>({})
   const [resumeLoading, setResumeLoading] = useState(!!resumeId)
+
+  useEffect(() => {
+    async function checkAuth() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push('/login'); return }
+      const name = user.user_metadata?.full_name || user.email || ''
+      setUserName(name)
+    }
+    checkAuth()
+  }, [router])
 
   useEffect(() => {
     if (!resumeId) return
@@ -79,6 +94,14 @@ function NewDecisionContent() {
         <div className="w-8 h-8 border-2 border-purple-500/40 border-t-purple-500 rounded-full animate-spin" />
       </div>
     )
+  }
+
+  if (introStep === -1) {
+    return <WelcomeScreen userName={userName} onNext={() => setIntroStep(0)} />
+  }
+
+  if (introStep === 0) {
+    return <MomentScreen onNext={() => setIntroStep(null)} />
   }
 
   function update(patch: Partial<DecisionState>) {
