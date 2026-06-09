@@ -44,122 +44,109 @@ export default function WelcomeScreen({ userName, onNext }: Props) {
 
           {/* Human figure */}
           <div className="flex justify-center py-2">
-            <div className="relative w-36 h-52">
-              <svg viewBox="0 0 120 180" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <div className="relative w-40 h-56">
+              <svg viewBox="0 0 100 200" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
-                  <radialGradient id="bodyGlow" cx="50%" cy="45%" r="50%">
-                    <stop offset="0%" stopColor="#c8a060" stopOpacity="0.18" />
-                    <stop offset="100%" stopColor="#c8a060" stopOpacity="0" />
+                  <radialGradient id="hg" cx="50%" cy="40%" r="55%">
+                    <stop offset="0%" stopColor="#c8a060" stopOpacity="0.15"/>
+                    <stop offset="100%" stopColor="#c8a060" stopOpacity="0"/>
                   </radialGradient>
-                  <radialGradient id="heartGlow" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="#ffe8a0" stopOpacity="1" />
-                    <stop offset="40%" stopColor="#f0a830" stopOpacity="0.8" />
-                    <stop offset="100%" stopColor="#c8601000" stopOpacity="0" />
+                  <radialGradient id="cg" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#ffe090" stopOpacity="1"/>
+                    <stop offset="50%" stopColor="#e08820" stopOpacity="0.6"/>
+                    <stop offset="100%" stopColor="#c86010" stopOpacity="0"/>
                   </radialGradient>
-                  <filter id="glow">
-                    <feGaussianBlur stdDeviation="1.5" result="blur" />
-                    <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                  </filter>
-                  <filter id="softGlow">
-                    <feGaussianBlur stdDeviation="3" result="blur" />
-                    <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                  </filter>
+                  <filter id="fg"><feGaussianBlur stdDeviation="1.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                  <filter id="sg"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
                 </defs>
 
-                {/* Body ambient glow */}
-                <ellipse cx="60" cy="88" rx="38" ry="70" fill="url(#bodyGlow)" />
+                {/* Ambient body glow */}
+                <ellipse cx="50" cy="105" rx="32" ry="80" fill="url(#hg)"/>
 
-                {/* Human silhouette — filled semi-transparent */}
-                <path
-                  d="M60 4 C53 4 48 9 48 16 C48 23 53 28 60 28 C67 28 72 23 72 16 C72 9 67 4 60 4 Z
-                     M52 30 C44 31 36 35 34 42 L28 68 L36 70 L40 54 L40 170 L46 170 L48 118 L52 118 L54 170 L66 170 L68 118 L72 118 L74 170 L80 170 L80 54 L84 70 L92 68 L86 42 C84 35 76 31 68 30 Z"
-                  fill="rgba(200,160,80,0.07)"
-                  stroke="rgba(200,160,80,0.25)"
-                  strokeWidth="0.6"
-                />
+                {/* ── HEAD ── */}
+                <ellipse cx="50" cy="13" rx="10" ry="12" stroke="#c8a060" strokeWidth="1" opacity="0.8"/>
 
-                {/* Neural network lines inside body */}
-                <g stroke="#c8a060" strokeWidth="0.5" opacity="0.35" filter="url(#glow)">
-                  {/* Spine */}
-                  <line x1="60" y1="28" x2="60" y2="118" />
-                  {/* Rib lines */}
-                  <path d="M60 46 Q50 50 44 48" /><path d="M60 46 Q70 50 76 48" />
-                  <path d="M60 54 Q48 58 42 55" /><path d="M60 54 Q72 58 78 55" />
-                  <path d="M60 62 Q50 65 44 63" /><path d="M60 62 Q70 65 76 63" />
-                  {/* Collarbone */}
-                  <path d="M52 32 Q44 34 36 38" /><path d="M68 32 Q76 34 84 38" />
-                  {/* Shoulder to elbow to wrist */}
-                  <path d="M36 38 Q30 55 28 68" /><path d="M84 38 Q90 55 92 68" />
-                  {/* Pelvis */}
-                  <path d="M48 100 Q54 106 60 108" /><path d="M72 100 Q66 106 60 108" />
-                  {/* Thigh connections */}
-                  <path d="M48 110 Q44 130 43 150" /><path d="M72 110 Q76 130 77 150" />
-                  <path d="M46 118 Q52 128 54 142" /><path d="M74 118 Q68 128 66 142" />
-                  {/* Head cross lines */}
-                  <path d="M52 10 Q60 14 68 10" />
-                  <path d="M50 16 Q60 18 70 16" />
+                {/* ── NECK ── */}
+                <path d="M46 25 L46 31 M54 25 L54 31" stroke="#c8a060" strokeWidth="1" opacity="0.7"/>
+
+                {/* ── SHOULDERS & CLAVICLE ── */}
+                <path d="M46 31 C44 30 38 29 28 33" stroke="#c8a060" strokeWidth="1" opacity="0.8"/>
+                <path d="M54 31 C56 30 62 29 72 33" stroke="#c8a060" strokeWidth="1" opacity="0.8"/>
+
+                {/* ── TORSO ── */}
+                <path d="M44 31 C42 40 41 52 42 65 C43 74 44 78 46 82" stroke="#c8a060" strokeWidth="1" opacity="0.75"/>
+                <path d="M56 31 C58 40 59 52 58 65 C57 74 56 78 54 82" stroke="#c8a060" strokeWidth="1" opacity="0.75"/>
+                {/* Waist */}
+                <path d="M46 82 C48 84 52 84 54 82" stroke="#c8a060" strokeWidth="1" opacity="0.7"/>
+                {/* Hip flare */}
+                <path d="M46 82 C43 87 41 91 42 96" stroke="#c8a060" strokeWidth="1" opacity="0.7"/>
+                <path d="M54 82 C57 87 59 91 58 96" stroke="#c8a060" strokeWidth="1" opacity="0.7"/>
+                {/* Hip base */}
+                <path d="M42 96 C45 99 55 99 58 96" stroke="#c8a060" strokeWidth="1" opacity="0.65"/>
+
+                {/* ── LEFT ARM ── */}
+                <path d="M28 33 C24 45 21 58 19 70" stroke="#c8a060" strokeWidth="1" opacity="0.75"/>
+                {/* Left forearm */}
+                <path d="M19 70 C18 80 17 88 16 95" stroke="#c8a060" strokeWidth="0.9" opacity="0.6"/>
+                {/* Left hand */}
+                <path d="M16 95 C15 98 14 100 13 103 M16 95 C16 99 16 102 16 105 M16 95 C17 99 18 102 19 104" stroke="#c8a060" strokeWidth="0.7" opacity="0.5"/>
+
+                {/* ── RIGHT ARM ── */}
+                <path d="M72 33 C76 45 79 58 81 70" stroke="#c8a060" strokeWidth="1" opacity="0.75"/>
+                {/* Right forearm */}
+                <path d="M81 70 C82 80 83 88 84 95" stroke="#c8a060" strokeWidth="0.9" opacity="0.6"/>
+                {/* Right hand */}
+                <path d="M84 95 C85 98 86 100 87 103 M84 95 C84 99 84 102 84 105 M84 95 C83 99 82 102 81 104" stroke="#c8a060" strokeWidth="0.7" opacity="0.5"/>
+
+                {/* ── LEFT LEG ── */}
+                <path d="M44 96 C43 112 42 128 41 144" stroke="#c8a060" strokeWidth="1" opacity="0.75"/>
+                {/* Left shin */}
+                <path d="M41 144 C40 158 40 168 41 178" stroke="#c8a060" strokeWidth="0.9" opacity="0.6"/>
+                {/* Left foot */}
+                <path d="M41 178 C40 182 38 185 36 186 M41 178 C41 182 41 186 40 188" stroke="#c8a060" strokeWidth="0.8" opacity="0.5"/>
+
+                {/* ── RIGHT LEG ── */}
+                <path d="M56 96 C57 112 58 128 59 144" stroke="#c8a060" strokeWidth="1" opacity="0.75"/>
+                {/* Right shin */}
+                <path d="M59 144 C60 158 60 168 59 178" stroke="#c8a060" strokeWidth="0.9" opacity="0.6"/>
+                {/* Right foot */}
+                <path d="M59 178 C60 182 62 185 64 186 M59 178 C59 182 59 186 60 188" stroke="#c8a060" strokeWidth="0.8" opacity="0.5"/>
+
+                {/* ── INTERNAL LINES (spine, ribs, centre line) ── */}
+                <g stroke="#c8a060" strokeWidth="0.5" opacity="0.3">
+                  <line x1="50" y1="31" x2="50" y2="96"/>
+                  <path d="M50 44 Q44 47 40 46"/><path d="M50 44 Q56 47 60 46"/>
+                  <path d="M50 54 Q43 57 39 56"/><path d="M50 54 Q57 57 61 56"/>
+                  <path d="M50 64 Q44 67 41 66"/><path d="M50 64 Q56 67 59 66"/>
+                  <path d="M50 74 Q46 76 44 76"/><path d="M50 74 Q54 76 56 76"/>
                 </g>
 
-                {/* Constellation dots — body nodes */}
-                <g fill="#d4aa68" filter="url(#glow)">
-                  {/* Head nodes */}
-                  <circle cx="60" cy="8" r="1.2" opacity="0.7" />
-                  <circle cx="53" cy="14" r="0.9" opacity="0.6" />
-                  <circle cx="67" cy="14" r="0.9" opacity="0.6" />
-                  <circle cx="56" cy="20" r="0.8" opacity="0.5" />
-                  <circle cx="64" cy="20" r="0.8" opacity="0.5" />
-                  {/* Shoulder nodes */}
-                  <circle cx="36" cy="38" r="1.2" opacity="0.8" />
-                  <circle cx="84" cy="38" r="1.2" opacity="0.8" />
-                  {/* Arm nodes */}
-                  <circle cx="30" cy="54" r="0.9" opacity="0.6" />
-                  <circle cx="90" cy="54" r="0.9" opacity="0.6" />
-                  <circle cx="28" cy="68" r="1" opacity="0.7" />
-                  <circle cx="92" cy="68" r="1" opacity="0.7" />
-                  {/* Torso nodes */}
-                  <circle cx="44" cy="48" r="0.9" opacity="0.55" />
-                  <circle cx="76" cy="48" r="0.9" opacity="0.55" />
-                  <circle cx="42" cy="60" r="0.8" opacity="0.5" />
-                  <circle cx="78" cy="60" r="0.8" opacity="0.5" />
-                  <circle cx="48" cy="72" r="0.9" opacity="0.6" />
-                  <circle cx="72" cy="72" r="0.9" opacity="0.6" />
-                  <circle cx="46" cy="88" r="0.9" opacity="0.55" />
-                  <circle cx="74" cy="88" r="0.9" opacity="0.55" />
-                  {/* Hip nodes */}
-                  <circle cx="48" cy="100" r="1" opacity="0.65" />
-                  <circle cx="72" cy="100" r="1" opacity="0.65" />
-                  {/* Leg nodes */}
-                  <circle cx="46" cy="118" r="0.9" opacity="0.6" />
-                  <circle cx="74" cy="118" r="0.9" opacity="0.6" />
-                  <circle cx="44" cy="138" r="0.8" opacity="0.5" />
-                  <circle cx="76" cy="138" r="0.8" opacity="0.5" />
-                  <circle cx="43" cy="155" r="0.8" opacity="0.45" />
-                  <circle cx="77" cy="155" r="0.8" opacity="0.45" />
-                  <circle cx="43" cy="168" r="0.7" opacity="0.35" />
-                  <circle cx="77" cy="168" r="0.7" opacity="0.35" />
+                {/* ── NODE DOTS ── */}
+                <g fill="#d4aa70" filter="url(#fg)">
+                  <circle cx="50" cy="5"  r="1.1" opacity="0.6"/>
+                  <circle cx="28" cy="33" r="1.3" opacity="0.85"/>
+                  <circle cx="72" cy="33" r="1.3" opacity="0.85"/>
+                  <circle cx="19" cy="70" r="1.1" opacity="0.7"/>
+                  <circle cx="81" cy="70" r="1.1" opacity="0.7"/>
+                  <circle cx="16" cy="95" r="1"   opacity="0.6"/>
+                  <circle cx="84" cy="95" r="1"   opacity="0.6"/>
+                  <circle cx="44" cy="46" r="0.9" opacity="0.5"/>
+                  <circle cx="56" cy="46" r="0.9" opacity="0.5"/>
+                  <circle cx="42" cy="66" r="0.9" opacity="0.5"/>
+                  <circle cx="58" cy="66" r="0.9" opacity="0.5"/>
+                  <circle cx="42" cy="96" r="1.1" opacity="0.65"/>
+                  <circle cx="58" cy="96" r="1.1" opacity="0.65"/>
+                  <circle cx="41" cy="144" r="1"  opacity="0.6"/>
+                  <circle cx="59" cy="144" r="1"  opacity="0.6"/>
+                  <circle cx="41" cy="178" r="0.9" opacity="0.45"/>
+                  <circle cx="59" cy="178" r="0.9" opacity="0.45"/>
                 </g>
 
-                {/* Cross-body constellation lines */}
-                <g stroke="#d4aa68" strokeWidth="0.4" opacity="0.2">
-                  <line x1="44" y1="48" x2="60" y2="44" /><line x1="76" y1="48" x2="60" y2="44" />
-                  <line x1="42" y1="60" x2="48" y2="72" /><line x1="78" y1="60" x2="72" y2="72" />
-                  <line x1="46" y1="88" x2="48" y2="100" /><line x1="74" y1="88" x2="72" y2="100" />
-                  <line x1="36" y1="38" x2="44" y2="48" /><line x1="84" y1="38" x2="76" y2="48" />
-                </g>
-
-                {/* Heart glow — central energy point */}
-                <circle cx="60" cy="44" r="10" fill="url(#heartGlow)" opacity="0.6" filter="url(#softGlow)" />
-                <circle cx="60" cy="44" r="5" fill="rgba(255,220,120,0.4)" filter="url(#softGlow)" />
-                <circle cx="60" cy="44" r="2.5" fill="rgba(255,240,180,0.9)" filter="url(#glow)" />
-                <circle cx="60" cy="44" r="1" fill="#fffdf0" />
-
-                {/* Subtle particle scatter */}
-                <g fill="#c8a060" opacity="0.3">
-                  <circle cx="55" cy="36" r="0.6" /><circle cx="65" cy="38" r="0.5" />
-                  <circle cx="57" cy="52" r="0.5" /><circle cx="63" cy="50" r="0.6" />
-                  <circle cx="58" cy="78" r="0.5" /><circle cx="62" cy="82" r="0.4" />
-                  <circle cx="50" cy="64" r="0.4" /><circle cx="70" cy="66" r="0.4" />
-                </g>
+                {/* ── HEART GLOW ── */}
+                <circle cx="50" cy="48" r="12" fill="url(#cg)" opacity="0.55" filter="url(#sg)"/>
+                <circle cx="50" cy="48" r="4"  fill="rgba(255,210,100,0.45)" filter="url(#sg)"/>
+                <circle cx="50" cy="48" r="2"  fill="rgba(255,235,160,0.95)" filter="url(#fg)"/>
+                <circle cx="50" cy="48" r="0.8" fill="#fffef0"/>
               </svg>
             </div>
           </div>
