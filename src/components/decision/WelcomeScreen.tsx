@@ -1,4 +1,5 @@
 'use client'
+import PrimaryButton from '@/components/ui/PrimaryButton'
 
 interface Props {
   userName: string
@@ -6,44 +7,61 @@ interface Props {
 }
 
 export default function WelcomeScreen({ userName, onNext }: Props) {
-  const firstName = userName.split(' ')[0] || userName.split('@')[0] || 'You'
+  const firstName = userName.includes('@')
+    ? userName.split('@')[0]
+    : userName.split(' ')[0] || userName
 
   return (
-    <div className="relative min-h-screen max-w-[393px] mx-auto flex flex-col items-center justify-center px-6">
+    <div className="relative min-h-screen flex flex-col bg-[#0a0a0f] overflow-hidden max-w-[393px] mx-auto">
       <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(120,40,200,0.12)_0%,_transparent_70%)] -z-10" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
 
-      <div className="w-full backdrop-blur-sm bg-white/5 border border-white/15 rounded-3xl px-6 py-8 text-center shadow-2xl">
-        <h1 className="text-white text-2xl font-light leading-snug mb-3">
-          Welcome {firstName}<br />to Your Decision Room
-        </h1>
-        <p className="text-white/50 text-sm leading-relaxed mb-8">
-          Welcome to the Decision Room, a space where we explore the choices in front of you, deepen your alignment, and help you make decisions that reflect your true self.
-        </p>
-
-        {/* Human figure placeholder */}
-        <div className="flex justify-center mb-8">
-          <div className="relative w-24 h-28 flex items-center justify-center">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(200,150,80,0.25)_0%,_transparent_70%)] rounded-full" />
-            <svg viewBox="0 0 60 80" className="w-20 h-24 opacity-70" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="30" cy="10" r="8" stroke="#c8a060" strokeWidth="1.5" />
-              <line x1="30" y1="18" x2="30" y2="48" stroke="#c8a060" strokeWidth="1.5" />
-              <line x1="30" y1="28" x2="12" y2="40" stroke="#c8a060" strokeWidth="1.5" />
-              <line x1="30" y1="28" x2="48" y2="40" stroke="#c8a060" strokeWidth="1.5" />
-              <line x1="30" y1="48" x2="18" y2="70" stroke="#c8a060" strokeWidth="1.5" />
-              <line x1="30" y1="48" x2="42" y2="70" stroke="#c8a060" strokeWidth="1.5" />
-              <circle cx="30" cy="30" r="4" fill="rgba(200,160,80,0.4)" />
-              <circle cx="30" cy="30" r="2" fill="rgba(220,180,100,0.8)" />
-            </svg>
+      {/* Top bar — matches StepShell */}
+      <div className="flex items-center justify-between px-5 pt-14 pb-2">
+        <div className="w-8 h-8" />
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-purple-500/40 flex items-center justify-center text-xs">
+            ✦
           </div>
+          <span className="text-white/40 text-xs">Manifest yo...</span>
+          <span className="text-white/30 text-xs">28 min</span>
         </div>
+        <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white/60 text-sm">?</div>
+      </div>
 
-        <button
-          onClick={onNext}
-          className="w-full bg-white/90 hover:bg-white active:scale-[0.98] text-[#1a0826] font-medium rounded-2xl py-4 text-base transition-all"
-        >
-          Let's dive deep
-        </button>
+      {/* Content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-16 fade-up">
+        <div className="w-full text-center space-y-6">
+          <div className="space-y-2">
+            <h1 className="text-white text-2xl font-light leading-snug">
+              Welcome {firstName}<br />to Your Decision Room
+            </h1>
+          </div>
+
+          <p className="text-white/50 text-sm leading-relaxed">
+            Welcome to the Decision Room, a space where we explore the choices in front of you, deepen your alignment, and help you make decisions that reflect your true self.
+          </p>
+
+          {/* Human figure */}
+          <div className="flex justify-center py-2">
+            <div className="relative">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(200,150,80,0.2)_0%,_transparent_70%)]" />
+              <svg viewBox="0 0 60 84" className="w-20 h-28 opacity-75" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="30" cy="9" r="7" stroke="#c8a060" strokeWidth="1.2" />
+                <line x1="30" y1="16" x2="30" y2="50" stroke="#c8a060" strokeWidth="1.2" />
+                <line x1="30" y1="26" x2="10" y2="40" stroke="#c8a060" strokeWidth="1.2" />
+                <line x1="30" y1="26" x2="50" y2="40" stroke="#c8a060" strokeWidth="1.2" />
+                <line x1="30" y1="50" x2="17" y2="74" stroke="#c8a060" strokeWidth="1.2" />
+                <line x1="30" y1="50" x2="43" y2="74" stroke="#c8a060" strokeWidth="1.2" />
+                <circle cx="30" cy="32" r="5" fill="rgba(200,160,80,0.25)" />
+                <circle cx="30" cy="32" r="2.5" fill="rgba(230,190,110,0.85)" />
+                <circle cx="30" cy="32" r="1" fill="#fff8e8" />
+              </svg>
+            </div>
+          </div>
+
+          <PrimaryButton label="Let's dive deep" onClick={onNext} />
+        </div>
       </div>
     </div>
   )
