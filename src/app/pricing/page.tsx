@@ -6,7 +6,7 @@ const TIERS = [
   {
     id: 'free',
     name: 'Free',
-    price: '₪0',
+    price: '$0',
     period: '',
     tokens: '10,000',
     sessions: '~3',
@@ -17,7 +17,7 @@ const TIERS = [
   {
     id: 'core',
     name: 'Core',
-    price: '₪45',
+    price: '$15',
     period: '/mo',
     tokens: '150,000',
     sessions: '~50',
@@ -28,7 +28,7 @@ const TIERS = [
   {
     id: 'pro',
     name: 'Pro',
-    price: '₪75',
+    price: '$25',
     period: '/mo',
     tokens: '400,000',
     sessions: '~133',

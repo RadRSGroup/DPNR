@@ -22,7 +22,7 @@ export function TokenCapModal({ onClose }: Props) {
             className="flex items-center justify-between w-full bg-purple-600 hover:bg-purple-500 active:scale-[0.98] text-white rounded-2xl px-5 py-4 transition-all"
           >
             <div>
-              <p className="font-medium text-sm">Core — ₪45/mo</p>
+              <p className="font-medium text-sm">Core — $15/mo</p>
               <p className="text-purple-200/60 text-xs mt-0.5">~50 AI decisions per month</p>
             </div>
             <span className="text-white/60">›</span>
@@ -32,7 +32,7 @@ export function TokenCapModal({ onClose }: Props) {
             className="flex items-center justify-between w-full bg-white/5 border border-white/10 hover:border-white/20 active:scale-[0.98] text-white rounded-2xl px-5 py-4 transition-all"
           >
             <div>
-              <p className="font-medium text-sm">Pro — ₪75/mo</p>
+              <p className="font-medium text-sm">Pro — $25/mo</p>
               <p className="text-white/30 text-xs mt-0.5">~133 AI decisions per month</p>
             </div>
             <span className="text-white/20">›</span>

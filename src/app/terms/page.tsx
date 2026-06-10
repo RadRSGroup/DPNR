@@ -40,7 +40,7 @@ export default function TermsPage() {
         <Section title="5. Subscriptions and Payments">
           <ul>
             <li>Free accounts receive a limited monthly AI token allowance (~3 sessions).</li>
-            <li>Paid plans (Core ₪45/mo, Pro ₪75/mo) are billed monthly in Israeli Shekel via Grow, an Israeli payment gateway.</li>
+            <li>Paid plans (Core $15/mo, Pro $25/mo) are billed monthly via Grow.</li>
             <li>Subscriptions renew automatically unless cancelled before the renewal date.</li>
             <li>Refunds are handled on a case-by-case basis — contact support within 7 days of a charge.</li>
             <li>Prices are inclusive of applicable VAT where required by law.</li>
