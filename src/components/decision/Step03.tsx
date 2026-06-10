@@ -130,7 +130,12 @@ export default function Step03({ decisionTitle, decisionId, narrative, onComplet
                   ] as [UserResponse, string][]).map(([val, lbl]) => (
                     <button
                       key={val}
-                      onClick={() => setResponse(val)}
+                      onClick={() => {
+                        setResponse(val)
+                        if (val === 'refine' && reflection && !userRefinement) {
+                          setUserRefinement(reflection)
+                        }
+                      }}
                       className={`py-2 px-3 rounded-full border text-xs transition-all ${
                         response === val
                           ? 'bg-purple-600 border-purple-500 text-white'
@@ -143,13 +148,12 @@ export default function Step03({ decisionTitle, decisionId, narrative, onComplet
                 </div>
                 {response === 'refine' && (
                   <div className="pt-1 space-y-1 fade-up">
-                    <p className="text-white/40 text-xs">Write your own version:</p>
+                    <p className="text-white/40 text-xs">Add or edit — make it yours:</p>
                     <textarea
                       autoFocus
                       value={userRefinement}
-                      onChange={e => setUserRefinement(e.target.value.slice(0, 300))}
-                      placeholder="What feels more accurate for you..."
-                      rows={3}
+                      onChange={e => setUserRefinement(e.target.value.slice(0, 600))}
+                      rows={4}
                       className="w-full bg-white/5 border border-purple-700/40 rounded-xl px-3 py-2.5 text-white placeholder-white/25 text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
                     />
                   </div>
