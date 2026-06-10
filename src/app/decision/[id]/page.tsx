@@ -555,7 +555,8 @@ export default function DecisionDetailPage() {
 
   const optA = decision.options.find(o => o.label === 'A')
   const optB = decision.options.find(o => o.label === 'B')
-  const journalEntries = outcomes.filter(o => !o.reflection.startsWith('[Outcome]'))
+  const reflectionEntry = outcomes.find(o => o.reflection.startsWith('[Reflection]'))
+  const journalEntries = outcomes.filter(o => !o.reflection.startsWith('[Outcome]') && !o.reflection.startsWith('[Reflection]'))
   const outcomeEntries = outcomes.filter(o => o.reflection.startsWith('[Outcome]'))
 
   return (
@@ -653,6 +654,43 @@ export default function DecisionDetailPage() {
             </div>
           </Section>
         )}
+
+        {/* Step 7A reflection */}
+        {reflectionEntry && (() => {
+          const raw = reflectionEntry.reflection.replace('[Reflection] ', '')
+          const lines = raw.split('\n').filter(Boolean)
+          const leanLine = lines.find(l => l.startsWith('Leaning') || l.startsWith('Still undecided'))
+          const commitmentLine = lines.find(l => l.startsWith('Commitment:'))
+          const noteLine = lines.find(l => l !== leanLine && l !== commitmentLine)
+          const leanLabel = reflectionEntry.chosen_option_id === optA?.id ? 'A'
+            : reflectionEntry.chosen_option_id === optB?.id ? 'B' : null
+          return (
+            <Section title="Your reflection">
+              <div className="space-y-3">
+                {leanLine && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-purple-400 text-xs uppercase tracking-wide">Lean</span>
+                    <span className={`text-xs border rounded-full px-2.5 py-0.5 ${
+                      leanLabel ? 'bg-purple-900/30 border-purple-700/40 text-purple-300'
+                        : 'bg-white/5 border-white/15 text-white/50'
+                    }`}>
+                      {leanLabel ? `Option ${leanLabel}` : 'Undecided'}
+                    </span>
+                  </div>
+                )}
+                {noteLine && (
+                  <p className="text-white/70 text-sm leading-relaxed italic">"{noteLine}"</p>
+                )}
+                {commitmentLine && (
+                  <div className="border-t border-white/8 pt-3 space-y-0.5">
+                    <p className="text-white/30 text-xs uppercase tracking-wide">Commitment</p>
+                    <p className="text-white/60 text-sm">{commitmentLine.replace('Commitment: ', '')}</p>
+                  </div>
+                )}
+              </div>
+            </Section>
+          )
+        })()}
 
         {/* Journal timeline */}
         {journalEntries.length > 0 && (

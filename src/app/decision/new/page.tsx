@@ -222,17 +222,18 @@ function NewDecisionContent() {
         if (optionIds.idB) {
           await saveProjections(optionIds.idB, projectionsB, projectionsB.map(() => false))
         }
-        // Save reflection note + chosen lean as an outcome entry
+        // Save Step 7A reflection as a tagged outcome entry
         const leanLabel = chosenLean === 'A' || chosenLean === 'B' ? chosenLean : null
         const chosenOptionId = leanLabel === 'A' ? optionIds.idA : leanLabel === 'B' ? optionIds.idB : undefined
         const parts: string[] = []
+        if (leanLabel) parts.push(`Leaning towards Option ${leanLabel}`)
+        else if (chosenLean === 'undecided') parts.push('Still undecided')
         if (reflectionNote) parts.push(reflectionNote)
-        if (commitment) parts.push(`[Commitment] ${commitment}`)
-        if (leanLabel && !parts.length) parts.push(`Leaning towards Option ${leanLabel}`)
+        if (commitment) parts.push(`Commitment: ${commitment}`)
         if (parts.length || chosenOptionId) {
           await addOutcome({
             decisionId: state.id,
-            reflection: parts.join('\n\n'),
+            reflection: `[Reflection] ${parts.join('\n')}`,
             chosenOptionId: chosenOptionId ?? undefined,
           })
         }
