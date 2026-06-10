@@ -86,7 +86,7 @@ export default function AccountPage() {
             <div>
               <p className="text-white text-sm font-medium capitalize">{tier} plan</p>
               <p className="text-white/30 text-xs mt-0.5">
-                {tier === 'free' ? '10,000 tokens/mo · ~3 decisions' : tier === 'core' ? '150,000 tokens/mo · ~50 decisions' : '400,000 tokens/mo · ~133 decisions'}
+                {tier === 'free' ? '~7 AI decisions/mo' : tier === 'core' ? '~100 AI decisions/mo' : 'Unlimited AI decisions'}
               </p>
             </div>
             {tier !== 'pro' && (

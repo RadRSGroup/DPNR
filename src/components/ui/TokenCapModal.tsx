@@ -13,7 +13,7 @@ export function TokenCapModal({ onClose }: Props) {
         <div className="text-center space-y-2">
           <div className="w-14 h-14 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-2xl mx-auto">✦</div>
           <h2 className="text-white text-lg font-medium">You've used all your AI sessions</h2>
-          <p className="text-white/50 text-sm">Your free tier includes ~3 AI-guided decisions per month. Upgrade to continue exploring.</p>
+          <p className="text-white/50 text-sm">Your free tier includes ~7 AI-guided decisions per month. Upgrade to continue exploring.</p>
         </div>
 
         <div className="space-y-3">
@@ -23,7 +23,7 @@ export function TokenCapModal({ onClose }: Props) {
           >
             <div>
               <p className="font-medium text-sm">Core — $15/mo</p>
-              <p className="text-purple-200/60 text-xs mt-0.5">~50 AI decisions per month</p>
+              <p className="text-purple-200/60 text-xs mt-0.5">~100 AI decisions per month</p>
             </div>
             <span className="text-white/60">›</span>
           </Link>
@@ -33,7 +33,7 @@ export function TokenCapModal({ onClose }: Props) {
           >
             <div>
               <p className="font-medium text-sm">Pro — $25/mo</p>
-              <p className="text-white/30 text-xs mt-0.5">~133 AI decisions per month</p>
+              <p className="text-white/30 text-xs mt-0.5">Unlimited AI decisions</p>
             </div>
             <span className="text-white/20">›</span>
           </Link>
