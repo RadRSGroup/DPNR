@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import StepShell from './StepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI } from '@/lib/useAI'
@@ -22,8 +22,6 @@ export default function Step02({ decisionTitle, decisionId, tier = 'free', onCom
   const [optionA, setOptionA] = useState<DecisionOption>({ label: 'A', content: '', approved: false })
   const [optionB, setOptionB] = useState<DecisionOption>({ label: 'B', content: '', approved: false })
   const [parsed, setParsed] = useState(false)
-  const [refiningA, setRefiningA] = useState(false)
-  const [refiningB, setRefiningB] = useState(false)
   const { callAI, loading, error, tokenCapReached, dismissTokenCap } = useAI()
   const charLimit = CHAR_LIMITS[tier] ?? 500
 
@@ -36,16 +34,6 @@ export default function Step02({ decisionTitle, decisionId, tier = 'free', onCom
       setOptionB({ label: 'B', content: res.optionB, approved: false })
       setParsed(true)
     }
-  }
-
-  async function handleRefine(which: 'A' | 'B') {
-    const option = which === 'A' ? optionA : optionB
-    const setRefining = which === 'A' ? setRefiningA : setRefiningB
-    const setOption = which === 'A' ? setOptionA : setOptionB
-    setRefining(true)
-    const res = await callAI<{ refined: string }>('refine_option', { optionText: option.content }, decisionId)
-    if (res?.refined) setOption(prev => ({ ...prev, content: res.refined }))
-    setRefining(false)
   }
 
   function handleApprove(which: 'A' | 'B') {
@@ -100,9 +88,7 @@ export default function Step02({ decisionTitle, decisionId, tier = 'free', onCom
               label="Option A"
               option={optionA}
               onEdit={val => setOptionA(prev => ({ ...prev, content: val, approved: false }))}
-              onRefine={() => handleRefine('A')}
               onApprove={() => handleApprove('A')}
-              refining={refiningA}
             />
 
             {/* Option B */}
@@ -110,9 +96,7 @@ export default function Step02({ decisionTitle, decisionId, tier = 'free', onCom
               label="Option B"
               option={optionB}
               onEdit={val => setOptionB(prev => ({ ...prev, content: val, approved: false }))}
-              onRefine={() => handleRefine('B')}
               onApprove={() => handleApprove('B')}
-              refining={refiningB}
             />
 
             {/* Re-parse */}
@@ -136,15 +120,20 @@ export default function Step02({ decisionTitle, decisionId, tier = 'free', onCom
 }
 
 function OptionCard({
-  label, option, onEdit, onRefine, onApprove, refining
+  label, option, onEdit, onApprove,
 }: {
   label: string
   option: DecisionOption
   onEdit: (v: string) => void
-  onRefine: () => void
   onApprove: () => void
-  refining: boolean
 }) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  function handleRewrite() {
+    onEdit('')
+    setTimeout(() => textareaRef.current?.focus(), 0)
+  }
+
   return (
     <div className={`rounded-2xl border p-4 space-y-3 transition-all duration-300 ${
       option.approved
@@ -153,19 +142,21 @@ function OptionCard({
     }`}>
       <p className="text-purple-400 text-xs font-medium uppercase tracking-wide">{label}</p>
       <textarea
+        ref={textareaRef}
         value={option.content}
         onChange={e => onEdit(e.target.value)}
         disabled={option.approved}
         rows={3}
+        placeholder="Describe this option in your own words..."
         className="w-full bg-transparent text-white/80 text-sm resize-none focus:outline-none placeholder-white/30 disabled:opacity-70"
       />
       <div className="flex items-center gap-2">
         <button
-          onClick={onRefine}
-          disabled={refining || option.approved}
+          onClick={handleRewrite}
+          disabled={option.approved}
           className="flex-1 py-2 rounded-full border border-purple-700/50 text-purple-400 hover:bg-purple-900/30 text-xs transition-colors disabled:opacity-40"
         >
-          {refining ? 'Refining...' : 'Refine'}
+          Rewrite
         </button>
         <button
           onClick={onApprove}

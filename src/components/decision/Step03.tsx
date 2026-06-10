@@ -22,6 +22,7 @@ export default function Step03({ decisionTitle, decisionId, narrative, onComplet
   const [emotion, setEmotion] = useState<EmotionColor | null>(null)
   const [reflection, setReflection] = useState<string | null>(null)
   const [response, setResponse] = useState<UserResponse | null>(null)
+  const [userRefinement, setUserRefinement] = useState('')
   const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI()
 
   async function handleMapFeelings() {
@@ -36,7 +37,10 @@ export default function Step03({ decisionTitle, decisionId, narrative, onComplet
 
   function handleContinue() {
     if (!bodyLocation || !emotion || !reflection) return
-    onComplete(bodyLocation, emotion, reflection)
+    const finalReflection = response === 'refine' && userRefinement.trim()
+      ? userRefinement.trim()
+      : reflection
+    onComplete(bodyLocation, emotion, finalReflection)
   }
 
   return (
@@ -115,7 +119,7 @@ export default function Step03({ decisionTitle, decisionId, narrative, onComplet
                 <p className="text-white/40 text-xs font-medium uppercase tracking-wide">A word from us:</p>
                 <p className="text-white/80 text-sm leading-relaxed">{reflection}</p>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <p className="text-white/40 text-xs">Does this resonate?</p>
                 <div className="grid grid-cols-2 gap-2">
                   {([
@@ -137,13 +141,26 @@ export default function Step03({ decisionTitle, decisionId, narrative, onComplet
                     </button>
                   ))}
                 </div>
+                {response === 'refine' && (
+                  <div className="pt-1 space-y-1 fade-up">
+                    <p className="text-white/40 text-xs">Write your own version:</p>
+                    <textarea
+                      autoFocus
+                      value={userRefinement}
+                      onChange={e => setUserRefinement(e.target.value.slice(0, 300))}
+                      placeholder="What feels more accurate for you..."
+                      rows={3}
+                      className="w-full bg-white/5 border border-purple-700/40 rounded-xl px-3 py-2.5 text-white placeholder-white/25 text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
             <PrimaryButton
               label="Keep Exploring"
               onClick={handleContinue}
-              disabled={!response}
+              disabled={!response || (response === 'refine' && !userRefinement.trim())}
             />
           </div>
         )}
