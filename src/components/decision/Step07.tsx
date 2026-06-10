@@ -215,7 +215,7 @@ export default function Step07({
   /* ── Phase 7a: reflect ── */
   if (phase === 'reflect') {
     return (
-      <StepShell step={7} decisionTitle={decisionTitle} onBack={() => setPhase('projections')}>
+      <StepShell step={7} decisionTitle={decisionTitle} onBack={() => setPhase('projections')} onSkip={handleReflectNext}>
         <div className="flex-1 flex flex-col space-y-6 pt-2">
           <div className="text-center space-y-1">
             <p className="text-purple-400 text-xs uppercase tracking-widest">Step 7 · Reflect</p>
@@ -284,7 +284,7 @@ export default function Step07({
   /* ── Phase 7b: review date ── */
   if (phase === 'review_date') {
     return (
-      <StepShell step={7} decisionTitle={decisionTitle} onBack={() => setPhase('reflect')}>
+      <StepShell step={7} decisionTitle={decisionTitle} onBack={() => setPhase('reflect')} onSkip={handleReviewNext}>
         <div className="flex-1 flex flex-col space-y-6 pt-2">
           <div className="text-center space-y-1">
             <p className="text-purple-400 text-xs uppercase tracking-widest">Step 7 · Check-in</p>
