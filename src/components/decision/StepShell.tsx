@@ -38,7 +38,7 @@ export default function StepShell({
   }
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-[#0a0a0f] overflow-hidden max-w-[393px] mx-auto">
+    <div className="relative h-dvh flex flex-col bg-[#0a0a0f] overflow-hidden max-w-[393px] mx-auto">
       {/* Galaxy background */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
@@ -93,7 +93,7 @@ export default function StepShell({
       </div>
 
       {/* Step content */}
-      <div className="flex-1 flex flex-col px-5 pb-4 fade-up">
+      <div className="flex-1 overflow-y-auto flex flex-col px-5 pb-4 fade-up">
         {children}
       </div>
 

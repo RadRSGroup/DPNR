@@ -12,7 +12,7 @@ interface Step07Props {
   decisionId?: string
   optionA: DecisionOption
   optionB: DecisionOption
-  onComplete: (projectionsA: string[], projectionsB: string[], reviewDate?: string, chosenLean?: string) => void
+  onComplete: (projectionsA: string[], projectionsB: string[], reviewDate?: string, chosenLean?: string, reflectionNote?: string, commitment?: string) => void
   onBack?: () => void
   onSkip?: () => void
 }
@@ -112,12 +112,15 @@ export default function Step07({
   }
 
   function handleFinish() {
-    const lean = chosenLean
-      ? commitment.trim()
-        ? `${chosenLean}|${commitment.trim()}`
-        : chosenLean
-      : undefined
-    onComplete(selectedA, selectedB, reviewDate ?? undefined, lean)
+    const lean = chosenLean ?? undefined
+    onComplete(
+      selectedA,
+      selectedB,
+      reviewDate ?? undefined,
+      lean,
+      reflectionNote.trim() || undefined,
+      commitment.trim() || undefined,
+    )
   }
 
   /* ── Phase: projections ── */
@@ -339,23 +342,13 @@ export default function Step07({
   }
 
   /* ── Phase 7c: final reflection / commitment ── */
-  const calendarUrl = reviewDate
-    ? (() => {
-        const start = reviewDate.replace(/-/g, '')
-        const subject = commitment.trim()
-          ? commitment.trim()
-          : `Decision Room check-in: "${decisionTitle}"`
-        const details = commitment.trim()
-          ? `${commitment.trim()}\n\nRevisit your decision about "${decisionTitle}" in Decision Room.`
-          : `Revisit your decision about "${decisionTitle}" in Decision Room.`
-        const title = encodeURIComponent(subject)
-        const desc = encodeURIComponent(details)
-        return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${start}&details=${desc}`
-      })()
-    : null
+  const calendarTitle = commitment.trim()
+    ? commitment.trim()
+    : `Decision Room check-in: "${decisionTitle}"`
+  const calendarDescription = `Revisit your decision about "${decisionTitle}" in Decision Room.`
 
   return (
-    <div className="relative min-h-screen max-w-[393px] mx-auto flex flex-col">
+    <div className="relative h-dvh max-w-[393px] mx-auto flex flex-col">
       {/* Background — radial purple glow */}
       <div className="absolute inset-0 bg-[#1a0826] -z-10" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.45)_0%,_rgba(80,20,140,0.25)_45%,_transparent_75%)] -z-10" />
@@ -400,16 +393,13 @@ export default function Step07({
           />
         </div>
 
-        {/* Add to Calendar */}
-        {calendarUrl && (
-          <a
-            href={calendarUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center w-full border border-white/20 hover:border-white/35 rounded-full py-3 text-white/70 hover:text-white text-sm transition-all"
-          >
-            Add to Calendar
-          </a>
+        {/* Add to Calendar — both Google and Apple/Outlook */}
+        {reviewDate && (
+          <CalendarButtons
+            title={calendarTitle}
+            date={reviewDate}
+            description={calendarDescription}
+          />
         )}
       </div>
 

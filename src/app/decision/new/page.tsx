@@ -19,6 +19,7 @@ import {
   saveEmotionMap,
   saveOptionTags,
   saveProjections,
+  addOutcome,
 } from '@/lib/supabase/decisions'
 
 const INITIAL_STATE: DecisionState = {
@@ -207,7 +208,7 @@ function NewDecisionContent() {
     }
   }
 
-  async function completeStep07(projectionsA: string[], projectionsB: string[], reviewDate?: string, chosenLean?: string) {
+  async function completeStep07(projectionsA: string[], projectionsB: string[], reviewDate?: string, chosenLean?: string, reflectionNote?: string, commitment?: string) {
     if (state.id) {
       try {
         await updateDecision(state.id, {
@@ -220,6 +221,20 @@ function NewDecisionContent() {
         }
         if (optionIds.idB) {
           await saveProjections(optionIds.idB, projectionsB, projectionsB.map(() => false))
+        }
+        // Save reflection note + chosen lean as an outcome entry
+        const leanLabel = chosenLean === 'A' || chosenLean === 'B' ? chosenLean : null
+        const chosenOptionId = leanLabel === 'A' ? optionIds.idA : leanLabel === 'B' ? optionIds.idB : undefined
+        const parts: string[] = []
+        if (reflectionNote) parts.push(reflectionNote)
+        if (commitment) parts.push(`[Commitment] ${commitment}`)
+        if (leanLabel && !parts.length) parts.push(`Leaning towards Option ${leanLabel}`)
+        if (parts.length || chosenOptionId) {
+          await addOutcome({
+            decisionId: state.id,
+            reflection: parts.join('\n\n'),
+            chosenOptionId: chosenOptionId ?? undefined,
+          })
         }
       } catch (e) { console.error('Step07 save error:', e) }
     }

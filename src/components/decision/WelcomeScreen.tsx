@@ -15,7 +15,7 @@ export default function WelcomeScreen({ userName, onNext }: Props) {
     : userName.split(' ')[0] || userName
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-[#0a0a0f] overflow-hidden max-w-[393px] mx-auto">
+    <div className="relative h-dvh flex flex-col bg-[#0a0a0f] overflow-hidden max-w-[393px] mx-auto">
       <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
 
@@ -34,7 +34,7 @@ export default function WelcomeScreen({ userName, onNext }: Props) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-16 fade-up">
+      <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-6 pb-8 fade-up">
         <div className="w-full text-center space-y-5">
 
           <h1 className="text-white text-2xl font-light leading-snug">
