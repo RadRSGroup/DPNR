@@ -65,7 +65,10 @@ function DashboardContent() {
       <div className="pt-14 pb-6 flex items-center justify-between">
         <div>
           <p className="text-purple-400 text-xs tracking-widest uppercase">DPNR</p>
-          <h1 className="text-white text-xl font-light mt-0.5">Decision Room</h1>
+          <div className="flex items-center gap-2 mt-0.5">
+            <h1 className="text-white text-xl font-light">Decision Room</h1>
+            <span className="text-[10px] font-semibold tracking-widest uppercase text-yellow-400 border border-yellow-400/40 rounded-full px-2 py-0.5">Beta</span>
+          </div>
         </div>
         <Link
           href="/account"
