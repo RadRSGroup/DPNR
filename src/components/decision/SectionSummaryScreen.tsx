@@ -5,7 +5,7 @@ import { useAI } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { DecisionOption, TOTAL_STEPS } from '@/lib/types'
 
-export type SummaryType = 'pros_cons' | 'fears_desires' | 'values_needs' | 'values' | 'needs'
+export type SummaryType = 'pros_cons' | 'fears_desires' | 'values_needs' | 'values' | 'needs' | 'projections'
 
 interface Props {
   decisionTitle: string
@@ -25,6 +25,7 @@ const STEP_NUM: Record<SummaryType, number> = {
   values_needs: 6,
   values: 6,
   needs: 6,
+  projections: 7,
 }
 
 const STEP_TYPE_LABEL: Record<SummaryType, string> = {
@@ -33,6 +34,7 @@ const STEP_TYPE_LABEL: Record<SummaryType, string> = {
   values_needs: 'Values & Needs',
   values: 'Values',
   needs: 'Needs',
+  projections: 'Future Projections',
 }
 
 const INTRO_QUOTE: Record<SummaryType, string | null> = {
@@ -41,6 +43,7 @@ const INTRO_QUOTE: Record<SummaryType, string | null> = {
   values_needs: 'Your values and needs reveal what matters most\nbeneath this decision.',
   values: 'Your values are the principles you live by —\nthe compass beneath every real choice.',
   needs: 'Your six core needs shape every decision you make,\noften without you knowing it.',
+  projections: 'The future you can imagine is already shaping\nthe path you feel drawn to take.',
 }
 
 const CTA_LABEL: Record<SummaryType, string> = {
@@ -49,6 +52,7 @@ const CTA_LABEL: Record<SummaryType, string> = {
   values_needs: "Let's Go Deeper →",
   values: 'Explore Your Needs →',
   needs: "Let's Go Deeper →",
+  projections: 'Complete →',
 }
 
 const AGREEMENT_OPTIONS = ['Accurate', 'Refine this', 'Not sure', 'Partly True']
@@ -280,6 +284,29 @@ export default function SectionSummaryScreen({
                     <div className="flex flex-wrap gap-1">
                       {needs.map(t => (
                         <span key={t} className="text-[10px] bg-rose-900/25 border border-rose-600/30 text-rose-200/80 rounded-full px-2 py-0.5">{t}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-white/20 text-[10px] italic">None selected</p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Projections */}
+        {stepType === 'projections' && (
+          <div className="grid grid-cols-2 gap-2">
+            {(['A', 'B'] as const).map(label => {
+              const projs = (label === 'A' ? tagsA : tagsB).projections ?? []
+              return (
+                <div key={label} className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
+                  <p className="text-purple-300 text-xs font-semibold mb-1">Option {label}</p>
+                  {projs.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {projs.map(t => (
+                        <p key={t} className="text-[10px] text-white/60 leading-relaxed">· {t}</p>
                       ))}
                     </div>
                   ) : (

@@ -91,7 +91,7 @@ export async function POST(req: Request) {
       }
       case 'section_summary': {
         const p = prompts.sectionSummary(
-          params.step as 'pros_cons' | 'fears_desires' | 'values_needs' | 'values' | 'needs',
+          params.step as 'pros_cons' | 'fears_desires' | 'values_needs' | 'values' | 'needs' | 'projections',
           params.decisionTitle as string,
           params.optionA as string,
           params.optionB as string,

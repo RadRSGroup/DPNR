@@ -258,22 +258,14 @@ function NewDecisionContent() {
         }
       } catch {}
     }
-    const decisionId = state.id
     setPendingSummary({
-      type: 'values',
-      tagsA: { values: valuesA },
-      tagsB: { values: valuesB },
+      type: 'values_needs',
+      tagsA: { values: valuesA, needs: needsA },
+      tagsB: { values: valuesB, needs: needsB },
       onConfirm: () => {
-        setPendingSummary({
-          type: 'needs',
-          tagsA: { needs: needsA },
-          tagsB: { needs: needsB },
-          onConfirm: () => {
-            setPendingSummary(null)
-            update({ currentStep: 7 })
-            if (decisionId) updateDecision(decisionId, { current_step: 7 }).catch(() => {})
-          },
-        })
+        setPendingSummary(null)
+        update({ currentStep: 7 })
+        if (state.id) updateDecision(state.id, { current_step: 7 }).catch(() => {})
       },
     })
   }
@@ -292,7 +284,6 @@ function NewDecisionContent() {
         if (optionIds.idB) {
           await saveProjections(optionIds.idB, projectionsB, projectionsB.map(() => false))
         }
-        // Save Step 7A reflection as a tagged outcome entry
         const leanLabel = chosenLean === 'A' || chosenLean === 'B' ? chosenLean : null
         const chosenOptionId = leanLabel === 'A' ? optionIds.idA : leanLabel === 'B' ? optionIds.idB : undefined
         const parts: string[] = []
@@ -309,15 +300,23 @@ function NewDecisionContent() {
         }
       } catch (e) { console.error('Step07 save error:', e) }
     }
-    setCelebrating(true)
-    setCompletedSummary({
-      title: state.title,
-      optionA: state.optionA?.content,
-      optionB: state.optionB?.content,
-      chosenLean,
-      reflectionNote,
-      commitment,
-      decisionId: state.id,
+    setPendingSummary({
+      type: 'projections',
+      tagsA: { projections: projectionsA },
+      tagsB: { projections: projectionsB },
+      onConfirm: () => {
+        setPendingSummary(null)
+        setCelebrating(true)
+        setCompletedSummary({
+          title: state.title,
+          optionA: state.optionA?.content,
+          optionB: state.optionB?.content,
+          chosenLean,
+          reflectionNote,
+          commitment,
+          decisionId: state.id,
+        })
+      },
     })
   }
 
