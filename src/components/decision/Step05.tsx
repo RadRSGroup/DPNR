@@ -75,7 +75,11 @@ export default function Step05({ decisionTitle, decisionId, narrative, optionA, 
     })
   }
 
-  const totalSelected = Object.values(tags).flat().length
+  const totalSelectedA = Object.values(tagsA).flat().length
+  const totalSelectedB = Object.values(tagsB).flat().length
+  const canAdvance = currentOption === 'A'
+    ? totalSelectedA > 0
+    : totalSelectedA > 0 && totalSelectedB > 0
 
   const sections = lens === 'pros_cons'
     ? [{ type: 'pro', label: 'Pros' }, { type: 'con', label: 'Cons' }]
@@ -174,7 +178,7 @@ export default function Step05({ decisionTitle, decisionId, narrative, optionA, 
         <PrimaryButton
           label={currentOption === 'A' ? 'Next Option →' : 'Next Step →'}
           onClick={handleNextOption}
-          disabled={totalSelected === 0}
+          disabled={!canAdvance}
         />
       </div>
     </StepShell>

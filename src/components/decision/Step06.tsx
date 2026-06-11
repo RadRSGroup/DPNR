@@ -78,6 +78,11 @@ export default function Step06({ decisionTitle, decisionId, optionA, optionB, on
 
   const presetKey = round === 'values' ? 'value' : 'need'
   const currentSelected = selected[currentOption][round]
+  const bothOptionsDefined =
+    selected.A.values.length > 0 && selected.A.needs.length > 0 &&
+    selected.B.values.length > 0 && selected.B.needs.length > 0
+  const isFinalStep = round === 'needs' && currentOption === 'B'
+  const canAdvance = currentSelected.length > 0 && (!isFinalStep || bothOptionsDefined)
   const items = [
     ...(suggested[round] ?? []),
     ...PRESET_TAGS[presetKey],
@@ -171,7 +176,7 @@ export default function Step06({ decisionTitle, decisionId, optionA, optionB, on
           </button>
         </div>
 
-        <PrimaryButton label={ctaLabel} onClick={handleNext} disabled={currentSelected.length === 0} />
+        <PrimaryButton label={ctaLabel} onClick={handleNext} disabled={!canAdvance} />
       </div>
     </StepShell>
   )
