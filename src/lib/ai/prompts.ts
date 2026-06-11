@@ -70,12 +70,13 @@ No jargon, no bullet points, no headers. Conversational and human.`,
     user: `Step ${step}: ${stepLabel}\nDecision: "${decisionTitle}"`,
   }),
 
-  futureProjection: (optionLabel: string, optionText: string) => ({
+  futureProjection: (optionLabel: string, optionText: string, decisionTitle?: string, narrative?: string) => ({
     system: `For someone considering this option, generate 4–5 realistic emotional/life states
 they might feel in one year if they chose it.
 Return ONLY valid JSON: { "statements": ["...", "..."] }
-Mix positive and challenging. Honest, not optimistic bias. Short phrases 3–6 words each.`,
-    user: `Option ${optionLabel}: "${optionText}"`,
+Mix positive and challenging. Honest, not optimistic bias. Short phrases 3–6 words each.
+Stay strictly within the domain of the decision — do not introduce themes unrelated to it.`,
+    user: `Decision: "${decisionTitle ?? ''}"${narrative ? `\nContext: ${narrative}` : ''}\nOption ${optionLabel}: "${optionText}"`,
   }),
 
   sectionSummary: (

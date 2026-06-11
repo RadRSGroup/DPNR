@@ -70,7 +70,7 @@ export default function Step07({
     const opt = label === 'A' ? optionA : optionB
     const res = await callAI<{ statements: string[] }>(
       'future_projection',
-      { optionLabel: label, optionText: opt.content },
+      { optionLabel: label, optionText: opt.content, decisionTitle },
       decisionId
     )
     if (res?.statements) {

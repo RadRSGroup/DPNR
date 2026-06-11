@@ -83,7 +83,7 @@ export async function POST(req: Request) {
         break
       }
       case 'future_projection': {
-        const p = prompts.futureProjection(params.optionLabel, params.optionText)
+        const p = prompts.futureProjection(params.optionLabel, params.optionText, params.decisionTitle, params.narrative)
         const r = await aiCallJSON<{ statements: string[] }>(p.system, p.user)
         result = r.data
         tokensUsed = r.tokensUsed
