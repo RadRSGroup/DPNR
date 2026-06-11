@@ -102,9 +102,9 @@ export default function Step03({ decisionTitle, decisionId, narrative, onComplet
             <p className="text-white/80 text-sm leading-relaxed">{reflection}</p>
           </div>
 
-          {/* Do ye Agree? */}
+          {/* Do You Agree? */}
           <div className="space-y-3">
-            <p className="text-white/30 text-xs text-center tracking-widest">— Do ye Agree? —</p>
+            <p className="text-white/30 text-xs text-center tracking-widest">— Do You Agree? —</p>
             <div className="grid grid-cols-2 gap-2">
               {([
                 ['accurate', 'Accurate'],

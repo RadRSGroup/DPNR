@@ -339,9 +339,9 @@ export default function SectionSummaryScreen({
           </div>
         )}
 
-        {/* Do ye Agree? */}
+        {/* Do You Agree? */}
         <div className="space-y-3">
-          <p className="text-white/30 text-xs text-center tracking-widest">— Do ye Agree? —</p>
+          <p className="text-white/30 text-xs text-center tracking-widest">— Do You Agree? —</p>
           <div className="grid grid-cols-2 gap-2">
             {AGREEMENT_OPTIONS.map(opt => (
               <button
