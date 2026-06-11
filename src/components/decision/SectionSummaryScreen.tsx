@@ -5,7 +5,7 @@ import { useAI } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { DecisionOption, TOTAL_STEPS } from '@/lib/types'
 
-export type SummaryType = 'pros_cons' | 'fears_desires' | 'values_needs'
+export type SummaryType = 'pros_cons' | 'fears_desires' | 'values_needs' | 'values' | 'needs'
 
 interface Props {
   decisionTitle: string
@@ -23,24 +23,32 @@ const STEP_NUM: Record<SummaryType, number> = {
   pros_cons: 5,
   fears_desires: 5,
   values_needs: 6,
+  values: 6,
+  needs: 6,
 }
 
 const STEP_TYPE_LABEL: Record<SummaryType, string> = {
   pros_cons: 'Pros & Cons',
   fears_desires: 'Fear & Desires',
   values_needs: 'Values & Needs',
+  values: 'Values',
+  needs: 'Needs',
 }
 
 const INTRO_QUOTE: Record<SummaryType, string | null> = {
   pros_cons: null,
   fears_desires: 'Desire points toward growth and new possibility.\nFear protects safety and what already works.',
   values_needs: 'Your values and needs reveal what matters most\nbeneath this decision.',
+  values: 'Your values are the principles you live by —\nthe compass beneath every real choice.',
+  needs: 'Your six core needs shape every decision you make,\noften without you knowing it.',
 }
 
 const CTA_LABEL: Record<SummaryType, string> = {
   pros_cons: 'Keep Exploring →',
   fears_desires: "Let's Go Deeper →",
   values_needs: "Let's Go Deeper →",
+  values: 'Explore Your Needs →',
+  needs: "Let's Go Deeper →",
 }
 
 const AGREEMENT_OPTIONS = ['Accurate', 'Refine this', 'Not sure', 'Partly True']
@@ -202,7 +210,7 @@ export default function SectionSummaryScreen({
           </div>
         )}
 
-        {/* Values & Needs: show values/needs comparison */}
+        {/* Values & Needs: legacy combined view */}
         {stepType === 'values_needs' && (
           <div className="grid grid-cols-2 gap-2">
             {(['A', 'B'] as const).map(label => {
@@ -230,6 +238,52 @@ export default function SectionSummaryScreen({
                         ))}
                       </div>
                     </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Values only */}
+        {stepType === 'values' && (
+          <div className="grid grid-cols-2 gap-2">
+            {(['A', 'B'] as const).map(label => {
+              const values = (label === 'A' ? tagsA : tagsB).values ?? []
+              return (
+                <div key={label} className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
+                  <p className="text-violet-300 text-xs font-semibold mb-1">Option {label}</p>
+                  {values.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {values.map(t => (
+                        <span key={t} className="text-[10px] bg-violet-900/25 border border-violet-600/30 text-violet-200/80 rounded-full px-2 py-0.5">{t}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-white/20 text-[10px] italic">None selected</p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Needs only — show all 6 human needs with which are selected */}
+        {stepType === 'needs' && (
+          <div className="grid grid-cols-2 gap-2">
+            {(['A', 'B'] as const).map(label => {
+              const needs = (label === 'A' ? tagsA : tagsB).needs ?? []
+              return (
+                <div key={label} className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
+                  <p className="text-rose-300 text-xs font-semibold mb-1">Option {label}</p>
+                  {needs.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {needs.map(t => (
+                        <span key={t} className="text-[10px] bg-rose-900/25 border border-rose-600/30 text-rose-200/80 rounded-full px-2 py-0.5">{t}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-white/20 text-[10px] italic">None selected</p>
                   )}
                 </div>
               )

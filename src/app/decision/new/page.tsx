@@ -258,14 +258,22 @@ function NewDecisionContent() {
         }
       } catch {}
     }
+    const decisionId = state.id
     setPendingSummary({
-      type: 'values_needs',
-      tagsA: { values: valuesA, needs: needsA },
-      tagsB: { values: valuesB, needs: needsB },
+      type: 'values',
+      tagsA: { values: valuesA },
+      tagsB: { values: valuesB },
       onConfirm: () => {
-        setPendingSummary(null)
-        update({ currentStep: 7 })
-        if (state.id) updateDecision(state.id, { current_step: 7 }).catch(() => {})
+        setPendingSummary({
+          type: 'needs',
+          tagsA: { needs: needsA },
+          tagsB: { needs: needsB },
+          onConfirm: () => {
+            setPendingSummary(null)
+            update({ currentStep: 7 })
+            if (decisionId) updateDecision(decisionId, { current_step: 7 }).catch(() => {})
+          },
+        })
       },
     })
   }

@@ -65,8 +65,8 @@ export const PRESET_TAGS: Record<TagType, string[]> = {
     'Doubt', 'Overwhelm', 'Pressure', 'Loss of stability', 'Regret',
   ],
   desire: [
-    'Grow', 'Feel secure', 'Be seen', 'Feel free', 'Find peace',
-    'Make an impact', 'Connect deeply', 'Belong', 'Reach my potential',
+    'Expand & learn', 'Feel safe', 'Be seen', 'Feel free', 'Find peace',
+    'Leave a mark', 'Feel truly seen', 'Belong', 'Reach my potential',
     'Be authentic', 'Feel loved', 'Have clarity',
   ],
   fear: [
@@ -75,13 +75,13 @@ export const PRESET_TAGS: Record<TagType, string[]> = {
     'Being hurt', 'Regret', 'Losing someone', 'Being alone',
   ],
   value: [
-    'Growth', 'Learning', 'Stability', 'Recognition', 'Freedom',
-    'Contribution', 'Security', 'Connection', 'Integrity', 'Authenticity',
-    'Compassion', 'Courage', 'Loyalty', 'Wellbeing',
+    'Integrity', 'Authenticity', 'Compassion', 'Courage', 'Loyalty',
+    'Honesty', 'Respect', 'Responsibility', 'Creativity', 'Fairness',
+    'Wisdom', 'Kindness', 'Patience', 'Humility',
   ],
   need: [
     'Certainty', 'Variety', 'Significance', 'Love & Connection',
-    'Growth', 'Contribution', 'Safety', 'Belonging', 'Autonomy', 'Purpose',
+    'Growth', 'Contribution',
   ],
 }
 

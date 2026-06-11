@@ -79,7 +79,7 @@ Mix positive and challenging. Honest, not optimistic bias. Short phrases 3–6 w
   }),
 
   sectionSummary: (
-    step: 'pros_cons' | 'fears_desires' | 'values_needs' | 'projections',
+    step: 'pros_cons' | 'fears_desires' | 'values_needs' | 'values' | 'needs' | 'projections',
     decisionTitle: string,
     optionA: string,
     optionB: string,
