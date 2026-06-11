@@ -268,22 +268,8 @@ export default function Step07({
 
   /* ── Phase 7b: final commitment ── */
   return (
-    <div className="relative h-dvh max-w-[393px] mx-auto flex flex-col">
-      {/* Background — radial purple glow */}
-      <div className="absolute inset-0 bg-[#1a0826] -z-10" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.45)_0%,_rgba(80,20,140,0.25)_45%,_transparent_75%)] -z-10" />
-
-      {/* Header */}
-      <div className="pt-14 px-5 pb-4 text-center space-y-1">
-        <div className="w-12 h-12 rounded-full bg-purple-800/40 border border-purple-500/40 flex items-center justify-center text-xl mx-auto mb-3">
-          ✦
-        </div>
-        <h1 className="text-white text-lg font-medium">"{decisionTitle}"</h1>
-        <p className="text-white/50 text-sm">Last Step: Before You Leave</p>
-      </div>
-
-      {/* Scrollable body */}
-      <div className="flex-1 px-5 space-y-5 overflow-y-auto no-scrollbar pb-32">
+    <StepShell step={7} decisionTitle={decisionTitle} onBack={() => setPhase('reflect')}>
+      <div className="flex-1 flex flex-col justify-between pt-2 pb-2 space-y-5">
 
         {/* Inspirational card */}
         <div className="bg-white/8 border border-white/12 rounded-3xl px-5 py-6 space-y-4 text-center">
@@ -303,33 +289,19 @@ export default function Step07({
         </div>
 
         {/* Commitment input */}
-        <div>
-          <input
-            type="text"
-            value={commitment}
-            onChange={e => setCommitment(e.target.value.slice(0, 200))}
-            placeholder='Type: "I commit to taking this step by:"'
-            className="w-full bg-white/8 border border-white/15 rounded-2xl px-4 py-3.5 text-white placeholder-white/30 text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
-          />
+        <input
+          type="text"
+          value={commitment}
+          onChange={e => setCommitment(e.target.value.slice(0, 200))}
+          placeholder='Type: "I commit to taking this step by:"'
+          className="w-full bg-white/8 border border-white/15 rounded-2xl px-4 py-3.5 text-white placeholder-white/30 text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+        />
+
+        {/* Footer */}
+        <div className="pt-2">
+          <PrimaryButton label="Done →" onClick={handleFinish} />
         </div>
-
       </div>
-
-      {/* Footer — Back / Done */}
-      <div className="absolute bottom-0 inset-x-0 px-5 pb-8 pt-4 bg-gradient-to-t from-[#1a0826] via-[#1a0826]/80 to-transparent flex gap-3">
-        <button
-          onClick={() => setPhase('reflect')}
-          className="flex-1 py-3.5 rounded-full border border-white/20 text-white/60 hover:text-white hover:border-white/35 text-sm font-medium transition-all"
-        >
-          Back
-        </button>
-        <button
-          onClick={handleFinish}
-          className="flex-1 py-3.5 rounded-full bg-white/90 hover:bg-white active:scale-[0.98] text-[#1a0826] text-sm font-semibold transition-all"
-        >
-          Done
-        </button>
-      </div>
-    </div>
+    </StepShell>
   )
 }

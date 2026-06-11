@@ -45,7 +45,10 @@ export default function SummaryInsightScreen({
 
   return (
     <StepShell step={9} decisionTitle={decisionTitle} onBack={onBack}>
-      <div className="flex-1 flex flex-col justify-between pt-4 pb-2">
+      <div className="flex-1 flex flex-col justify-between pt-2 pb-2">
+
+        {/* Section label */}
+        <p className="text-purple-400 text-xs uppercase tracking-widest text-center pb-3">Your Story</p>
 
         {/* Insight card */}
         <div className="flex-1 flex flex-col justify-center space-y-5">
