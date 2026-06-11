@@ -89,6 +89,20 @@ export async function POST(req: Request) {
         tokensUsed = r.tokensUsed
         break
       }
+      case 'section_summary': {
+        const p = prompts.sectionSummary(
+          params.step as 'pros_cons' | 'fears_desires' | 'values_needs',
+          params.decisionTitle as string,
+          params.optionA as string,
+          params.optionB as string,
+          params.selectionsA as string[],
+          params.selectionsB as string[],
+        )
+        const r = await aiCallJSON<{ wordFromUs: string; reflection: string }>(p.system, p.user)
+        result = r.data
+        tokensUsed = r.tokensUsed
+        break
+      }
       default:
         return Response.json({ error: 'Unknown AI call type' }, { status: 400 })
     }

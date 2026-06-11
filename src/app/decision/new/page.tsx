@@ -12,6 +12,7 @@ import Step06 from '@/components/decision/Step06'
 import Step07 from '@/components/decision/Step07'
 import CompletionScreen from '@/components/decision/CompletionScreen'
 import CelebrationScreen from '@/components/decision/CelebrationScreen'
+import SectionSummaryScreen, { SummaryType } from '@/components/decision/SectionSummaryScreen'
 import { DecisionState, DecisionOption, Lens, EmotionColor } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -36,6 +37,12 @@ function NewDecisionContent() {
   const resumeId = params.get('resume')
 
   const [introStep, setIntroStep] = useState<-1 | 0 | null>(resumeId ? null : -1)
+  const [pendingSummary, setPendingSummary] = useState<{
+    type: SummaryType
+    tagsA: Record<string, string[]>
+    tagsB: Record<string, string[]>
+    onConfirm: () => void
+  } | null>(null)
   const [celebrating, setCelebrating] = useState(false)
   const [completedSummary, setCompletedSummary] = useState<{
     title: string
@@ -199,10 +206,8 @@ function NewDecisionContent() {
   }
 
   async function completeStep05(tags: Record<string, string[]>) {
-    update({ currentStep: 6 })
     if (state.id) {
       try {
-        await updateDecision(state.id, { current_step: 6 })
         if (optionIds.idA) {
           const tagsA = [
             ...(tags.A_pro ?? []).map(l => ({ label: l, tagType: 'pro' })),
@@ -223,13 +228,22 @@ function NewDecisionContent() {
         }
       } catch (e) { console.error('Step05 save error:', e) }
     }
+    const summaryType: SummaryType = (state.lens ?? 'pros_cons') === 'pros_cons' ? 'pros_cons' : 'fears_desires'
+    setPendingSummary({
+      type: summaryType,
+      tagsA: { pro: tags.A_pro ?? [], con: tags.A_con ?? [], desire: tags.A_desire ?? [], fear: tags.A_fear ?? [] },
+      tagsB: { pro: tags.B_pro ?? [], con: tags.B_con ?? [], desire: tags.B_desire ?? [], fear: tags.B_fear ?? [] },
+      onConfirm: () => {
+        setPendingSummary(null)
+        update({ currentStep: 6 })
+        if (state.id) updateDecision(state.id, { current_step: 6 }).catch(() => {})
+      },
+    })
   }
 
   async function completeStep06(valuesA: string[], needsA: string[], valuesB: string[], needsB: string[]) {
-    update({ currentStep: 7 })
     if (state.id) {
       try {
-        await updateDecision(state.id, { current_step: 7 })
         if (optionIds.idA) {
           await saveOptionTags(optionIds.idA, [
             ...valuesA.map(l => ({ label: l, tagType: 'value' })),
@@ -244,6 +258,16 @@ function NewDecisionContent() {
         }
       } catch {}
     }
+    setPendingSummary({
+      type: 'values_needs',
+      tagsA: { values: valuesA, needs: needsA },
+      tagsB: { values: valuesB, needs: needsB },
+      onConfirm: () => {
+        setPendingSummary(null)
+        update({ currentStep: 7 })
+        if (state.id) updateDecision(state.id, { current_step: 7 }).catch(() => {})
+      },
+    })
   }
 
   async function completeStep07(projectionsA: string[], projectionsB: string[], reviewDate?: string, chosenLean?: string, reflectionNote?: string, commitment?: string) {
@@ -287,6 +311,22 @@ function NewDecisionContent() {
       commitment,
       decisionId: state.id,
     })
+  }
+
+  if (pendingSummary && state.optionA && state.optionB) {
+    return (
+      <SectionSummaryScreen
+        decisionTitle={state.title}
+        stepType={pendingSummary.type}
+        optionA={state.optionA}
+        optionB={state.optionB}
+        tagsA={pendingSummary.tagsA}
+        tagsB={pendingSummary.tagsB}
+        decisionId={state.id}
+        onContinue={pendingSummary.onConfirm}
+        onBack={() => setPendingSummary(null)}
+      />
+    )
   }
 
   if (!state.optionA || !state.optionB) {
