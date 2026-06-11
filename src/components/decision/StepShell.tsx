@@ -21,7 +21,9 @@ const STEP_REFLECTIONS: Record<number, string> = {
   5: 'Looking closely at each path — without rushing — is wisdom.',
   6: 'What you value most is the compass behind every real choice.',
   7: 'Imagining forward helps you feel which path is truly yours.',
+  8: 'Seeing the whole picture helps you understand what you truly know.',
   9: 'What you discovered here belongs to you — carry it with care.',
+  10: 'A small step taken with intention is worth more than a leap taken in fear.',
 }
 
 export default function StepShell({

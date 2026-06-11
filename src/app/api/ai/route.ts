@@ -89,6 +89,20 @@ export async function POST(req: Request) {
         tokensUsed = r.tokensUsed
         break
       }
+      case 'session_summary': {
+        const p = prompts.sessionSummary(params as Parameters<typeof prompts.sessionSummary>[0])
+        const r = await aiCallJSON<{ situation: string; bodyAwareness: string; prosAndCons: string; desireVsFear: string; valuesAndNeeds: string; futureSelf: string }>(p.system, p.user)
+        result = r.data
+        tokensUsed = r.tokensUsed
+        break
+      }
+      case 'clarity_action': {
+        const p = prompts.clarityAction(params.decisionTitle as string, params.narrative as string, params.optionA as string, params.optionB as string, params.chosenLean as string | undefined)
+        const r = await aiCallJSON<{ nextStep: string }>(p.system, p.user)
+        result = r.data
+        tokensUsed = r.tokensUsed
+        break
+      }
       case 'summary_insight': {
         const p = prompts.summaryInsight(
           params.decisionTitle as string,

@@ -79,6 +79,64 @@ Stay strictly within the domain of the decision — do not introduce themes unre
     user: `Decision: "${decisionTitle ?? ''}"${narrative ? `\nContext: ${narrative}` : ''}\nOption ${optionLabel}: "${optionText}"`,
   }),
 
+  sessionSummary: (params: {
+    decisionTitle: string
+    narrative: string
+    optionA: string
+    optionB: string
+    emotionColor?: string
+    emotionBodyLocation?: string
+    emotionReflection?: string
+    tagsA?: Record<string, string[]>
+    tagsB?: Record<string, string[]>
+    valuesA?: string[]
+    needsA?: string[]
+    valuesB?: string[]
+    needsB?: string[]
+    projectionsA?: string[]
+    projectionsB?: string[]
+    chosenLean?: string
+  }) => ({
+    system: `You are a compassionate guide summarising a person's decision exploration session.
+Generate a SHORT summary for each of the 5 sections the person worked through.
+Each summary: 1–2 sentences, warm and reflective, referencing their actual data.
+Return ONLY valid JSON:
+{
+  "situation": "...",
+  "bodyAwareness": "...",
+  "prosAndCons": "...",
+  "desireVsFear": "...",
+  "valuesAndNeeds": "...",
+  "futureSelf": "..."
+}
+"situation": Distil the core tension/dilemma from the narrative (1 sentence).
+Each other field: what the data in that section revealed about the person's relationship to this decision.
+Stay specific — reference what they actually selected, not generic themes.`,
+    user: `Decision: "${params.decisionTitle}"
+Narrative: ${params.narrative}
+Option A: "${params.optionA}" | Option B: "${params.optionB}"
+Body: ${params.emotionColor ?? '—'} at ${params.emotionBodyLocation ?? '—'}. ${params.emotionReflection ?? ''}
+Pros A: ${(params.tagsA?.pro ?? []).join(', ') || '—'} | Cons A: ${(params.tagsA?.con ?? []).join(', ') || '—'}
+Pros B: ${(params.tagsB?.pro ?? []).join(', ') || '—'} | Cons B: ${(params.tagsB?.con ?? []).join(', ') || '—'}
+Desires A: ${(params.tagsA?.desire ?? []).join(', ') || '—'} | Fears A: ${(params.tagsA?.fear ?? []).join(', ') || '—'}
+Values A: ${(params.valuesA ?? []).join(', ') || '—'} | Needs A: ${(params.needsA ?? []).join(', ') || '—'}
+Values B: ${(params.valuesB ?? []).join(', ') || '—'} | Needs B: ${(params.needsB ?? []).join(', ') || '—'}
+Projections A: ${(params.projectionsA ?? []).join(', ') || '—'}
+Projections B: ${(params.projectionsB ?? []).join(', ') || '—'}
+Chosen lean: ${params.chosenLean ?? 'undecided'}`,
+  }),
+
+  clarityAction: (decisionTitle: string, narrative: string, optionA: string, optionB: string, chosenLean?: string) => ({
+    system: `Based on this decision exploration, suggest one concrete next small step.
+It should feel: Small, Safe, Possible within the next few days.
+Return ONLY valid JSON: { "nextStep": "..." }
+1–2 sentences. Specific and actionable. Not prescriptive — frame it as an exploration or conversation, not a final decision.`,
+    user: `Decision: "${decisionTitle}"
+Context: ${narrative}
+Option A: "${optionA}" | Option B: "${optionB}"
+Leaning towards: ${chosenLean ?? 'undecided'}`,
+  }),
+
   summaryInsight: (decisionTitle: string, narrative: string, optionA: string, optionB: string, allTags: string[]) => ({
     system: `You are a compassionate decision guide. Based on everything the person explored — their pros/cons, fears, desires, values, and future projections — write a 2–3 sentence insight that:
 - Reflects what became visible through their exploration (name the real tension or theme)

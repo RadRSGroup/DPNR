@@ -10,12 +10,12 @@ interface Step07Props {
   decisionId?: string
   optionA: DecisionOption
   optionB: DecisionOption
-  onComplete: (projectionsA: string[], projectionsB: string[], reviewDate?: string, chosenLean?: string, reflectionNote?: string, commitment?: string) => void
+  onComplete: (projectionsA: string[], projectionsB: string[], chosenLean?: string, reflectionNote?: string) => void
   onBack?: () => void
   onSkip?: () => void
 }
 
-type Phase = 'projections' | 'reflect' | 'complete'
+type Phase = 'projections' | 'reflect'
 
 export default function Step07({
   decisionTitle, decisionId, optionA, optionB, onComplete, onBack, onSkip
@@ -29,12 +29,8 @@ export default function Step07({
   const [customA, setCustomA] = useState('')
   const [customB, setCustomB] = useState('')
 
-  // 7a — reflection
   const [chosenLean, setChosenLean] = useState<'A' | 'B' | 'undecided' | null>(null)
   const [reflectionNote, setReflectionNote] = useState('')
-
-  // 7b — commitment
-  const [commitment, setCommitment] = useState('')
 
   const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI()
 
@@ -86,18 +82,7 @@ export default function Step07({
   }
 
   function handleReflectNext() {
-    setPhase('complete')
-  }
-
-  function handleFinish() {
-    onComplete(
-      selectedA,
-      selectedB,
-      undefined,
-      chosenLean ?? undefined,
-      reflectionNote.trim() || undefined,
-      commitment.trim() || undefined,
-    )
+    onComplete(selectedA, selectedB, chosenLean ?? undefined, reflectionNote.trim() || undefined)
   }
 
   /* ── Phase: projections ── */
@@ -267,41 +252,6 @@ export default function Step07({
   }
 
   /* ── Phase 7b: final commitment ── */
-  return (
-    <StepShell step={7} decisionTitle={decisionTitle} onBack={() => setPhase('reflect')}>
-      <div className="flex-1 flex flex-col justify-between pt-2 pb-2 space-y-5">
-
-        {/* Inspirational card */}
-        <div className="bg-white/8 border border-white/12 rounded-3xl px-5 py-6 space-y-4 text-center">
-          <p className="text-white/60 text-sm italic leading-relaxed">
-            Many decisions carry different needs,<br />hopes, and fears within them.
-          </p>
-          <div className="w-8 h-px bg-white/15 mx-auto" />
-          <p className="text-white/80 text-sm leading-relaxed">
-            Before you leave this space, take a gentle moment with yourself.
-            Looking closely at a decision is not always easy.
-            It takes honesty, courage, and care.
-            You've taken the time to listen to your thoughts, emotions, and what matters most to you.
-          </p>
-          <p className="text-white font-medium text-sm">
-            What are you committing to from here?
-          </p>
-        </div>
-
-        {/* Commitment input */}
-        <input
-          type="text"
-          value={commitment}
-          onChange={e => setCommitment(e.target.value.slice(0, 200))}
-          placeholder='Type: "I commit to taking this step by:"'
-          className="w-full bg-white/8 border border-white/15 rounded-2xl px-4 py-3.5 text-white placeholder-white/30 text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
-        />
-
-        {/* Footer */}
-        <div className="pt-2">
-          <PrimaryButton label="Done →" onClick={handleFinish} />
-        </div>
-      </div>
-    </StepShell>
-  )
+  // reflect phase — fallthrough (handled above)
+  return null
 }

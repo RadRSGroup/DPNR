@@ -14,6 +14,9 @@ import CompletionScreen from '@/components/decision/CompletionScreen'
 import CelebrationScreen from '@/components/decision/CelebrationScreen'
 import SectionSummaryScreen, { SummaryType } from '@/components/decision/SectionSummaryScreen'
 import SummaryInsightScreen from '@/components/decision/SummaryInsightScreen'
+import SessionSummaryScreen from '@/components/decision/SessionSummaryScreen'
+import ClarityToActionScreen from '@/components/decision/ClarityToActionScreen'
+import CommitmentScreen from '@/components/decision/CommitmentScreen'
 import { DecisionState, DecisionOption, Lens, EmotionColor } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -45,10 +48,20 @@ function NewDecisionContent() {
     onConfirm: () => void
   } | null>(null)
   const [celebrating, setCelebrating] = useState(false)
-  const [showInsight, setShowInsight] = useState<{
-    allTags: string[]
-    onContinue: () => void
-  } | null>(null)
+
+  // Session data accumulated across steps for end-of-flow screens
+  const [sessionData, setSessionData] = useState<{
+    tags05?: Record<string, string[]>
+    valuesA?: string[]; needsA?: string[]; valuesB?: string[]; needsB?: string[]
+    projectionsA?: string[]; projectionsB?: string[]
+    chosenLean?: string; reflectionNote?: string
+  }>({})
+
+  // Post-flow screen state
+  type PostFlow = 'session_summary' | 'insight' | 'clarity_action' | 'commitment' | null
+  const [postFlow, setPostFlow] = useState<PostFlow>(null)
+  const [clarityNextStep, setClarityNextStep] = useState('')
+
   const [completedSummary, setCompletedSummary] = useState<{
     title: string
     optionA?: string
@@ -121,17 +134,72 @@ function NewDecisionContent() {
     )
   }
 
-  if (showInsight && state.optionA && state.optionB) {
+  // ── Post-flow screens (Step 08 → 09 → 10 → Last Step) ──
+  if (postFlow === 'session_summary' && state.optionA && state.optionB) {
+    return (
+      <SessionSummaryScreen
+        decisionTitle={state.title}
+        narrative={state.narrative}
+        optionA={state.optionA.content}
+        optionB={state.optionB.content}
+        emotionColor={state.emotionColor}
+        emotionBodyLocation={state.emotionBodyLocation}
+        emotionReflection={state.emotionReflection}
+        tagsA={{ pro: sessionData.tags05?.pro ?? [], con: sessionData.tags05?.con ?? [], desire: sessionData.tags05?.desire ?? [], fear: sessionData.tags05?.fear ?? [] }}
+        tagsB={{ pro: sessionData.tags05?.B_pro ?? [], con: sessionData.tags05?.B_con ?? [], desire: sessionData.tags05?.B_desire ?? [], fear: sessionData.tags05?.B_fear ?? [] }}
+        valuesA={sessionData.valuesA}
+        needsA={sessionData.needsA}
+        valuesB={sessionData.valuesB}
+        needsB={sessionData.needsB}
+        projectionsA={sessionData.projectionsA}
+        projectionsB={sessionData.projectionsB}
+        chosenLean={sessionData.chosenLean}
+        decisionId={state.id}
+        onContinue={() => setPostFlow('insight')}
+        onBack={() => { setPostFlow(null); setPendingSummary(null) }}
+      />
+    )
+  }
+
+  if (postFlow === 'insight' && state.optionA && state.optionB) {
+    const allTags = [...(sessionData.projectionsA ?? []), ...(sessionData.projectionsB ?? [])]
     return (
       <SummaryInsightScreen
         decisionTitle={state.title}
         narrative={state.narrative}
         optionA={state.optionA.content}
         optionB={state.optionB.content}
-        allTags={showInsight.allTags}
+        allTags={allTags}
         decisionId={state.id}
-        onContinue={showInsight.onContinue}
-        onBack={() => setShowInsight(null)}
+        onContinue={() => setPostFlow('clarity_action')}
+        onBack={() => setPostFlow('session_summary')}
+      />
+    )
+  }
+
+  if (postFlow === 'clarity_action' && state.optionA && state.optionB) {
+    return (
+      <ClarityToActionScreen
+        decisionTitle={state.title}
+        narrative={state.narrative}
+        optionA={state.optionA.content}
+        optionB={state.optionB.content}
+        chosenLean={sessionData.chosenLean}
+        decisionId={state.id}
+        onCommit={(nextStep) => { setClarityNextStep(nextStep); setPostFlow('commitment') }}
+        onSkip={() => setPostFlow('commitment')}
+        onBack={() => setPostFlow('insight')}
+      />
+    )
+  }
+
+  if (postFlow === 'commitment') {
+    return (
+      <CommitmentScreen
+        decisionTitle={state.title}
+        nextStep={clarityNextStep || undefined}
+        onDone={finishFlow}
+        onBack={() => setPostFlow('clarity_action')}
       />
     )
   }
@@ -248,6 +316,13 @@ function NewDecisionContent() {
         }
       } catch (e) { console.error('Step05 save error:', e) }
     }
+    setSessionData(prev => ({
+      ...prev,
+      tags05: {
+        pro: tags.A_pro ?? [], con: tags.A_con ?? [], desire: tags.A_desire ?? [], fear: tags.A_fear ?? [],
+        B_pro: tags.B_pro ?? [], B_con: tags.B_con ?? [], B_desire: tags.B_desire ?? [], B_fear: tags.B_fear ?? [],
+      },
+    }))
     const summaryType: SummaryType = (state.lens ?? 'pros_cons') === 'pros_cons' ? 'pros_cons' : 'fears_desires'
     setPendingSummary({
       type: summaryType,
@@ -278,6 +353,7 @@ function NewDecisionContent() {
         }
       } catch {}
     }
+    setSessionData(prev => ({ ...prev, valuesA, needsA, valuesB, needsB }))
     setPendingSummary({
       type: 'values_needs',
       tagsA: { values: valuesA, needs: needsA },
@@ -290,58 +366,48 @@ function NewDecisionContent() {
     })
   }
 
-  async function completeStep07(projectionsA: string[], projectionsB: string[], reviewDate?: string, chosenLean?: string, reflectionNote?: string, commitment?: string) {
+  async function completeStep07(projectionsA: string[], projectionsB: string[], chosenLean?: string, reflectionNote?: string) {
     if (state.id) {
       try {
-        await updateDecision(state.id, {
-          status: 'completed',
-          current_step: 7,
-          ...(reviewDate ? { review_date: reviewDate } : {}),
-        })
-        if (optionIds.idA) {
-          await saveProjections(optionIds.idA, projectionsA, projectionsA.map(() => true))
-        }
-        if (optionIds.idB) {
-          await saveProjections(optionIds.idB, projectionsB, projectionsB.map(() => false))
-        }
+        await updateDecision(state.id, { status: 'completed', current_step: 7 })
+        if (optionIds.idA) await saveProjections(optionIds.idA, projectionsA, projectionsA.map(() => true))
+        if (optionIds.idB) await saveProjections(optionIds.idB, projectionsB, projectionsB.map(() => false))
         const leanLabel = chosenLean === 'A' || chosenLean === 'B' ? chosenLean : null
         const chosenOptionId = leanLabel === 'A' ? optionIds.idA : leanLabel === 'B' ? optionIds.idB : undefined
         const parts: string[] = []
         if (leanLabel) parts.push(`Leaning towards Option ${leanLabel}`)
         else if (chosenLean === 'undecided') parts.push('Still undecided')
         if (reflectionNote) parts.push(reflectionNote)
-        if (commitment) parts.push(`Commitment: ${commitment}`)
         if (parts.length || chosenOptionId) {
-          await addOutcome({
-            decisionId: state.id,
-            reflection: `[Reflection] ${parts.join('\n')}`,
-            chosenOptionId: chosenOptionId ?? undefined,
-          })
+          await addOutcome({ decisionId: state.id, reflection: `[Reflection] ${parts.join('\n')}`, chosenOptionId })
         }
       } catch (e) { console.error('Step07 save error:', e) }
     }
-    const allTags = [...projectionsA, ...projectionsB]
-    const goToCompletion = () => {
-      setCelebrating(true)
-      setCompletedSummary({
-        title: state.title,
-        optionA: state.optionA?.content,
-        optionB: state.optionB?.content,
-        chosenLean,
-        reflectionNote,
-        commitment,
-        decisionId: state.id,
-      })
-    }
+    setSessionData(prev => ({ ...prev, projectionsA, projectionsB, chosenLean, reflectionNote }))
+    // Start the post-flow: projections section summary → session summary → insight → clarity → commitment
     setPendingSummary({
       type: 'projections',
       tagsA: { projections: projectionsA },
       tagsB: { projections: projectionsB },
       onConfirm: () => {
         setPendingSummary(null)
-        setShowInsight({ allTags, onContinue: () => { setShowInsight(null); goToCompletion() } })
+        setPostFlow('session_summary')
       },
     })
+  }
+
+  function finishFlow(commitment: string) {
+    setCelebrating(true)
+    setCompletedSummary({
+      title: state.title,
+      optionA: state.optionA?.content,
+      optionB: state.optionB?.content,
+      chosenLean: sessionData.chosenLean,
+      reflectionNote: sessionData.reflectionNote,
+      commitment,
+      decisionId: state.id,
+    })
+    setPostFlow(null)
   }
 
   if (pendingSummary && state.optionA && state.optionB) {
