@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import StepShell from './StepShell'
 import { useAI } from '@/lib/useAI'
 
 interface SummaryInsightScreenProps {
@@ -31,7 +32,7 @@ export default function SummaryInsightScreen({
   const { callAI, loading } = useAI()
 
   useEffect(() => {
-    async function fetch() {
+    async function fetchInsight() {
       const res = await callAI<{ insight: string }>(
         'summary_insight',
         { decisionTitle, narrative, optionA, optionB, allTags },
@@ -39,86 +40,86 @@ export default function SummaryInsightScreen({
       )
       if (res?.insight) setInsight(res.insight)
     }
-    fetch()
+    fetchInsight()
   }, [])
 
   return (
-    <div className="relative h-dvh max-w-[393px] mx-auto flex flex-col bg-[#0a0a0f] overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.22)_0%,_transparent_70%)] -z-10" />
+    <StepShell step={9} decisionTitle={decisionTitle} onBack={onBack}>
+      <div className="flex-1 flex flex-col justify-between pt-4 pb-2">
 
-      {/* Header */}
-      <div className="pt-14 px-6 pb-4 text-center space-y-1">
-        <p className="text-purple-400 text-xs uppercase tracking-widest">Your Story</p>
-        <h2 className="text-white text-lg font-light">"{decisionTitle}"</h2>
-        <p className="text-white/40 text-xs">Summary Insight</p>
-      </div>
+        {/* Insight card */}
+        <div className="flex-1 flex flex-col justify-center space-y-5">
+          <div className="bg-white/8 backdrop-blur-sm border border-white/12 rounded-3xl px-5 py-7 space-y-5">
 
-      {/* Card */}
-      <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-6 flex flex-col justify-center">
-        <div className="bg-white/5 border border-white/10 rounded-3xl px-6 py-8 space-y-5">
-          {loading && !insight ? (
-            <div className="flex items-center justify-center gap-2 text-white/40 text-sm py-4">
-              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-              </svg>
-              Generating your insight…
-            </div>
-          ) : (
-            <p className="text-white/80 text-sm leading-relaxed text-center">
-              {insight ?? '—'}
+            {/* Fixed opener line with bold keywords */}
+            <p className="text-white text-sm text-center leading-relaxed">
+              You explored this decision through your{' '}
+              <strong className="text-white font-semibold">body, thoughts, fears, and values.</strong>
             </p>
-          )}
 
-          {/* Divider */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-white/10" />
-            <p className="text-white/30 text-xs">Do You Agree?</p>
-            <div className="flex-1 h-px bg-white/10" />
-          </div>
+            {/* AI insight */}
+            {loading && !insight ? (
+              <div className="flex items-center justify-center gap-2 text-white/40 text-sm py-2">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+                Generating your insight…
+              </div>
+            ) : (
+              <p className="text-white/75 text-sm text-center leading-relaxed">
+                {insight}
+              </p>
+            )}
 
-          {/* Agreement options */}
-          <div className="grid grid-cols-2 gap-2.5">
-            {AGREEMENT_OPTIONS.map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setAgreement(key)}
-                className={`flex items-center gap-2.5 px-3 py-3 rounded-2xl border text-sm transition-all ${
-                  agreement === key
-                    ? 'border-purple-500/70 bg-purple-900/30 text-white'
-                    : 'border-white/10 bg-white/5 text-white/50 hover:border-white/20 hover:text-white/70'
-                }`}
-              >
-                <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                  agreement === key ? 'border-purple-400 bg-purple-500' : 'border-white/30'
-                }`}>
-                  {agreement === key && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                </div>
-                {label}
-              </button>
-            ))}
+            {/* Divider */}
+            <div className="flex items-center gap-3 pt-1">
+              <div className="flex-1 h-px bg-white/10" />
+              <p className="text-white/30 text-xs">Do You Agree?</p>
+              <div className="flex-1 h-px bg-white/10" />
+            </div>
+
+            {/* Agreement options */}
+            <div className="grid grid-cols-2 gap-2.5">
+              {AGREEMENT_OPTIONS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setAgreement(key)}
+                  className={`flex items-center gap-2.5 px-3 py-3 rounded-2xl border text-sm transition-all ${
+                    agreement === key
+                      ? 'border-purple-500/70 bg-purple-900/30 text-white'
+                      : 'border-white/10 bg-white/5 text-white/50 hover:border-white/20 hover:text-white/70'
+                  }`}
+                >
+                  <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+                    agreement === key ? 'border-purple-400 bg-purple-500' : 'border-white/30'
+                  }`}>
+                    {agreement === key && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Footer */}
-      <div className="px-5 pb-8 pt-2 flex gap-3">
-        <button
-          onClick={onBack}
-          className="flex-1 py-3.5 rounded-full border border-white/20 text-white/60 hover:text-white hover:border-white/35 text-sm font-medium transition-all"
-        >
-          Back
-        </button>
-        <button
-          onClick={onContinue}
-          disabled={!agreement || !insight}
-          className="flex-1 py-3.5 rounded-full bg-white/90 hover:bg-white active:scale-[0.98] text-[#1a0826] text-sm font-semibold transition-all disabled:opacity-40 disabled:pointer-events-none"
-        >
-          Supporting Yourself
-        </button>
+        {/* Footer */}
+        <div className="pt-4 flex gap-3">
+          <button
+            onClick={onBack}
+            className="flex-1 py-3.5 rounded-full border border-white/20 text-white/60 hover:text-white hover:border-white/35 text-sm font-medium transition-all"
+          >
+            Back
+          </button>
+          <button
+            onClick={onContinue}
+            disabled={!agreement || !insight}
+            className="flex-1 py-3.5 rounded-full bg-white/90 hover:bg-white active:scale-[0.98] text-[#1a0826] text-sm font-semibold transition-all disabled:opacity-40 disabled:pointer-events-none"
+          >
+            Supporting Yourself
+          </button>
+        </div>
       </div>
-    </div>
+    </StepShell>
   )
 }

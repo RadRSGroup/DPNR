@@ -93,6 +93,7 @@ export const STEP_LABELS: Record<number, string> = {
   5: 'Deep Exploration',
   6: 'Values & Needs',
   7: 'Future Projection',
+  9: 'Insight',
 }
 
 export const TOTAL_STEPS = 7
