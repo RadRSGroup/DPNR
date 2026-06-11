@@ -89,6 +89,19 @@ export async function POST(req: Request) {
         tokensUsed = r.tokensUsed
         break
       }
+      case 'summary_insight': {
+        const p = prompts.summaryInsight(
+          params.decisionTitle as string,
+          params.narrative as string,
+          params.optionA as string,
+          params.optionB as string,
+          params.allTags as string[],
+        )
+        const r = await aiCallJSON<{ insight: string }>(p.system, p.user)
+        result = r.data
+        tokensUsed = r.tokensUsed
+        break
+      }
       case 'section_summary': {
         const p = prompts.sectionSummary(
           params.step as 'pros_cons' | 'fears_desires' | 'values_needs' | 'values' | 'needs' | 'projections',

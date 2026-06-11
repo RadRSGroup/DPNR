@@ -13,6 +13,7 @@ import Step07 from '@/components/decision/Step07'
 import CompletionScreen from '@/components/decision/CompletionScreen'
 import CelebrationScreen from '@/components/decision/CelebrationScreen'
 import SectionSummaryScreen, { SummaryType } from '@/components/decision/SectionSummaryScreen'
+import SummaryInsightScreen from '@/components/decision/SummaryInsightScreen'
 import { DecisionState, DecisionOption, Lens, EmotionColor } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -44,6 +45,10 @@ function NewDecisionContent() {
     onConfirm: () => void
   } | null>(null)
   const [celebrating, setCelebrating] = useState(false)
+  const [showInsight, setShowInsight] = useState<{
+    allTags: string[]
+    onContinue: () => void
+  } | null>(null)
   const [completedSummary, setCompletedSummary] = useState<{
     title: string
     optionA?: string
@@ -113,6 +118,21 @@ function NewDecisionContent() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
         <div className="w-8 h-8 border-2 border-purple-500/40 border-t-purple-500 rounded-full animate-spin" />
       </div>
+    )
+  }
+
+  if (showInsight && state.optionA && state.optionB) {
+    return (
+      <SummaryInsightScreen
+        decisionTitle={state.title}
+        narrative={state.narrative}
+        optionA={state.optionA.content}
+        optionB={state.optionB.content}
+        allTags={showInsight.allTags}
+        decisionId={state.id}
+        onContinue={showInsight.onContinue}
+        onBack={() => setShowInsight(null)}
+      />
     )
   }
 
@@ -300,22 +320,26 @@ function NewDecisionContent() {
         }
       } catch (e) { console.error('Step07 save error:', e) }
     }
+    const allTags = [...projectionsA, ...projectionsB]
+    const goToCompletion = () => {
+      setCelebrating(true)
+      setCompletedSummary({
+        title: state.title,
+        optionA: state.optionA?.content,
+        optionB: state.optionB?.content,
+        chosenLean,
+        reflectionNote,
+        commitment,
+        decisionId: state.id,
+      })
+    }
     setPendingSummary({
       type: 'projections',
       tagsA: { projections: projectionsA },
       tagsB: { projections: projectionsB },
       onConfirm: () => {
         setPendingSummary(null)
-        setCelebrating(true)
-        setCompletedSummary({
-          title: state.title,
-          optionA: state.optionA?.content,
-          optionB: state.optionB?.content,
-          chosenLean,
-          reflectionNote,
-          commitment,
-          decisionId: state.id,
-        })
+        setShowInsight({ allTags, onContinue: () => { setShowInsight(null); goToCompletion() } })
       },
     })
   }

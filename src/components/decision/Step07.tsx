@@ -5,8 +5,6 @@ import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { DecisionOption } from '@/lib/types'
-import { CalendarButtons } from '@/components/ui/CalendarButtons'
-
 interface Step07Props {
   decisionTitle: string
   decisionId?: string
@@ -17,20 +15,7 @@ interface Step07Props {
   onSkip?: () => void
 }
 
-type Phase = 'projections' | 'reflect' | 'review_date' | 'complete'
-
-const REVIEW_OPTIONS = [
-  { label: 'In 1 week',   days: 7 },
-  { label: 'In 1 month',  days: 30 },
-  { label: 'In 3 months', days: 90 },
-  { label: 'In 6 months', days: 180 },
-]
-
-function addDays(days: number) {
-  const d = new Date()
-  d.setDate(d.getDate() + days)
-  return d.toISOString().split('T')[0]
-}
+type Phase = 'projections' | 'reflect' | 'complete'
 
 export default function Step07({
   decisionTitle, decisionId, optionA, optionB, onComplete, onBack, onSkip
@@ -48,10 +33,7 @@ export default function Step07({
   const [chosenLean, setChosenLean] = useState<'A' | 'B' | 'undecided' | null>(null)
   const [reflectionNote, setReflectionNote] = useState('')
 
-  // 7b — review date
-  const [reviewDate, setReviewDate] = useState<string | null>(null)
-
-  // 7c — commitment
+  // 7b — commitment
   const [commitment, setCommitment] = useState('')
 
   const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI()
@@ -104,20 +86,15 @@ export default function Step07({
   }
 
   function handleReflectNext() {
-    setPhase('review_date')
-  }
-
-  function handleReviewNext() {
     setPhase('complete')
   }
 
   function handleFinish() {
-    const lean = chosenLean ?? undefined
     onComplete(
       selectedA,
       selectedB,
-      reviewDate ?? undefined,
-      lean,
+      undefined,
+      chosenLean ?? undefined,
       reflectionNote.trim() || undefined,
       commitment.trim() || undefined,
     )
@@ -280,7 +257,7 @@ export default function Step07({
           </div>
 
           <PrimaryButton
-            label="Set a check-in date →"
+            label="Continue →"
             onClick={handleReflectNext}
             disabled={!chosenLean}
           />
@@ -289,72 +266,7 @@ export default function Step07({
     )
   }
 
-  /* ── Phase 7b: review date ── */
-  if (phase === 'review_date') {
-    return (
-      <StepShell step={7} decisionTitle={decisionTitle} onBack={() => setPhase('reflect')} onSkip={handleReviewNext}>
-        <div className="flex-1 flex flex-col space-y-6 pt-2">
-          <div className="text-center space-y-1">
-            <p className="text-purple-400 text-xs uppercase tracking-widest">Step 7 · Check-in</p>
-            <h2 className="text-white text-lg font-light">When would you like to revisit this?</h2>
-            <p className="text-white/40 text-sm">We'll remind you to reflect on how the decision unfolded.</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {REVIEW_OPTIONS.map(({ label, days }) => {
-              const date = addDays(days)
-              return (
-                <button
-                  key={label}
-                  onClick={() => setReviewDate(date)}
-                  className={`rounded-2xl border p-4 text-center transition-all ${
-                    reviewDate === date
-                      ? 'border-purple-500/60 bg-purple-900/25'
-                      : 'border-white/10 bg-white/5 hover:border-white/20'
-                  }`}
-                >
-                  <p className={`text-sm font-medium ${reviewDate === date ? 'text-white' : 'text-white/60'}`}>{label}</p>
-                  <p className="text-white/30 text-xs mt-1">{new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Custom date */}
-          <div className="space-y-1.5">
-            <p className="text-white/30 text-xs text-center">Or pick a specific date</p>
-            <input
-              type="date"
-              value={reviewDate ?? ''}
-              min={addDays(1)}
-              onChange={e => setReviewDate(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white/70 text-sm focus:outline-none focus:border-purple-500/50 transition-colors [color-scheme:dark]"
-            />
-          </div>
-
-          <PrimaryButton
-            label="Save & complete →"
-            onClick={handleReviewNext}
-            disabled={!reviewDate}
-          />
-
-          <button
-            onClick={() => { setReviewDate(null); handleReviewNext() }}
-            className="text-white/25 text-xs text-center hover:text-white/40 transition-colors"
-          >
-            Skip for now
-          </button>
-        </div>
-      </StepShell>
-    )
-  }
-
-  /* ── Phase 7c: final reflection / commitment ── */
-  const calendarTitle = commitment.trim()
-    ? commitment.trim()
-    : `Decision Room check-in: "${decisionTitle}"`
-  const calendarDescription = `Revisit your decision about "${decisionTitle}" in Decision Room.`
-
+  /* ── Phase 7b: final commitment ── */
   return (
     <div className="relative h-dvh max-w-[393px] mx-auto flex flex-col">
       {/* Background — radial purple glow */}
@@ -401,20 +313,12 @@ export default function Step07({
           />
         </div>
 
-        {/* Add to Calendar — both Google and Apple/Outlook */}
-        {reviewDate && (
-          <CalendarButtons
-            title={calendarTitle}
-            date={reviewDate}
-            description={calendarDescription}
-          />
-        )}
       </div>
 
       {/* Footer — Back / Done */}
       <div className="absolute bottom-0 inset-x-0 px-5 pb-8 pt-4 bg-gradient-to-t from-[#1a0826] via-[#1a0826]/80 to-transparent flex gap-3">
         <button
-          onClick={() => setPhase('review_date')}
+          onClick={() => setPhase('reflect')}
           className="flex-1 py-3.5 rounded-full border border-white/20 text-white/60 hover:text-white hover:border-white/35 text-sm font-medium transition-all"
         >
           Back

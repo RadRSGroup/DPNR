@@ -79,6 +79,19 @@ Stay strictly within the domain of the decision — do not introduce themes unre
     user: `Decision: "${decisionTitle ?? ''}"${narrative ? `\nContext: ${narrative}` : ''}\nOption ${optionLabel}: "${optionText}"`,
   }),
 
+  summaryInsight: (decisionTitle: string, narrative: string, optionA: string, optionB: string, allTags: string[]) => ({
+    system: `You are a compassionate decision guide. Based on everything the person explored — their pros/cons, fears, desires, values, and future projections — write a 2–3 sentence insight that:
+- Reflects what became visible through their exploration (name the real tension or theme)
+- Is specific to their decision — do NOT reference feelings or domains unrelated to it
+- Uses warm, non-directive language
+Return ONLY valid JSON: { "insight": "..." }`,
+    user: `Decision: "${decisionTitle}"
+Context: ${narrative}
+Option A: "${optionA}"
+Option B: "${optionB}"
+What they explored: ${allTags.slice(0, 30).join(', ')}`,
+  }),
+
   sectionSummary: (
     step: 'pros_cons' | 'fears_desires' | 'values_needs' | 'values' | 'needs' | 'projections',
     decisionTitle: string,
