@@ -117,12 +117,13 @@ export default function Step05({ decisionTitle, decisionId, narrative, optionA, 
     ? `What does Option ${currentOption} make you long for?`
     : `What does Option ${currentOption} make you afraid of?`
 
+  const usePresets = currentSection.type === 'desire' || currentSection.type === 'fear'
   const chipList = [
     ...(suggested[currentSection.type] ?? []),
-    ...(PRESET_TAGS[currentSection.type as keyof typeof PRESET_TAGS] ?? []),
+    ...(usePresets ? (PRESET_TAGS[currentSection.type as keyof typeof PRESET_TAGS] ?? []) : []),
     ...currentTags.filter(t =>
       !(suggested[currentSection.type] ?? []).includes(t) &&
-      !(PRESET_TAGS[currentSection.type as keyof typeof PRESET_TAGS] ?? []).includes(t)
+      !(usePresets ? PRESET_TAGS[currentSection.type as keyof typeof PRESET_TAGS] ?? [] : []).includes(t)
     ),
   ].filter((v, i, a) => a.indexOf(v) === i)
 

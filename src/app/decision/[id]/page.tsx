@@ -64,7 +64,8 @@ function EditableTagGroup({
   const [suggesting, setSuggesting] = useState(false)
 
   const presetKey = tagType as keyof typeof PRESET_TAGS
-  const presets: string[] = PRESET_TAGS[presetKey] ?? []
+  const usePresets = tagType === 'desire' || tagType === 'fear' || tagType === 'value' || tagType === 'need'
+  const presets: string[] = usePresets ? (PRESET_TAGS[presetKey] ?? []) : []
   const allChips = [
     ...presets,
     ...aiSuggestions,
