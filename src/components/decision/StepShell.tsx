@@ -13,6 +13,16 @@ interface StepShellProps {
   minutesLeft?: number
 }
 
+const STEP_REFLECTIONS: Record<number, string> = {
+  1: 'Naming what you\'re carrying is the first act of clarity.',
+  2: 'Every decision holds two truths — this step helps you see both.',
+  3: 'Your body often knows what your mind is still working out.',
+  4: 'The lens you choose shapes what becomes visible.',
+  5: 'Looking closely at each path — without rushing — is wisdom.',
+  6: 'What you value most is the compass behind every real choice.',
+  7: 'Imagining forward helps you feel which path is truly yours.',
+}
+
 export default function StepShell({
   step,
   decisionTitle,
@@ -95,6 +105,11 @@ export default function StepShell({
       {/* Step content */}
       <div className="flex-1 overflow-y-auto flex flex-col px-5 pb-4 fade-up">
         {children}
+      </div>
+
+      {/* A word from us */}
+      <div className="px-6 py-2 text-center">
+        <p className="text-white/20 text-xs italic leading-relaxed">{STEP_REFLECTIONS[step]}</p>
       </div>
 
       {/* Bottom nav */}

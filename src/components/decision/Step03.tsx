@@ -82,7 +82,7 @@ export default function Step03({ decisionTitle, decisionId, narrative, onComplet
             {/* Emotion colour picker */}
             <div className="space-y-3">
               <p className="text-white/60 text-sm text-center">Identify the colour of this experience</p>
-              <div className="flex justify-center gap-3">
+              <div className="grid grid-cols-4 gap-x-3 gap-y-4 justify-items-center">
                 {EMOTION_COLORS.map(({ label, color }) => (
                   <button
                     key={label}

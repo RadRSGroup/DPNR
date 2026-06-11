@@ -38,7 +38,7 @@ export default function MomentScreen({ onNext, onBack }: Props) {
           </h1>
 
           <p className="text-white/50 text-sm leading-relaxed">
-            Welcome to the Decision Room, a space where we explore the choices in front of you, deepen your alignment, and help you make decisions that reflect your true self.
+            Take a breath. You're about to give yourself the gift of real clarity. There's no rush here — just honest reflection, one step at a time.
           </p>
 
           <PrimaryButton label="Make a decision" onClick={onNext} />

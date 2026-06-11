@@ -42,7 +42,7 @@ export default function WelcomeScreen({ userName, onNext }: Props) {
           </h1>
 
           <p className="text-white/50 text-sm leading-relaxed">
-            Welcome to the Decision Room, a space where we explore the choices in front of you, deepen your alignment, and help you make decisions that reflect your true self.
+            This is your space to slow down, look inward, and make a decision that truly reflects who you are — not just what seems logical.
           </p>
 
           {/* Human figure with edge blending */}

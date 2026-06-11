@@ -86,7 +86,7 @@ export default function AccountPage() {
             <div>
               <p className="text-white text-sm font-medium capitalize">{tier} plan</p>
               <p className="text-white/30 text-xs mt-0.5">
-                {tier === 'free' ? '~7 AI decisions/mo' : tier === 'core' ? '~100 AI decisions/mo' : 'Unlimited AI decisions'}
+                {tier === 'free' ? '~5 AI decisions/mo' : tier === 'core' ? '~55 AI decisions/mo' : 'Unlimited AI decisions'}
               </p>
             </div>
             {tier !== 'pro' && (

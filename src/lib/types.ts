@@ -4,6 +4,7 @@ export type Lens = 'pros_cons' | 'fears_desires' | 'values_needs'
 
 export type EmotionColor =
   | 'Anger' | 'Sadness' | 'Fear' | 'Uncertainty' | 'Excitement' | 'Calm'
+  | 'Hope' | 'Joy' | 'Guilt' | 'Overwhelm' | 'Grief' | 'Anxiety'
 
 export type TagType = 'pro' | 'con' | 'desire' | 'fear' | 'value' | 'need'
 
@@ -41,6 +42,12 @@ export const EMOTION_COLORS: { label: EmotionColor; color: string }[] = [
   { label: 'Uncertainty', color: '#f59e0b' },
   { label: 'Excitement',  color: '#10b981' },
   { label: 'Calm',        color: '#6366f1' },
+  { label: 'Hope',        color: '#84cc16' },
+  { label: 'Joy',         color: '#fcd34d' },
+  { label: 'Guilt',       color: '#78716c' },
+  { label: 'Overwhelm',   color: '#f97316' },
+  { label: 'Grief',       color: '#94a3b8' },
+  { label: 'Anxiety',     color: '#e879f9' },
 ]
 
 export const BODY_LOCATIONS = [
@@ -50,28 +57,31 @@ export const BODY_LOCATIONS = [
 export const PRESET_TAGS: Record<TagType, string[]> = {
   pro: [
     'Growth', 'Learning', 'Stability', 'Recognition', 'Freedom',
-    'Contribution', 'Security', 'Connection', 'Higher salary',
-    'Leadership', 'Career growth', 'Autonomy',
+    'Contribution', 'Security', 'Connection', 'Fulfilment', 'Clarity',
+    'Meaning', 'Balance', 'Peace', 'Joy',
   ],
   con: [
-    'Uncertainty', 'Lower salary', 'No Growth', 'New pressure',
-    'Higher expectations', 'Losing stability', 'Less security',
-    'Long hours', 'Risk',
+    'Uncertainty', 'Risk', 'Sacrifice', 'Compromise', 'Distance',
+    'Doubt', 'Overwhelm', 'Pressure', 'Loss of stability', 'Regret',
   ],
   desire: [
-    'Grow professionally', 'Lead projects', 'Be recognised',
-    'Feel secure', 'Progress', 'Reach my potential', 'Make an impact',
+    'Grow', 'Feel secure', 'Be seen', 'Feel free', 'Find peace',
+    'Make an impact', 'Connect deeply', 'Belong', 'Reach my potential',
+    'Be authentic', 'Feel loved', 'Have clarity',
   ],
   fear: [
     'Losing stability', 'Failing', 'Losing identity', 'Uncertainty',
-    'Left behind', 'Not good enough', 'Making the wrong call',
+    'Being left behind', 'Not being enough', 'Making the wrong choice',
+    'Being hurt', 'Regret', 'Losing someone', 'Being alone',
   ],
   value: [
     'Growth', 'Learning', 'Stability', 'Recognition', 'Freedom',
-    'Contribution', 'Security', 'Connection', 'Professionalism', 'Integrity',
+    'Contribution', 'Security', 'Connection', 'Integrity', 'Authenticity',
+    'Compassion', 'Courage', 'Loyalty', 'Wellbeing',
   ],
   need: [
-    'Certainty', 'Variety', 'Significance', 'Love & Connection', 'Growth', 'Contribution',
+    'Certainty', 'Variety', 'Significance', 'Love & Connection',
+    'Growth', 'Contribution', 'Safety', 'Belonging', 'Autonomy', 'Purpose',
   ],
 }
 
