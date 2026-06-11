@@ -769,11 +769,6 @@ export default function DecisionDetailPage() {
           </Section>
         )}
 
-        {decision.lens && (
-          <Section title="Exploration lens">
-            <p className="text-white/60 text-sm">{LENS_LABEL[decision.lens] ?? decision.lens}</p>
-          </Section>
-        )}
 
         {decision.status !== 'completed' && (
           <Link href={`/decision/new?resume=${decision.id}`}

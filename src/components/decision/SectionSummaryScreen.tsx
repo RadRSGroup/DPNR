@@ -144,158 +144,50 @@ export default function SectionSummaryScreen({
           </div>
         )}
 
-        {/* Pros & Cons: two-column tag comparison */}
+        {/* Pros & Cons: one row per section, A vs B */}
         {stepType === 'pros_cons' && (
-          <div className="grid grid-cols-2 gap-2">
-            {(['A', 'B'] as const).map(label => {
-              const pros = (label === 'A' ? tagsA : tagsB).pro ?? []
-              const cons = (label === 'A' ? tagsA : tagsB).con ?? []
-              return (
-                <div key={label} className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
-                  <p className="text-purple-300 text-xs font-semibold mb-1">Option {label}</p>
-                  {pros.length > 0 && (
-                    <div className="space-y-1">
-                      <p className="text-green-400/60 text-[10px] uppercase tracking-wider">Pros</p>
-                      <div className="flex flex-wrap gap-1">
-                        {pros.map(t => (
-                          <span key={t} className="text-[10px] bg-green-900/25 border border-green-600/30 text-green-300/80 rounded-full px-2 py-0.5">{t}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {cons.length > 0 && (
-                    <div className="space-y-1">
-                      <p className="text-red-400/60 text-[10px] uppercase tracking-wider">Cons</p>
-                      <div className="flex flex-wrap gap-1">
-                        {cons.map(t => (
-                          <span key={t} className="text-[10px] bg-red-900/25 border border-red-600/30 text-red-300/80 rounded-full px-2 py-0.5">{t}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+          <div className="space-y-3">
+            {[
+              { key: 'pro',  label: 'Pros', color: 'green' },
+              { key: 'con',  label: 'Cons', color: 'red'   },
+            ].map(({ key, label, color }) => (
+              <SectionRow key={key} label={label} color={color}
+                tagsA={tagsA[key] ?? []} tagsB={tagsB[key] ?? []} />
+            ))}
           </div>
         )}
 
-        {/* Fears & Desires: show desire/fear comparison */}
+        {/* Fears & Desires: one row per section, A vs B */}
         {stepType === 'fears_desires' && (
-          <div className="grid grid-cols-2 gap-2">
-            {(['A', 'B'] as const).map(label => {
-              const desires = (label === 'A' ? tagsA : tagsB).desire ?? []
-              const fears = (label === 'A' ? tagsA : tagsB).fear ?? []
-              return (
-                <div key={label} className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
-                  <p className="text-purple-300 text-xs font-semibold mb-1">Option {label}</p>
-                  {desires.length > 0 && (
-                    <div className="space-y-1">
-                      <p className="text-amber-400/60 text-[10px] uppercase tracking-wider">Desires</p>
-                      <div className="flex flex-wrap gap-1">
-                        {desires.map(t => (
-                          <span key={t} className="text-[10px] bg-amber-900/25 border border-amber-600/30 text-amber-200/80 rounded-full px-2 py-0.5">{t}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {fears.length > 0 && (
-                    <div className="space-y-1">
-                      <p className="text-indigo-400/60 text-[10px] uppercase tracking-wider">Fears</p>
-                      <div className="flex flex-wrap gap-1">
-                        {fears.map(t => (
-                          <span key={t} className="text-[10px] bg-indigo-900/25 border border-indigo-600/30 text-indigo-200/80 rounded-full px-2 py-0.5">{t}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+          <div className="space-y-3">
+            {[
+              { key: 'desire', label: 'Desires', color: 'amber'  },
+              { key: 'fear',   label: 'Fears',   color: 'indigo' },
+            ].map(({ key, label, color }) => (
+              <SectionRow key={key} label={label} color={color}
+                tagsA={tagsA[key] ?? []} tagsB={tagsB[key] ?? []} />
+            ))}
           </div>
         )}
 
-        {/* Values & Needs: legacy combined view */}
-        {stepType === 'values_needs' && (
-          <div className="grid grid-cols-2 gap-2">
-            {(['A', 'B'] as const).map(label => {
-              const values = (label === 'A' ? tagsA : tagsB).values ?? []
-              const needs = (label === 'A' ? tagsA : tagsB).needs ?? []
-              return (
-                <div key={label} className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
-                  <p className="text-purple-300 text-xs font-semibold mb-1">Option {label}</p>
-                  {values.length > 0 && (
-                    <div className="space-y-1">
-                      <p className="text-violet-400/60 text-[10px] uppercase tracking-wider">Values</p>
-                      <div className="flex flex-wrap gap-1">
-                        {values.map(t => (
-                          <span key={t} className="text-[10px] bg-violet-900/25 border border-violet-600/30 text-violet-200/80 rounded-full px-2 py-0.5">{t}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {needs.length > 0 && (
-                    <div className="space-y-1">
-                      <p className="text-rose-400/60 text-[10px] uppercase tracking-wider">Needs</p>
-                      <div className="flex flex-wrap gap-1">
-                        {needs.map(t => (
-                          <span key={t} className="text-[10px] bg-rose-900/25 border border-rose-600/30 text-rose-200/80 rounded-full px-2 py-0.5">{t}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+        {/* Values & Needs: one row per section, A vs B */}
+        {(stepType === 'values_needs' || stepType === 'values' || stepType === 'needs') && (
+          <div className="space-y-3">
+            {[
+              { key: 'values', label: 'Values', color: 'violet' },
+              { key: 'needs',  label: 'Needs',  color: 'rose'   },
+            ].filter(({ key }) => {
+              if (stepType === 'values') return key === 'values'
+              if (stepType === 'needs')  return key === 'needs'
+              return true
+            }).map(({ key, label, color }) => (
+              <SectionRow key={key} label={label} color={color}
+                tagsA={tagsA[key] ?? []} tagsB={tagsB[key] ?? []} />
+            ))}
           </div>
         )}
 
-        {/* Values only */}
-        {stepType === 'values' && (
-          <div className="grid grid-cols-2 gap-2">
-            {(['A', 'B'] as const).map(label => {
-              const values = (label === 'A' ? tagsA : tagsB).values ?? []
-              return (
-                <div key={label} className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
-                  <p className="text-violet-300 text-xs font-semibold mb-1">Option {label}</p>
-                  {values.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {values.map(t => (
-                        <span key={t} className="text-[10px] bg-violet-900/25 border border-violet-600/30 text-violet-200/80 rounded-full px-2 py-0.5">{t}</span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-white/20 text-[10px] italic">None selected</p>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Needs only — show all 6 human needs with which are selected */}
-        {stepType === 'needs' && (
-          <div className="grid grid-cols-2 gap-2">
-            {(['A', 'B'] as const).map(label => {
-              const needs = (label === 'A' ? tagsA : tagsB).needs ?? []
-              return (
-                <div key={label} className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
-                  <p className="text-rose-300 text-xs font-semibold mb-1">Option {label}</p>
-                  {needs.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {needs.map(t => (
-                        <span key={t} className="text-[10px] bg-rose-900/25 border border-rose-600/30 text-rose-200/80 rounded-full px-2 py-0.5">{t}</span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-white/20 text-[10px] italic">None selected</p>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Projections */}
+        {/* Projections: one row per option */}
         {stepType === 'projections' && (
           <div className="grid grid-cols-2 gap-2">
             {(['A', 'B'] as const).map(label => {
@@ -380,6 +272,45 @@ export default function SectionSummaryScreen({
         >
           {CTA_LABEL[stepType]}
         </button>
+      </div>
+    </div>
+  )
+}
+
+const COLOR_MAP: Record<string, { bg: string; border: string; text: string; heading: string }> = {
+  green:  { bg: 'bg-green-900/25',  border: 'border-green-600/30',  text: 'text-green-300/80',  heading: 'text-green-400/70'  },
+  red:    { bg: 'bg-red-900/25',    border: 'border-red-600/30',    text: 'text-red-300/80',    heading: 'text-red-400/70'    },
+  amber:  { bg: 'bg-amber-900/25',  border: 'border-amber-600/30',  text: 'text-amber-200/80',  heading: 'text-amber-400/70'  },
+  indigo: { bg: 'bg-indigo-900/25', border: 'border-indigo-600/30', text: 'text-indigo-200/80', heading: 'text-indigo-400/70' },
+  violet: { bg: 'bg-violet-900/25', border: 'border-violet-600/30', text: 'text-violet-200/80', heading: 'text-violet-400/70' },
+  rose:   { bg: 'bg-rose-900/25',   border: 'border-rose-600/30',   text: 'text-rose-200/80',   heading: 'text-rose-400/70'   },
+}
+
+function SectionRow({ label, color, tagsA, tagsB }: {
+  label: string; color: string; tagsA: string[]; tagsB: string[]
+}) {
+  const c = COLOR_MAP[color] ?? COLOR_MAP.violet
+  return (
+    <div className="space-y-1.5">
+      <p className={`text-[10px] uppercase tracking-wider font-semibold ${c.heading}`}>{label}</p>
+      <div className="grid grid-cols-2 gap-2">
+        {(['A', 'B'] as const).map((label, idx) => {
+          const tags = idx === 0 ? tagsA : tagsB
+          return (
+            <div key={label} className="bg-white/5 border border-white/10 rounded-xl p-2.5 space-y-1.5">
+              <p className="text-white/30 text-[10px] uppercase tracking-wider">Option {label}</p>
+              {tags.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {tags.map(t => (
+                    <span key={t} className={`text-[10px] ${c.bg} border ${c.border} ${c.text} rounded-full px-2 py-0.5`}>{t}</span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-white/20 text-[10px] italic">None selected</p>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
