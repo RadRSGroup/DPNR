@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
+import { TIER_CAPS, type Tier } from '@/lib/tier-caps'
 
 export async function createDecision(title: string, subtitle?: string) {
   const supabase = createClient()
@@ -166,10 +167,10 @@ export async function getTokenUsage() {
   const supabase = createClient()
   const { data: profile } = await supabase
     .from('user_profiles')
-    .select('tier, token_cap, billing_period_start')
+    .select('tier, billing_period_start')
     .single()
 
-  if (!profile) return { used: 0, cap: 10000, tier: 'free' as const }
+  if (!profile) return { used: 0, cap: TIER_CAPS.free, tier: 'free' as const }
 
   const { data: usage } = await supabase
     .from('token_usage')
@@ -177,5 +178,6 @@ export async function getTokenUsage() {
     .gte('created_at', profile.billing_period_start)
 
   const used = (usage ?? []).reduce((sum: number, r: { tokens_used: number }) => sum + r.tokens_used, 0)
-  return { used, cap: profile.token_cap as number, tier: profile.tier as 'free' | 'core' | 'pro' }
+  const tier = profile.tier as Tier
+  return { used, cap: TIER_CAPS[tier] ?? TIER_CAPS.free, tier }
 }

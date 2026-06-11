@@ -1,19 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
+import { TIER_CAPS, type Tier } from '@/lib/tier-caps'
 
-export const TIER_CAPS = {
-  free: 15_000,
-  core: 150_000,
-  pro: 400_000,
-} as const
-
-export type Tier = keyof typeof TIER_CAPS
+export { TIER_CAPS, type Tier }
 
 export async function checkTokenBudget(userId: string) {
   const supabase = await createClient()
 
   const { data: profile } = await supabase
     .from('user_profiles')
-    .select('tier, token_cap, billing_period_start')
+    .select('tier, billing_period_start')
     .eq('user_id', userId)
     .single()
 
@@ -26,7 +21,8 @@ export async function checkTokenBudget(userId: string) {
     .gte('created_at', profile.billing_period_start)
 
   const used = (usage ?? []).reduce((sum, r) => sum + r.tokens_used, 0)
-  const cap = profile.token_cap as number
+  const tier = profile.tier as Tier
+  const cap = TIER_CAPS[tier] ?? TIER_CAPS.free
 
   return {
     allowed: used < cap,

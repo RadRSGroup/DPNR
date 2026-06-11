@@ -89,7 +89,7 @@ function DashboardContent() {
       <div className="mb-6 bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
         <div className="flex justify-between text-xs text-white/40">
           <span>Monthly AI usage</span>
-          <span>{loading ? '…' : `${tokenData?.used.toLocaleString() ?? 0} / ${tokenData?.cap.toLocaleString() ?? 10000} tokens`}</span>
+          <span>{loading ? '…' : `${tokenData?.used.toLocaleString() ?? 0} / ${tokenData?.cap.toLocaleString() ?? 15000} tokens`}</span>
         </div>
         <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
           <div
