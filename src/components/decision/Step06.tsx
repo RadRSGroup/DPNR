@@ -19,54 +19,68 @@ interface Step06Props {
 
 type Round = 'values' | 'needs'
 
+const ROUNDS: { round: Round; label: string; icon: string }[] = [
+  { round: 'values', label: 'Values', icon: '💎' },
+  { round: 'needs',  label: 'Needs',  icon: '🫀' },
+]
+
 export default function Step06({ decisionTitle, decisionId, optionA, optionB, onComplete, onBack, onSkip }: Step06Props) {
+  const [roundIdx, setRoundIdx] = useState(0)
   const [currentOption, setCurrentOption] = useState<'A' | 'B'>('A')
-  const [round, setRound] = useState<Round>('values')
   const [selected, setSelected] = useState<Record<string, Record<Round, string[]>>>({
     A: { values: [], needs: [] },
     B: { values: [], needs: [] },
   })
-  const [suggested, setSuggested] = useState<{ values: string[]; needs: string[] }>({ values: [], needs: [] })
+  const [suggestedA, setSuggestedA] = useState<{ values: string[]; needs: string[] }>({ values: [], needs: [] })
+  const [suggestedB, setSuggestedB] = useState<{ values: string[]; needs: string[] }>({ values: [], needs: [] })
   const [customInput, setCustomInput] = useState('')
   const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI()
 
+  const currentRound = ROUNDS[roundIdx]
+  const isLastRound = roundIdx === ROUNDS.length - 1
   const option = currentOption === 'A' ? optionA : optionB
+  const suggested = currentOption === 'A' ? suggestedA : suggestedB
 
-  useEffect(() => { fetchSuggestions() }, [currentOption])
+  useEffect(() => {
+    fetchSuggestions(currentOption)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentOption])
 
-  async function fetchSuggestions() {
+  async function fetchSuggestions(opt: 'A' | 'B') {
+    const o = opt === 'A' ? optionA : optionB
     const res = await callAI<{ values: string[]; needs: string[] }>(
       'values_needs_tags',
-      { optionLabel: option.label, optionText: option.content },
+      { optionLabel: o.label, optionText: o.content },
       decisionId
     )
-    if (res) setSuggested(res)
+    if (res) {
+      const setter = opt === 'A' ? setSuggestedA : setSuggestedB
+      setter(res)
+    }
   }
 
   function toggle(item: string) {
     setSelected(prev => {
-      const arr = prev[currentOption][round]
+      const arr = prev[currentOption][currentRound.round]
       return {
         ...prev,
         [currentOption]: {
           ...prev[currentOption],
-          [round]: arr.includes(item) ? arr.filter(i => i !== item) : [...arr, item],
+          [currentRound.round]: arr.includes(item) ? arr.filter(i => i !== item) : [...arr, item],
         },
       }
     })
   }
 
   function handleNext() {
-    if (round === 'values') {
-      setRound('needs')
-    } else if (currentOption === 'A') {
+    if (currentOption === 'A') {
       setCurrentOption('B')
-      setRound('values')
+      if (Object.values(suggestedB).every(a => a.length === 0)) fetchSuggestions('B')
+    } else if (!isLastRound) {
+      setRoundIdx(i => i + 1)
+      setCurrentOption('A')
     } else {
-      onComplete(
-        selected.A.values, selected.A.needs,
-        selected.B.values, selected.B.needs
-      )
+      onComplete(selected.A.values, selected.A.needs, selected.B.values, selected.B.needs)
     }
   }
 
@@ -76,38 +90,35 @@ export default function Step06({ decisionTitle, decisionId, optionA, optionB, on
     setCustomInput('')
   }
 
-  const presetKey = round === 'values' ? 'value' : 'need'
-  const currentSelected = selected[currentOption][round]
-  const bothOptionsDefined =
-    selected.A.values.length > 0 && selected.A.needs.length > 0 &&
-    selected.B.values.length > 0 && selected.B.needs.length > 0
-  const isFinalStep = round === 'needs' && currentOption === 'B'
-  const canAdvance = currentSelected.length > 0 && (!isFinalStep || bothOptionsDefined)
+  const presetKey = currentRound.round === 'values' ? 'value' : 'need'
+  const currentSelected = selected[currentOption][currentRound.round]
+  const canAdvance = currentSelected.length > 0
+
   const items = [
-    ...(suggested[round] ?? []),
+    ...(suggested[currentRound.round] ?? []),
     ...PRESET_TAGS[presetKey],
     ...currentSelected.filter(t =>
-      !(suggested[round] ?? []).includes(t) &&
+      !(suggested[currentRound.round] ?? []).includes(t) &&
       !PRESET_TAGS[presetKey].includes(t)
     ),
   ].filter((v, i, a) => a.indexOf(v) === i)
 
-  const prompt = round === 'values'
-    ? `Select which values are most important to you per Option ${currentOption}.`
-    : `Select which needs are associated with Option ${currentOption}.`
+  const prompt = currentRound.round === 'values'
+    ? `Which values does Option ${currentOption} honour most?`
+    : `Which of the 6 core needs does Option ${currentOption} fulfil?`
 
-  const ctaLabel = round === 'values'
-    ? 'Choose Needs →'
-    : currentOption === 'A'
-    ? 'Next Option →'
-    : 'Next Step →'
+  const ctaLabel = currentOption === 'A'
+    ? `Option B: ${currentRound.label} →`
+    : isLastRound
+    ? 'Next Step →'
+    : `Next: ${ROUNDS[roundIdx + 1].label} →`
 
   return (
     <StepShell step={6} decisionTitle={decisionTitle} onBack={onBack} onSkip={onSkip}>
       {tokenCapReached && <TokenCapModal onClose={dismissTokenCap} />}
       <div className="flex-1 flex flex-col space-y-4 pt-2">
 
-        {/* Option toggle */}
+        {/* Option cards */}
         <div className="grid grid-cols-2 gap-2">
           {(['A', 'B'] as const).map(label => (
             <div
@@ -115,7 +126,7 @@ export default function Step06({ decisionTitle, decisionId, optionA, optionB, on
               className={`rounded-xl border p-3 transition-all ${
                 currentOption === label
                   ? 'border-purple-600/60 bg-purple-900/20'
-                  : 'border-white/10 bg-white/5 opacity-50'
+                  : 'border-white/10 bg-white/5 opacity-40'
               }`}
             >
               <p className="text-purple-400 text-xs mb-1">Option {label}</p>
@@ -126,20 +137,22 @@ export default function Step06({ decisionTitle, decisionId, optionA, optionB, on
           ))}
         </div>
 
-        <p className="text-white/60 text-sm text-center leading-relaxed">{prompt}</p>
-
         {/* Section header */}
         <div className="flex items-center gap-3">
           <span className="inline-flex items-center gap-1.5 bg-purple-900/40 border border-purple-600/40 rounded-full px-3 py-1 text-purple-300 text-xs font-semibold uppercase tracking-wider">
-            {round === 'values' ? '💎 Values' : '🫀 Needs'}
+            {currentRound.icon} {currentRound.label} — Option {currentOption}
           </span>
           <div className="flex-1 h-px bg-white/8" />
-          {/* Sub-step dots */}
-          <div className="flex items-center gap-2">
-            <div className={`w-1.5 h-1.5 rounded-full transition-colors ${round === 'values' ? 'bg-purple-400' : 'bg-white/20'}`} />
-            <div className={`w-1.5 h-1.5 rounded-full transition-colors ${round === 'needs' ? 'bg-purple-400' : 'bg-white/20'}`} />
+          <div className="flex items-center gap-1.5">
+            {ROUNDS.map((r, i) => (
+              <div key={r.round} className={`h-1.5 rounded-full transition-all ${
+                i < roundIdx ? 'bg-purple-400 w-4' : i === roundIdx ? 'bg-fuchsia-300 w-5' : 'bg-white/15 w-3'
+              }`} />
+            ))}
           </div>
         </div>
+
+        <p className="text-white/60 text-sm text-center leading-relaxed">{prompt}</p>
 
         {/* Chip grid */}
         <div className="flex-1 flex flex-wrap gap-2 content-start no-scrollbar overflow-y-auto">
@@ -147,8 +160,8 @@ export default function Step06({ decisionTitle, decisionId, optionA, optionB, on
             <Chip
               key={item}
               label={item}
-              selected={selected[currentOption][round].includes(item)}
-              aiSuggested={(suggested[round] ?? []).includes(item)}
+              selected={currentSelected.includes(item)}
+              aiSuggested={(suggested[currentRound.round] ?? []).includes(item)}
               onClick={() => toggle(item)}
             />
           ))}
