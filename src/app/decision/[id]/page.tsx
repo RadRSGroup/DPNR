@@ -709,6 +709,13 @@ export default function DecisionDetailPage() {
           </Section>
         )}
 
+        {/* Narrative */}
+        {decision.narrative && (
+          <Section title="Your story">
+            <p className="text-white/60 text-sm leading-relaxed">{decision.narrative}</p>
+          </Section>
+        )}
+
         {/* Choice comparison summary */}
         <ChoiceSummary optA={optA} optB={optB} />
 
@@ -749,13 +756,6 @@ export default function DecisionDetailPage() {
             </button>
           )}
         </Section>
-
-        {/* Narrative */}
-        {decision.narrative && (
-          <Section title="Your story">
-            <p className="text-white/60 text-sm leading-relaxed">{decision.narrative}</p>
-          </Section>
-        )}
 
         {/* Emotion map */}
         {decision.emotion_maps?.[0] && (
