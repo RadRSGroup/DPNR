@@ -147,7 +147,15 @@ export default function Step07({
             ))}
           </div>
 
-          <div className="space-y-1 text-center">
+          {/* Section header */}
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 bg-purple-900/40 border border-purple-600/40 rounded-full px-3 py-1 text-purple-300 text-xs font-semibold uppercase tracking-wider">
+              🔭 Future Projections
+            </span>
+            <div className="flex-1 h-px bg-white/8" />
+          </div>
+
+          <div className="space-y-0.5 text-center">
             <p className="text-white/70 text-sm">Imagine your life in one year</p>
             <p className="text-white/40 text-xs">if you choose Option {currentOption}.</p>
           </div>

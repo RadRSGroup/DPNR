@@ -110,12 +110,14 @@ export default function Step05({ decisionTitle, decisionId, narrative, optionA, 
         <p className="text-white/60 text-sm text-center leading-relaxed">{promptText}</p>
 
         {/* Tag sections */}
-        <div className="flex-1 space-y-4 no-scrollbar overflow-y-auto">
+        <div className="flex-1 space-y-5 no-scrollbar overflow-y-auto">
           {sections.map(({ type, label }) => (
-            <div key={type} className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-purple-400 text-xs">+</span>
-                <p className="text-white/50 text-xs font-medium uppercase tracking-wide">{label}</p>
+            <div key={type} className="space-y-3">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex items-center gap-1.5 bg-purple-900/40 border border-purple-600/40 rounded-full px-3 py-1 text-purple-300 text-xs font-semibold uppercase tracking-wider">
+                  {type === 'pro' && '✓'}{type === 'con' && '✗'}{type === 'desire' && '✦'}{type === 'fear' && '⚡'} {label}
+                </span>
+                <div className="flex-1 h-px bg-white/8" />
               </div>
 
               {/* AI suggested + preset + custom chips */}

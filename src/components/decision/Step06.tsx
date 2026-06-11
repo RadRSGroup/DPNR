@@ -123,16 +123,16 @@ export default function Step06({ decisionTitle, decisionId, optionA, optionB, on
 
         <p className="text-white/60 text-sm text-center leading-relaxed">{prompt}</p>
 
-        {/* Round indicator */}
-        <div className="flex items-center justify-center gap-3">
-          <div className={`flex items-center gap-1.5 text-xs transition-colors ${round === 'values' ? 'text-purple-400' : 'text-white/30'}`}>
-            <div className={`w-2 h-2 rounded-full ${round === 'values' ? 'bg-purple-400' : 'bg-white/20'}`} />
-            Choose Values
-          </div>
-          <div className="w-8 h-px bg-white/10" />
-          <div className={`flex items-center gap-1.5 text-xs transition-colors ${round === 'needs' ? 'text-purple-400' : 'text-white/30'}`}>
-            <div className={`w-2 h-2 rounded-full ${round === 'needs' ? 'bg-purple-400' : 'bg-white/20'}`} />
-            Now Choose Needs
+        {/* Section header */}
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-1.5 bg-purple-900/40 border border-purple-600/40 rounded-full px-3 py-1 text-purple-300 text-xs font-semibold uppercase tracking-wider">
+            {round === 'values' ? '💎 Values' : '🫀 Needs'}
+          </span>
+          <div className="flex-1 h-px bg-white/8" />
+          {/* Sub-step dots */}
+          <div className="flex items-center gap-2">
+            <div className={`w-1.5 h-1.5 rounded-full transition-colors ${round === 'values' ? 'bg-purple-400' : 'bg-white/20'}`} />
+            <div className={`w-1.5 h-1.5 rounded-full transition-colors ${round === 'needs' ? 'bg-purple-400' : 'bg-white/20'}`} />
           </div>
         </div>
 

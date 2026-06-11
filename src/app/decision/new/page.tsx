@@ -11,6 +11,7 @@ import Step05 from '@/components/decision/Step05'
 import Step06 from '@/components/decision/Step06'
 import Step07 from '@/components/decision/Step07'
 import CompletionScreen from '@/components/decision/CompletionScreen'
+import CelebrationScreen from '@/components/decision/CelebrationScreen'
 import { DecisionState, DecisionOption, Lens, EmotionColor } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -35,6 +36,7 @@ function NewDecisionContent() {
   const resumeId = params.get('resume')
 
   const [introStep, setIntroStep] = useState<-1 | 0 | null>(resumeId ? null : -1)
+  const [celebrating, setCelebrating] = useState(false)
   const [completedSummary, setCompletedSummary] = useState<{
     title: string
     optionA?: string
@@ -104,6 +106,16 @@ function NewDecisionContent() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
         <div className="w-8 h-8 border-2 border-purple-500/40 border-t-purple-500 rounded-full animate-spin" />
       </div>
+    )
+  }
+
+  if (completedSummary && celebrating) {
+    return (
+      <CelebrationScreen
+        userName={userName}
+        decisionTitle={completedSummary.title}
+        onContinue={() => setCelebrating(false)}
+      />
     )
   }
 
@@ -265,6 +277,7 @@ function NewDecisionContent() {
         }
       } catch (e) { console.error('Step07 save error:', e) }
     }
+    setCelebrating(true)
     setCompletedSummary({
       title: state.title,
       optionA: state.optionA?.content,
