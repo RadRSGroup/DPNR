@@ -75,6 +75,8 @@ export default function Step05({ decisionTitle, decisionId, narrative, optionA, 
     })
   }
 
+  const totalSelected = Object.values(tags).flat().length
+
   const sections = lens === 'pros_cons'
     ? [{ type: 'pro', label: 'Pros' }, { type: 'con', label: 'Cons' }]
     : [{ type: 'desire', label: 'Desires' }, { type: 'fear', label: 'Fears' }]
@@ -172,6 +174,7 @@ export default function Step05({ decisionTitle, decisionId, narrative, optionA, 
         <PrimaryButton
           label={currentOption === 'A' ? 'Next Option →' : 'Next Step →'}
           onClick={handleNextOption}
+          disabled={totalSelected === 0}
         />
       </div>
     </StepShell>

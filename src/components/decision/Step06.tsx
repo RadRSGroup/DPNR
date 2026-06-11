@@ -171,7 +171,7 @@ export default function Step06({ decisionTitle, decisionId, optionA, optionB, on
           </button>
         </div>
 
-        <PrimaryButton label={ctaLabel} onClick={handleNext} />
+        <PrimaryButton label={ctaLabel} onClick={handleNext} disabled={currentSelected.length === 0} />
       </div>
     </StepShell>
   )
