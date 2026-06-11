@@ -59,7 +59,7 @@ export default function Step01({ onComplete, onBack }: Step01Props) {
               </button>
             </div>
           ) : (
-            title.length > 3 && (
+            title.trim().length > 0 && (
               <button
                 onClick={handleSuggestSubtitle}
                 disabled={loading}
@@ -77,7 +77,7 @@ export default function Step01({ onComplete, onBack }: Step01Props) {
           <PrimaryButton
             label="Continue"
             onClick={handleContinue}
-            disabled={title.trim().length < 2}
+            disabled={!title.trim()}
           />
         </div>
       </div>
