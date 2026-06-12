@@ -427,6 +427,19 @@ function NewDecisionContent() {
   }
 
   if (!state.optionA || !state.optionB) {
+    // Steps 4+ require options — fall back to step 2 to re-enter them
+    if (state.currentStep >= 4) {
+      return (
+        <Step02
+          decisionTitle={state.title}
+          decisionId={state.id}
+          initialNarrative={state.narrative}
+          onComplete={completeStep02}
+          onBack={goBack}
+          onSkip={skip}
+        />
+      )
+    }
     if (state.currentStep === 1) {
       return <Step01 initialTitle={state.title} initialSubtitle={state.subtitle} onComplete={completeStep01} onBack={goBack} />
     }
@@ -561,7 +574,9 @@ function NewDecisionContent() {
         onSkip={skip}
       />
     )
-    default: return null
+    default: return (
+      <Step01 initialTitle={state.title} initialSubtitle={state.subtitle} onComplete={completeStep01} onBack={goBack} />
+    )
   }
 }
 
