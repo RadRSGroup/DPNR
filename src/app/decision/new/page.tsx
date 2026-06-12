@@ -39,6 +39,7 @@ function NewDecisionContent() {
   const router = useRouter()
   const params = useSearchParams()
   const resumeId = params.get('resume')
+  const stepParam = params.get('step') ? parseInt(params.get('step')!) : null
 
   const [introStep, setIntroStep] = useState<-1 | 0 | null>(resumeId ? null : -1)
   const [pendingSummary, setPendingSummary] = useState<{
@@ -108,7 +109,7 @@ function NewDecisionContent() {
           title: data.title ?? '',
           subtitle: data.subtitle ?? undefined,
           narrative: data.narrative ?? '',
-          currentStep: data.current_step ?? 1,
+          currentStep: stepParam ?? data.current_step ?? 1,
           lens: (data.lens as Lens) ?? undefined,
           optionA: optA ? { label: 'A', content: optA.content, approved: optA.approved } : undefined,
           optionB: optB ? { label: 'B', content: optB.content, approved: optB.approved } : undefined,

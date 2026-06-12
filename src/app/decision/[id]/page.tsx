@@ -392,7 +392,12 @@ function OptionCard({ opt, lens, onSaved, decisionId, narrative }: {
         <div className="px-4 pb-4 space-y-5 border-t border-white/8 pt-4">
 
           {/* Full option text */}
-          <p className="text-white/60 text-sm leading-relaxed">{opt.content}</p>
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-white/60 text-sm leading-relaxed flex-1">{opt.content}</p>
+            {decisionId && (
+              <Link href={`/decision/new?resume=${decisionId}&step=2`} className="text-white/25 hover:text-purple-400 text-xs flex-shrink-0 transition-colors">Edit</Link>
+            )}
+          </div>
 
           {/* Tag groups */}
           {groupsToShow.map(group => (
@@ -429,7 +434,7 @@ function OptionCard({ opt, lens, onSaved, decisionId, narrative }: {
 }
 
 /* ─── Choice summary strip ───────────────────────────── */
-function ChoiceSummary({ optA, optB }: { optA?: OptionRow; optB?: OptionRow }) {
+function ChoiceSummary({ optA, optB, decisionId }: { optA?: OptionRow; optB?: OptionRow; decisionId?: string }) {
   if (!optA || !optB) return null
   const topPro  = (opt: OptionRow) => opt.tags.find(t => t.tag_type === 'pro')?.label ?? opt.tags[0]?.label
   const topCon  = (opt: OptionRow) => opt.tags.find(t => t.tag_type === 'con')?.label
@@ -437,7 +442,12 @@ function ChoiceSummary({ optA, optB }: { optA?: OptionRow; optB?: OptionRow }) {
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
-      <p className="text-purple-400 text-xs uppercase tracking-wide font-medium">Choice comparison</p>
+      <div className="flex items-center justify-between">
+        <p className="text-purple-400 text-xs uppercase tracking-wide font-medium">Choice comparison</p>
+        {decisionId && (
+          <Link href={`/decision/new?resume=${decisionId}&step=2`} className="text-white/25 hover:text-purple-400 text-xs transition-colors">Edit</Link>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-3">
         {[optA, optB].map(opt => (
           <div key={opt.id} className="space-y-2">
@@ -611,21 +621,22 @@ export default function DecisionDetailPage() {
             {decision.status === 'completed' ? '✓ Completed' : `Step ${decision.current_step}/7 in progress`}
             {' · '}{timeAgo(decision.created_at)}
           </p>
-          <h1 className="text-white text-xl font-light leading-snug">"{decision.title}"</h1>
+          <div className="flex items-start justify-between gap-2">
+            <h1 className="text-white text-xl font-light leading-snug flex-1">"{decision.title}"</h1>
+            <Link href={`/decision/new?resume=${decision.id}&step=1`} className="text-white/20 hover:text-purple-400 text-xs transition-colors mt-1 flex-shrink-0">Edit</Link>
+          </div>
           {decision.subtitle && <p className="text-white/40 text-sm italic">{decision.subtitle}</p>}
         </div>
       </div>
 
       {/* Action bar */}
       <div className="flex gap-2 mb-5">
-        {decision.status !== 'completed' && (
-          <Link
-            href={`/decision/new?resume=${decision.id}`}
-            className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 active:scale-[0.98] text-white text-xs font-medium text-center transition-all"
-          >
-            Continue →
-          </Link>
-        )}
+        <Link
+          href={`/decision/new?resume=${decision.id}`}
+          className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 active:scale-[0.98] text-white text-xs font-medium text-center transition-all"
+        >
+          {decision.status === 'completed' ? 'Edit →' : 'Continue →'}
+        </Link>
         <button onClick={() => { setShowCheckIn(v => !v); setShowOutcome(false) }}
           className="flex-1 py-2.5 rounded-xl border border-purple-700/40 bg-purple-900/20 text-purple-300 text-xs hover:bg-purple-900/35 transition-all">
           + Add check-in
@@ -685,9 +696,13 @@ export default function DecisionDetailPage() {
       <div className="space-y-4">
 
         {/* Narrative */}
-        {decision.narrative && (
-          <Section title="Your story">
+        {decision.narrative ? (
+          <Section title="Your story" editHref={`/decision/new?resume=${decision.id}&step=2`}>
             <p className="text-white/60 text-sm leading-relaxed">{decision.narrative}</p>
+          </Section>
+        ) : (
+          <Section title="Your story" editHref={`/decision/new?resume=${decision.id}&step=2`}>
+            <p className="text-white/30 text-sm italic">No story written yet.</p>
           </Section>
         )}
 
@@ -720,7 +735,7 @@ export default function DecisionDetailPage() {
           const leanLabel = reflectionEntry.chosen_option_id === optA?.id ? 'A'
             : reflectionEntry.chosen_option_id === optB?.id ? 'B' : null
           return (
-            <Section title="Your reflection">
+            <Section title="Your reflection" editHref={`/decision/new?resume=${decision.id}&step=7`}>
               <div className="space-y-3">
                 {leanLine && (
                   <div className="flex items-center gap-2">
@@ -764,7 +779,7 @@ export default function DecisionDetailPage() {
         )}
 
         {/* Choice comparison summary */}
-        <ChoiceSummary optA={optA} optB={optB} />
+        <ChoiceSummary optA={optA} optB={optB} decisionId={decision.id} />
 
         {/* Option deep-dive cards (collapsible, editable) */}
         {optA && <OptionCard opt={optA} lens={decision.lens} onSaved={load} decisionId={decision.id} narrative={decision.narrative ?? undefined} />}
@@ -805,17 +820,21 @@ export default function DecisionDetailPage() {
         </Section>
 
         {/* Emotion map */}
-        {decision.emotion_maps?.[0] && (
-          <Section title="Body & emotion">
-            <div className="flex gap-2 flex-wrap mb-2">
-              <span className="text-xs bg-white/10 rounded-full px-2.5 py-1 text-white/60">{decision.emotion_maps[0].body_location}</span>
-              <span className="text-xs bg-white/10 rounded-full px-2.5 py-1 text-white/60">{decision.emotion_maps[0].emotion_color}</span>
-            </div>
-            {decision.emotion_maps[0].ai_reflection && (
-              <p className="text-white/50 text-sm italic leading-relaxed">"{decision.emotion_maps[0].ai_reflection}"</p>
-            )}
-          </Section>
-        )}
+        <Section title="Body & emotion" editHref={`/decision/new?resume=${decision.id}&step=3`}>
+          {decision.emotion_maps?.[0] ? (
+            <>
+              <div className="flex gap-2 flex-wrap mb-2">
+                <span className="text-xs bg-white/10 rounded-full px-2.5 py-1 text-white/60">{decision.emotion_maps[0].body_location}</span>
+                <span className="text-xs bg-white/10 rounded-full px-2.5 py-1 text-white/60">{decision.emotion_maps[0].emotion_color}</span>
+              </div>
+              {decision.emotion_maps[0].ai_reflection && (
+                <p className="text-white/50 text-sm italic leading-relaxed">"{decision.emotion_maps[0].ai_reflection}"</p>
+              )}
+            </>
+          ) : (
+            <p className="text-white/30 text-sm italic">No emotion map recorded yet.</p>
+          )}
+        </Section>
 
 
       </div>
@@ -823,10 +842,17 @@ export default function DecisionDetailPage() {
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children, editHref }: { title: string; children: React.ReactNode; editHref?: string }) {
   return (
     <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
-      <p className="text-purple-400 text-xs uppercase tracking-wide font-medium">{title}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-purple-400 text-xs uppercase tracking-wide font-medium">{title}</p>
+        {editHref && (
+          <Link href={editHref} className="text-white/25 hover:text-purple-400 text-xs transition-colors">
+            Edit
+          </Link>
+        )}
+      </div>
       {children}
     </div>
   )
