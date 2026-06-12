@@ -637,6 +637,13 @@ export default function DecisionDetailPage() {
 
       <div className="space-y-4">
 
+        {/* Narrative */}
+        {decision.narrative && (
+          <Section title="Your story">
+            <p className="text-white/60 text-sm leading-relaxed">{decision.narrative}</p>
+          </Section>
+        )}
+
         {/* Outcome entries */}
         {outcomeEntries.length > 0 && (
           <Section title="What happened">
@@ -706,13 +713,6 @@ export default function DecisionDetailPage() {
                 </div>
               ))}
             </div>
-          </Section>
-        )}
-
-        {/* Narrative */}
-        {decision.narrative && (
-          <Section title="Your story">
-            <p className="text-white/60 text-sm leading-relaxed">{decision.narrative}</p>
           </Section>
         )}
 
