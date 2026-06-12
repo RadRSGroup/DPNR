@@ -14,20 +14,22 @@ interface Step05Props {
   optionA: DecisionOption
   optionB: DecisionOption
   lens: Lens
+  initialTagsA?: Record<string, string[]>
+  initialTagsB?: Record<string, string[]>
   onComplete: (tags: Record<string, string[]>) => void
   onBack?: () => void
   onSkip?: () => void
 }
 
-export default function Step05({ decisionTitle, decisionId, narrative, optionA, optionB, lens, onComplete, onBack, onSkip }: Step05Props) {
+export default function Step05({ decisionTitle, decisionId, narrative, optionA, optionB, lens, initialTagsA, initialTagsB, onComplete, onBack, onSkip }: Step05Props) {
   const sections = lens === 'pros_cons'
     ? [{ type: 'pro', label: 'Pros', icon: '✓' }, { type: 'con', label: 'Cons', icon: '✗' }]
     : [{ type: 'desire', label: 'Desires', icon: '✦' }, { type: 'fear', label: 'Fears', icon: '⚡' }]
 
   const [sectionIdx, setSectionIdx] = useState(0)
   const [currentOption, setCurrentOption] = useState<'A' | 'B'>('A')
-  const [tagsA, setTagsA] = useState<Record<string, string[]>>({ pro: [], con: [], desire: [], fear: [] })
-  const [tagsB, setTagsB] = useState<Record<string, string[]>>({ pro: [], con: [], desire: [], fear: [] })
+  const [tagsA, setTagsA] = useState<Record<string, string[]>>(initialTagsA ?? { pro: [], con: [], desire: [], fear: [] })
+  const [tagsB, setTagsB] = useState<Record<string, string[]>>(initialTagsB ?? { pro: [], con: [], desire: [], fear: [] })
   const [suggestedA, setSuggestedA] = useState<Record<string, string[]>>({})
   const [suggestedB, setSuggestedB] = useState<Record<string, string[]>>({})
   const [customInput, setCustomInput] = useState('')

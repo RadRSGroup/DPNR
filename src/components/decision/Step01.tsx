@@ -5,13 +5,15 @@ import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI } from '@/lib/useAI'
 
 interface Step01Props {
+  initialTitle?: string
+  initialSubtitle?: string
   onComplete: (title: string, subtitle?: string) => void
   onBack?: () => void
 }
 
-export default function Step01({ onComplete, onBack }: Step01Props) {
-  const [title, setTitle] = useState('')
-  const [subtitle, setSubtitle] = useState<string | undefined>()
+export default function Step01({ initialTitle = '', initialSubtitle, onComplete, onBack }: Step01Props) {
+  const [title, setTitle] = useState(initialTitle)
+  const [subtitle, setSubtitle] = useState<string | undefined>(initialSubtitle)
   const { callAI, loading } = useAI()
 
   async function handleSuggestSubtitle() {

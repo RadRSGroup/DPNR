@@ -8,6 +8,7 @@ interface Step04Props {
   decisionTitle: string
   optionA: DecisionOption
   optionB: DecisionOption
+  initialLens?: Lens
   onComplete: (lens: Lens) => void
   onBack?: () => void
   onSkip?: () => void
@@ -19,8 +20,8 @@ const LENSES: { id: Lens; icon: string; label: string; description: string }[] =
   { id: 'values_needs',   icon: '💎', label: 'Values & Needs',   description: 'See which values and needs each option honours.' },
 ]
 
-export default function Step04({ decisionTitle, optionA, optionB, onComplete, onBack, onSkip }: Step04Props) {
-  const [selected, setSelected] = useState<Lens | null>(null)
+export default function Step04({ decisionTitle, optionA, optionB, initialLens, onComplete, onBack, onSkip }: Step04Props) {
+  const [selected, setSelected] = useState<Lens | null>(initialLens ?? null)
 
   return (
     <StepShell step={4} decisionTitle={decisionTitle} onBack={onBack} onSkip={onSkip}>

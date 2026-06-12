@@ -428,13 +428,16 @@ function NewDecisionContent() {
 
   if (!state.optionA || !state.optionB) {
     if (state.currentStep === 1) {
-      return <Step01 onComplete={completeStep01} onBack={goBack} />
+      return <Step01 initialTitle={state.title} initialSubtitle={state.subtitle} onComplete={completeStep01} onBack={goBack} />
     }
     if (state.currentStep === 2) {
       return (
         <Step02
           decisionTitle={state.title}
           decisionId={state.id}
+          initialNarrative={state.narrative}
+          initialOptionA={state.optionA}
+          initialOptionB={state.optionB}
           onComplete={completeStep02}
           onBack={goBack}
           onSkip={skip}
@@ -447,6 +450,9 @@ function NewDecisionContent() {
           decisionTitle={state.title}
           decisionId={state.id}
           narrative={state.narrative}
+          initialBodyLocation={state.emotionBodyLocation}
+          initialEmotion={state.emotionColor}
+          initialReflection={state.emotionReflection}
           onComplete={completeStep03}
           onBack={goBack}
           onSkip={skip}
@@ -456,11 +462,21 @@ function NewDecisionContent() {
   }
 
   switch (state.currentStep) {
-    case 1: return <Step01 onComplete={completeStep01} onBack={goBack} />
+    case 1: return (
+      <Step01
+        initialTitle={state.title}
+        initialSubtitle={state.subtitle}
+        onComplete={completeStep01}
+        onBack={goBack}
+      />
+    )
     case 2: return (
       <Step02
         decisionTitle={state.title}
         decisionId={state.id}
+        initialNarrative={state.narrative}
+        initialOptionA={state.optionA}
+        initialOptionB={state.optionB}
         onComplete={completeStep02}
         onBack={goBack}
         onSkip={skip}
@@ -471,6 +487,9 @@ function NewDecisionContent() {
         decisionTitle={state.title}
         decisionId={state.id}
         narrative={state.narrative}
+        initialBodyLocation={state.emotionBodyLocation}
+        initialEmotion={state.emotionColor}
+        initialReflection={state.emotionReflection}
         onComplete={completeStep03}
         onBack={goBack}
         onSkip={skip}
@@ -481,6 +500,7 @@ function NewDecisionContent() {
         decisionTitle={state.title}
         optionA={state.optionA!}
         optionB={state.optionB!}
+        initialLens={state.lens}
         onComplete={completeStep04}
         onBack={goBack}
         onSkip={skip}
@@ -494,6 +514,18 @@ function NewDecisionContent() {
         optionA={state.optionA!}
         optionB={state.optionB!}
         lens={state.lens ?? 'pros_cons'}
+        initialTagsA={sessionData.tags05 ? {
+          pro: sessionData.tags05.pro ?? [],
+          con: sessionData.tags05.con ?? [],
+          desire: sessionData.tags05.desire ?? [],
+          fear: sessionData.tags05.fear ?? [],
+        } : undefined}
+        initialTagsB={sessionData.tags05 ? {
+          pro: sessionData.tags05.B_pro ?? [],
+          con: sessionData.tags05.B_con ?? [],
+          desire: sessionData.tags05.B_desire ?? [],
+          fear: sessionData.tags05.B_fear ?? [],
+        } : undefined}
         onComplete={completeStep05}
         onBack={goBack}
         onSkip={skip}
@@ -505,6 +537,10 @@ function NewDecisionContent() {
         decisionId={state.id}
         optionA={state.optionA!}
         optionB={state.optionB!}
+        initialValuesA={sessionData.valuesA}
+        initialNeedsA={sessionData.needsA}
+        initialValuesB={sessionData.valuesB}
+        initialNeedsB={sessionData.needsB}
         onComplete={completeStep06}
         onBack={goBack}
         onSkip={skip}
@@ -516,6 +552,10 @@ function NewDecisionContent() {
         decisionId={state.id}
         optionA={state.optionA!}
         optionB={state.optionB!}
+        initialSelectedA={sessionData.projectionsA}
+        initialSelectedB={sessionData.projectionsB}
+        initialChosenLean={sessionData.chosenLean}
+        initialReflectionNote={sessionData.reflectionNote}
         onComplete={completeStep07}
         onBack={goBack}
         onSkip={skip}

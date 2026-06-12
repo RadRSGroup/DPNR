@@ -10,6 +10,10 @@ interface Step07Props {
   decisionId?: string
   optionA: DecisionOption
   optionB: DecisionOption
+  initialSelectedA?: string[]
+  initialSelectedB?: string[]
+  initialChosenLean?: string
+  initialReflectionNote?: string
   onComplete: (projectionsA: string[], projectionsB: string[], chosenLean?: string, reflectionNote?: string) => void
   onBack?: () => void
   onSkip?: () => void
@@ -18,19 +22,23 @@ interface Step07Props {
 type Phase = 'projections' | 'reflect'
 
 export default function Step07({
-  decisionTitle, decisionId, optionA, optionB, onComplete, onBack, onSkip
+  decisionTitle, decisionId, optionA, optionB,
+  initialSelectedA, initialSelectedB, initialChosenLean, initialReflectionNote,
+  onComplete, onBack, onSkip
 }: Step07Props) {
   const [phase, setPhase] = useState<Phase>('projections')
   const [currentOption, setCurrentOption] = useState<'A' | 'B'>('A')
-  const [statementsA, setStatementsA] = useState<string[]>([])
-  const [statementsB, setStatementsB] = useState<string[]>([])
-  const [selectedA, setSelectedA] = useState<string[]>([])
-  const [selectedB, setSelectedB] = useState<string[]>([])
+  const [statementsA, setStatementsA] = useState<string[]>(initialSelectedA ?? [])
+  const [statementsB, setStatementsB] = useState<string[]>(initialSelectedB ?? [])
+  const [selectedA, setSelectedA] = useState<string[]>(initialSelectedA ?? [])
+  const [selectedB, setSelectedB] = useState<string[]>(initialSelectedB ?? [])
   const [customA, setCustomA] = useState('')
   const [customB, setCustomB] = useState('')
 
-  const [chosenLean, setChosenLean] = useState<'A' | 'B' | 'undecided' | null>(null)
-  const [reflectionNote, setReflectionNote] = useState('')
+  const [chosenLean, setChosenLean] = useState<'A' | 'B' | 'undecided' | null>(
+    (initialChosenLean as 'A' | 'B' | 'undecided' | null) ?? null
+  )
+  const [reflectionNote, setReflectionNote] = useState(initialReflectionNote ?? '')
 
   const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI()
 

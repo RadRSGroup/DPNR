@@ -11,6 +11,9 @@ interface Step03Props {
   decisionTitle: string
   decisionId?: string
   narrative?: string
+  initialBodyLocation?: string
+  initialEmotion?: EmotionColor
+  initialReflection?: string
   onComplete: (bodyLocation: string, emotion: EmotionColor, reflection: string) => void
   onBack?: () => void
   onSkip?: () => void
@@ -18,11 +21,11 @@ interface Step03Props {
 
 type UserResponse = 'accurate' | 'refine' | 'not_sure' | 'partly_true'
 
-export default function Step03({ decisionTitle, decisionId, narrative, onComplete, onBack, onSkip }: Step03Props) {
+export default function Step03({ decisionTitle, decisionId, narrative, initialBodyLocation, initialEmotion, initialReflection, onComplete, onBack, onSkip }: Step03Props) {
   const router = useRouter()
-  const [bodyLocation, setBodyLocation] = useState<string | null>(null)
-  const [emotion, setEmotion] = useState<EmotionColor | null>(null)
-  const [reflection, setReflection] = useState<string | null>(null)
+  const [bodyLocation, setBodyLocation] = useState<string | null>(initialBodyLocation ?? null)
+  const [emotion, setEmotion] = useState<EmotionColor | null>(initialEmotion ?? null)
+  const [reflection, setReflection] = useState<string | null>(initialReflection ?? null)
   const [response, setResponse] = useState<UserResponse | null>(null)
   const [userRefinement, setUserRefinement] = useState('')
   const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI()

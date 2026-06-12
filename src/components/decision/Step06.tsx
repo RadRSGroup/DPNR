@@ -12,6 +12,10 @@ interface Step06Props {
   decisionId?: string
   optionA: DecisionOption
   optionB: DecisionOption
+  initialValuesA?: string[]
+  initialNeedsA?: string[]
+  initialValuesB?: string[]
+  initialNeedsB?: string[]
   onComplete: (valuesA: string[], needsA: string[], valuesB: string[], needsB: string[]) => void
   onBack?: () => void
   onSkip?: () => void
@@ -24,12 +28,12 @@ const ROUNDS: { round: Round; label: string; icon: string }[] = [
   { round: 'needs',  label: 'Needs',  icon: '🫀' },
 ]
 
-export default function Step06({ decisionTitle, decisionId, optionA, optionB, onComplete, onBack, onSkip }: Step06Props) {
+export default function Step06({ decisionTitle, decisionId, optionA, optionB, initialValuesA, initialNeedsA, initialValuesB, initialNeedsB, onComplete, onBack, onSkip }: Step06Props) {
   const [roundIdx, setRoundIdx] = useState(0)
   const [currentOption, setCurrentOption] = useState<'A' | 'B'>('A')
   const [selected, setSelected] = useState<Record<string, Record<Round, string[]>>>({
-    A: { values: [], needs: [] },
-    B: { values: [], needs: [] },
+    A: { values: initialValuesA ?? [], needs: initialNeedsA ?? [] },
+    B: { values: initialValuesB ?? [], needs: initialNeedsB ?? [] },
   })
   const [suggestedA, setSuggestedA] = useState<{ values: string[]; needs: string[] }>({ values: [], needs: [] })
   const [suggestedB, setSuggestedB] = useState<{ values: string[]; needs: string[] }>({ values: [], needs: [] })
