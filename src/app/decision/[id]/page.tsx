@@ -5,8 +5,9 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
   addOutcome, getOutcomes, updateDecision,
-  replaceTagsForType, replaceProjections,
+  replaceTagsForType, replaceProjections, deleteDecision,
 } from '@/lib/supabase/decisions'
+import { useRouter } from 'next/navigation'
 import { CalendarButtons } from '@/components/ui/CalendarButtons'
 import { PRESET_TAGS } from '@/lib/types'
 
@@ -467,9 +468,25 @@ function ChoiceSummary({ optA, optB }: { optA?: OptionRow; optB?: OptionRow }) {
 /* ─── Main page ─────────────────────────────────────── */
 export default function DecisionDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const router = useRouter()
   const [decision, setDecision] = useState<DecisionDetail | null>(null)
   const [outcomes, setOutcomes] = useState<Outcome[]>([])
   const [loading, setLoading] = useState(true)
+
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleDelete() {
+    if (!decision) return
+    setDeleting(true)
+    try {
+      await deleteDecision(decision.id)
+      router.push('/dashboard')
+    } catch {
+      setDeleting(false)
+      setConfirmDelete(false)
+    }
+  }
 
   const [checkInText, setCheckInText] = useState('')
   const [savingCheckIn, setSavingCheckIn] = useState(false)
@@ -566,7 +583,29 @@ export default function DecisionDetailPage() {
 
       {/* Header */}
       <div className="pt-12 pb-5">
-        <Link href="/dashboard" className="text-purple-400 text-sm">← Dashboard</Link>
+        <div className="flex items-center justify-between">
+          <Link href="/dashboard" className="text-purple-400 text-sm">← Dashboard</Link>
+          {!confirmDelete ? (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="text-white/20 hover:text-red-400 text-xs transition-colors px-1 py-1"
+              title="Delete decision"
+            >
+              Delete
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-white/40 text-xs">Delete?</span>
+              <button onClick={handleDelete} disabled={deleting}
+                className="text-red-400 hover:text-red-300 text-xs font-medium transition-colors disabled:opacity-50">
+                {deleting ? 'Deleting…' : 'Yes'}
+              </button>
+              <button onClick={() => setConfirmDelete(false)} className="text-white/30 hover:text-white/60 text-xs transition-colors">
+                No
+              </button>
+            </div>
+          )}
+        </div>
         <div className="mt-5 space-y-1">
           <p className={`text-xs uppercase tracking-widest ${decision.status === 'completed' ? 'text-emerald-400' : 'text-purple-400'}`}>
             {decision.status === 'completed' ? '✓ Completed' : `Step ${decision.current_step}/7 in progress`}
@@ -579,6 +618,14 @@ export default function DecisionDetailPage() {
 
       {/* Action bar */}
       <div className="flex gap-2 mb-5">
+        {decision.status !== 'completed' && (
+          <Link
+            href={`/decision/new?resume=${decision.id}`}
+            className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 active:scale-[0.98] text-white text-xs font-medium text-center transition-all"
+          >
+            Continue →
+          </Link>
+        )}
         <button onClick={() => { setShowCheckIn(v => !v); setShowOutcome(false) }}
           className="flex-1 py-2.5 rounded-xl border border-purple-700/40 bg-purple-900/20 text-purple-300 text-xs hover:bg-purple-900/35 transition-all">
           + Add check-in
@@ -771,12 +818,6 @@ export default function DecisionDetailPage() {
         )}
 
 
-        {decision.status !== 'completed' && (
-          <Link href={`/decision/new?resume=${decision.id}`}
-            className="block w-full text-center bg-purple-600 hover:bg-purple-500 text-white rounded-2xl px-5 py-4 text-sm font-medium transition-all active:scale-[0.98]">
-            Continue decision →
-          </Link>
-        )}
       </div>
     </div>
   )

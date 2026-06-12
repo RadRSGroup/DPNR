@@ -153,6 +153,12 @@ export async function getOutcomes(decisionId: string) {
   return data
 }
 
+export async function deleteDecision(id: string) {
+  const supabase = createClient()
+  const { error } = await supabase.from('decisions').delete().eq('id', id)
+  if (error) throw error
+}
+
 export async function getDecisions() {
   const supabase = createClient()
   const { data, error } = await supabase
