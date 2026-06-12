@@ -135,9 +135,14 @@ function NewDecisionContent() {
         const tagsFor = (opt: { option_tags?: { tag_type: string; label: string }[] } | undefined, type: string) =>
           (opt?.option_tags ?? []).filter((t: { tag_type: string }) => t.tag_type === type).map((t: { label: string }) => t.label)
 
-        // Extract selected projections per option
-        const projectionsFor = (opt: { projections?: { statement: string; selected: boolean }[] } | undefined) =>
-          (opt?.projections ?? []).filter((p: { selected: boolean }) => p.selected).map((p: { statement: string }) => p.statement)
+        // Extract selected projections per option.
+        // Fallback: if all rows have selected=false (old data bug), return all of them so the
+        // user sees their projections rather than a blank list that triggers a fresh AI call.
+        const projectionsFor = (opt: { projections?: { statement: string; selected: boolean }[] } | undefined) => {
+          const all = opt?.projections ?? []
+          const selected = all.filter((p: { selected: boolean }) => p.selected)
+          return (selected.length > 0 ? selected : all).map((p: { statement: string }) => p.statement)
+        }
 
         setState({
           id: data.id,
@@ -311,10 +316,16 @@ function NewDecisionContent() {
 
   async function completeStep01(title: string, subtitle?: string) {
     try {
-      const id = await createDecision(title, subtitle)
-      update({ title, subtitle, id, currentStep: 2 })
+      if (state.id) {
+        // Resume/edit mode — update existing decision, don't create a duplicate
+        await updateDecision(state.id, { title, subtitle, current_step: 2 })
+        update({ title, subtitle, currentStep: 2 })
+      } else {
+        const id = await createDecision(title, subtitle)
+        update({ title, subtitle, id, currentStep: 2 })
+      }
     } catch (e) {
-      console.error('createDecision error:', e)
+      console.error('completeStep01 error:', e)
       update({ title, subtitle, currentStep: 2 })
     }
   }
