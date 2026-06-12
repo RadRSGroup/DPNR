@@ -61,6 +61,23 @@ export async function saveEmotionMap(
   if (error) throw error
 }
 
+export async function upsertEmotionMap(
+  decisionId: string,
+  bodyLocation: string,
+  emotionColor: string,
+  aiReflection: string,
+) {
+  const supabase = createClient()
+  await supabase.from('emotion_maps').delete().eq('decision_id', decisionId)
+  const { error } = await supabase.from('emotion_maps').insert({
+    decision_id: decisionId,
+    body_location: bodyLocation,
+    emotion_color: emotionColor,
+    ai_reflection: aiReflection,
+  })
+  if (error) throw error
+}
+
 export async function saveOptionTags(
   optionId: string,
   tags: Array<{ label: string; tagType: string; aiSuggested?: boolean }>,
@@ -121,6 +138,41 @@ export async function replaceProjections(
   const { error } = await supabase.from('projections').insert(
     statements.map(s => ({ option_id: optionId, statement: s.statement, selected: s.selected }))
   )
+  if (error) throw error
+}
+
+export async function replaceAllTagsForOption(
+  optionId: string,
+  tagsByType: Record<string, string[]>,
+) {
+  const supabase = createClient()
+  const types = Object.keys(tagsByType)
+  if (!types.length) return
+  await supabase.from('option_tags').delete().eq('option_id', optionId).in('tag_type', types)
+  const rows = types.flatMap(type =>
+    (tagsByType[type] ?? []).map(label => ({ option_id: optionId, tag_type: type, label, ai_suggested: false }))
+  )
+  if (!rows.length) return
+  const { error } = await supabase.from('option_tags').insert(rows)
+  if (error) throw error
+}
+
+export async function upsertReflectionOutcome({
+  decisionId,
+  reflection,
+  chosenOptionId,
+}: {
+  decisionId: string
+  reflection: string
+  chosenOptionId?: string
+}) {
+  const supabase = createClient()
+  await supabase.from('outcomes').delete().eq('decision_id', decisionId).like('reflection', '[Reflection]%')
+  const { error } = await supabase.from('outcomes').insert({
+    decision_id: decisionId,
+    reflection,
+    chosen_option_id: chosenOptionId ?? null,
+  })
   if (error) throw error
 }
 

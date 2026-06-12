@@ -23,9 +23,10 @@ import {
   createDecision,
   updateDecision,
   upsertOptions,
-  saveEmotionMap,
-  saveOptionTags,
-  saveProjections,
+  upsertEmotionMap,
+  replaceAllTagsForOption,
+  replaceProjections,
+  upsertReflectionOutcome,
   addOutcome,
 } from '@/lib/supabase/decisions'
 
@@ -95,14 +96,48 @@ function NewDecisionContent() {
         const supabase = createClient()
         const { data } = await supabase
           .from('decisions')
-          .select(`id, title, subtitle, narrative, current_step, lens,
-            options ( id, label, content, approved )`)
+          .select(`
+            id, title, subtitle, narrative, current_step, lens,
+            options (
+              id, label, content, approved,
+              option_tags ( tag_type, label ),
+              projections ( statement, selected )
+            ),
+            emotion_maps ( body_location, emotion_color, ai_reflection ),
+            outcomes ( id, reflection, chosen_option_id )
+          `)
           .eq('id', resumeId)
           .single()
         if (!data) return
 
         const optA = data.options?.find((o: { label: string }) => o.label === 'A')
         const optB = data.options?.find((o: { label: string }) => o.label === 'B')
+        const emotion = data.emotion_maps?.[0]
+
+        // Parse the [Reflection] outcome for lean + note
+        const reflectionOutcome = (data.outcomes ?? []).find(
+          (o: { reflection: string }) => o.reflection?.startsWith('[Reflection]')
+        )
+        let chosenLean: string | undefined
+        let reflectionNote: string | undefined
+        if (reflectionOutcome) {
+          const raw = reflectionOutcome.reflection.replace('[Reflection] ', '')
+          const lines = raw.split('\n').filter(Boolean)
+          const leanLine = lines.find((l: string) => l.startsWith('Leaning') || l.startsWith('Still undecided'))
+          const noteLine = lines.find((l: string) => !l.startsWith('Leaning') && !l.startsWith('Still undecided') && !l.startsWith('Commitment:'))
+          if (leanLine?.startsWith('Leaning towards Option A')) chosenLean = 'A'
+          else if (leanLine?.startsWith('Leaning towards Option B')) chosenLean = 'B'
+          else if (leanLine?.startsWith('Still undecided')) chosenLean = 'undecided'
+          reflectionNote = noteLine
+        }
+
+        // Extract tags by type for each option
+        const tagsFor = (opt: { option_tags?: { tag_type: string; label: string }[] } | undefined, type: string) =>
+          (opt?.option_tags ?? []).filter((t: { tag_type: string }) => t.tag_type === type).map((t: { label: string }) => t.label)
+
+        // Extract selected projections per option
+        const projectionsFor = (opt: { projections?: { statement: string; selected: boolean }[] } | undefined) =>
+          (opt?.projections ?? []).filter((p: { selected: boolean }) => p.selected).map((p: { statement: string }) => p.statement)
 
         setState({
           id: data.id,
@@ -113,10 +148,32 @@ function NewDecisionContent() {
           lens: (data.lens as Lens) ?? undefined,
           optionA: optA ? { label: 'A', content: optA.content, approved: optA.approved } : undefined,
           optionB: optB ? { label: 'B', content: optB.content, approved: optB.approved } : undefined,
+          emotionBodyLocation: emotion?.body_location ?? undefined,
+          emotionColor: emotion?.emotion_color ?? undefined,
+          emotionReflection: emotion?.ai_reflection ?? undefined,
         })
-        if (optA && optB) {
-          setOptionIds({ idA: optA.id, idB: optB.id })
-        }
+        if (optA && optB) setOptionIds({ idA: optA.id, idB: optB.id })
+
+        setSessionData({
+          tags05: {
+            pro:    tagsFor(optA, 'pro'),
+            con:    tagsFor(optA, 'con'),
+            desire: tagsFor(optA, 'desire'),
+            fear:   tagsFor(optA, 'fear'),
+            B_pro:    tagsFor(optB, 'pro'),
+            B_con:    tagsFor(optB, 'con'),
+            B_desire: tagsFor(optB, 'desire'),
+            B_fear:   tagsFor(optB, 'fear'),
+          },
+          valuesA: tagsFor(optA, 'value'),
+          needsA:  tagsFor(optA, 'need'),
+          valuesB: tagsFor(optB, 'value'),
+          needsB:  tagsFor(optB, 'need'),
+          projectionsA: projectionsFor(optA),
+          projectionsB: projectionsFor(optB),
+          chosenLean,
+          reflectionNote,
+        })
       } catch {
         // fall through — start fresh if load fails
       } finally {
@@ -278,7 +335,7 @@ function NewDecisionContent() {
     if (state.id) {
       try {
         await updateDecision(state.id, { current_step: 4 })
-        await saveEmotionMap(state.id, bodyLocation, emotionColor, reflection)
+        await upsertEmotionMap(state.id, bodyLocation, emotionColor, reflection)
       } catch {
         // non-fatal
       }
@@ -298,22 +355,20 @@ function NewDecisionContent() {
     if (state.id) {
       try {
         if (optionIds.idA) {
-          const tagsA = [
-            ...(tags.A_pro ?? []).map(l => ({ label: l, tagType: 'pro' })),
-            ...(tags.A_con ?? []).map(l => ({ label: l, tagType: 'con' })),
-            ...(tags.A_desire ?? []).map(l => ({ label: l, tagType: 'desire' })),
-            ...(tags.A_fear ?? []).map(l => ({ label: l, tagType: 'fear' })),
-          ]
-          if (tagsA.length) await saveOptionTags(optionIds.idA, tagsA)
+          await replaceAllTagsForOption(optionIds.idA, {
+            pro:    tags.A_pro    ?? [],
+            con:    tags.A_con    ?? [],
+            desire: tags.A_desire ?? [],
+            fear:   tags.A_fear   ?? [],
+          })
         }
         if (optionIds.idB) {
-          const tagsB = [
-            ...(tags.B_pro ?? []).map(l => ({ label: l, tagType: 'pro' })),
-            ...(tags.B_con ?? []).map(l => ({ label: l, tagType: 'con' })),
-            ...(tags.B_desire ?? []).map(l => ({ label: l, tagType: 'desire' })),
-            ...(tags.B_fear ?? []).map(l => ({ label: l, tagType: 'fear' })),
-          ]
-          if (tagsB.length) await saveOptionTags(optionIds.idB, tagsB)
+          await replaceAllTagsForOption(optionIds.idB, {
+            pro:    tags.B_pro    ?? [],
+            con:    tags.B_con    ?? [],
+            desire: tags.B_desire ?? [],
+            fear:   tags.B_fear   ?? [],
+          })
         }
       } catch (e) { console.error('Step05 save error:', e) }
     }
@@ -340,18 +395,8 @@ function NewDecisionContent() {
   async function completeStep06(valuesA: string[], needsA: string[], valuesB: string[], needsB: string[]) {
     if (state.id) {
       try {
-        if (optionIds.idA) {
-          await saveOptionTags(optionIds.idA, [
-            ...valuesA.map(l => ({ label: l, tagType: 'value' })),
-            ...needsA.map(l => ({ label: l, tagType: 'need' })),
-          ])
-        }
-        if (optionIds.idB) {
-          await saveOptionTags(optionIds.idB, [
-            ...valuesB.map(l => ({ label: l, tagType: 'value' })),
-            ...needsB.map(l => ({ label: l, tagType: 'need' })),
-          ])
-        }
+        if (optionIds.idA) await replaceAllTagsForOption(optionIds.idA, { value: valuesA, need: needsA })
+        if (optionIds.idB) await replaceAllTagsForOption(optionIds.idB, { value: valuesB, need: needsB })
       } catch {}
     }
     setSessionData(prev => ({ ...prev, valuesA, needsA, valuesB, needsB }))
@@ -371,17 +416,19 @@ function NewDecisionContent() {
     if (state.id) {
       try {
         await updateDecision(state.id, { status: 'completed', current_step: 7 })
-        if (optionIds.idA) await saveProjections(optionIds.idA, projectionsA, projectionsA.map(() => true))
-        if (optionIds.idB) await saveProjections(optionIds.idB, projectionsB, projectionsB.map(() => false))
+        if (optionIds.idA) await replaceProjections(optionIds.idA, projectionsA.map(s => ({ statement: s, selected: true })))
+        if (optionIds.idB) await replaceProjections(optionIds.idB, projectionsB.map(s => ({ statement: s, selected: true })))
         const leanLabel = chosenLean === 'A' || chosenLean === 'B' ? chosenLean : null
         const chosenOptionId = leanLabel === 'A' ? optionIds.idA : leanLabel === 'B' ? optionIds.idB : undefined
         const parts: string[] = []
         if (leanLabel) parts.push(`Leaning towards Option ${leanLabel}`)
         else if (chosenLean === 'undecided') parts.push('Still undecided')
         if (reflectionNote) parts.push(reflectionNote)
-        if (parts.length || chosenOptionId) {
-          await addOutcome({ decisionId: state.id, reflection: `[Reflection] ${parts.join('\n')}`, chosenOptionId })
-        }
+        await upsertReflectionOutcome({
+          decisionId: state.id,
+          reflection: `[Reflection] ${parts.join('\n')}`,
+          chosenOptionId,
+        })
       } catch (e) { console.error('Step07 save error:', e) }
     }
     setSessionData(prev => ({ ...prev, projectionsA, projectionsB, chosenLean, reflectionNote }))
@@ -397,7 +444,7 @@ function NewDecisionContent() {
     })
   }
 
-  function finishFlow(commitment: string) {
+  async function finishFlow(commitment: string) {
     setCelebrating(true)
     setCompletedSummary({
       title: state.title,
@@ -409,6 +456,23 @@ function NewDecisionContent() {
       decisionId: state.id,
     })
     setPostFlow(null)
+    if (state.id && commitment.trim()) {
+      try {
+        const supabase = createClient()
+        const { data: existing } = await supabase
+          .from('outcomes')
+          .select('id, reflection')
+          .eq('decision_id', state.id)
+          .like('reflection', '[Reflection]%')
+          .single()
+        if (existing) {
+          const base = existing.reflection.replace(/\nCommitment:.*$/, '')
+          await supabase.from('outcomes')
+            .update({ reflection: `${base}\nCommitment: ${commitment.trim()}` })
+            .eq('id', existing.id)
+        }
+      } catch {}
+    }
   }
 
   if (pendingSummary && state.optionA && state.optionB) {
