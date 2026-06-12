@@ -17,7 +17,7 @@ import SummaryInsightScreen from '@/components/decision/SummaryInsightScreen'
 import SessionSummaryScreen from '@/components/decision/SessionSummaryScreen'
 import ClarityToActionScreen from '@/components/decision/ClarityToActionScreen'
 import CommitmentScreen from '@/components/decision/CommitmentScreen'
-import { DecisionState, DecisionOption, Lens, EmotionColor } from '@/lib/types'
+import { DecisionState, DecisionOption, Lens } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 import {
   createDecision,
@@ -273,7 +273,7 @@ function NewDecisionContent() {
     }
   }
 
-  async function completeStep03(bodyLocation: string, emotionColor: EmotionColor, reflection: string) {
+  async function completeStep03(bodyLocation: string, emotionColor: string, reflection: string) {
     update({ emotionBodyLocation: bodyLocation, emotionColor, emotionReflection: reflection, currentStep: 4 })
     if (state.id) {
       try {

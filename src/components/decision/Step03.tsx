@@ -7,14 +7,16 @@ import { useAI } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { EMOTION_COLORS, BODY_LOCATIONS, EmotionColor, TOTAL_STEPS } from '@/lib/types'
 
+const PRESET_EMOTION_LABELS: string[] = EMOTION_COLORS.map(e => e.label)
+
 interface Step03Props {
   decisionTitle: string
   decisionId?: string
   narrative?: string
   initialBodyLocation?: string
-  initialEmotion?: EmotionColor
+  initialEmotion?: string
   initialReflection?: string
-  onComplete: (bodyLocation: string, emotion: EmotionColor, reflection: string) => void
+  onComplete: (bodyLocation: string, emotion: string, reflection: string) => void
   onBack?: () => void
   onSkip?: () => void
 }
@@ -23,29 +25,37 @@ type UserResponse = 'accurate' | 'refine' | 'not_sure' | 'partly_true'
 
 export default function Step03({ decisionTitle, decisionId, narrative, initialBodyLocation, initialEmotion, initialReflection, onComplete, onBack, onSkip }: Step03Props) {
   const router = useRouter()
+  const isPreset = (v?: string): v is EmotionColor => !!v && PRESET_EMOTION_LABELS.includes(v)
   const [bodyLocation, setBodyLocation] = useState<string | null>(initialBodyLocation ?? null)
-  const [emotion, setEmotion] = useState<EmotionColor | null>(initialEmotion ?? null)
+  const [emotion, setEmotion] = useState<EmotionColor | null>(
+    isPreset(initialEmotion) ? initialEmotion : null
+  )
+  const [customEmotion, setCustomEmotion] = useState<string>(
+    isPreset(initialEmotion) ? '' : (initialEmotion ?? '')
+  )
   const [reflection, setReflection] = useState<string | null>(initialReflection ?? null)
   const [response, setResponse] = useState<UserResponse | null>(null)
   const [userRefinement, setUserRefinement] = useState('')
   const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI()
 
+  const resolvedEmotion = emotion ?? (customEmotion.trim() || null)
+
   async function handleMapFeelings() {
-    if (!bodyLocation || !emotion) return
+    if (!bodyLocation || !resolvedEmotion) return
     const res = await callAI<{ reflection: string }>(
       'emotion_reflection',
-      { title: decisionTitle, bodyLocation, emotion, narrative },
+      { title: decisionTitle, bodyLocation, emotion: resolvedEmotion, narrative },
       decisionId
     )
     if (res?.reflection) setReflection(res.reflection)
   }
 
   function handleContinue() {
-    if (!bodyLocation || !emotion || !reflection) return
+    if (!bodyLocation || !resolvedEmotion || !reflection) return
     const finalReflection = response === 'refine' && userRefinement.trim()
       ? userRefinement.trim()
       : reflection
-    onComplete(bodyLocation, emotion, finalReflection)
+    onComplete(bodyLocation, resolvedEmotion, finalReflection)
   }
 
   if (reflection) {
@@ -99,7 +109,7 @@ export default function Step03({ decisionTitle, decisionId, narrative, initialBo
         <div className="flex-1 overflow-y-auto no-scrollbar px-5 space-y-4 pb-4 fade-up">
           <div className="bg-fuchsia-950/40 border border-fuchsia-600/25 rounded-2xl px-4 py-4 space-y-3">
             <p className="text-fuchsia-300 text-xs uppercase tracking-widest font-semibold">
-              Your selection: {bodyLocation} · {emotion}
+              Your selection: {bodyLocation} · {resolvedEmotion}
             </p>
             <p className="text-white/40 text-xs font-medium uppercase tracking-wide">A word from Us:</p>
             <p className="text-white/80 text-sm leading-relaxed">{reflection}</p>
@@ -216,7 +226,7 @@ export default function Step03({ decisionTitle, decisionId, narrative, initialBo
             {EMOTION_COLORS.map(({ label, color }) => (
               <button
                 key={label}
-                onClick={() => setEmotion(label)}
+                onClick={() => { setEmotion(label); setCustomEmotion('') }}
                 className="flex flex-col items-center gap-1.5"
               >
                 <div
@@ -229,12 +239,19 @@ export default function Step03({ decisionTitle, decisionId, narrative, initialBo
               </button>
             ))}
           </div>
+          <input
+            type="text"
+            value={customEmotion}
+            onChange={e => { setCustomEmotion(e.target.value); setEmotion(null) }}
+            placeholder="Or type your own…"
+            className="w-full bg-white/5 border border-white/15 rounded-full px-4 py-2 text-white placeholder-white/30 text-sm focus:outline-none focus:border-fuchsia-500/60 transition-colors"
+          />
         </div>
 
         <PrimaryButton
           label="Map My Feelings"
           onClick={handleMapFeelings}
-          disabled={!bodyLocation || !emotion}
+          disabled={!bodyLocation || !resolvedEmotion}
           loading={loading}
         />
       </div>

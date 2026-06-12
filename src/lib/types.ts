@@ -23,7 +23,7 @@ export interface DecisionState {
   optionA?: DecisionOption
   optionB?: DecisionOption
   emotionBodyLocation?: string
-  emotionColor?: EmotionColor
+  emotionColor?: string
   emotionReflection?: string
   lens?: Lens
   currentStep: number

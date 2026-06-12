@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
 import StepShell from './StepShell'
-import { EmotionColor } from '@/lib/types'
 import { useAI } from '@/lib/useAI'
 
 interface SessionSummaryScreenProps {
@@ -9,7 +8,7 @@ interface SessionSummaryScreenProps {
   narrative: string
   optionA: string
   optionB: string
-  emotionColor?: EmotionColor
+  emotionColor?: string
   emotionBodyLocation?: string
   emotionReflection?: string
   tagsA?: Record<string, string[]>
