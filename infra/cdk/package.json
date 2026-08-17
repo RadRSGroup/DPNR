@@ -1,0 +1,7 @@
+{
+  "name": "infra-cdk",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AWS CDK app for the DPNR platform (Cognito, API Gateway + Lambda, DynamoDB, Bedrock, EventBridge, KMS). Not yet implemented.",
+  "scripts": {}
+}

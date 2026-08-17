@@ -1,0 +1,8 @@
+{
+  "name": "@dpnr/shared-types",
+  "private": true,
+  "version": "0.1.0",
+  "description": "TypeScript types and validation schemas shared between apps/web and infra/cdk Lambda handlers — API request/response contracts, DynamoDB item shapes, Prompt Registry records. Prevents drift between frontend and backend as they're built by separate sessions.",
+  "main": "index.ts",
+  "scripts": {}
+}
