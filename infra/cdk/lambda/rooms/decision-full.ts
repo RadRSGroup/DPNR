@@ -1,6 +1,5 @@
 import type { APIGatewayProxyHandlerV2WithJWTAuthorizer } from 'aws-lambda'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { DynamoDBDocumentClient, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
+import { GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import {
   Sk,
   userPk,
@@ -19,9 +18,7 @@ import {
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { stubDecryptField } from '../lib/crypto-stub'
-
-const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
-const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
+import { ddb, TABLE_NAME } from './decision-steps/db'
 
 type DecisionContent = { title: string; subtitle: string | null; narrative: string }
 type OptionContent = { content: string }
