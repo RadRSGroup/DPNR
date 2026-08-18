@@ -51,6 +51,24 @@ export const DECISION_ROOM_STEP_ORDER: DecisionRoomStepId[] = [
   'FUTURE_PROJECTION',
 ]
 
+/**
+ * The post-flow summary sequence (original `STEP_LABELS` 8–10, never part
+ * of `TOTAL_STEPS = 7` or the `currentStep` numeric column above — a
+ * decision's `currentStep` stays at 7 throughout this whole sequence,
+ * matching the original exactly). Tracked only via `SessionItem.currentStepId`
+ * (a free-form string), not `DecisionItem.currentStep`. Runs entirely
+ * *after* `DecisionItem.status` is already `'completed'` — that field means
+ * "the core 7-step decision is done," not "no further interaction happens."
+ * `COMMITMENT` is the true end of the whole flow (sets `sessionComplete`).
+ */
+export const DecisionRoomPostFlowStepIdSchema = z.enum([
+  'SESSION_SUMMARY',
+  'SUMMARY_INSIGHT',
+  'CLARITY_ACTION',
+  'COMMITMENT',
+])
+export type DecisionRoomPostFlowStepId = z.infer<typeof DecisionRoomPostFlowStepIdSchema>
+
 export const DecisionStatusSchema = z.enum(['active', 'completed', 'archived'])
 export type DecisionStatus = z.infer<typeof DecisionStatusSchema>
 

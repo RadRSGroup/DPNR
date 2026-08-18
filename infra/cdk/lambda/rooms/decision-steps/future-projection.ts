@@ -108,6 +108,14 @@ export const futureProjectionStep: StepDefinition = {
       ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: updatedDecision })),
     ])
 
-    return { nextStepId: null, result: { chosenLean }, sessionComplete: true }
+    // NOT sessionComplete here, even though DecisionItem.status is now
+    // 'completed' — matches the original exactly: `completeStep07` sets
+    // status:'completed' immediately, but the app keeps interacting with
+    // this same decision through the whole post-flow summary sequence
+    // (session_summary → summary_insight → clarity_action → commitment)
+    // afterward. "Product-visible completion" and "engine stops accepting
+    // commands" are different things; only COMMITMENT (the real end of
+    // the flow, matching the original's finishFlow) sets sessionComplete.
+    return { nextStepId: 'SESSION_SUMMARY', result: { chosenLean } }
   },
 }
