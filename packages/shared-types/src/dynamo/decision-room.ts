@@ -69,6 +69,28 @@ export const DecisionRoomPostFlowStepIdSchema = z.enum([
 ])
 export type DecisionRoomPostFlowStepId = z.infer<typeof DecisionRoomPostFlowStepIdSchema>
 
+/**
+ * The 3 `SectionSummaryScreen` interstitials the original shows mid-flow —
+ * after Step05, Step06, and Step07, gating the transition to the next
+ * step. Distinct from both `DecisionRoomStepIdSchema` (the numbered 1–7
+ * model) and `DecisionRoomPostFlowStepIdSchema` (the sequence after the
+ * whole 7-step flow is done): these sit *between* structural steps.
+ * `DEEP_EXPLORATION_SUMMARY`/`VALUES_NEEDS_SUMMARY` are where
+ * `DecisionItem.currentStep` actually advances to 6/7 — the structural
+ * step's own `SUBMIT_STEP` (Step05/06) persists data but does NOT bump
+ * `currentStep`, matching the original exactly (`current_step` only
+ * changes once the interstitial's own continue fires). `FUTURE_PROJECTION`
+ * is the one exception — it already sets `currentStep: 7` immediately, so
+ * `FUTURE_PROJECTION_SUMMARY` only gates the client-side transition into
+ * the post-flow sequence, nothing in `DecisionItem` changes there.
+ */
+export const DecisionRoomSectionSummaryStepIdSchema = z.enum([
+  'DEEP_EXPLORATION_SUMMARY',
+  'VALUES_NEEDS_SUMMARY',
+  'FUTURE_PROJECTION_SUMMARY',
+])
+export type DecisionRoomSectionSummaryStepId = z.infer<typeof DecisionRoomSectionSummaryStepIdSchema>
+
 export const DecisionStatusSchema = z.enum(['active', 'completed', 'archived'])
 export type DecisionStatus = z.infer<typeof DecisionStatusSchema>
 

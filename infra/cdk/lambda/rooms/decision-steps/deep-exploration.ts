@@ -1,11 +1,10 @@
 import { z } from 'zod'
-import { PutCommand } from '@aws-sdk/lib-dynamodb'
-import { DECISION_ROOM_STEP_NUMBER, type Lens, type TagType } from '@dpnr/shared-types'
+import type { Lens, TagType } from '@dpnr/shared-types'
 import { parseValue, HttpError } from '../../lib/http'
 import { stubDecryptField } from '../../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModelStub } from '../../lib/model-call-stub'
-import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
+import { ddb, PROMPT_REGISTRY_TABLE_NAME } from './db'
 import { getDecision, getOption, replaceTagsOfTypes, type DecisionContent, type OptionContent, type TagEntry } from './helpers'
 import type { StepDefinition } from './types'
 
@@ -36,7 +35,7 @@ type TagBucket = z.infer<typeof TagBucketSchema>
  * rationale behind it. Step06 (Values & Needs) is unchanged either way —
  * it still runs unconditionally for every lens, exactly as the original.
  */
-function tagKindForLens(lens: Lens): 'pros_cons' | 'fears_desires' {
+export function tagKindForLens(lens: Lens): 'pros_cons' | 'fears_desires' {
   return lens === 'pros_cons' ? 'pros_cons' : 'fears_desires'
 }
 
@@ -107,14 +106,12 @@ export const deepExplorationStep: StepDefinition = {
     const newTags = [...flattenTags('A', tagsA), ...flattenTags('B', tagsB)]
     await replaceTagsOfTypes(ctx.pk, ctx.sessionId, ['pro', 'con', 'desire', 'fear'], newTags)
 
-    const now = new Date().toISOString()
-    await ddb.send(
-      new PutCommand({
-        TableName: TABLE_NAME,
-        Item: { ...decision, currentStep: DECISION_ROOM_STEP_NUMBER.VALUES_NEEDS, updatedAt: now },
-      })
-    )
-
-    return { nextStepId: 'VALUES_NEEDS', result: {} }
+    // DecisionItem.currentStep does NOT advance here — matches the original
+    // exactly: `completeStep05` persists tags but current_step only becomes
+    // 6 once the SectionSummaryScreen interstitial is dismissed
+    // (DEEP_EXPLORATION_SUMMARY's own SUBMIT_STEP does that). A resuming
+    // client should see currentStep still at 5 if they never got past that
+    // interstitial, same as the original.
+    return { nextStepId: 'DEEP_EXPLORATION_SUMMARY', result: {} }
   },
 }

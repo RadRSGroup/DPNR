@@ -1,12 +1,10 @@
 import { z } from 'zod'
-import { PutCommand } from '@aws-sdk/lib-dynamodb'
-import { DECISION_ROOM_STEP_NUMBER } from '@dpnr/shared-types'
 import { parseValue } from '../../lib/http'
 import { stubDecryptField } from '../../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModelStub } from '../../lib/model-call-stub'
-import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
-import { getDecision, getOption, replaceTagsOfTypes, type OptionContent } from './helpers'
+import { ddb, PROMPT_REGISTRY_TABLE_NAME } from './db'
+import { getOption, replaceTagsOfTypes, type OptionContent } from './helpers'
 import type { StepDefinition } from './types'
 
 const RefineInput = z.object({ optionLabel: z.enum(['A', 'B']) })
@@ -47,15 +45,10 @@ export const valuesNeedsStep: StepDefinition = {
     ]
     await replaceTagsOfTypes(ctx.pk, ctx.sessionId, ['value', 'need'], newTags)
 
-    const decision = await getDecision(ctx.pk, ctx.sessionId)
-    const now = new Date().toISOString()
-    await ddb.send(
-      new PutCommand({
-        TableName: TABLE_NAME,
-        Item: { ...decision, currentStep: DECISION_ROOM_STEP_NUMBER.FUTURE_PROJECTION, updatedAt: now },
-      })
-    )
-
-    return { nextStepId: 'FUTURE_PROJECTION', result: {} }
+    // DecisionItem.currentStep does NOT advance here — matches the original:
+    // `completeStep06` persists tags but current_step only becomes 7 once
+    // the SectionSummaryScreen interstitial is dismissed
+    // (VALUES_NEEDS_SUMMARY's own SUBMIT_STEP does that).
+    return { nextStepId: 'VALUES_NEEDS_SUMMARY', result: {} }
   },
 }

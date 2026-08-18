@@ -110,12 +110,17 @@ export const futureProjectionStep: StepDefinition = {
 
     // NOT sessionComplete here, even though DecisionItem.status is now
     // 'completed' — matches the original exactly: `completeStep07` sets
-    // status:'completed' immediately, but the app keeps interacting with
-    // this same decision through the whole post-flow summary sequence
-    // (session_summary → summary_insight → clarity_action → commitment)
-    // afterward. "Product-visible completion" and "engine stops accepting
-    // commands" are different things; only COMMITMENT (the real end of
-    // the flow, matching the original's finishFlow) sets sessionComplete.
-    return { nextStepId: 'SESSION_SUMMARY', result: { chosenLean } }
+    // status:'completed' AND current_step:7 immediately (unlike Step05/06,
+    // whose current_step advance is deferred to their own interstitial —
+    // Step07's isn't, because current_step is already maxed at 7 by this
+    // point), but the app keeps interacting with this same decision
+    // through the whole post-flow summary sequence afterward.
+    // "Product-visible completion" and "engine stops accepting commands"
+    // are different things; only COMMITMENT (the real end of the flow,
+    // matching the original's finishFlow) sets sessionComplete. The
+    // FUTURE_PROJECTION_SUMMARY interstitial that follows only gates the
+    // client-side transition into the post-flow sequence, same as the
+    // original's `postFlow = 'session_summary'`.
+    return { nextStepId: 'FUTURE_PROJECTION_SUMMARY', result: { chosenLean } }
   },
 }
