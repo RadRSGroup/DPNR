@@ -99,7 +99,7 @@ export default function StepShell({
 
       {/* Decision title + step label */}
       <div className="text-center px-6 pt-4 pb-2">
-        <h2 className="text-white text-lg font-light">"{decisionTitle}"</h2>
+        <h2 className="text-white text-lg font-light">&quot;{decisionTitle}&quot;</h2>
         <p className="text-white/50 text-xs mt-1">
           Step {String(step).padStart(2, '0')}: {STEP_LABELS[step]}
         </p>

@@ -32,15 +32,20 @@ export default function SummaryInsightScreen({
   const { callAI, loading } = useAI()
 
   useEffect(() => {
+    let ignore = false
     async function fetchInsight() {
       const res = await callAI<{ insight: string }>(
         'summary_insight',
         { decisionTitle, narrative, optionA, optionB, allTags },
         decisionId,
       )
-      if (res?.insight) setInsight(res.insight)
+      if (!ignore && res?.insight) setInsight(res.insight)
     }
     fetchInsight()
+    return () => { ignore = true }
+    // Runs once on mount by design — this screen is mounted fresh per step, and callAI isn't
+    // memoized, so including the full dep list would re-fire the AI call on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (

@@ -12,7 +12,7 @@ export function TokenCapModal({ onClose }: Props) {
       <div className="relative w-full max-w-[393px] bg-[#130d1f] border border-purple-700/40 rounded-3xl p-6 space-y-5">
         <div className="text-center space-y-2">
           <div className="w-14 h-14 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-2xl mx-auto">✦</div>
-          <h2 className="text-white text-lg font-medium">You've used all your AI sessions</h2>
+          <h2 className="text-white text-lg font-medium">You&apos;ve used all your AI sessions</h2>
           <p className="text-white/50 text-sm">Your free tier includes ~5 AI-guided decisions per month. Upgrade to continue exploring.</p>
         </div>
 

@@ -38,7 +38,7 @@ export default function MomentScreen({ onNext, onBack }: Props) {
           </h1>
 
           <p className="text-white/50 text-sm leading-relaxed">
-            Take a breath. You're about to give yourself the gift of real clarity. There's no rush here — just honest reflection, one step at a time.
+            Take a breath. You&apos;re about to give yourself the gift of real clarity. There&apos;s no rush here — just honest reflection, one step at a time.
           </p>
 
           <PrimaryButton label="Make a decision" onClick={onNext} />

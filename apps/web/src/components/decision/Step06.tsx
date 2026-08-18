@@ -42,7 +42,6 @@ export default function Step06({ decisionTitle, decisionId, optionA, optionB, in
 
   const currentRound = ROUNDS[roundIdx]
   const isLastRound = roundIdx === ROUNDS.length - 1
-  const option = currentOption === 'A' ? optionA : optionB
   const suggested = currentOption === 'A' ? suggestedA : suggestedB
 
   useEffect(() => {

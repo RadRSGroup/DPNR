@@ -25,9 +25,6 @@ type DecisionDetail = {
 }
 
 /* ─── Constants ─────────────────────────────────────── */
-const LENS_LABEL: Record<string, string> = {
-  pros_cons: 'Pros & Cons', fears_desires: 'Fears & Desires', values_needs: 'Values & Needs',
-}
 const TAG_COLOR: Record<string, string> = {
   pro: 'bg-emerald-900/30 border-emerald-700/40 text-emerald-300',
   con: 'bg-red-900/30 border-red-700/40 text-red-300',
@@ -466,7 +463,7 @@ function ChoiceSummary({ optA, optB, decisionId }: { optA?: OptionRow; optB?: Op
               </div>
             )}
             {topProj(opt) && (
-              <p className="text-white/30 text-xs italic line-clamp-2">"{topProj(opt)}"</p>
+              <p className="text-white/30 text-xs italic line-clamp-2">&quot;{topProj(opt)}&quot;</p>
             )}
           </div>
         ))}
@@ -536,6 +533,10 @@ export default function DecisionDetailPage() {
     setLoading(false)
   }, [id])
 
+  // `load` is intentionally shared with the manual refresh after mutations below (handleMarkOutcome),
+  // so this can't use the ignore-flag cleanup pattern without duplicating fetch logic for that one
+  // call site. This whole page is replaced by the /v1 API client in Phase 4 (see MVP_ARCHITECTURE.md §5.3).
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
   async function handleAddCheckIn() {
@@ -622,7 +623,7 @@ export default function DecisionDetailPage() {
             {' · '}{timeAgo(decision.created_at)}
           </p>
           <div className="flex items-start justify-between gap-2">
-            <h1 className="text-white text-xl font-light leading-snug flex-1">"{decision.title}"</h1>
+            <h1 className="text-white text-xl font-light leading-snug flex-1">&quot;{decision.title}&quot;</h1>
             <Link href={`/decision/new?resume=${decision.id}&step=1`} className="text-white/20 hover:text-purple-400 text-xs transition-colors mt-1 flex-shrink-0">Edit</Link>
           </div>
           {decision.subtitle && <p className="text-white/40 text-sm italic">{decision.subtitle}</p>}
@@ -749,7 +750,7 @@ export default function DecisionDetailPage() {
                   </div>
                 )}
                 {noteLine && (
-                  <p className="text-white/70 text-sm leading-relaxed italic">"{noteLine}"</p>
+                  <p className="text-white/70 text-sm leading-relaxed italic">&quot;{noteLine}&quot;</p>
                 )}
                 {commitmentLine && (
                   <div className="border-t border-white/8 pt-3 space-y-0.5">
@@ -828,7 +829,7 @@ export default function DecisionDetailPage() {
                 <span className="text-xs bg-white/10 rounded-full px-2.5 py-1 text-white/60">{decision.emotion_maps[0].emotion_color}</span>
               </div>
               {decision.emotion_maps[0].ai_reflection && (
-                <p className="text-white/50 text-sm italic leading-relaxed">"{decision.emotion_maps[0].ai_reflection}"</p>
+                <p className="text-white/50 text-sm italic leading-relaxed">&quot;{decision.emotion_maps[0].ai_reflection}&quot;</p>
               )}
             </>
           ) : (

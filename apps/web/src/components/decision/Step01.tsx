@@ -52,7 +52,7 @@ export default function Step01({ initialTitle = '', initialSubtitle, onComplete,
           {subtitle ? (
             <div className="bg-purple-900/20 border border-purple-700/30 rounded-2xl px-4 py-3 space-y-1 fade-up">
               <p className="text-purple-300 text-xs uppercase tracking-wide">AI Frame</p>
-              <p className="text-white/80 text-sm italic">"{subtitle}"</p>
+              <p className="text-white/80 text-sm italic">&quot;{subtitle}&quot;</p>
               <button
                 onClick={() => setSubtitle(undefined)}
                 className="text-white/30 hover:text-white/50 text-xs transition-colors"

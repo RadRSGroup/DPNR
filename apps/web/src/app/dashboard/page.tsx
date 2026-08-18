@@ -135,7 +135,7 @@ function DashboardContent() {
             className="flex items-center justify-between bg-white/5 border border-white/10 hover:border-white/20 rounded-2xl px-4 py-4 transition-all"
           >
             <div>
-              <p className="text-white text-sm font-medium">"{d.title}"</p>
+              <p className="text-white text-sm font-medium">&quot;{d.title}&quot;</p>
               <p className="text-white/30 text-xs mt-1">
                 {d.status === 'completed' ? '✓ Completed' : `Step ${d.current_step}/7 in progress`} · {timeAgo(d.updated_at)}
               </p>

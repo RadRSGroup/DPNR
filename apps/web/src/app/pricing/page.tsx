@@ -56,7 +56,7 @@ export default function PricingPage() {
         setError(json.error ?? 'Checkout failed. Please try again.')
         return
       }
-      window.location.href = json.checkoutUrl
+      window.location.assign(json.checkoutUrl)
     } catch {
       setError('Network error. Please try again.')
     } finally {

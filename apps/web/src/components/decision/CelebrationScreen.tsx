@@ -64,14 +64,14 @@ export default function CelebrationScreen({ userName, decisionTitle, onContinue 
             Well Done{firstName ? `, ${firstName}` : ''}!
           </h1>
           <p className="text-purple-300/70 text-sm">
-            You've completed your decision journey.
+            You&apos;ve completed your decision journey.
           </p>
         </div>
 
         {/* Affirmation */}
         <div className="bg-white/5 border border-white/10 rounded-3xl px-6 py-5">
           <p className="text-white/75 text-sm leading-relaxed italic">
-            "{affirmation}"
+            &quot;{affirmation}&quot;
           </p>
         </div>
 

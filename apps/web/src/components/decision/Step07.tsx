@@ -42,28 +42,29 @@ export default function Step07({
 
   const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI()
 
-  const option = currentOption === 'A' ? optionA : optionB
   const statements = currentOption === 'A' ? statementsA : statementsB
   const selected = currentOption === 'A' ? selectedA : selectedB
   const setSelected = currentOption === 'A' ? setSelectedA : setSelectedB
 
   useEffect(() => {
+    let ignore = false
+    async function fetchProjections(label: 'A' | 'B') {
+      const opt = label === 'A' ? optionA : optionB
+      const res = await callAI<{ statements: string[] }>(
+        'future_projection',
+        { optionLabel: label, optionText: opt.content, decisionTitle },
+        decisionId
+      )
+      if (!ignore && res?.statements) {
+        if (label === 'A') setStatementsA(res.statements)
+        else setStatementsB(res.statements)
+      }
+    }
     if (currentOption === 'A' && statementsA.length === 0) fetchProjections('A')
     if (currentOption === 'B' && statementsB.length === 0) fetchProjections('B')
+    return () => { ignore = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentOption])
-
-  async function fetchProjections(label: 'A' | 'B') {
-    const opt = label === 'A' ? optionA : optionB
-    const res = await callAI<{ statements: string[] }>(
-      'future_projection',
-      { optionLabel: label, optionText: opt.content, decisionTitle },
-      decisionId
-    )
-    if (res?.statements) {
-      if (label === 'A') setStatementsA(res.statements)
-      else setStatementsB(res.statements)
-    }
-  }
 
   function toggleStatement(s: string) {
     setSelected(prev =>
@@ -197,7 +198,7 @@ export default function Step07({
         <div className="flex-1 flex flex-col space-y-6 pt-2">
           <div className="text-center space-y-1">
             <p className="text-purple-400 text-xs uppercase tracking-widest">Step 7 · Reflect</p>
-            <h2 className="text-white text-lg font-light">You've mapped both paths.</h2>
+            <h2 className="text-white text-lg font-light">You&apos;ve mapped both paths.</h2>
             <p className="text-white/40 text-sm">Now let it settle. Which option leans closer to your truth?</p>
           </div>
 
@@ -234,7 +235,7 @@ export default function Step07({
                 : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'
             }`}
           >
-            Still undecided — and that's okay
+            Still undecided — and that&apos;s okay
           </button>
 
           {/* One-line reflection */}

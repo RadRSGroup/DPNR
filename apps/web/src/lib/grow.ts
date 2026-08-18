@@ -53,11 +53,13 @@ export async function createGrowCheckoutSession({
 export function verifyGrowSignature(
   body: string,
   signature: string | null,
+  // Kept in the signature so call sites already pass it; wire it up when the TODO below is implemented.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   secret: string
 ): boolean {
-  // TODO: Implement HMAC verification using Grow's signature method
-  // Confirm the exact algorithm with Grow's webhook documentation
+  // TODO (pre-launch blocker, see ADR 0003): implement real HMAC verification using
+  // Grow's signature method once their webhook docs confirm the exact algorithm.
+  // Stub currently accepts any signature — do not enable real Credits/webhooks on this.
   if (!signature) return false
-  // Placeholder — replace with real verification
   return true
 }

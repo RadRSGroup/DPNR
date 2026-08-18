@@ -15,12 +15,12 @@ export default function TermsPage() {
       <div className="prose prose-invert prose-sm max-w-none space-y-8 text-white/70 text-sm leading-relaxed">
 
         <Section title="1. Acceptance of Terms">
-          <p>By creating an account or using Decision Room ("the Service"), you agree to be bound by these Terms of Use and our Privacy & Data Policy. If you do not agree, do not use the Service.</p>
+          <p>By creating an account or using Decision Room (&quot;the Service&quot;), you agree to be bound by these Terms of Use and our Privacy & Data Policy. If you do not agree, do not use the Service.</p>
           <p>These terms apply to all users, including free-tier and paid subscribers.</p>
         </Section>
 
         <Section title="2. Description of Service">
-          <p>Decision Room is an AI-assisted personal decision-making application. It guides users through a structured 7-step process to explore, map, and reflect on meaningful decisions. The Service uses OpenAI's language models to generate reflections, suggestions, and projections based on content you provide.</p>
+          <p>Decision Room is an AI-assisted personal decision-making application. It guides users through a structured 7-step process to explore, map, and reflect on meaningful decisions. The Service uses OpenAI&apos;s language models to generate reflections, suggestions, and projections based on content you provide.</p>
           <p><strong className="text-white/90">The Service is not a mental health service, therapy, or medical advice platform.</strong> It is a self-reflective tool. If you are in distress, please seek professional support.</p>
         </Section>
 
@@ -48,7 +48,7 @@ export default function TermsPage() {
         </Section>
 
         <Section title="6. Content You Provide">
-          <p>You retain ownership of all content you submit — your decision narratives, reflections, tags, and journal entries ("User Content").</p>
+          <p>You retain ownership of all content you submit — your decision narratives, reflections, tags, and journal entries (&quot;User Content&quot;).</p>
           <p>By using the Service, you grant DPNR a limited, non-exclusive licence to process your User Content solely to:</p>
           <ul>
             <li>Deliver the Service features (AI responses, storage, display)</li>
@@ -58,12 +58,12 @@ export default function TermsPage() {
         </Section>
 
         <Section title="7. Data Use for Service Improvement">
-          <p>To improve Decision Room's AI quality, product design, and user experience, we may analyse usage patterns and content in anonymised, aggregated form. This means:</p>
+          <p>To improve Decision Room&apos;s AI quality, product design, and user experience, we may analyse usage patterns and content in anonymised, aggregated form. This means:</p>
           <ul>
             <li><strong className="text-white/90">Anonymisation:</strong> Personal identifiers (name, email, account ID) are removed before any analytical use.</li>
             <li><strong className="text-white/90">Aggregation:</strong> Insights are derived from patterns across many users — no individual decision narrative is read or attributed.</li>
             <li><strong className="text-white/90">No profiling:</strong> We do not build individual user profiles for advertising or third-party sale.</li>
-            <li><strong className="text-white/90">AI training:</strong> Your content may be used in anonymised form to fine-tune or evaluate our internal AI prompts. We do not share raw User Content with OpenAI for training purposes beyond standard API usage under OpenAI's data terms.</li>
+            <li><strong className="text-white/90">AI training:</strong> Your content may be used in anonymised form to fine-tune or evaluate our internal AI prompts. We do not share raw User Content with OpenAI for training purposes beyond standard API usage under OpenAI&apos;s data terms.</li>
           </ul>
           <p>You may opt out of anonymised analytical use by contacting us. Opting out does not affect your ability to use the Service.</p>
         </Section>
@@ -80,7 +80,7 @@ export default function TermsPage() {
 
         <Section title="9. Disclaimers">
           <ul>
-            <li>The Service is provided "as is" without warranties of any kind.</li>
+            <li>The Service is provided &quot;as is&quot; without warranties of any kind.</li>
             <li>AI-generated content (reflections, suggestions, projections) is illustrative — it may be inaccurate, incomplete, or not suited to your specific situation. Exercise your own judgement.</li>
             <li>We do not guarantee uptime, data retention, or AI response quality.</li>
           </ul>

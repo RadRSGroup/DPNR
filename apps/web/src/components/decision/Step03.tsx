@@ -99,7 +99,7 @@ export default function Step03({ decisionTitle, decisionId, narrative, initialBo
 
         {/* Header */}
         <div className="text-center px-6 pt-4 pb-3">
-          <h2 className="text-white text-lg font-light">"{decisionTitle}"</h2>
+          <h2 className="text-white text-lg font-light">&quot;{decisionTitle}&quot;</h2>
           <p className="text-fuchsia-300/60 text-xs mt-1 uppercase tracking-widest">
             Step 03: Body Emotion Mapping
           </p>

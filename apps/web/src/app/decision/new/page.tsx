@@ -27,7 +27,6 @@ import {
   replaceAllTagsForOption,
   replaceProjections,
   upsertReflectionOutcome,
-  addOutcome,
 } from '@/lib/supabase/decisions'
 
 const INITIAL_STATE: DecisionState = {
@@ -186,7 +185,7 @@ function NewDecisionContent() {
       }
     }
     loadResume()
-  }, [resumeId])
+  }, [resumeId, stepParam])
 
   if (resumeLoading) {
     return (

@@ -57,7 +57,7 @@ export default function Step02({ decisionTitle, decisionId, tier = 'free', initi
           /* Narrative input */
           <div className="flex-1 flex flex-col space-y-3">
             <p className="text-white/60 text-sm text-center">
-              Tell me about this decision. Write freely — what's happening, what makes it hard?
+              Tell me about this decision. Write freely — what&apos;s happening, what makes it hard?
             </p>
             <textarea
               value={narrative}

@@ -60,14 +60,14 @@ export default function CompletionScreen({
             Well done, {firstName}!
           </h1>
           <p className="text-white/60 text-sm leading-relaxed italic">
-            "{affirmation}"
+            &quot;{affirmation}&quot;
           </p>
         </div>
 
         {/* Decision recap */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-4">
           <p className="text-purple-400 text-xs uppercase tracking-wide font-medium">Your decision</p>
-          <p className="text-white text-base font-light">"{decisionTitle}"</p>
+          <p className="text-white text-base font-light">&quot;{decisionTitle}&quot;</p>
 
           {/* Options */}
           {(optionA || optionB) && (
@@ -104,7 +104,7 @@ export default function CompletionScreen({
         {reflectionNote && (
           <div className="bg-purple-900/15 border border-purple-700/25 rounded-2xl p-4 space-y-1">
             <p className="text-purple-400 text-xs uppercase tracking-wide">What felt true</p>
-            <p className="text-white/70 text-sm italic leading-relaxed">"{reflectionNote}"</p>
+            <p className="text-white/70 text-sm italic leading-relaxed">&quot;{reflectionNote}&quot;</p>
           </div>
         )}
 

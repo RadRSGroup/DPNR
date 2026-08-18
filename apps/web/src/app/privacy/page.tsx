@@ -56,12 +56,12 @@ export default function PrivacyPage() {
             <li>All personal identifiers are stripped before analysis.</li>
             <li>We look at patterns — e.g. which lens types are most used, common emotional themes — never at individual narratives.</li>
             <li>Aggregated findings may inform product decisions, published research, or AI model improvements.</li>
-            <li>You can opt out by emailing <span className="text-purple-400">privacy@dpnr.app</span> with the subject "Opt out of analytics".</li>
+            <li>You can opt out by emailing <span className="text-purple-400">privacy@dpnr.app</span> with the subject &quot;Opt out of analytics&quot;.</li>
           </ul>
         </Section>
 
         <Section title="AI Processing">
-          <p>Your decision content is sent to OpenAI's API to generate reflections and suggestions. OpenAI processes this data under their <a href="https://openai.com/policies/api-data-usage-policies" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300">API Data Usage Policy</a>, which states that API inputs and outputs are not used to train OpenAI models by default.</p>
+          <p>Your decision content is sent to OpenAI&apos;s API to generate reflections and suggestions. OpenAI processes this data under their <a href="https://openai.com/policies/api-data-usage-policies" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300">API Data Usage Policy</a>, which states that API inputs and outputs are not used to train OpenAI models by default.</p>
           <p>We do not send your email address or account ID to OpenAI — only the decision content needed to generate a response.</p>
         </Section>
 
@@ -88,9 +88,9 @@ export default function PrivacyPage() {
         <Section title="Your Rights">
           <p>Under applicable data protection law you have the right to:</p>
           <ul>
-            <li><strong className="text-white/90">Access:</strong> See all data we hold about you (use "Download my data" in account settings)</li>
+            <li><strong className="text-white/90">Access:</strong> See all data we hold about you (use &quot;Download my data&quot; in account settings)</li>
             <li><strong className="text-white/90">Portability:</strong> Export your data as machine-readable JSON</li>
-            <li><strong className="text-white/90">Erasure:</strong> Delete your account and all associated data (use "Delete my account" in account settings)</li>
+            <li><strong className="text-white/90">Erasure:</strong> Delete your account and all associated data (use &quot;Delete my account&quot; in account settings)</li>
             <li><strong className="text-white/90">Correction:</strong> Edit your decisions and reflections directly in the app</li>
             <li><strong className="text-white/90">Restriction:</strong> Ask us to pause processing while a dispute is resolved</li>
             <li><strong className="text-white/90">Objection:</strong> Opt out of legitimate-interest processing (analytics)</li>
@@ -107,7 +107,7 @@ export default function PrivacyPage() {
         </Section>
 
         <Section title="Changes">
-          <p>We'll notify you by email at least 14 days before any material change to this policy.</p>
+          <p>We&apos;ll notify you by email at least 14 days before any material change to this policy.</p>
         </Section>
 
         <div className="pt-4 border-t border-white/10">

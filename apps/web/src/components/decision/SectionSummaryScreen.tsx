@@ -128,7 +128,7 @@ export default function SectionSummaryScreen({
 
       {/* Header */}
       <div className="text-center px-6 pt-4 pb-3">
-        <h2 className="text-white text-lg font-light">"{decisionTitle}"</h2>
+        <h2 className="text-white text-lg font-light">&quot;{decisionTitle}&quot;</h2>
         <p className="text-fuchsia-300/60 text-xs mt-1 uppercase tracking-widest">
           Step {String(step).padStart(2, '0')}: {STEP_TYPE_LABEL[stepType]}
         </p>

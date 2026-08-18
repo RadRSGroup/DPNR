@@ -17,7 +17,7 @@ function addDays(days: number) {
 
 export default function CommitmentScreen({ decisionTitle, nextStep, onDone, onBack }: CommitmentScreenProps) {
   const [commitment, setCommitment] = useState(nextStep ?? '')
-  const [reviewDate, setReviewDate] = useState<string | null>(null)
+  const [reviewDate] = useState<string | null>(null)
 
   const calendarTitle = commitment.trim() || `Decision Room check-in: "${decisionTitle}"`
   const calendarDate = reviewDate ?? addDays(7)
@@ -31,7 +31,7 @@ export default function CommitmentScreen({ decisionTitle, nextStep, onDone, onBa
       {/* Header */}
       <div className="pt-14 px-5 pb-4 text-center space-y-1">
         <div className="w-12 h-12 rounded-full bg-purple-800/40 border border-purple-500/40 flex items-center justify-center text-xl mx-auto mb-3">✦</div>
-        <h1 className="text-white text-lg font-medium">"{decisionTitle}"</h1>
+        <h1 className="text-white text-lg font-medium">&quot;{decisionTitle}&quot;</h1>
         <p className="text-white/50 text-sm">Last Step: Before You Leave</p>
       </div>
 
@@ -47,7 +47,7 @@ export default function CommitmentScreen({ decisionTitle, nextStep, onDone, onBa
           <p className="text-white/80 text-sm leading-relaxed">
             Before you leave this space, take a gentle moment with yourself.
             Looking closely at a decision is not always easy.
-            It takes honesty, courage, and care. You've taken the time to listen to your
+            It takes honesty, courage, and care. You&apos;ve taken the time to listen to your
             thoughts, emotions, and what matters most to you.
           </p>
           <p className="text-white font-medium text-sm">What are you committing to from here?</p>

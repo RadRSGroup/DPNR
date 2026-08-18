@@ -55,6 +55,7 @@ export default function SessionSummaryScreen({
   const { callAI, loading } = useAI()
 
   useEffect(() => {
+    let ignore = false
     async function fetch() {
       const res = await callAI<{
         situation: string
@@ -73,13 +74,17 @@ export default function SessionSummaryScreen({
         },
         decisionId,
       )
-      if (res) {
+      if (!ignore && res) {
         const { situation: sit, ...rest } = res
         setSituation(sit ?? '')
         setSummaries(rest)
       }
     }
     fetch()
+    return () => { ignore = true }
+    // Runs once on mount by design — this screen is mounted fresh per step, and callAI isn't
+    // memoized, so including the full dep list would re-fire the AI call on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (

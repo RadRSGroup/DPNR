@@ -37,11 +37,9 @@ export default function Step05({ decisionTitle, decisionId, narrative, optionA, 
 
   const currentSection = sections[sectionIdx]
   const isLastSection = sectionIdx === sections.length - 1
-  const option = currentOption === 'A' ? optionA : optionB
   const tags = currentOption === 'A' ? tagsA : tagsB
   const setTags = currentOption === 'A' ? setTagsA : setTagsB
   const suggested = currentOption === 'A' ? suggestedA : suggestedB
-  const setSuggested = currentOption === 'A' ? setSuggestedA : setSuggestedB
 
   useEffect(() => {
     fetchSuggestions(currentOption)

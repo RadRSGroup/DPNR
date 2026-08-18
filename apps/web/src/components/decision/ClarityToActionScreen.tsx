@@ -30,18 +30,23 @@ export default function ClarityToActionScreen({
   const { callAI, loading } = useAI()
 
   useEffect(() => {
+    let ignore = false
     async function fetchSuggestion() {
       const res = await callAI<{ nextStep: string }>(
         'clarity_action',
         { decisionTitle, narrative, optionA, optionB, chosenLean },
         decisionId,
       )
-      if (res?.nextStep) {
+      if (!ignore && res?.nextStep) {
         setSuggestedStep(res.nextStep)
         setNextStep(res.nextStep)
       }
     }
     fetchSuggestion()
+    return () => { ignore = true }
+    // Runs once on mount by design — this screen is mounted fresh per step, and callAI isn't
+    // memoized, so including the full dep list would re-fire the AI call on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function toggleFeeling(f: string) {

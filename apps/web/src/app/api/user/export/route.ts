@@ -9,7 +9,6 @@ export async function GET() {
     { data: profile },
     { data: decisions },
     { data: tokenUsage },
-    { data: outcomes },
   ] = await Promise.all([
     supabase.from('user_profiles').select('tier, token_cap, billing_period_start, preferred_language, created_at').eq('user_id', user.id).single(),
     supabase.from('decisions').select(`
@@ -23,7 +22,6 @@ export async function GET() {
       outcomes ( reflection, chosen_option_id, created_at )
     `).eq('user_id', user.id).order('created_at', { ascending: true }),
     supabase.from('token_usage').select('step, call_type, tokens_used, created_at').eq('user_id', user.id).order('created_at', { ascending: true }),
-    supabase.from('outcomes').select('reflection, chosen_option_id, created_at').eq('user_id', user.id).order('created_at', { ascending: true }),
   ])
 
   const export_data = {
