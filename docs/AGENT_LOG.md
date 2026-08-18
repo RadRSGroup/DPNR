@@ -2,6 +2,21 @@
 
 This project has **no human development team**. It is built entirely by Claude Code agents, one session at a time. Each session starts with zero memory of prior sessions except what's written here and in `docs/MVP_ARCHITECTURE.md`. Treat this file as load-bearing infrastructure, not a changelog.
 
+## Prompt for next agent
+
+*(Copy-paste this to start a new session. Overwrite it at the end of every session — same rule as "Next Agent — Start Here" below, which this points to for the full detail.)*
+
+> You're picking up work on DPNR (`C:\Users\rekkawi\decision-room`), a personal-development product built entirely by Claude Code agents — no human dev team, real engineering discipline expected anyway. Before doing anything else, read `docs/AGENT_LOG.md` in full (protocol, guardrails, and the "Next Agent — Start Here" section), then `docs/MVP_ARCHITECTURE.md`, then `docs/adr/` — don't relitigate a settled ADR.
+>
+> Current state: Phase 0 platform scaffolding (`packages/shared-types` + `infra/cdk`'s three stacks) is built and verified locally (typecheck, `cdk synth`, and the actual synthesized CloudFormation was inspected, not just "it compiled"). **Nothing is deployed — no AWS account exists yet.** The user is setting AWS up on their own timeline, not this session — don't ask about AWS status or push toward `cdk bootstrap`/`deploy`; just do non-AWS-dependent work.
+>
+> Good next tasks, roughly in priority order (use judgment on which matters most, or ask the user if genuinely unsure):
+> 1. Clean up the 57 pre-existing lint errors in `apps/web` (flagged since Session 2, still unfixed) — the Decision Room code should be lint-clean before Phase 4 ports it onto the new platform.
+> 2. Flesh out the remaining `/v1` API contracts in `packages/shared-types/src/api` (Companion, room creation, Library, Daily Card/Weekly Recap, Commitments) — see the TODO list in `src/api/index.ts`.
+> 3. Migrate the 8 existing OpenAI prompts in `apps/web/src/lib/ai/prompts.ts` into versioned Prompt Registry records (schema in `MVP_ARCHITECTURE.md` §8.2) — ready to load once that table is deployed.
+>
+> Before ending your session: run lint/typecheck/build (never hand off a red build), update this file's "Next Agent — Start Here" and "Prompt for next agent" sections honestly — including anything left broken or stubbed — and write an ADR for any irreversible decision.
+
 ## Protocol — every session, in order
 
 1. **Read this entire file before doing anything else.** Then check `docs/MVP_ARCHITECTURE.md` for the target architecture/build plan, and `docs/adr/` (if it exists) for decisions already made. Do not relitigate a settled ADR without writing a new one explaining why it changed.
@@ -32,7 +47,7 @@ This project has **no human development team**. It is built entirely by Claude C
 
 *(This section is overwritten every session with the current, precise handoff. Do not append to it — replace it.)*
 
-**Status:** Phase 0 code is substantially scaffolded and verified (typecheck + `cdk synth` + inspected the actual synthesized CloudFormation, not just "it compiled"). **Nothing is deployed** — no AWS account exists yet. The user is working through `docs/AWS_SETUP.md` in parallel; once `aws sts get-caller-identity` succeeds, the next session's job is `cdk bootstrap` (ask first) and a first real `cdk deploy` (ask first), not more code-writing.
+**Status:** Phase 0 code is substantially scaffolded and verified (typecheck + `cdk synth` + inspected the actual synthesized CloudFormation, not just "it compiled"). **Nothing is deployed** — no AWS account exists yet, and the user has said they'll set it up later on their own timeline. Don't ask about AWS status or nudge toward it — treat AWS-dependent work (`cdk bootstrap`/`deploy`, anything needing Bedrock model access) as blocked until the user brings it up, and default to the non-AWS-dependent backlog instead (see "Prompt for next agent" above).
 
 **What exists now (Session 3), all verified working from a clean build:**
 - `packages/shared-types`: Zod schemas (source of truth) + inferred TS types for every DynamoDB item in `MVP_ARCHITECTURE.md` §3.1/§3.2 (account/credits, Digital Twin, sessions, Decision Room — ported from `apps/web/supabase/migrations/`, Mirror Room first-pass, continuity items, Prompt Registry, Session Tickets, Library/Plans catalogs) plus a `keys.ts` module that is the *only* place PK/SK string formats are built — never hand-roll a key in handler code. API-side: the shared room-command contract (`FlowId: DECISION | MIRROR`, used by both rooms — this is the highest-leverage reuse point per `MVP_ARCHITECTURE.md` §5.2), dashboard/twin/credits response shapes, health check. **Not yet typed:** most of §4's endpoint list (auth/account, Companion, room creation reads, Library, Daily Card/Weekly Recap, Commitments, payment webhook) — `src/api/index.ts` has the explicit backlog comment; add schemas as each endpoint is actually built, not speculatively.
