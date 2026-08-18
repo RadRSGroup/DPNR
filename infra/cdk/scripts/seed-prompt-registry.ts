@@ -1,9 +1,9 @@
 /**
  * Loads the Prompt Registry seed data into the deployed
- * `dpnr-prompt-registry` DynamoDB table. Two domains so far:
- * `decision_room` (an actual port of already-shipped OpenAI prompts) and
- * `mirror_room` (net-new, designed Claude-native from day one — see
- * mirror-room-prompts.seed.ts's doc comment). Every other domain in
+ * `dpnr-prompt-registry` DynamoDB table. Three domains so far:
+ * `decision_room` (an actual port of already-shipped OpenAI prompts),
+ * `mirror_room`, and `library` (both net-new, designed Claude-native from
+ * day one — see each seed file's own doc comment). Every other domain in
  * MVP_ARCHITECTURE.md §3.2 gets seeded once it's actually built, not
  * speculatively.
  *
@@ -32,6 +32,7 @@ import {
 } from '@dpnr/shared-types'
 import { DECISION_ROOM_PROMPT_SEEDS, type PromptSeed } from './decision-room-prompts.seed'
 import { MIRROR_ROOM_PROMPT_SEEDS } from './mirror-room-prompts.seed'
+import { LIBRARY_PROMPT_SEEDS } from './library-prompts.seed'
 
 const TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME ?? 'dpnr-prompt-registry'
 
@@ -47,6 +48,12 @@ const DOMAINS: { domain: string; seeds: PromptSeed[]; author: string; sourceNote
     seeds: MIRROR_ROOM_PROMPT_SEEDS,
     author: 'design:mirror-room-prompts',
     sourceNote: 'Net-new — designed Claude-native, not ported from anywhere (see mirror-room-prompts.seed.ts).',
+  },
+  {
+    domain: 'library',
+    seeds: LIBRARY_PROMPT_SEEDS,
+    author: 'design:library-prompts',
+    sourceNote: 'Net-new — designed Claude-native, not ported from anywhere (see library-prompts.seed.ts).',
   },
 ]
 

@@ -10,6 +10,7 @@ import {
   type LibraryTopicDetailResponse,
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
+import { stubDecryptField } from '../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
 import { callPromptModelStub } from '../lib/model-call-stub'
 
@@ -25,10 +26,19 @@ const PROMPT_REGISTRY_TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME as str
  * "not from unsupported assumptions", MVP_ARCHITECTURE.md §5.5) — that
  * part IS ownership-checked the normal structural way (`userPk(requireUserId(event))`).
  *
- * Personalization is best-effort: if there are no confirmed signals, or
- * the `library` Prompt Registry domain doesn't exist yet (it doesn't, as
- * of this session — only `decision_room` is seeded), this degrades to
- * `personalizedExplanation: null` rather than failing the whole read.
+ * The prompt is given the actual confirmed signals' decrypted descriptions
+ * (up to 5 most recent, per `library/topic_explanation`'s documented
+ * convention — infra/cdk/scripts/library-prompts.seed.ts), not just a
+ * count — a count alone gives a model nothing to genuinely personalize
+ * with, which would make "personalized" a lie in practice even though the
+ * response shape looked right. Fixed this session, once the `library`
+ * domain's prompt (and its expected variable shape) existed to fix it
+ * against.
+ *
+ * Personalization is still best-effort: if there are no confirmed
+ * signals, or the `library` Prompt Registry domain doesn't exist/isn't
+ * seeded yet, this degrades to `personalizedExplanation: null` rather
+ * than failing the whole read.
  */
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
@@ -68,16 +78,21 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         ExpressionAttributeValues: { ':pk': userPk(userId), ':prefix': 'TWIN#SIGNAL#' },
       })
     )
-    const confirmedSignalCount = ((signalsResult.Items ?? []) as TwinSignalItem[]).filter(
-      (s) => s.status === 'confirmed'
-    ).length
+    const confirmedSignals = ((signalsResult.Items ?? []) as TwinSignalItem[])
+      .filter((s) => s.status === 'confirmed')
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, 5)
 
-    if (confirmedSignalCount > 0) {
+    if (confirmedSignals.length > 0) {
       try {
         const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'library', 'topic_explanation')
+        const confirmedSignalsList = confirmedSignals
+          .map((s) => `- (${s.domain}) ${stubDecryptField<{ description: string }>(s.content).description}`)
+          .join('\n')
         const stub = await callPromptModelStub(version, {
           topicTitle: versionItem.title,
-          confirmedSignalCount: String(confirmedSignalCount),
+          topicBodyExcerpt: versionItem.body.slice(0, 500),
+          confirmedSignals: confirmedSignalsList,
         })
         personalizedExplanation = typeof stub === 'string' ? stub : JSON.stringify(stub)
         usedPromptRef = promptRef('library', 'topic_explanation', version)
