@@ -1,9 +1,11 @@
 /**
- * Loads the Prompt Registry seed data (currently just decision-room-prompts.seed.ts
- * — the only domain that's an actual port of already-shipped prompts; every
- * other domain in MVP_ARCHITECTURE.md §3.2 is net-new and gets seeded once
- * it's actually built, not speculatively) into the deployed
- * `dpnr-prompt-registry` DynamoDB table.
+ * Loads the Prompt Registry seed data into the deployed
+ * `dpnr-prompt-registry` DynamoDB table. Two domains so far:
+ * `decision_room` (an actual port of already-shipped OpenAI prompts) and
+ * `mirror_room` (net-new, designed Claude-native from day one — see
+ * mirror-room-prompts.seed.ts's doc comment). Every other domain in
+ * MVP_ARCHITECTURE.md §3.2 gets seeded once it's actually built, not
+ * speculatively.
  *
  * NOT run as part of this session — there is no AWS account yet
  * (docs/AGENT_LOG.md). Run manually after `cdk deploy Dpnr-Data` succeeds:
@@ -29,14 +31,32 @@ import {
   type PromptAliasItem,
 } from '@dpnr/shared-types'
 import { DECISION_ROOM_PROMPT_SEEDS, type PromptSeed } from './decision-room-prompts.seed'
+import { MIRROR_ROOM_PROMPT_SEEDS } from './mirror-room-prompts.seed'
 
 const TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME ?? 'dpnr-prompt-registry'
 
-const DOMAINS: { domain: string; seeds: PromptSeed[] }[] = [
-  { domain: 'decision_room', seeds: DECISION_ROOM_PROMPT_SEEDS },
+const DOMAINS: { domain: string; seeds: PromptSeed[]; author: string; sourceNote: string }[] = [
+  {
+    domain: 'decision_room',
+    seeds: DECISION_ROOM_PROMPT_SEEDS,
+    author: 'migration:decision-room-prompts',
+    sourceNote: 'Ported from apps/web/src/lib/ai/prompts.ts.',
+  },
+  {
+    domain: 'mirror_room',
+    seeds: MIRROR_ROOM_PROMPT_SEEDS,
+    author: 'design:mirror-room-prompts',
+    sourceNote: 'Net-new — designed Claude-native, not ported from anywhere (see mirror-room-prompts.seed.ts).',
+  },
 ]
 
-function buildVersionItem(domain: string, seed: PromptSeed, now: string): PromptVersionItem {
+function buildVersionItem(
+  domain: string,
+  seed: PromptSeed,
+  now: string,
+  author: string,
+  sourceNote: string
+): PromptVersionItem {
   return PromptVersionItemSchema.parse({
     pk: GlobalKeys.promptRegistryPk(domain, seed.name),
     sk: GlobalKeys.promptVersion(1),
@@ -45,9 +65,11 @@ function buildVersionItem(domain: string, seed: PromptSeed, now: string): Prompt
     variables: seed.variables,
     modelParams: {
       // Re-validated against Claude/Bedrock this session (ADR 0005) — was
-      // 'gpt-4o' through Session 4. This is Claude Sonnet 4.5's Bedrock
-      // model ID as of the last time it was checked; there is still no AWS
-      // account/Bedrock access to confirm it live. CONFIRM against
+      // 'gpt-4o' through Session 4 for decision_room; mirror_room was
+      // designed against this model directly, never anything else. This
+      // is Claude Sonnet 4.5's Bedrock model ID as of the last time it was
+      // checked; there is still no AWS account/Bedrock access to confirm
+      // it live. CONFIRM against
       // https://docs.aws.amazon.com/bedrock/latest/userguide/models-regions.html
       // for the actual deploy region before this is ever really called —
       // Bedrock model IDs and regional availability drift, and a newer
@@ -60,10 +82,8 @@ function buildVersionItem(domain: string, seed: PromptSeed, now: string): Prompt
     outputSchema: seed.outputSchema,
     status: 'active',
     createdAt: now,
-    author: 'migration:decision-room-prompts',
-    changelog: seed.notes
-      ? `Ported from apps/web/src/lib/ai/prompts.ts. ${seed.notes}`
-      : 'Ported from apps/web/src/lib/ai/prompts.ts.',
+    author,
+    changelog: seed.notes ? `${sourceNote} ${seed.notes}` : sourceNote,
   })
 }
 
@@ -81,9 +101,9 @@ async function main() {
   const now = new Date().toISOString()
   let count = 0
 
-  for (const { domain, seeds } of DOMAINS) {
+  for (const { domain, seeds, author, sourceNote } of DOMAINS) {
     for (const seed of seeds) {
-      const versionItem = buildVersionItem(domain, seed, now)
+      const versionItem = buildVersionItem(domain, seed, now, author, sourceNote)
       const aliasItem = buildAliasItem(domain, seed.name, now)
 
       await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: versionItem }))

@@ -9,19 +9,23 @@ import {
   type SessionItem,
 } from '@dpnr/shared-types'
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
-import { ddb, TABLE_NAME } from './decision-steps/db'
+import { ddb, TABLE_NAME } from './db'
 import { decisionFlow } from './decision-steps'
-import type { FlowDefinition } from './decision-steps/types'
+import { mirrorFlow } from './mirror-steps'
+import type { FlowDefinition } from './types'
 
 /**
- * POST /v1/rooms/decision — the "single flow-engine Lambda" (migration
- * plan §11, MVP_ARCHITECTURE.md §5.2): one command contract
- * (RoomCommandRequestSchema), a step map per `flowId`. Only `DECISION` is
- * registered so far (its full 7-step map lives in ./decision-steps —
- * see docs/AGENT_LOG.md for the step-by-step port notes and the
- * `values_needs` lens decision). `MIRROR` gets its own step map once
- * Slice 2 designs its prompts/steps, reusing everything below (session
- * bookkeeping, optimistic concurrency, idempotency) unchanged.
+ * The "single flow-engine Lambda" (migration plan §11, MVP_ARCHITECTURE.md
+ * §5.2): one command contract (RoomCommandRequestSchema), a step map per
+ * `flowId`. Bound to two API Gateway routes (`POST /v1/rooms/decision` and
+ * `POST /v1/rooms/mirror`) — same Lambda function, same dispatcher, the
+ * route only decides which `flowId` the client is expected to send.
+ * `DECISION`'s full 14-step map lives in `./decision-steps`; `MIRROR`'s
+ * first-pass 4-step map lives in `./mirror-steps` — see docs/AGENT_LOG.md
+ * for the port notes on both (Decision Room's `values_needs` lens
+ * decision; Mirror Room's step design, which is this session's own
+ * reasonable first pass, not sourced from a spec doc — flagged there for
+ * review, not a locked design).
  *
  * Ownership is structural, same as the other handlers: `pk` is always
  * `userPk(requireUserId(event))`; `sessionId` is client-supplied but only
@@ -29,7 +33,7 @@ import type { FlowDefinition } from './decision-steps/types'
  */
 const FLOW_REGISTRY: Partial<Record<FlowId, FlowDefinition>> = {
   DECISION: decisionFlow,
-  // MIRROR: not yet implemented — see MVP_ARCHITECTURE.md §5.2.
+  MIRROR: mirrorFlow,
 }
 
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {

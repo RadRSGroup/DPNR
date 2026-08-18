@@ -142,7 +142,7 @@ export class ApiStack extends Stack {
         ...sharedProductLambdaProps.environment,
         PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
       },
-      description: 'POST /v1/rooms/decision — flow-engine command endpoint (Decision Room step map; Mirror Room to follow).',
+      description: 'POST /v1/rooms/{decision,mirror} — flow-engine command endpoint (one Lambda, dispatches on flowId).',
     })
     props.applicationTable.grantReadWriteData(roomsCommandFn)
     props.promptRegistryTable.grantReadData(roomsCommandFn)
@@ -154,6 +154,13 @@ export class ApiStack extends Stack {
     })
     props.applicationTable.grantReadData(decisionFullFn)
 
+    const mirrorFullFn = new lambda.NodejsFunction(this, 'MirrorFullFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/rooms/mirror-full.ts'),
+      description: 'GET /v1/rooms/mirror/{id}/full — decrypted read of one Mirror Room session.',
+    })
+    props.applicationTable.grantReadData(mirrorFullFn)
+
     this.httpApi.addRoutes({
       path: '/v1/rooms/decision',
       methods: [apigwv2.HttpMethod.POST],
@@ -161,10 +168,26 @@ export class ApiStack extends Stack {
       authorizer: this.cognitoAuthorizer,
     })
 
+    // Same Lambda as above (roomsCommandFn) — one flow-engine function,
+    // two routes, dispatch is on `flowId` in the request body, not the URL.
+    this.httpApi.addRoutes({
+      path: '/v1/rooms/mirror',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('MirrorRoomsCommandIntegration', roomsCommandFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
     this.httpApi.addRoutes({
       path: '/v1/rooms/decision/{id}/full',
       methods: [apigwv2.HttpMethod.GET],
       integration: new integrations.HttpLambdaIntegration('DecisionFullIntegration', decisionFullFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/rooms/mirror/{id}/full',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('MirrorFullIntegration', mirrorFullFn),
       authorizer: this.cognitoAuthorizer,
     })
 
