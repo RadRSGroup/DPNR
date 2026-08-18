@@ -57,6 +57,40 @@ cdk bootstrap aws://<ACCOUNT_ID>/<REGION>
 
 `cdk bootstrap` creates a small set of real AWS resources (an S3 bucket and IAM roles CDK uses to stage deployment assets) — low cost, but still real infrastructure. **The agent will ask for explicit confirmation before running `cdk bootstrap` or any `cdk deploy`, even after credentials are configured** — these are the kind of actions that are easy to do but require explicit go-ahead per session, since it involves real AWS resources and account interaction, not just committing code.
 
+**✅ Checkpoint:** `cdk bootstrap` completes without error (it prints "Environment ... bootstrapped").
+
+## 6. Deploy the DPNR stacks (agent runs this, only after your explicit go-ahead)
+
+Three stacks exist and are synth-verified as of Session 3/4 (`infra/cdk/lib/*.ts`): `Dpnr-Data` (DynamoDB tables + KMS key), `Dpnr-Auth` (Cognito user pool + two Lambda triggers), `Dpnr-Api` (the `/v1` API Gateway + one health-check route). Deploy them together, in this order, since `Dpnr-Auth` depends on `Dpnr-Data` and `Dpnr-Api` depends on `Dpnr-Auth`:
+
+```bash
+cd infra/cdk
+npm run deploy -- Dpnr-Data Dpnr-Auth Dpnr-Api --require-approval never
+```
+
+This creates real, billable resources for the first time (5 DynamoDB tables on pay-per-request billing, a KMS key at ~$1/mo, a Cognito user pool, 2 Lambda functions, 1 API Gateway) — still small at this stage, but no longer "free tier only." **The agent will ask for explicit confirmation before running this**, same as bootstrap — the confirmation happens in chat first, and `--require-approval never` only skips `cdk`'s own interactive terminal prompt (which would otherwise hang forever, since the agent's shell has no human to type `y` at it), not the actual go-ahead decision.
+
+**✅ Checkpoint:** deployment succeeds for all three stacks. Note the `Dpnr-Api.ApiUrl` value CDK prints at the end (also visible any time via `aws cloudformation describe-stacks --stack-name Dpnr-Api --query "Stacks[0].Outputs"`). Verify the API is actually reachable:
+```bash
+curl <ApiUrl>/v1/health
+```
+Expected response: `{"status":"ok","service":"dpnr-api","timestamp":"<ISO datetime>"}`. If this doesn't return that shape, stop and have the agent investigate before moving on — don't assume the rest of the stack works just because `cdk deploy` reported success.
+
+## 7. Seed the Prompt Registry
+
+Once `Dpnr-Data` exists, load the 13 already-ported Decision Room prompts (`infra/cdk/scripts/decision-room-prompts.seed.ts`, see `docs/AGENT_LOG.md` for what they are) into the real `dpnr-prompt-registry` table:
+
+```bash
+cd infra/cdk
+npm run seed:prompt-registry
+```
+
+This uses whatever AWS credentials/region are active in your terminal (the same `aws configure` setup from step 3) — no additional configuration needed. It's safe to re-run: every run overwrites the same version-1 + `prod`-alias records deterministically, it doesn't accrete duplicates.
+
+**✅ Checkpoint:** the script prints `Seeded decision_room/<name>@v1 (+ prod alias)` 13 times, then `Done: 13 prompts seeded into dpnr-prompt-registry.`, with no errors.
+
+**At this point the platform skeleton is live**, but only `GET /v1/health` actually does anything — every product route (Companion, Dashboard, Rooms, Library, Credits, ...) still needs a real Lambda behind it. That's ordinary feature work from here, not AWS account setup — see `docs/AGENT_LOG.md`'s "Next Agent — Start Here" for what's next.
+
 ## Ongoing cost hygiene
 
 - Keep the AWS Budgets alert from step 1 active for the life of the project.
