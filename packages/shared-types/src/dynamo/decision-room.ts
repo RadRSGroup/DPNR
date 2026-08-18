@@ -38,6 +38,10 @@ export const DecisionOptionItemSchema = z.object({
 })
 export type DecisionOptionItem = z.infer<typeof DecisionOptionItemSchema>
 
+/** User's reaction to the AI's emotion-reflection suggestion (ported from emotion_maps.user_response). */
+export const DecisionEmotionAgreementSchema = z.enum(['accurate', 'refine', 'not_sure', 'partly_true'])
+export type DecisionEmotionAgreement = z.infer<typeof DecisionEmotionAgreementSchema>
+
 /** Whole item encrypted, matching the migration plan §5 schema's item-level [ENCRYPTED] marker. */
 export const DecisionEmotionItemSchema = z.object({
   pk: z.string(),

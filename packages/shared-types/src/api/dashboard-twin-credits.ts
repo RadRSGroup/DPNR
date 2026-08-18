@@ -72,3 +72,25 @@ export const CreditsPurchaseResponseSchema = z.object({
   transactionId: z.string(),
 })
 export type CreditsPurchaseResponse = z.infer<typeof CreditsPurchaseResponseSchema>
+
+/**
+ * GET /v1/plans — catalog read (dynamo/global-tables.ts PlanItem), kept
+ * configurable per spec §Beta Trial rather than hard-coded into product
+ * logic. Only `active` plans are expected to be returned by the handler;
+ * `active` itself isn't part of the client-facing shape.
+ */
+export const PlanSummarySchema = z.object({
+  planId: z.string(),
+  displayName: z.string(),
+  kind: z.enum(['credit_pack', 'subscription']),
+  credits: z.number().int().positive(),
+  priceMinorUnits: z.number().int().nonnegative(), // e.g. agorot for ILS
+  currency: z.string(),
+  billingFrequency: z.enum(['one_time', 'monthly']).optional(),
+})
+export type PlanSummary = z.infer<typeof PlanSummarySchema>
+
+export const PlansResponseSchema = z.object({
+  plans: z.array(PlanSummarySchema),
+})
+export type PlansResponse = z.infer<typeof PlansResponseSchema>

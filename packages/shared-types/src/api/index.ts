@@ -1,14 +1,19 @@
 export * from './command-contract'
 export * from './dashboard-twin-credits'
 export * from './health'
+export * from './account'
+export * from './companion'
+export * from './rooms'
+export * from './library'
+export * from './continuity'
+export * from './webhooks'
 
 /**
- * Not yet typed — see MVP_ARCHITECTURE.md §4 for the full endpoint list.
- * Add schemas here as each is actually built, rather than speculatively
- * up front: auth/account (session-ticket, logout, password change, delete
- * account, GET /v1/keys), Companion message/context, room creation
- * (POST /v1/rooms/decision|mirror, GET .../full — the read side probably
- * just returns arrays of the Dynamo item types in ../dynamo, decrypted),
- * Content Library (topics, recommendations), Daily Card / Weekly Recap
- * reads, Commitments, and the payment webhook.
+ * Every /v1 endpoint in MVP_ARCHITECTURE.md §4 now has a contract here.
+ * Two open items to revisit, not forgotten:
+ * - account.ts's SessionTicketRequestSchema mirrors the already-committed
+ *   SessionTicketItem fields, but the actual KMS wrap handshake needs a
+ *   security-review pass before the Lambda is built.
+ * - webhooks.ts's GrowWebhookEventSchema field names are unconfirmed
+ *   against Grow's real docs (same caveat as apps/web/src/lib/grow.ts).
  */
