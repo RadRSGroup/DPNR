@@ -11,6 +11,46 @@ import { EncryptedBlobSchema } from './crypto'
 export const LensSchema = z.enum(['pros_cons', 'fears_desires', 'values_needs'])
 export type Lens = z.infer<typeof LensSchema>
 
+/**
+ * Symbolic step ids for the room command contract (api/command-contract.ts:
+ * `stepId` must be "symbolic ... never a UI position number"). The
+ * pre-migration UI's 7 numbered steps map 1:1 onto these — ported from
+ * apps/web/src/lib/types.ts's STEP_LABELS 1-7, not renumbered or
+ * reinterpreted. `DecisionItem.currentStep` keeps the original numeric
+ * column (ported from the SQL schema) for storage; DECISION_ROOM_STEP_NUMBER
+ * is the only place that maps between the two — never hand-convert elsewhere.
+ */
+export const DecisionRoomStepIdSchema = z.enum([
+  'NAME_DECISION',
+  'MAP_OPTIONS',
+  'BODY_EMOTION',
+  'CHOOSE_LENS',
+  'DEEP_EXPLORATION',
+  'VALUES_NEEDS',
+  'FUTURE_PROJECTION',
+])
+export type DecisionRoomStepId = z.infer<typeof DecisionRoomStepIdSchema>
+
+export const DECISION_ROOM_STEP_NUMBER: Record<DecisionRoomStepId, number> = {
+  NAME_DECISION: 1,
+  MAP_OPTIONS: 2,
+  BODY_EMOTION: 3,
+  CHOOSE_LENS: 4,
+  DEEP_EXPLORATION: 5,
+  VALUES_NEEDS: 6,
+  FUTURE_PROJECTION: 7,
+}
+
+export const DECISION_ROOM_STEP_ORDER: DecisionRoomStepId[] = [
+  'NAME_DECISION',
+  'MAP_OPTIONS',
+  'BODY_EMOTION',
+  'CHOOSE_LENS',
+  'DEEP_EXPLORATION',
+  'VALUES_NEEDS',
+  'FUTURE_PROJECTION',
+]
+
 export const DecisionStatusSchema = z.enum(['active', 'completed', 'archived'])
 export type DecisionStatus = z.infer<typeof DecisionStatusSchema>
 

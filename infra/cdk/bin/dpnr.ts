@@ -29,4 +29,6 @@ new ApiStack(app, 'Dpnr-Api', {
   userPool: authStack.userPool,
   userPoolClient: authStack.userPoolClient,
   applicationTable: dataStack.applicationTable,
+  promptRegistryTable: dataStack.promptRegistryTable,
+  libraryCatalogTable: dataStack.libraryCatalogTable,
 })

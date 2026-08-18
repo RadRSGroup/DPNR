@@ -18,6 +18,15 @@ export const SessionItemSchema = z.object({
   sessionVersion: z.number().int().min(0), // for optimistic concurrency (expectedSessionVersion)
   startedAt: z.string().datetime(),
   endedAt: z.string().datetime().optional(),
+  // Room command engine only (Decision/Mirror flow-engine Lambda) —
+  // Companion doesn't use these. Lets a retried command with the same
+  // idempotencyKey short-circuit to the cached response INSTEAD of hitting
+  // the optimistic-concurrency check below, which would otherwise 409 on a
+  // retry (sessionVersion already advanced from the first, successful
+  // attempt) — the two mechanisms interact, this is what makes them work
+  // together rather than fight each other. See lambda/rooms/command.ts.
+  lastIdempotencyKey: z.string().optional(),
+  lastResponse: z.record(z.string(), z.unknown()).optional(),
 })
 export type SessionItem = z.infer<typeof SessionItemSchema>
 

@@ -7,10 +7,19 @@ import type {
 // generic signature carries internal type params that make a simple
 // `ZodType<T>` parameter type break across minor versions. Every Zod
 // schema satisfies this shape regardless of version.
-interface ParsableSchema<T> {
+export interface ParsableSchema<T> {
   safeParse(
     data: unknown
   ): { success: true; data: T } | { success: false; error: { issues: { message: string }[] } }
+}
+
+/** Validates an already-parsed value (e.g. a room command's `input` record) against a schema. */
+export function parseValue<T>(raw: unknown, schema: ParsableSchema<T>): T {
+  const parsed = schema.safeParse(raw)
+  if (!parsed.success) {
+    throw new HttpError(400, 'invalid_request', parsed.error.issues.map((i) => i.message).join('; '))
+  }
+  return parsed.data
 }
 
 /**
@@ -82,10 +91,5 @@ export function parseBody<T>(event: APIGatewayProxyEventV2WithJWTAuthorizer, sch
   } catch {
     throw new HttpError(400, 'invalid_json', 'Request body is not valid JSON.')
   }
-
-  const parsed = schema.safeParse(raw)
-  if (!parsed.success) {
-    throw new HttpError(400, 'invalid_request', parsed.error.issues.map((i) => i.message).join('; '))
-  }
-  return parsed.data
+  return parseValue(raw, schema)
 }

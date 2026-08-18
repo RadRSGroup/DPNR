@@ -62,6 +62,13 @@ export const LibraryTopicVersionItemSchema = z.object({
   sk: z.string(), // GlobalKeys.promptVersion(n) — reuse the same VERSION# convention
   taxonomyCategory: z.string(), // e.g. "Inner World", "Values & Needs" (MVP spec §Content Library taxonomy)
   title: z.string(),
+  // Authored content. Plaintext — this is DPNR's own taxonomy content, not
+  // personal user data (same reasoning as this table's own top-of-section
+  // comment). Added this session: the schema previously had nowhere to put
+  // the actual topic body, which api/library.ts's
+  // LibraryTopicDetailResponseSchema.body already expected — a real gap,
+  // not a style choice, caught while wiring the first Library read handler.
+  body: z.string(),
   status: z.enum(['draft', 'active', 'retired']),
   createdAt: z.string().datetime(),
 })
