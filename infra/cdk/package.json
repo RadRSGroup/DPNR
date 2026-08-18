@@ -2,6 +2,27 @@
   "name": "infra-cdk",
   "private": true,
   "version": "0.1.0",
-  "description": "AWS CDK app for the DPNR platform (Cognito, API Gateway + Lambda, DynamoDB, Bedrock, EventBridge, KMS). Not yet implemented.",
-  "scripts": {}
+  "description": "AWS CDK app for the DPNR platform (Cognito, API Gateway + Lambda, DynamoDB, Bedrock, EventBridge, KMS). Phase 0: Cognito + DynamoDB + API Gateway skeleton only — see docs/AGENT_LOG.md for status.",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "synth": "cdk synth",
+    "diff": "cdk diff",
+    "deploy": "cdk deploy"
+  },
+  "dependencies": {
+    "@dpnr/shared-types": "*",
+    "@aws-sdk/client-dynamodb": "^3.658.0",
+    "@aws-sdk/lib-dynamodb": "^3.658.0",
+    "aws-cdk-lib": "^2.160.0",
+    "constructs": "^10.3.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^20",
+    "aws-cdk": "^2.160.0",
+    "esbuild": "^0.23.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5"
+  }
 }

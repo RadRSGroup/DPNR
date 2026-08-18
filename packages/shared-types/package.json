@@ -2,7 +2,17 @@
   "name": "@dpnr/shared-types",
   "private": true,
   "version": "0.1.0",
-  "description": "TypeScript types and validation schemas shared between apps/web and infra/cdk Lambda handlers — API request/response contracts, DynamoDB item shapes, Prompt Registry records. Prevents drift between frontend and backend as they're built by separate sessions.",
-  "main": "index.ts",
-  "scripts": {}
+  "description": "Zod schemas + inferred TypeScript types shared between apps/web and infra/cdk Lambda handlers — DynamoDB item shapes and /v1 API contracts. Schema is the source of truth; types are derived, so runtime validation and compile-time types can never drift apart.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
 }

@@ -9,9 +9,12 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=apps/web",
-    "build": "npm run build --workspace=apps/web",
+    "build:shared-types": "npm run build --workspace=packages/shared-types",
+    "dev": "npm run build:shared-types && npm run dev --workspace=apps/web",
+    "build": "npm run build:shared-types && npm run build --workspace=apps/web",
     "start": "npm run start --workspace=apps/web",
-    "lint": "npm run lint --workspace=apps/web"
+    "lint": "npm run lint --workspace=apps/web",
+    "typecheck:cdk": "npm run build:shared-types && npm run typecheck --workspace=infra/cdk",
+    "synth": "npm run build:shared-types && npm run synth --workspace=infra/cdk"
   }
 }
