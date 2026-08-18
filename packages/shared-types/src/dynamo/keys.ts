@@ -15,6 +15,9 @@ export const Sk = {
   roadmapVersion: (version: number): string => `ROADMAP#v${version}`,
   twinSignal: (domain: string, signalId: string): string => `TWIN#SIGNAL#${domain}#${signalId}`,
   session: (sessionId: string): string => `SESSION#${sessionId}`,
+  // Pointer to the user's current Companion session, so handlers can GetItem
+  // it directly instead of scanning/filtering SESSION# items by roomType.
+  companionActiveSession: (): 'COMPANION#ACTIVE_SESSION' => 'COMPANION#ACTIVE_SESSION',
   sessionMessage: (sessionId: string, isoTimestamp: string): string =>
     `SESSION#${sessionId}#MSG#${isoTimestamp}`,
   sessionSummary: (sessionId: string): string => `SESSION#${sessionId}#SUMMARY`,

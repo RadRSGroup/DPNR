@@ -25,6 +25,8 @@ const authStack = new AuthStack(app, 'Dpnr-Auth', {
 
 new ApiStack(app, 'Dpnr-Api', {
   env,
+  isProduction,
   userPool: authStack.userPool,
   userPoolClient: authStack.userPoolClient,
+  applicationTable: dataStack.applicationTable,
 })

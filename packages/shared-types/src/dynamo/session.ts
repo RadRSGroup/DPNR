@@ -28,8 +28,30 @@ export const SessionMessageItemSchema = z.object({
   role: z.enum(['user', 'assistant']),
   content: EncryptedBlobSchema, // wraps { text: string }
   createdAt: z.string().datetime(),
+  // Only set on user-authored turns — mirrors CompanionMessageRequest's
+  // clientMessageId (api/companion.ts), used for a short-window idempotency
+  // check on retry. Not a lookup key — see the Companion message handler's
+  // own comment on the bounded scope of that check.
+  clientMessageId: z.string().optional(),
 })
 export type SessionMessageItem = z.infer<typeof SessionMessageItemSchema>
+
+/**
+ * USER#<id> / COMPANION#ACTIVE_SESSION — pointer to the user's current
+ * Companion session. Exists so handlers can `GetItem` it directly instead
+ * of scanning/filtering SESSION# items by roomType — this repo avoids
+ * adding a GSI/query pattern until a concrete need justifies it
+ * (MVP_ARCHITECTURE.md §3.1's data-stack comment), and a single pointer
+ * item is cheaper than either for this specific "which session is active"
+ * lookup.
+ */
+export const CompanionActiveSessionPointerItemSchema = z.object({
+  pk: z.string(),
+  sk: z.literal('COMPANION#ACTIVE_SESSION'),
+  sessionId: z.string(),
+  updatedAt: z.string().datetime(),
+})
+export type CompanionActiveSessionPointerItem = z.infer<typeof CompanionActiveSessionPointerItemSchema>
 
 export const SessionSummaryItemSchema = z.object({
   pk: z.string(),
