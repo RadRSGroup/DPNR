@@ -37,6 +37,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       recurringPattern: orUndefined(content.recurringPattern),
       energyMoodEffect: orUndefined(content.energyMoodEffect),
       lifeDomain: orUndefined(content.lifeDomain),
+      commitment: orUndefined(content.commitment),
       createdAt: session.createdAt,
       updatedAt: session.updatedAt,
     }

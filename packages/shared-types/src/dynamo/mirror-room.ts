@@ -2,22 +2,15 @@ import { z } from 'zod'
 import { EncryptedBlobSchema } from './crypto'
 
 /**
- * Mirror Room schema. The MVP spec gives a prompt-logic outline and a
- * data-captured list (situation, trigger, thought, emotion, body
- * response, automatic reaction, coping/protective response, recurring
- * pattern, energy/mood effect, life domain) but not a formal step machine
- * the way Decision Room's pre-migration UI had one to port from.
- *
- * `MirrorRoomStepIdSchema` below is this session's own reasonable first
- * pass at grouping those 10 already-committed fields into a step
- * sequence loosely following MVP_ARCHITECTURE.md §5.2's one-line arc
- * ("situation → automatic reaction → trigger people → trigger situations
- * → shape the character") — it is NOT sourced from the actual product
- * spec docx (unavailable this session) and should be treated as a
- * flagged-for-review draft, not a locked design, unlike Decision Room's
- * step map (which faithfully ports a real, already-shipped UI). The 10
- * data fields themselves are NOT new — they were already committed
- * before this session; only their grouping into steps is new.
+ * Mirror Room schema. Session 5 designed this collaboratively with the
+ * user as a first pass (no pre-migration implementation or spec docx was
+ * available), then the user gave explicit product review and approved the
+ * grouping and both prompts as-is (Session 6) — this is no longer a
+ * flagged draft the way it was when first built. The 10 original data
+ * fields (situation, trigger, thought, emotion, body response, automatic
+ * reaction, coping/protective response, recurring pattern, energy/mood
+ * effect, life domain) were already committed before Session 5; an 11th,
+ * `commitment`, was added in Session 6 per the product review below.
  */
 export const MirrorSessionStatusSchema = z.enum(['active', 'completed'])
 export type MirrorSessionStatus = z.infer<typeof MirrorSessionStatusSchema>
@@ -28,29 +21,38 @@ export const MirrorSessionItemSchema = z.object({
   mirrorId: z.string(),
   status: MirrorSessionStatusSchema,
   currentStepId: z.string().optional(),
-  content: EncryptedBlobSchema, // wraps { situation, trigger, thought, emotion, bodyResponse, automaticReaction, copingResponse, recurringPattern, energyMoodEffect, lifeDomain }
+  content: EncryptedBlobSchema, // wraps { situation, trigger, thought, emotion, bodyResponse, automaticReaction, copingResponse, recurringPattern, energyMoodEffect, lifeDomain, commitment }
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })
 export type MirrorSessionItem = z.infer<typeof MirrorSessionItemSchema>
 
 /**
- * First-pass step grouping of the 10 already-committed content fields —
- * see the file doc comment above for why this is a draft, not a port.
- * SITUATION: situation, trigger. AUTOMATIC_REACTION: thought, emotion,
- * bodyResponse, automaticReaction (the in-the-moment cluster — what they
- * thought, felt, sensed in the body, and actually did/said; also one of
- * two AI touchpoints in this flow, mirroring Decision Room's
+ * Step grouping of the content fields, product-reviewed and approved in
+ * Session 6 — treat this as settled, same status as Decision Room's step
+ * map. SITUATION: situation, trigger. AUTOMATIC_REACTION: thought,
+ * emotion, bodyResponse, automaticReaction (the in-the-moment cluster —
+ * what they thought, felt, sensed in the body, and actually did/said;
+ * also one of two AI touchpoints in this flow, mirroring Decision Room's
  * emotion_reflection). PATTERN: copingResponse (how they tried to
  * protect/cope afterward — distinct from `automaticReaction`'s in-the-
  * moment behavior), recurringPattern (widens from this one incident to a
  * recurring pattern — "trigger people/trigger situations" in the
  * architecture doc's phrase). LIFE_IMPACT: energyMoodEffect, lifeDomain
  * ("shape the character"). SYNTHESIS: no new fields — a closing
- * restatement/synthesis prompt (added at the user's request, for UX
- * consistency with Decision Room's own closing sequence) and the step
- * that marks the session `'completed'`; there is no further post-flow
- * sequence defined for Mirror Room the way Decision Room has one.
+ * restatement/synthesis prompt (`REFINE`, ephemeral, not persisted).
+ * COMMITMENT: added in Session 6 per explicit product request, for UX
+ * parity with Decision Room's closing sequence — an optional `commitment`
+ * field (matches Decision Room's own "genuinely optional" commitment), no
+ * AI call, and the step that marks the session `'completed'`. There is no
+ * further post-flow sequence beyond it, unlike Decision Room.
  */
-export const MirrorRoomStepIdSchema = z.enum(['SITUATION', 'AUTOMATIC_REACTION', 'PATTERN', 'LIFE_IMPACT', 'SYNTHESIS'])
+export const MirrorRoomStepIdSchema = z.enum([
+  'SITUATION',
+  'AUTOMATIC_REACTION',
+  'PATTERN',
+  'LIFE_IMPACT',
+  'SYNTHESIS',
+  'COMMITMENT',
+])
 export type MirrorRoomStepId = z.infer<typeof MirrorRoomStepIdSchema>

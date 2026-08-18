@@ -7,16 +7,14 @@ import { getMirrorSession, type MirrorContent } from './helpers'
 import type { StepDefinition } from '../types'
 
 /**
- * Closing step — a synthesis/restatement of the whole session, added at
- * the user's explicit request for UX consistency with Decision Room's own
+ * A synthesis/restatement of the whole session so far, added at the
+ * user's explicit request for UX consistency with Decision Room's own
  * closing sequence. `REFINE` generates it (nothing new to persist — same
- * pattern as Decision Room's `SESSION_SUMMARY`); `SUBMIT_STEP` marks the
- * whole Mirror Room session complete. Unlike Decision Room, there's no
- * earlier point where `MirrorSessionItem.status` becomes `'completed'` —
- * this step is the only one that sets it, and it's also the true end of
- * the flow (no further post-flow sequence is defined for Mirror Room
- * anywhere — inventing one would be scope creep beyond this session's
- * "reasonable first pass" mandate).
+ * pattern as Decision Room's `SESSION_SUMMARY`); `SUBMIT_STEP` persists
+ * nothing and advances to `COMMITMENT` — added in Session 6 per explicit
+ * product request, the real end of the flow (mirrors Decision Room's own
+ * `SESSION_SUMMARY` → ... → `COMMITMENT` split: a reflective screen isn't
+ * the same fact as "the flow is done").
  */
 export const synthesisStep: StepDefinition = {
   allowedActions: ['SUBMIT_STEP', 'REFINE'],
@@ -46,7 +44,7 @@ export const synthesisStep: StepDefinition = {
     }
 
     const now = new Date().toISOString()
-    await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: { ...session, status: 'completed' as const, updatedAt: now } }))
-    return { nextStepId: null, result: {}, sessionComplete: true }
+    await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: { ...session, currentStepId: 'SYNTHESIS', updatedAt: now } }))
+    return { nextStepId: 'COMMITMENT', result: {} }
   },
 }

@@ -27,6 +27,7 @@ export const patternStep: StepDefinition = {
     const now = new Date().toISOString()
     const updatedSession = {
       ...session,
+      currentStepId: 'PATTERN',
       content: stubEncryptField<MirrorContent>({ ...content, copingResponse, recurringPattern }),
       updatedAt: now,
     }

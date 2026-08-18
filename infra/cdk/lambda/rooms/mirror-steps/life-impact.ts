@@ -25,6 +25,7 @@ export const lifeImpactStep: StepDefinition = {
     const now = new Date().toISOString()
     const updatedSession = {
       ...session,
+      currentStepId: 'LIFE_IMPACT',
       content: stubEncryptField<MirrorContent>({ ...content, energyMoodEffect, lifeDomain }),
       updatedAt: now,
     }

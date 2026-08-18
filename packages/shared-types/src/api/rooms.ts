@@ -93,6 +93,7 @@ export const MirrorRoomFullResponseSchema = z.object({
   recurringPattern: z.string().optional(),
   energyMoodEffect: z.string().optional(),
   lifeDomain: z.string().optional(),
+  commitment: z.string().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })

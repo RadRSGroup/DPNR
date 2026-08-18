@@ -15,6 +15,7 @@ export type MirrorContent = {
   recurringPattern: string
   energyMoodEffect: string
   lifeDomain: string
+  commitment: string
 }
 
 export async function getMirrorSession(pk: string, mirrorId: string): Promise<MirrorSessionItem> {

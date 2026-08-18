@@ -4,16 +4,18 @@ import { automaticReactionStep } from './automatic-reaction'
 import { patternStep } from './pattern'
 import { lifeImpactStep } from './life-impact'
 import { synthesisStep } from './synthesis'
+import { commitmentStep } from './commitment'
 
 /**
- * Mirror Room's first-pass step map — SITUATION → AUTOMATIC_REACTION →
- * PATTERN → LIFE_IMPACT → SYNTHESIS. This is a reasonable draft this
- * session designed from MVP_ARCHITECTURE.md §5.2's one-line arc, NOT a
- * port of an existing implementation (none exists) and NOT sourced from
- * the product spec docx (unavailable this session) — see
- * packages/shared-types/src/dynamo/mirror-room.ts's doc comment before
- * treating this grouping, or the `mirror_room` prompts it calls
- * (infra/cdk/scripts/mirror-room-prompts.seed.ts), as locked.
+ * Mirror Room's step map — SITUATION → AUTOMATIC_REACTION → PATTERN →
+ * LIFE_IMPACT → SYNTHESIS → COMMITMENT. Session 5 designed the first five
+ * steps as a first pass (no existing implementation or spec docx was
+ * available); Session 6 got explicit product review and approval of that
+ * grouping and both prompts, then added COMMITMENT at the user's request
+ * for UX parity with Decision Room's closing sequence — see
+ * packages/shared-types/src/dynamo/mirror-room.ts's doc comment for the
+ * full history. Treat this step map as settled now, same status as
+ * Decision Room's.
  *
  * Reuses the exact same flow-engine machinery Decision Room proved out
  * (session bookkeeping, optimistic concurrency, idempotency,
@@ -21,7 +23,7 @@ import { synthesisStep } from './synthesis'
  * lambda/rooms/command.ts. No interstitial "section summary" screens
  * here (Mirror Room's data model is one flat item, not Decision Room's
  * many separate tag/option/projection items — there's nothing analogous
- * to summarize mid-flow), and no post-flow sequence beyond SYNTHESIS.
+ * to summarize mid-flow).
  */
 export const mirrorFlow: FlowDefinition = {
   firstStepId: 'SITUATION',
@@ -31,5 +33,6 @@ export const mirrorFlow: FlowDefinition = {
     PATTERN: patternStep,
     LIFE_IMPACT: lifeImpactStep,
     SYNTHESIS: synthesisStep,
+    COMMITMENT: commitmentStep,
   },
 }

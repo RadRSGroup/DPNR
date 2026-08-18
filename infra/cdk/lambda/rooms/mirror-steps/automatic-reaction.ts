@@ -56,6 +56,7 @@ export const automaticReactionStep: StepDefinition = {
     const now = new Date().toISOString()
     const updatedSession = {
       ...session,
+      currentStepId: 'AUTOMATIC_REACTION',
       content: stubEncryptField<MirrorContent>({ ...content, thought, emotion, bodyResponse, automaticReaction }),
       updatedAt: now,
     }

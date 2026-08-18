@@ -10,12 +10,12 @@
  * `decision_room`'s `emotion_reflection` (curious, tentative, non-
  * diagnostic, no preamble). It has never been run against a live model —
  * no AWS/Bedrock access exists yet — and, being new content rather than a
- * port, has no "original behavior" to be faithful to. Treat it as a
- * reasonable first draft, not validated product copy.
- *
- * See packages/shared-types/src/dynamo/mirror-room.ts's doc comment for
- * why the step grouping this prompt is called from is a first-pass draft
- * too, not sourced from the product spec docx.
+ * port, has no "original behavior" to be faithful to. Both prompts got
+ * explicit product review and approval in Session 6 (see
+ * packages/shared-types/src/dynamo/mirror-room.ts's doc comment) — treat
+ * them as the approved first version, same status as `decision_room`'s
+ * re-validated prompts, still unvalidated against a live model (no
+ * AWS/Bedrock access exists yet), not unvalidated as product copy.
  */
 import type { PromptSeed } from './decision-room-prompts.seed'
 

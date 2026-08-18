@@ -37,12 +37,14 @@ export const situationStep: StepDefinition = {
       recurringPattern: '',
       energyMoodEffect: '',
       lifeDomain: '',
+      commitment: '',
     }
     const session: MirrorSessionItem = {
       pk: ctx.pk,
       sk: Sk.mirrorRoom(ctx.sessionId),
       mirrorId: ctx.sessionId,
       status: 'active',
+      currentStepId: 'SITUATION',
       content: stubEncryptField<MirrorContent>(content),
       createdAt: now,
       updatedAt: now,
