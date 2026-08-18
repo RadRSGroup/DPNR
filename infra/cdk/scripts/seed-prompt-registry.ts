@@ -44,11 +44,18 @@ function buildVersionItem(domain: string, seed: PromptSeed, now: string): Prompt
     userTemplate: seed.userTemplate,
     variables: seed.variables,
     modelParams: {
-      // Ported from apps/web/src/lib/ai/call.ts verbatim — NOT yet
-      // re-validated against Claude/Bedrock (MVP_ARCHITECTURE.md §5.3).
-      model: 'gpt-4o',
+      // Re-validated against Claude/Bedrock this session (ADR 0005) — was
+      // 'gpt-4o' through Session 4. This is Claude Sonnet 4.5's Bedrock
+      // model ID as of the last time it was checked; there is still no AWS
+      // account/Bedrock access to confirm it live. CONFIRM against
+      // https://docs.aws.amazon.com/bedrock/latest/userguide/models-regions.html
+      // for the actual deploy region before this is ever really called —
+      // Bedrock model IDs and regional availability drift, and a newer
+      // Claude model may be preferable by the time this deploys
+      // (AWS_SETUP.md step 3 flags the same caveat for region choice).
+      model: 'anthropic.claude-sonnet-4-5-20250929-v1:0',
       temperature: 0.7,
-      maxTokens: seed.outputSchema ? 600 : 500, // matches aiCallJSON vs aiCall's limits
+      maxTokens: seed.outputSchema ? 600 : 500, // matches aiCallJSON vs aiCall's limits — unchanged, no evidence Claude needs more headroom here
     },
     outputSchema: seed.outputSchema,
     status: 'active',

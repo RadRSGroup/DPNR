@@ -11,11 +11,16 @@ export const PromptVersionItemSchema = z.object({
   userTemplate: z.string(),
   variables: z.array(z.string()),
   modelParams: z.object({
-    model: z.string(),
-    temperature: z.number().min(0).max(2),
+    model: z.string(), // Bedrock Converse model ID, e.g. "anthropic.claude-sonnet-4-5-20250929-v1:0" — confirm against the deploy region's current model catalog, IDs/availability drift over time
+    temperature: z.number().min(0).max(1), // Claude's Converse API clamps to [0,1], unlike OpenAI's [0,2] — was max(2) when these prompts were still gpt-4o-only
     maxTokens: z.number().int().positive(),
   }),
-  outputSchema: z.record(z.string(), z.unknown()).optional(), // JSON-schema-shaped, validated per version
+  // JSON-schema-shaped. When present, the Prompt Registry Lambda MUST invoke Bedrock with a
+  // single forced tool call (tool_choice: {type: "tool", name: <fixed>}, input_schema: outputSchema)
+  // and read the result from the tool_use block's `input` — not by parsing free text as JSON.
+  // Claude has no equivalent to OpenAI's response_format:"json_object"; forced tool-use is the
+  // reliable substitute (also incidentally eliminates the "preamble before the JSON" failure mode).
+  outputSchema: z.record(z.string(), z.unknown()).optional(),
   status: z.enum(['draft', 'active', 'retired']),
   createdAt: z.string().datetime(),
   author: z.string(),
