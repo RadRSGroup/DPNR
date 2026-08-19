@@ -71,18 +71,20 @@ function buildVersionItem(
     userTemplate: seed.userTemplate,
     variables: seed.variables,
     modelParams: {
-      // Re-validated against Claude/Bedrock this session (ADR 0005) — was
-      // 'gpt-4o' through Session 4 for decision_room; mirror_room was
-      // designed against this model directly, never anything else. This
-      // is Claude Sonnet 4.5's Bedrock model ID as of the last time it was
-      // checked; there is still no AWS account/Bedrock access to confirm
-      // it live. CONFIRM against
-      // https://docs.aws.amazon.com/bedrock/latest/userguide/models-regions.html
-      // for the actual deploy region before this is ever really called —
-      // Bedrock model IDs and regional availability drift, and a newer
-      // Claude model may be preferable by the time this deploys
-      // (AWS_SETUP.md step 3 flags the same caveat for region choice).
-      model: 'anthropic.claude-sonnet-4-5-20250929-v1:0',
+      // Confirmed LIVE against real Bedrock access in us-east-1, Session 7 —
+      // no longer an unconfirmed placeholder. The bare model id
+      // ('anthropic.claude-sonnet-4-5-20250929-v1:0') returns a
+      // ValidationException on Converse ("on-demand throughput isn't
+      // supported... retry with an inference profile") — Bedrock requires
+      // the region-prefixed inference profile id for on-demand invocation
+      // of this model. Verified with a real `aws bedrock-runtime converse`
+      // call, not just `list-foundation-models` (which lists the catalog,
+      // not actual invokability). `anthropic.claude-sonnet-5` is also in
+      // this account's catalog but returned AccessDeniedException — not
+      // yet granted for this account; request it in the Bedrock console's
+      // Model access page if/when upgrading past 4.5, then re-verify with
+      // the same converse-call method before changing this value.
+      model: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
       temperature: 0.7,
       maxTokens: seed.outputSchema ? 600 : 500, // matches aiCallJSON vs aiCall's limits — unchanged, no evidence Claude needs more headroom here
     },

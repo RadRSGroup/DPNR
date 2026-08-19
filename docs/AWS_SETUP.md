@@ -1,5 +1,9 @@
 # AWS Account Setup — Runbook
 
+**Status as of 2026-08-19 (Session 6, part 3): steps 1–7 are all done for real against account `346866989957` (`us-east-1`).** `Dpnr-Data`/`Dpnr-Auth`/`Dpnr-Api` are deployed, `GET /v1/health` is confirmed reachable, and the Prompt Registry + Library catalog are both seeded. Root MFA and the budget alert (the last two checkpoints of step 1) are the one thing still genuinely outstanding — see `docs/AGENT_LOG.md`'s "Next Agent — Start Here" for detail, including a real Bedrock model-id gotcha (inference profile ids) and a local-machine dual-Windows-account quirk that affects where `aws configure`/CLI commands need to run. This doc is kept as-is below for reference (e.g. if a second environment/account is ever needed) — don't assume "no AWS account" from the text below without checking the current status note here and in `docs/AGENT_LOG.md` first.
+
+---
+
 No AWS account exists for this project yet. I (the agent) cannot create an AWS account, enter billing/payment details, or handle your account credentials directly — those are steps only you can do. This doc is the step-by-step guide; follow it in order, and tell the agent when you hit each ✅ checkpoint so it can verify and continue.
 
 ## 1. Create the AWS account (you do this)
