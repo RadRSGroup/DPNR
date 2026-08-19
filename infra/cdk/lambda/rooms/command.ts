@@ -9,6 +9,7 @@ import {
   type SessionItem,
 } from '@dpnr/shared-types'
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
+import { requireConsent } from '../lib/consent'
 import { ddb, TABLE_NAME } from './db'
 import { decisionFlow } from './decision-steps'
 import { mirrorFlow } from './mirror-steps'
@@ -30,6 +31,14 @@ import type { FlowDefinition } from './types'
  * Ownership is structural, same as the other handlers: `pk` is always
  * `userPk(requireUserId(event))`; `sessionId` is client-supplied but only
  * ever selects a sort key inside the caller's own partition.
+ *
+ * Consent IS required here, same as Companion's message handler and for
+ * the same reason (spec §8: "collecting consent before any
+ * personal-content processing happens") — both Rooms capture exactly the
+ * kind of personal content that rule targets, arguably more sensitive than
+ * a Companion chat turn in Mirror Room's case. This was a real gap found
+ * and closed by docs/PHASE_AUDIT.md §4.1 — this handler had no consent
+ * check of any kind before that.
  */
 const FLOW_REGISTRY: Partial<Record<FlowId, FlowDefinition>> = {
   DECISION: decisionFlow,
@@ -41,6 +50,8 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const userId = requireUserId(event)
     const pk = userPk(userId)
     const body = parseBody(event, RoomCommandRequestSchema)
+
+    await requireConsent(ddb, TABLE_NAME, userId)
 
     const flow = FLOW_REGISTRY[body.flowId]
     if (!flow) {

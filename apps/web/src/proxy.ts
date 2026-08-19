@@ -1,36 +1,28 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 
+/**
+ * UX-only redirect gate (MVP_ARCHITECTURE.md §5.3) — as of Session 7's
+ * alignment work, this reads the lightweight `dpnr_session`/`dpnr_consented`
+ * cookies `lib/cognito/client.ts` maintains, not a Supabase server client.
+ * Cognito's browser SDK keeps real tokens client-side (amazon-cognito-identity-js
+ * has no server-readable session), so this can only check presence, never
+ * validate a token — same non-enforcing role the Supabase-era version had
+ * (see that file's own history), just without an SDK call to do it.
+ * The real security boundary is unchanged: API Gateway's JWT authorizer on
+ * every `/v1` call, plus each handler's own `requireConsent()`/ownership
+ * check (ADR 0004).
+ */
 export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return request.cookies.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
-
   const { pathname } = request.nextUrl
+  const hasSession = request.cookies.get('dpnr_session')?.value === '1'
+  const hasConsent = request.cookies.get('dpnr_consented')?.value === '1'
 
   const isProtected = pathname.startsWith('/dashboard') || pathname.startsWith('/decision')
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup')
   const isConsentPage = pathname.startsWith('/consent')
 
   // Unauthenticated → login
-  if (isProtected && !user) {
+  if (isProtected && !hasSession) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('next', pathname)
@@ -38,7 +30,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Authenticated but no consent → consent gate
-  if (isProtected && user && !user.user_metadata?.consented_at) {
+  if (isProtected && hasSession && !hasConsent) {
     const url = request.nextUrl.clone()
     url.pathname = '/consent'
     url.searchParams.set('next', pathname)
@@ -46,7 +38,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Already consented — skip consent page
-  if (isConsentPage && user?.user_metadata?.consented_at) {
+  if (isConsentPage && hasConsent) {
     const url = request.nextUrl.clone()
     url.pathname = request.nextUrl.searchParams.get('next') ?? '/dashboard'
     url.searchParams.delete('next')
@@ -54,13 +46,13 @@ export async function proxy(request: NextRequest) {
   }
 
   // Already authenticated — skip auth pages
-  if (isAuthPage && user) {
+  if (isAuthPage && hasSession) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 
-  return supabaseResponse
+  return NextResponse.next()
 }
 
 export const config = {

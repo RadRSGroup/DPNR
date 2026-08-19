@@ -2,6 +2,8 @@
 import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { grantConsent } from '@/lib/api/v1-client'
+import { markConsentedLocally } from '@/lib/cognito/client'
 
 const POINTS = [
   {
@@ -38,12 +40,12 @@ function ConsentContent() {
     setAccepting(true)
     setError(null)
     try {
-      const res = await fetch('/api/user/consent', { method: 'POST' })
-      if (!res.ok) { setError('Something went wrong. Please try again.'); return }
+      await grantConsent()
+      markConsentedLocally()
       router.push(next)
       router.refresh()
     } catch {
-      setError('Network error. Please try again.')
+      setError('Something went wrong. Please try again.')
     } finally {
       setAccepting(false)
     }

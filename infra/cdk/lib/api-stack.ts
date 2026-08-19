@@ -40,8 +40,12 @@ export interface ApiStackProps extends StackProps {
  * authenticated handler by reading `event.requestContext.authorizer.jwt.claims`,
  * per the "per-handler check completes the story" principle
  * (MVP_ARCHITECTURE.md §3, ADR 0004) — see lambda/lib/consent.ts, used by
- * the Companion message handler (not the read-only ones — see its doc
- * comment on why).
+ * the Companion message handler and the Rooms command handler (not the
+ * read-only ones — see consent.ts's own doc comment on why). `UserConsentFn`
+ * below is the write path that actually satisfies the gate — until it
+ * existed, no code path could ever set `PROFILE.consentedAt` on the new
+ * backend, so every consent-gated handler 403'd unconditionally for any
+ * real signup (docs/PHASE_AUDIT.md §2.2/§4.1/§4.2).
  *
  * All handlers below use lambda/lib/crypto-stub.ts for any `[ENCRYPTED]`
  * field — NOT real encryption yet, see that file's doc comment. `isProduction`
@@ -65,6 +69,22 @@ export class ApiStack extends Stack {
     this.httpApi = new apigwv2.HttpApi(this, 'HttpApi', {
       apiName: 'dpnr-v1',
       description: 'DPNR /v1 API — see MVP_ARCHITECTURE.md §4 for the full planned surface.',
+      // apps/web calls this API directly from the browser (a different
+      // origin), which needs a real CORS preflight response — found the
+      // hard way during Session 7's alignment-work verification (the
+      // consent endpoint 100% worked server-side but every browser call
+      // was silently blocked pre-flight). localhost:3000 is dev-only;
+      // add the real deployed frontend origin here once one exists.
+      corsPreflight: {
+        allowOrigins: ['http://localhost:3000'],
+        allowMethods: [
+          apigwv2.CorsHttpMethod.GET,
+          apigwv2.CorsHttpMethod.POST,
+          apigwv2.CorsHttpMethod.PUT,
+          apigwv2.CorsHttpMethod.DELETE,
+        ],
+        allowHeaders: ['authorization', 'content-type'],
+      },
     })
 
     const healthFn = new lambda.NodejsFunction(this, 'HealthFn', {
@@ -114,10 +134,24 @@ export class ApiStack extends Stack {
     })
     props.applicationTable.grantReadData(companionContextFn)
 
+    const userConsentFn = new lambda.NodejsFunction(this, 'UserConsentFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/account/consent.ts'),
+      description: 'POST /v1/user/consent — grants consent on the PROFILE item (the write path the consent gate needs).',
+    })
+    props.applicationTable.grantReadWriteData(userConsentFn)
+
     this.httpApi.addRoutes({
       path: '/v1/dashboard',
       methods: [apigwv2.HttpMethod.GET],
       integration: new integrations.HttpLambdaIntegration('DashboardIntegration', dashboardFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/user/consent',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('UserConsentIntegration', userConsentFn),
       authorizer: this.cognitoAuthorizer,
     })
 

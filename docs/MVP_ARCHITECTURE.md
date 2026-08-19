@@ -123,7 +123,7 @@ The 8 Supabase tables (`user_profiles`, `decisions`, `options`, `emotion_maps`, 
 
 | Resource | Endpoints | Notes |
 |---|---|---|
-| Auth/account | `POST /v1/session-ticket`, `DELETE /v1/auth/sessions/{id}`, `PUT /v1/auth/password`, `DELETE /v1/account`, `GET /v1/keys` | Ported directly from migration plan §11 workstream 1 |
+| Auth/account | `POST /v1/session-ticket`, `DELETE /v1/auth/sessions/{id}`, `PUT /v1/auth/password`, `DELETE /v1/account`, `GET /v1/keys`, `POST /v1/user/consent` | Ported directly from migration plan §11 workstream 1. `POST /v1/user/consent` is the write path ADR 0004 anticipated ("updates the PROFILE item") — built in the audit-follow-up session that found consent was otherwise unsatisfiable (docs/PHASE_AUDIT.md §2.2); the other five endpoints in this row remain unbuilt. |
 | Companion | `POST /v1/companion/message`, `GET /v1/companion/context` | Chat-first router; resolves intent, may return a room/dashboard transition directive |
 | Dashboard | `GET /v1/dashboard` | Aggregate read: roadmap + twin summary + continuity cues + credits status, one call |
 | Digital Twin | `GET /v1/twin`, `POST /v1/twin/signals/{id}/confirm`, `POST /v1/twin/signals/{id}/reject` | Confirm/reject rule from spec §5 "Trust rules" |

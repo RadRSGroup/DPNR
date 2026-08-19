@@ -73,3 +73,20 @@ export const UserKeysResponseSchema = z.object({
   wrappedPrivateKey: z.string(),
 })
 export type UserKeysResponse = z.infer<typeof UserKeysResponseSchema>
+
+/**
+ * POST /v1/user/consent — the write path ADR 0004 anticipated ("One write
+ * path for consent... updates the PROFILE item") but that never got built
+ * against the new backend (see docs/PHASE_AUDIT.md §2.2/§4.2: until this
+ * existed, no code path could ever set `PROFILE.consentedAt`, so every
+ * consent-gated handler would 403 forever for a real signup). No request
+ * body — the server owns the current consent-copy version, the same
+ * convention the old Supabase-era route used.
+ */
+export const CURRENT_CONSENT_VERSION = '2026-06'
+
+export const ConsentResponseSchema = z.object({
+  consentedAt: z.string().datetime(),
+  consentVersion: z.string(),
+})
+export type ConsentResponse = z.infer<typeof ConsentResponseSchema>
