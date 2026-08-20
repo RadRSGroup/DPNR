@@ -12,7 +12,7 @@ import {
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { stubDecryptField } from '../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
-import { callPromptModelStub } from '../lib/model-call-stub'
+import { callPromptModel } from '../lib/model-call'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const CATALOG_TABLE_NAME = process.env.LIBRARY_CATALOG_TABLE_NAME as string
@@ -89,12 +89,12 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         const confirmedSignalsList = confirmedSignals
           .map((s) => `- (${s.domain}) ${stubDecryptField<{ description: string }>(s.content).description}`)
           .join('\n')
-        const stub = await callPromptModelStub(version, {
+        const modelResult = await callPromptModel(version, {
           topicTitle: versionItem.title,
           topicBodyExcerpt: versionItem.body.slice(0, 500),
           confirmedSignals: confirmedSignalsList,
         })
-        personalizedExplanation = typeof stub === 'string' ? stub : JSON.stringify(stub)
+        personalizedExplanation = typeof modelResult === 'string' ? modelResult : JSON.stringify(modelResult)
         usedPromptRef = promptRef('library', 'topic_explanation', version)
       } catch (err) {
         if (!(err instanceof HttpError && err.code === 'prompt_not_found')) {

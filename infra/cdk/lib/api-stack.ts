@@ -1,14 +1,28 @@
-import { Stack, StackProps } from 'aws-cdk-lib'
+import { Stack, StackProps, Duration } from 'aws-cdk-lib'
 import * as apigwv2 from 'aws-cdk-lib/aws-apigatewayv2'
 import * as authorizers from 'aws-cdk-lib/aws-apigatewayv2-authorizers'
 import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations'
 import * as cognito from 'aws-cdk-lib/aws-cognito'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
+import * as iam from 'aws-cdk-lib/aws-iam'
 import * as lambda from 'aws-cdk-lib/aws-lambda-nodejs'
 import { Runtime } from 'aws-cdk-lib/aws-lambda'
 import { CfnOutput } from 'aws-cdk-lib'
 import * as path from 'path'
 import { Construct } from 'constructs'
+
+/**
+ * The one Bedrock model every seeded Prompt Registry entry currently uses
+ * (infra/cdk/scripts/seed-prompt-registry.ts) — a real, on-demand-invokable
+ * inference-profile id, confirmed via a live `converse` call in Session 6
+ * part 3 (docs/AGENT_LOG.md). If a future prompt is seeded against a
+ * different model, extend the resources below rather than widening them
+ * to a blanket wildcard.
+ */
+const BEDROCK_INFERENCE_PROFILE_ID = 'us.anthropic.claude-sonnet-4-5-20250929-v1:0'
+const BEDROCK_FOUNDATION_MODEL_ID = 'anthropic.claude-sonnet-4-5-20250929-v1:0'
+/** The `us.` prefix is a cross-region inference profile spanning these three regions — Bedrock requires the underlying foundation-model ARNs be authorized too, not just the profile ARN itself. */
+const BEDROCK_INFERENCE_PROFILE_REGIONS = ['us-east-1', 'us-east-2', 'us-west-2']
 
 export interface ApiStackProps extends StackProps {
   userPool: cognito.UserPool
@@ -113,6 +127,36 @@ export class ApiStack extends Stack {
       },
     }
 
+    /**
+     * Grants a Lambda permission to call Bedrock Converse for the one model
+     * every Prompt Registry entry is seeded against — used by any function
+     * that calls lib/model-call.ts (currently roomsCommandFn and
+     * libraryTopicDetailFn). Both the inference-profile ARN and the
+     * underlying foundation-model ARNs (across the profile's regions) need
+     * authorizing — Bedrock evaluates IAM against the actual invoked
+     * resource, which for a cross-region inference profile can be either.
+     */
+    const grantBedrockConverse = (fn: lambda.NodejsFunction) => {
+      fn.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
+          resources: [
+            `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/${BEDROCK_INFERENCE_PROFILE_ID}`,
+            ...BEDROCK_INFERENCE_PROFILE_REGIONS.map(
+              (region) => `arn:aws:bedrock:${region}::foundation-model/${BEDROCK_FOUNDATION_MODEL_ID}`
+            ),
+          ],
+        })
+      )
+    }
+
+    // Every product Lambda defaults to the Lambda-wide 3s timeout unless
+    // overridden — fine for pure DynamoDB reads/writes, but a real Bedrock
+    // Converse call will not complete in 3s. 29s stays under the HTTP API
+    // integration's own ~30s ceiling so a slow model call surfaces as a
+    // real Lambda timeout, not a swallowed Gateway timeout.
+    const bedrockCallTimeout = Duration.seconds(29)
+
     const dashboardFn = new lambda.NodejsFunction(this, 'DashboardFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/dashboard/handler.ts'),
@@ -171,6 +215,7 @@ export class ApiStack extends Stack {
 
     const roomsCommandFn = new lambda.NodejsFunction(this, 'RoomsCommandFn', {
       ...sharedProductLambdaProps,
+      timeout: bedrockCallTimeout,
       entry: path.join(__dirname, '../lambda/rooms/command.ts'),
       environment: {
         ...sharedProductLambdaProps.environment,
@@ -180,6 +225,7 @@ export class ApiStack extends Stack {
     })
     props.applicationTable.grantReadWriteData(roomsCommandFn)
     props.promptRegistryTable.grantReadData(roomsCommandFn)
+    grantBedrockConverse(roomsCommandFn)
 
     const decisionFullFn = new lambda.NodejsFunction(this, 'DecisionFullFn', {
       ...sharedProductLambdaProps,
@@ -237,6 +283,7 @@ export class ApiStack extends Stack {
     const libraryTopicDetailFn = new lambda.NodejsFunction(this, 'LibraryTopicDetailFn', {
       runtime: Runtime.NODEJS_24_X,
       bundling: { minify: true, sourceMap: true },
+      timeout: bedrockCallTimeout,
       environment: {
         LIBRARY_CATALOG_TABLE_NAME: props.libraryCatalogTable.tableName,
         APPLICATION_TABLE_NAME: props.applicationTable.tableName,
@@ -248,6 +295,7 @@ export class ApiStack extends Stack {
     props.libraryCatalogTable.grantReadData(libraryTopicDetailFn)
     props.applicationTable.grantReadData(libraryTopicDetailFn)
     props.promptRegistryTable.grantReadData(libraryTopicDetailFn)
+    grantBedrockConverse(libraryTopicDetailFn)
 
     const libraryRecommendationsFn = new lambda.NodejsFunction(this, 'LibraryRecommendationsFn', {
       runtime: Runtime.NODEJS_24_X,

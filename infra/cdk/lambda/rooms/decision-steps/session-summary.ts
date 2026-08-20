@@ -1,5 +1,5 @@
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
-import { callPromptModelStub } from '../../lib/model-call-stub'
+import { callPromptModel } from '../../lib/model-call'
 import { ddb, PROMPT_REGISTRY_TABLE_NAME } from './db'
 import { gatherDecisionContext } from './decision-context'
 import type { StepDefinition } from './types'
@@ -25,7 +25,7 @@ export const sessionSummaryStep: StepDefinition = {
     if (ctx.action === 'REFINE') {
       const context = await gatherDecisionContext(ctx.pk, ctx.sessionId)
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'session_summary')
-      const stub = await callPromptModelStub(version, {
+      const modelResult = await callPromptModel(version, {
         decisionTitle: context.title,
         narrative: context.narrative,
         optionA: context.optionAContent,
@@ -49,7 +49,7 @@ export const sessionSummaryStep: StepDefinition = {
       })
       return {
         nextStepId: null,
-        result: typeof stub === 'string' ? { situation: stub } : stub,
+        result: typeof modelResult === 'string' ? { situation: modelResult } : modelResult,
         promptRef: promptRef('decision_room', 'session_summary', version),
       }
     }

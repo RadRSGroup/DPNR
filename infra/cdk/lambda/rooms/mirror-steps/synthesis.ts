@@ -1,7 +1,7 @@
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import { stubDecryptField } from '../../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
-import { callPromptModelStub } from '../../lib/model-call-stub'
+import { callPromptModel } from '../../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from '../db'
 import { getMirrorSession, type MirrorContent } from './helpers'
 import type { StepDefinition } from '../types'
@@ -24,7 +24,7 @@ export const synthesisStep: StepDefinition = {
 
     if (ctx.action === 'REFINE') {
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'mirror_room', 'synthesis')
-      const stub = await callPromptModelStub(version, {
+      const modelResult = await callPromptModel(version, {
         situationExcerpt: content.situation.slice(0, 600),
         trigger: content.trigger,
         thought: content.thought,
@@ -38,7 +38,7 @@ export const synthesisStep: StepDefinition = {
       })
       return {
         nextStepId: null,
-        result: typeof stub === 'string' ? { synthesis: stub } : stub,
+        result: typeof modelResult === 'string' ? { synthesis: modelResult } : modelResult,
         promptRef: promptRef('mirror_room', 'synthesis', version),
       }
     }

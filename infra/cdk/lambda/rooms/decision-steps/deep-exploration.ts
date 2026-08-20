@@ -3,7 +3,7 @@ import type { Lens, TagType } from '@dpnr/shared-types'
 import { parseValue, HttpError } from '../../lib/http'
 import { stubDecryptField } from '../../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
-import { callPromptModelStub } from '../../lib/model-call-stub'
+import { callPromptModel } from '../../lib/model-call'
 import { ddb, PROMPT_REGISTRY_TABLE_NAME } from './db'
 import { getDecision, getOption, replaceTagsOfTypes, type DecisionContent, type OptionContent, type TagEntry } from './helpers'
 import type { StepDefinition } from './types'
@@ -69,23 +69,23 @@ export const deepExplorationStep: StepDefinition = {
 
       if (kind === 'pros_cons') {
         const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'pros_cons_tags')
-        const stub = await callPromptModelStub(version, {
+        const modelResult = await callPromptModel(version, {
           optionLabel,
           optionText: optionContent.content,
           narrativeExcerpt: decisionContent.narrative.slice(0, 400), // matches the seed's documented truncation
         })
         return {
           nextStepId: null,
-          result: typeof stub === 'string' ? { pros: [], cons: [] } : stub,
+          result: typeof modelResult === 'string' ? { pros: [], cons: [] } : modelResult,
           promptRef: promptRef('decision_room', 'pros_cons_tags', version),
         }
       }
 
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'fear_desire_tags')
-      const stub = await callPromptModelStub(version, { narrativeExcerpt: decisionContent.narrative.slice(0, 600) })
+      const modelResult = await callPromptModel(version, { narrativeExcerpt: decisionContent.narrative.slice(0, 600) })
       return {
         nextStepId: null,
-        result: typeof stub === 'string' ? { desires: [], fears: [] } : stub,
+        result: typeof modelResult === 'string' ? { desires: [], fears: [] } : modelResult,
         promptRef: promptRef('decision_room', 'fear_desire_tags', version),
       }
     }

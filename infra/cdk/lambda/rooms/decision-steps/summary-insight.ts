@@ -1,5 +1,5 @@
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
-import { callPromptModelStub } from '../../lib/model-call-stub'
+import { callPromptModel } from '../../lib/model-call'
 import { ddb, PROMPT_REGISTRY_TABLE_NAME } from './db'
 import { gatherDecisionContext } from './decision-context'
 import type { StepDefinition } from './types'
@@ -19,7 +19,7 @@ export const summaryInsightStep: StepDefinition = {
       const context = await gatherDecisionContext(ctx.pk, ctx.sessionId)
       const exploredTags = [...context.projectionsA, ...context.projectionsB].slice(0, 30).join(', ')
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'summary_insight')
-      const stub = await callPromptModelStub(version, {
+      const modelResult = await callPromptModel(version, {
         decisionTitle: context.title,
         narrative: context.narrative,
         optionA: context.optionAContent,
@@ -28,7 +28,7 @@ export const summaryInsightStep: StepDefinition = {
       })
       return {
         nextStepId: null,
-        result: typeof stub === 'string' ? { insight: stub } : stub,
+        result: typeof modelResult === 'string' ? { insight: modelResult } : modelResult,
         promptRef: promptRef('decision_room', 'summary_insight', version),
       }
     }

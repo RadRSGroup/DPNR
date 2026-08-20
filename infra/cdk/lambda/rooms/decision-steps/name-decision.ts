@@ -4,7 +4,7 @@ import { Sk, DECISION_ROOM_STEP_NUMBER, type DecisionItem } from '@dpnr/shared-t
 import { parseValue } from '../../lib/http'
 import { stubEncryptField } from '../../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
-import { callPromptModelStub } from '../../lib/model-call-stub'
+import { callPromptModel } from '../../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
 import type { DecisionContent } from './helpers'
 import type { StepDefinition } from './types'
@@ -22,10 +22,10 @@ export const nameDecisionStep: StepDefinition = {
       // client, not a read.
       const { title } = parseValue(ctx.input, RefineInput)
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'subtitle')
-      const stub = await callPromptModelStub(version, { title })
+      const modelResult = await callPromptModel(version, { title })
       return {
         nextStepId: null,
-        result: { subtitle: stub },
+        result: { subtitle: modelResult },
         promptRef: promptRef('decision_room', 'subtitle', version),
       }
     }

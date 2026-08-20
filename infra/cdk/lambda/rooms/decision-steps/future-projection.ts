@@ -5,7 +5,7 @@ import { Sk, DECISION_ROOM_STEP_NUMBER, type DecisionProjectionItem, type Decisi
 import { parseValue } from '../../lib/http'
 import { stubEncryptField, stubDecryptField } from '../../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
-import { callPromptModelStub } from '../../lib/model-call-stub'
+import { callPromptModel } from '../../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
 import { getDecision, getOption, type DecisionContent, type OptionContent } from './helpers'
 import type { StepDefinition } from './types'
@@ -60,7 +60,7 @@ export const futureProjectionStep: StepDefinition = {
       const decisionContent = stubDecryptField<DecisionContent>(decision.content)
       const optionContent = stubDecryptField<OptionContent>(option.content)
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'future_projection')
-      const stub = await callPromptModelStub(version, {
+      const modelResult = await callPromptModel(version, {
         decisionTitle: decisionContent.title,
         // Matches the original: an empty string when there's no narrative,
         // never a conditional inside the template itself (established
@@ -71,7 +71,7 @@ export const futureProjectionStep: StepDefinition = {
       })
       return {
         nextStepId: null,
-        result: typeof stub === 'string' ? { statements: [] } : stub,
+        result: typeof modelResult === 'string' ? { statements: [] } : modelResult,
         promptRef: promptRef('decision_room', 'future_projection', version),
       }
     }

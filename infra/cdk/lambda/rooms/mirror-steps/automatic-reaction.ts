@@ -3,7 +3,7 @@ import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import { parseValue } from '../../lib/http'
 import { stubEncryptField, stubDecryptField } from '../../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
-import { callPromptModelStub } from '../../lib/model-call-stub'
+import { callPromptModel } from '../../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from '../db'
 import { getMirrorSession, type MirrorContent } from './helpers'
 import type { StepDefinition } from '../types'
@@ -38,7 +38,7 @@ export const automaticReactionStep: StepDefinition = {
     if (ctx.action === 'REFINE') {
       const { thought, emotion, bodyResponse } = parseValue(ctx.input, RefineInput)
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'mirror_room', 'reflection')
-      const stub = await callPromptModelStub(version, {
+      const modelResult = await callPromptModel(version, {
         situationExcerpt: content.situation.slice(0, 600),
         trigger: content.trigger,
         thought,
@@ -47,7 +47,7 @@ export const automaticReactionStep: StepDefinition = {
       })
       return {
         nextStepId: null,
-        result: typeof stub === 'string' ? { reflection: stub } : stub,
+        result: typeof modelResult === 'string' ? { reflection: modelResult } : modelResult,
         promptRef: promptRef('mirror_room', 'reflection', version),
       }
     }

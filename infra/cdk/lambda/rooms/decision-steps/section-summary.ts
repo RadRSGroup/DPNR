@@ -1,7 +1,7 @@
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import { DECISION_ROOM_STEP_NUMBER } from '@dpnr/shared-types'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
-import { callPromptModelStub } from '../../lib/model-call-stub'
+import { callPromptModel } from '../../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
 import { getDecision } from './helpers'
 import { gatherDecisionContext, type GatheredDecisionContext } from './decision-context'
@@ -42,7 +42,7 @@ function createSectionSummaryStep(config: SectionSummaryConfig): StepDefinition 
           context
         )
         const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'section_summary')
-        const stub = await callPromptModelStub(version, {
+        const modelResult = await callPromptModel(version, {
           decisionTitle: context.title,
           step: stepType,
           optionA: context.optionAContent,
@@ -52,7 +52,7 @@ function createSectionSummaryStep(config: SectionSummaryConfig): StepDefinition 
         })
         return {
           nextStepId: null,
-          result: typeof stub === 'string' ? { wordFromUs: stub, reflection: stub } : stub,
+          result: typeof modelResult === 'string' ? { wordFromUs: modelResult, reflection: modelResult } : modelResult,
           promptRef: promptRef('decision_room', 'section_summary', version),
         }
       }

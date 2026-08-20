@@ -4,7 +4,7 @@ import { Sk, DECISION_ROOM_STEP_NUMBER, type DecisionOptionItem } from '@dpnr/sh
 import { parseValue, HttpError } from '../../lib/http'
 import { stubEncryptField, stubDecryptField } from '../../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
-import { callPromptModelStub } from '../../lib/model-call-stub'
+import { callPromptModel } from '../../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
 import { getDecision, type DecisionContent } from './helpers'
 import type { StepDefinition } from './types'
@@ -25,10 +25,10 @@ export const mapOptionsStep: StepDefinition = {
       // advance; the user still approves/edits both before SUBMIT_STEP.
       const { narrative } = parseValue(ctx.input, RefineInput)
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'parse_options')
-      const stub = await callPromptModelStub(version, { narrative })
+      const modelResult = await callPromptModel(version, { narrative })
       return {
         nextStepId: null,
-        result: typeof stub === 'string' ? { optionA: stub, optionB: stub } : stub,
+        result: typeof modelResult === 'string' ? { optionA: modelResult, optionB: modelResult } : modelResult,
         promptRef: promptRef('decision_room', 'parse_options', version),
       }
     }

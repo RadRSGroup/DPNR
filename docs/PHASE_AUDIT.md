@@ -110,15 +110,19 @@ Lambda handlers or CDK routes exist for either. `dashboard/handler.ts` (read dir
 to `roadmap: null` / `creditsBalance: 0` when these items don't exist — this part is honest, not broken.
 Accurately reflected as not-started in `AGENT_LOG.md`.
 
-### 2.4 Every AI-driven feature is still model-stubbed, even where "wired"
+### 2.4 Companion is still model-stubbed; Decision Room/Mirror Room/Library now call real Bedrock
 
-Companion (`companion/model-stub.ts`), Decision Room + Mirror Room + Library personalization
-(`lib/model-call-stub.ts`, shared) all route through named, clearly-labeled canned-text stubs — confirmed
-by reading each file directly. **This is true even though Session 6 verified real Bedrock access works**
-(`aws bedrock-runtime converse` succeeded with the correct inference-profile model id). Live Bedrock access
-being confirmed and the product code actually calling it are two different facts, and only the first is
-true today — worth being precise about this distinction, since "Bedrock is confirmed working" (accurate)
-could otherwise be misread as "the product uses Bedrock" (not yet true anywhere).
+**Updated Session 10**: `lib/model-call.ts` (renamed from `lib/model-call-stub.ts`) now makes a real
+Bedrock Converse call — forced tool-use when a Prompt Registry entry has an `outputSchema`, plain text
+otherwise, per ADR 0005. This is the shared call used by every Decision Room step, Mirror Room step, and
+Library's `topic-detail.ts` personalization. Live-verified: a direct script call against real Bedrock for
+both calling conventions, plus an actual browser session through Decision Room's `NAME_DECISION` and
+`MAP_OPTIONS` steps against the deployed `Dpnr-Api` stack, returning real generated text/JSON, not stub
+text. `RoomsCommandFn` and `LibraryTopicDetailFn` both got a scoped `bedrock:InvokeModel`/
+`InvokeModelWithResponseStream` IAM grant and a timeout bump (3s default → 29s) to accommodate it.
+
+**Still stubbed**: Companion (`companion/model-stub.ts`) — out of scope for Session 10, no Prompt Registry
+domain exists for it yet (see `AGENT_LOG.md`).
 
 ---
 

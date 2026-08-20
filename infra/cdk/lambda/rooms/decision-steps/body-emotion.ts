@@ -4,7 +4,7 @@ import { Sk, DECISION_ROOM_STEP_NUMBER, DecisionEmotionAgreementSchema, type Dec
 import { parseValue, HttpError } from '../../lib/http'
 import { stubEncryptField, stubDecryptField } from '../../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
-import { callPromptModelStub } from '../../lib/model-call-stub'
+import { callPromptModel } from '../../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
 import { getDecision, type DecisionContent } from './helpers'
 import type { StepDefinition } from './types'
@@ -31,7 +31,7 @@ export const bodyEmotionStep: StepDefinition = {
       const decision = await getDecision(ctx.pk, ctx.sessionId)
       const content = stubDecryptField<DecisionContent>(decision.content)
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'emotion_reflection')
-      const stub = await callPromptModelStub(version, {
+      const modelResult = await callPromptModel(version, {
         title: content.title,
         narrativeExcerpt: content.narrative.slice(0, 600), // matches the seed's documented truncation convention
         bodyLocation,
@@ -39,7 +39,7 @@ export const bodyEmotionStep: StepDefinition = {
       })
       return {
         nextStepId: null,
-        result: typeof stub === 'string' ? { reflection: stub } : stub,
+        result: typeof modelResult === 'string' ? { reflection: modelResult } : modelResult,
         promptRef: promptRef('decision_room', 'emotion_reflection', version),
       }
     }

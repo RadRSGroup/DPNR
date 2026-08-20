@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { parseValue } from '../../lib/http'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
-import { callPromptModelStub } from '../../lib/model-call-stub'
+import { callPromptModel } from '../../lib/model-call'
 import { ddb, PROMPT_REGISTRY_TABLE_NAME } from './db'
 import { gatherDecisionContext } from './decision-context'
 import type { StepDefinition } from './types'
@@ -27,7 +27,7 @@ export const clarityActionStep: StepDefinition = {
     if (ctx.action === 'REFINE') {
       const context = await gatherDecisionContext(ctx.pk, ctx.sessionId)
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'clarity_action')
-      const stub = await callPromptModelStub(version, {
+      const modelResult = await callPromptModel(version, {
         decisionTitle: context.title,
         narrative: context.narrative,
         optionA: context.optionAContent,
@@ -36,7 +36,7 @@ export const clarityActionStep: StepDefinition = {
       })
       return {
         nextStepId: null,
-        result: typeof stub === 'string' ? { nextStep: stub } : stub,
+        result: typeof modelResult === 'string' ? { nextStep: modelResult } : modelResult,
         promptRef: promptRef('decision_room', 'clarity_action', version),
       }
     }

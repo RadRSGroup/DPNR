@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { parseValue } from '../../lib/http'
 import { stubDecryptField } from '../../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
-import { callPromptModelStub } from '../../lib/model-call-stub'
+import { callPromptModel } from '../../lib/model-call'
 import { ddb, PROMPT_REGISTRY_TABLE_NAME } from './db'
 import { getOption, replaceTagsOfTypes, type OptionContent } from './helpers'
 import type { StepDefinition } from './types'
@@ -28,10 +28,10 @@ export const valuesNeedsStep: StepDefinition = {
       const option = await getOption(ctx.pk, ctx.sessionId, optionLabel)
       const optionContent = stubDecryptField<OptionContent>(option.content)
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'values_needs_tags')
-      const stub = await callPromptModelStub(version, { optionLabel, optionText: optionContent.content })
+      const modelResult = await callPromptModel(version, { optionLabel, optionText: optionContent.content })
       return {
         nextStepId: null,
-        result: typeof stub === 'string' ? { values: [], needs: [] } : stub,
+        result: typeof modelResult === 'string' ? { values: [], needs: [] } : modelResult,
         promptRef: promptRef('decision_room', 'values_needs_tags', version),
       }
     }

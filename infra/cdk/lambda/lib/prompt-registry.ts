@@ -5,11 +5,9 @@ import { HttpError } from './http'
 
 /**
  * The "resolve {domain}/{name} + alias → template" half of the Prompt
- * Registry Lambda logic every session since Session 3 deferred (see
- * docs/AGENT_LOG.md). This part is real and fully testable once
- * `Dpnr-Data` is deployed and seeded — only the model call on the other
- * side of it (lib/model-call-stub.ts) is stubbed, for reasons that have
- * nothing to do with this resolution logic (no Bedrock access yet).
+ * Registry Lambda logic — real since Session 5 part 3. `lib/model-call.ts`
+ * on the other side of it now makes a real Bedrock Converse call too (see
+ * docs/AGENT_LOG.md and ADR 0005 for the calling convention).
  */
 export async function resolvePromptVersion(
   ddb: DynamoDBDocumentClient,
