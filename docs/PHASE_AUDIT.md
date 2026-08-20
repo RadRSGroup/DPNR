@@ -372,3 +372,22 @@ one that made them.
 Everything else in this document (no graph DB, no Mobile Capsule, Grow webhook stub, no VPC yet, Library
 topics awaiting review) is already a deliberate, documented, still-valid decision — re-confirmed this
 session, not re-opened.
+
+**Update, Session 10**: the Grow webhook stub is a bigger gap than "missing signature verification." Pulled
+Grow's real developer docs (`developers.grow.business`, formerly Meshulam) and found `apps/web/src/lib/grow.ts`
++ `apps/web/src/app/api/webhooks/grow/route.ts` are built against a **fictional API shape**, not Grow's real
+one: no `X-Grow-Signature` header or HMAC scheme exists in their docs at all; the real webhook payloads are
+flat (`transactionCode`/`paymentSum`/`webhookKey`/`payerEmail`/etc.) across 10 distinct webhook types
+(recurring payment, failed recurring, invoice, POS, paymentLinks, ...), not the `event.type`/
+`event.data.{plan_id,customer_id,period_end}` shape the code expects; and Grow's real auth model is
+`UserId`/`PageCode`(+`APIKey` for platforms), not the `Bearer $GROW_SECRET_KEY` scheme
+`createGrowCheckoutSession` uses against a `/v1/checkout/sessions` endpoint that also doesn't appear in
+their docs. A `webhookKey` field embedded in the payload may be the real authenticity mechanism (a static
+value configured per-merchant, compared server-side, not a signature) but Grow's own docs never explain it.
+**"Implement real HMAC verification" is not achievable as scoped — there's no HMAC scheme to implement.**
+A real fix means rebuilding this integration against Grow's actual API from scratch, informed by their real
+docs — not a small patch. Presented to the user, who chose to defer entirely rather than disable-and-flag or
+research further this session — no code changed. This is also legacy Supabase-billing code the still-unbuilt
+Credits ledger (Slice 1) is meant to replace, not port, so a real fix may belong there instead of as a
+standalone patch. **Do not re-scope this as "just add HMAC verification" in a future session** — start from
+this finding.

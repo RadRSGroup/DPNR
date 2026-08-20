@@ -15,7 +15,7 @@ This project has **no human development team**. It is built entirely by Claude C
 > 4. Digital Twin, Credits, Continuity, and the rest of the Auth/account row are all still fully unbuilt (`/v1` surface) — see `PHASE_AUDIT.md` §1 for exact per-phase status.
 > 5. `decision/[id]/page.tsx` (the post-completion review page) is still explicitly out of scope, still Supabase-only. Mirror Room has no equivalent review page either — no `GET /v1/rooms/mirror` list endpoint exists, so `/dashboard` can't show Mirror Room session history, only the entry-point card to start a new one.
 > 6. Root MFA is still not done — deprioritized since day-to-day work goes through the already-admin, already-MFA'd IAM user `RadBarOn`, not root.
-> 7. The Grow webhook's `verifyGrowSignature()` is still literally a stub that returns `true` for any signature (`apps/web/src/lib/grow.ts`) — flagged repeatedly since Session 8 part 2, never fixed, no one's asked for it explicitly yet.
+> 7. **The Grow webhook is a bigger gap than "missing signature verification" — do not re-scope it as a small HMAC patch.** Session 10 pulled Grow's real developer docs and found `apps/web/src/lib/grow.ts`/`.../api/webhooks/grow/route.ts` are built against a fictional API shape: no HMAC/signature-header scheme exists in Grow's real docs, the payload shape and event types are entirely different from what the code expects, and the auth model (`UserId`/`PageCode`/`APIKey`) doesn't match either. See `PHASE_AUDIT.md`'s Session 10 update for the full finding. A real fix means rebuilding this against Grow's actual API — likely as part of the still-unbuilt Credits ledger (Slice 1), not a standalone patch. Presented to the user, who chose to defer rather than disable-and-flag or research further this session.
 > 8. `api-stack.ts`'s CORS `allowOrigins` is still hardcoded to `http://localhost:3000` only — add the real deployed frontend origin once one exists.
 >
 > **Standing guardrail**: `packages/shared-types` and every consumer (`apps/web`, `infra/cdk`) MUST stay on the same major Zod version — see the guardrail below and Session 5 part 4 for why (it broke real code once already).
@@ -171,6 +171,26 @@ This project has **no human development team**. It is built entirely by Claude C
 ---
 
 ## Session History
+
+### 2026-08-20 — Session 10, part 2 (Grow webhook investigated at user's request — real finding, no code change, deferred)
+- User asked to work the highest-priority item next, which from part 1's session-start Q&A was the Grow
+  webhook signature stub (`verifyGrowSignature()` always returns `true`). Before touching code, pulled
+  Grow's real developer docs (`developers.grow.business`, formerly Meshulam) to confirm the actual signing
+  algorithm, since the existing code's own comment said the algorithm needed confirming from their docs.
+- **Real finding, not a small fix**: `apps/web/src/lib/grow.ts` + `.../api/webhooks/grow/route.ts` are built
+  against a fictional, generic payment-gateway shape — no HMAC/signature-header scheme exists anywhere in
+  Grow's real docs; their actual webhook payloads and event types (10 distinct kinds: recurring payment,
+  failed recurring, invoice, POS, paymentLinks, ...) don't match the code's `event.type`/`event.data.*`
+  shape at all; their real auth model (`UserId`/`PageCode`/`APIKey`) doesn't match the `Bearer $GROW_SECRET_KEY`
+  scheme `createGrowCheckoutSession` uses either. Full detail in `PHASE_AUDIT.md`'s Session 10 update —
+  read that before ever touching this integration again.
+- Presented this to the user directly (disable-and-flag vs. research the `webhookKey` mechanism further vs.
+  defer) — they chose to defer entirely. **No code changed.** Documented the finding in both
+  `PHASE_AUDIT.md` and this file's "Prompt for next agent" so a future session doesn't re-scope this as "just
+  add HMAC verification."
+- No new ADR — a research finding presented for a decision, not a decision itself; the user's choice was
+  "do nothing further this session," not a product/architecture call that needs recording as an ADR.
+- Did not touch: any code. Did not research the `webhookKey` mechanism further (that was the path not chosen).
 
 ### 2026-08-20 — Session 10 (real Bedrock wiring for Rooms + Library, deployed and live-verified)
 - Picked up the second, now-only-remaining user-directed priority from Session 8 part 2: replace
