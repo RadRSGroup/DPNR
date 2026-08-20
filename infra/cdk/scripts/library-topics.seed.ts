@@ -1,13 +1,13 @@
 /**
  * Content Library catalog seed data (MVP_ARCHITECTURE.md §5.5, §3.2). No
- * spec docx section for authored topic content was available this
- * session (same access gap Session 5 had for Mirror Room's prompts) — all
- * 6 topics below are this session's own first-authored draft, written
- * Claude-native in the same warm/curious/non-diagnostic voice already
- * established for `decision_room`/`mirror_room`/`library` prompts, not
- * ported from anywhere. **Treat these as draft content needing explicit
- * product review before being final**, the same status Mirror Room's
- * design had before its own Session 6 review — see docs/AGENT_LOG.md.
+ * spec docx section for authored topic content was available when these
+ * were first written (same access gap Session 5 had for Mirror Room's
+ * prompts) — all 6 topics below were Session 6's own first-authored draft,
+ * written Claude-native in the same warm/curious/non-diagnostic voice
+ * already established for `decision_room`/`mirror_room`/`library` prompts,
+ * not ported from anywhere. **Approved as-is by the user in Session 10** —
+ * treat this content as settled, same status Decision Room/Mirror Room's
+ * own content already has, not a draft awaiting review.
  *
  * `taxonomyCategory` names are this session's own choice, loosely aligned
  * to `TwinSignalDomainSchema`'s 6 values (`packages/shared-types/src/dynamo/twin.ts`)

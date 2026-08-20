@@ -64,7 +64,7 @@ This project has **no human development team**. It is built entirely by Claude C
 
 *(This section is overwritten every session with the current, precise handoff. Do not append to it — replace it.)*
 
-**Status:** Phase 0 code is substantially scaffolded and verified (typecheck + `cdk synth` + inspected the actual synthesized CloudFormation, not just "it compiled") — **and now verified live**, per Session 6 part 3 below. **AWS is deployed and real** as of this handoff: account `346866989957` (`us-east-1`), `Dpnr-Data`/`Dpnr-Auth`/`Dpnr-Api` all deployed, `GET /v1/health` confirmed reachable, Prompt Registry + Library catalog both seeded for real. This does NOT relax the "ask before deploying" guardrail for *future* deploys (schema changes, new stacks) — it only means the specific things this session deployed are done. **The Decision Room guided-creation-flow UI port (Session 8), Mirror Room's greenfield UI (Session 9), and real Bedrock wiring for Rooms/Library (Session 10, below) are now done and live-verified end to end.**
+**Status:** Phase 0 code is substantially scaffolded and verified (typecheck + `cdk synth` + inspected the actual synthesized CloudFormation, not just "it compiled") — **and now verified live**, per Session 6 part 3 below. **AWS is deployed and real** as of this handoff: account `346866989957` (`us-east-1`), `Dpnr-Data`/`Dpnr-Auth`/`Dpnr-Api` all deployed, `GET /v1/health` confirmed reachable, Prompt Registry + Library catalog both seeded for real. This does NOT relax the "ask before deploying" guardrail for *future* deploys (schema changes, new stacks) — it only means the specific things this session deployed are done. **The Decision Room guided-creation-flow UI port (Session 8), Mirror Room's greenfield UI (Session 9), real Bedrock wiring for Rooms/Library, the Cognito audit of /account/checkout/api-user routes, Digital Twin v1 (extraction + confirm/reject), and Library's content review (all Session 10, below) are now done and live-verified end to end.**
 
 **Session 10: wired up a real Bedrock (Claude) call, replacing `infra/cdk/lambda/lib/model-call-stub.ts` — the single remaining user-directed priority from Session 8 part 2. Deployed and live-verified.**
 
@@ -78,6 +78,13 @@ This project has **no human development team**. It is built entirely by Claude C
 - **Did not live-verify Library's personalization path end to end** (`libraryTopicDetailFn`'s new IAM/timeout fix) — it only fires for a user with a confirmed Digital Twin signal, and Digital Twin is still fully unbuilt (no way to create one). The code path was verified by direct reading/typecheck/synth-inspection instead, same as every other never-yet-exercised branch in this codebase; flagged here rather than silently assumed working. Whoever eventually builds Digital Twin should treat this as the first real end-to-end test opportunity for that code path.
 - No new ADR — this session implements ADR 0005's already-fully-specified calling convention; no new architectural decision was made.
 - Did not touch: Companion (`companion/model-stub.ts`, a separate, still-untouched stub — see "Prompt for next agent"), `/account`/checkout/`/api/user/*`, Library's product review, Digital Twin/Credits/Continuity, root MFA, or the Grow webhook HMAC fix.
+
+**Session 10, continued — the user then set three more priorities in order (Cognito account audit → Digital Twin → Library review), all completed this same session. Full detail in Session History parts 2–5; condensed here so this section stays self-sufficient:**
+
+- **Part 2**: investigated the Grow webhook stub at the user's request and found it's not fixable as a small HMAC patch — the whole integration (`apps/web/src/lib/grow.ts`, `.../api/webhooks/grow/route.ts`) is built against a fictional API shape that doesn't match Grow's real developer docs at all (wrong signature scheme — none exists; wrong payload/event shapes; wrong auth model). **No code changed** — presented to the user, who chose to defer rather than disable-and-flag or research further. See `PHASE_AUDIT.md`'s Session 10 update and "Prompt for next agent" item 7 — do not re-scope this as a quick fix.
+- **Part 3**: audited and fixed `/account`, checkout, and `/api/user/*` — all still 100% Supabase-based since Session 7's login swap, including a dead sign-out button no prior session had caught. Built real `GET /v1/user/export` and `DELETE /v1/account` Lambdas (self-service Cognito deletion via `deleteCognitoUser()`, DynamoDB partition deleted first for a safe failure mode), rewired `/account`/`/pricing` to Cognito + the new endpoints, disabled checkout (blocked on the Grow finding above), deleted four now-fully-dead Supabase API routes. Deployed and live-verified end to end (real export dump, real account deletion, confirmed via `aws cognito-idp admin-get-user` 404 + DynamoDB partition count 0). Found one new security-relevant gap while building this, not fixed (out of scope, flagged for Phase 6): `command.ts`'s `SessionItem.lastResponse` caches real generated content in plaintext, the only content field that skips `stubEncryptField`.
+- **Part 4**: built Digital Twin v1 for real — after the user chose "full pipeline" over "API-only" when asked, added a new `twin` Prompt Registry domain (`extract_signals`, forced tool-use), a shared extraction helper fired from both rooms' `COMMITMENT` steps, and `GET /v1/twin` + confirm/reject endpoints (reusing response schemas already scaffolded in `shared-types` since Session 4). Deployed, prompt seeded, live-verified end to end against a throwaway Cognito user driven through a real 6-step Mirror Room flow — extraction produced 4 real, distinct candidate signals, confirm/reject both worked. Mid-session the user also asked to rename Digital Twin → "InnerSelf" and Dashboard → "InnerOS" in user-facing copy only (internal code/routes unchanged) — applied the Dashboard→InnerOS sweep immediately since it has live UI; InnerSelf has no UI yet to apply to.
+- **Part 5**: presented all 6 Library topics for product review — **user approved as-is**, no content changes. Updated the seed file's doc comment and `PHASE_AUDIT.md` to drop the "draft, awaiting review" framing. The user also asked for two more small copy changes, explicitly queued as backlog rather than done this session — see "Prompt for next agent" item 1 for both (a consent-copy rewrite with a real accuracy caveat the user knowingly accepted, and a "Decision Room" → "Workshop Rooms" rename).
 
 **Session 9: built Mirror Room's frontend UI from scratch and verified it live — the top user-directed priority from Session 8's handoff. Also found and fixed a real, previously-undiscovered `mirror-full.ts` bug, and deployed the fix live.**
 
@@ -174,6 +181,28 @@ This project has **no human development team**. It is built entirely by Claude C
 ---
 
 ## Session History
+
+### 2026-08-20 — Session 10, part 5 (Library topics product-reviewed and approved; two new copy-change tasks queued)
+- Third and last of the user's three stated priorities this session. Presented all 6 draft Library topics
+  (titles, taxonomy categories, full content) for explicit review, same process Mirror Room's design went
+  through in Session 6. **User approved all 6 as-is** — no content changes. Updated
+  `library-topics.seed.ts`'s doc comment (was flagged as an unreviewed draft since Session 6) and
+  `PHASE_AUDIT.md` §1/§2 to reflect this — no re-seed needed since the content itself didn't change, only its
+  review status.
+- **Two new small, explicitly-requested tasks queued for later, not implemented this session** (the user
+  asked to add them to the backlog rather than do them now): (1) rewrite the consent page's AI-disclosure
+  copy to describe the *target* zero-knowledge architecture ("processed only during your session, encrypted
+  so we can't access it") rather than today's real behavior — **flagged to the user directly that this
+  describes ADR 0001's unbuilt Phase 6, not the current plaintext-stub reality (ADR 0007), and the user chose
+  to accept that gap knowingly, not by oversight**; (2) rename "Decision Room" to "Workshop Rooms" in all
+  user-facing copy (confirmed same scope convention as the InnerOS rename — internal code/routes unchanged).
+  Full detail recorded in "Prompt for next agent" item 1 above — do not implement item 1's copy change
+  without preserving the accuracy flag, and don't silently "correct" it back to the accurate version without
+  asking the user first, since accepting the gap was their explicit call.
+- No new ADR — the topic approval is a content sign-off, not an architectural decision; the two queued tasks
+  are recorded as pending work, not decided/implemented this session.
+- Did not touch: Companion's model stub, Credits/Continuity, root MFA, the Grow webhook rebuild, or either
+  of the two newly-queued copy changes (deliberately deferred, per the user's own instruction).
 
 ### 2026-08-20 — Session 10, part 4 (built Digital Twin v1 — extraction pipeline + confirm/reject API — deployed and live-verified)
 - Second of the user's three stated priorities this session (Cognito audit → Digital Twin → Library review).
