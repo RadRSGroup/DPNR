@@ -71,7 +71,7 @@ export default function CompletionScreen({ userName, situation, trigger, synthes
           onClick={onDone}
           className="w-full py-3.5 rounded-full bg-white/90 hover:bg-white active:scale-[0.98] text-[#1a0826] text-sm font-semibold transition-all"
         >
-          Back to dashboard
+          Back to InnerOS
         </button>
       </div>
     </div>

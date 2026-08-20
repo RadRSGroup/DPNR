@@ -70,7 +70,7 @@ export default function AccountPage() {
       <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
 
       <div className="pt-14 pb-6">
-        <Link href="/dashboard" className="text-purple-400 text-sm">← Dashboard</Link>
+        <Link href="/dashboard" className="text-purple-400 text-sm">← InnerOS</Link>
         <h1 className="text-white text-xl font-light mt-5">Account</h1>
         <p className="text-white/40 text-sm mt-1">{email}</p>
       </div>

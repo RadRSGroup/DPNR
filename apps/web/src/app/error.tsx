@@ -18,7 +18,7 @@ export default function GlobalError({
       <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
       <p className="text-white/40 text-xs uppercase tracking-widest">Something went wrong</p>
       <p className="text-white/60 text-sm text-center leading-relaxed">
-        An unexpected error occurred. Your progress is saved — you can continue from the dashboard.
+        An unexpected error occurred. Your progress is saved — you can continue from InnerOS.
       </p>
       <div className="flex gap-3 w-full">
         <button
@@ -31,7 +31,7 @@ export default function GlobalError({
           href="/dashboard"
           className="flex-1 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm text-center transition-all"
         >
-          Dashboard
+          InnerOS
         </Link>
       </div>
     </div>

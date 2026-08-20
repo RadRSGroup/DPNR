@@ -220,12 +220,12 @@ function NewDecisionContent() {
           setCurrentStepId((full.currentStepId as DecisionStepId) ?? currentStepId)
           setSyncNotice('This session moved on — you’ve been synced to the latest step.')
         } catch {
-          setFatalError('Something went wrong. Please go back to the dashboard and try again.')
+          setFatalError('Something went wrong. Please go back to InnerOS and try again.')
         }
         return
       }
     }
-    setFatalError('Something went wrong. Please go back to the dashboard and try again.')
+    setFatalError('Something went wrong. Please go back to InnerOS and try again.')
   }
 
   async function callCommand(
@@ -394,7 +394,7 @@ function NewDecisionContent() {
           <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
           <p className="text-white/70 text-sm">{fatalError}</p>
           <button onClick={() => router.push('/dashboard')} className="text-purple-400 text-sm underline">
-            Back to dashboard
+            Back to InnerOS
           </button>
         </div>
       )

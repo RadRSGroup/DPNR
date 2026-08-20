@@ -33,6 +33,7 @@ import {
 import { DECISION_ROOM_PROMPT_SEEDS, type PromptSeed } from './decision-room-prompts.seed'
 import { MIRROR_ROOM_PROMPT_SEEDS } from './mirror-room-prompts.seed'
 import { LIBRARY_PROMPT_SEEDS } from './library-prompts.seed'
+import { TWIN_PROMPT_SEEDS } from './twin-prompts.seed'
 
 const TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME ?? 'dpnr-prompt-registry'
 
@@ -54,6 +55,12 @@ const DOMAINS: { domain: string; seeds: PromptSeed[]; author: string; sourceNote
     seeds: LIBRARY_PROMPT_SEEDS,
     author: 'design:library-prompts',
     sourceNote: 'Net-new — designed Claude-native, not ported from anywhere (see library-prompts.seed.ts).',
+  },
+  {
+    domain: 'twin',
+    seeds: TWIN_PROMPT_SEEDS,
+    author: 'design:twin-prompts',
+    sourceNote: 'Net-new — designed Claude-native, not ported from anywhere (see twin-prompts.seed.ts).',
   },
 ]
 

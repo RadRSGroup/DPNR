@@ -199,6 +199,27 @@ export class ApiStack extends Stack {
     })
     props.applicationTable.grantReadWriteData(accountDeleteFn)
 
+    const twinListFn = new lambda.NodejsFunction(this, 'TwinListFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/twin/list.ts'),
+      description: 'GET /v1/twin — every Digital Twin signal the caller has, any status.',
+    })
+    props.applicationTable.grantReadData(twinListFn)
+
+    const twinConfirmFn = new lambda.NodejsFunction(this, 'TwinConfirmFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/twin/confirm.ts'),
+      description: 'POST /v1/twin/signals/{id}/confirm.',
+    })
+    props.applicationTable.grantReadWriteData(twinConfirmFn)
+
+    const twinRejectFn = new lambda.NodejsFunction(this, 'TwinRejectFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/twin/reject.ts'),
+      description: 'POST /v1/twin/signals/{id}/reject.',
+    })
+    props.applicationTable.grantReadWriteData(twinRejectFn)
+
     this.httpApi.addRoutes({
       path: '/v1/dashboard',
       methods: [apigwv2.HttpMethod.GET],
@@ -224,6 +245,27 @@ export class ApiStack extends Stack {
       path: '/v1/account',
       methods: [apigwv2.HttpMethod.DELETE],
       integration: new integrations.HttpLambdaIntegration('AccountDeleteIntegration', accountDeleteFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/twin',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('TwinListIntegration', twinListFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/twin/signals/{id}/confirm',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('TwinConfirmIntegration', twinConfirmFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/twin/signals/{id}/reject',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('TwinRejectIntegration', twinRejectFn),
       authorizer: this.cognitoAuthorizer,
     })
 

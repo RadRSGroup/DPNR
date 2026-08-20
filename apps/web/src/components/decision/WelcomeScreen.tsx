@@ -70,7 +70,7 @@ export default function WelcomeScreen({ userName, onNext }: Props) {
             <button
               onClick={() => router.push('/dashboard')}
               className="w-12 h-12 flex items-center justify-center rounded-full border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-all"
-              aria-label="Back to dashboard"
+              aria-label="Back to InnerOS"
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d="M11 4L6 9L11 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>

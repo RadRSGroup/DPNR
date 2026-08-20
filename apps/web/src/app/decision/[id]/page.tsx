@@ -578,7 +578,7 @@ export default function DecisionDetailPage() {
     <div className="relative min-h-screen max-w-[393px] mx-auto px-5 flex flex-col justify-center">
       <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
       <p className="text-white/50 text-center">Decision not found.</p>
-      <Link href="/dashboard" className="text-purple-400 text-sm text-center mt-4">← Dashboard</Link>
+      <Link href="/dashboard" className="text-purple-400 text-sm text-center mt-4">← InnerOS</Link>
     </div>
   )
 
@@ -595,7 +595,7 @@ export default function DecisionDetailPage() {
       {/* Header */}
       <div className="pt-12 pb-5">
         <div className="flex items-center justify-between">
-          <Link href="/dashboard" className="text-purple-400 text-sm">← Dashboard</Link>
+          <Link href="/dashboard" className="text-purple-400 text-sm">← InnerOS</Link>
           {!confirmDelete ? (
             <button
               onClick={() => setConfirmDelete(true)}

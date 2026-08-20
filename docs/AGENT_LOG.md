@@ -8,15 +8,18 @@ This project has **no human development team**. It is built entirely by Claude C
 
 > You're picking up work on DPNR (`C:\Users\rekkawi\decision-room`), a personal-development product built entirely by Claude Code agents — no human dev team, real engineering discipline expected anyway. Before doing anything else, read `docs/AGENT_LOG.md` in full, then `docs/MVP_ARCHITECTURE.md`, then `docs/adr/`, then `docs/PHASE_AUDIT.md` — don't relitigate a settled ADR.
 >
-> **Bedrock wiring is done as of Session 10** — `lib/model-call.ts` (renamed from `model-call-stub.ts`) makes a real Bedrock Converse call now, live-verified. No open task there unless you're extending it to Companion (see below). Pick from the list that follows; nothing here is prescriptive ordering, ask the user if it's unclear which to start with:
-> 1. **Wire Companion's own stub** (`companion/model-stub.ts`) — a separate, still-untouched stub, deliberately out of scope for Session 10 (the user's priority was Rooms/Library's shared `model-call.ts` specifically). Companion has no Prompt Registry domain yet either — that'd need to exist first (`decision_room`/`mirror_room`/`library` are the only domains today).
-> 2. Audit/fix `/account`, checkout, and the `/api/user/*` routes now that Supabase sessions no longer exist for Cognito-only users.
-> 3. Get explicit product review of Library's 6 draft topics, same as Mirror Room and Decision Room already got.
-> 4. Digital Twin, Credits, Continuity, and the rest of the Auth/account row are all still fully unbuilt (`/v1` surface) — see `PHASE_AUDIT.md` §1 for exact per-phase status.
-> 5. `decision/[id]/page.tsx` (the post-completion review page) is still explicitly out of scope, still Supabase-only. Mirror Room has no equivalent review page either — no `GET /v1/rooms/mirror` list endpoint exists, so `/dashboard` can't show Mirror Room session history, only the entry-point card to start a new one.
+> **Bedrock wiring is done as of Session 10** — `lib/model-call.ts` (renamed from `model-call-stub.ts`) makes a real Bedrock Converse call now, live-verified. Session 10 also finished the user's three stated priorities in order: the Cognito audit of `/account`/checkout/`/api/user/*`, and a full Digital Twin v1 build (extraction pipeline + confirm/reject API, live-verified). Pick from the list that follows; nothing here is prescriptive ordering, ask the user if it's unclear which to start with:
+> 1. **Two small, explicitly-requested copy changes, not yet done — do these first if the user doesn't redirect you:**
+>    - **Consent-page disclosure copy**: change the "AI processes your content... sent to Amazon Bedrock (Claude)" line (`apps/web/src/app/consent/page.tsx`) to describe the target zero-knowledge architecture instead — something like "processed only during your active session, and encrypted so we can't access it either." **Flag knowingly accepted by the user**: this describes ADR 0001's *target* architecture (Phase 6, not yet built) — today Bedrock genuinely does see plaintext content within the AWS account, and storage is still the ADR-0007-authorized internal-testing plaintext stub, not real encryption. The user was told this directly and chose to ship the aspirational copy anyway. Don't "fix" this back to the accurate-but-less-reassuring version without asking first — it was a deliberate call, not an oversight.
+>    - **"Decision Room" → "Workshop Rooms" rename, user-facing copy only, same convention as the InnerOS rename below** (internal code — `DecisionRoomStepIdSchema`, `/decision` routes, `decision_room` prompt domain — stays as-is). Applies everywhere "Decision Room" appears as visible text: the consent page heading (`DPNR · DECISION ROOM`), the dashboard's "Start a Decision" card and its own room-step headers/copy, `StepShell.tsx` and friends. Sweep `grep -rn "Decision Room" apps/web/src` for the full list — there are many more occurrences than the Dashboard→InnerOS sweep had, budget accordingly. Mirror Room's naming was not discussed — leave it alone unless told otherwise.
+> 2. **Wire Companion's own stub** (`companion/model-stub.ts`) — a separate, still-untouched stub, deliberately out of scope for Session 10 (the user's priority was Rooms/Library's shared `model-call.ts` specifically). Companion has no Prompt Registry domain yet either — that'd need to exist first (`decision_room`/`mirror_room`/`library`/`twin` are the only domains today).
+> 3. Get explicit product review of Library's 6 draft topics, same as Mirror Room and Decision Room already got — the last of the user's three original priorities this session, not yet started as of this handoff (check the latest Session History entry to see if it got done later in the same session).
+> 4. Credits, Continuity, and the rest of the Auth/account row are still fully unbuilt (`/v1` surface) — see `PHASE_AUDIT.md` §1 for exact per-phase status. Digital Twin's data/extraction/confirm-reject layer is now real (Session 10) but has no UI ("My Evolution Map") — that's still open too, whenever a UI-building session picks it up. Naming for a future Twin UI: user-facing copy should say "InnerSelf" (see the InnerOS precedent below), not "Digital Twin"/"My Evolution Map".
+> 5. `decision/[id]/page.tsx` (the post-completion review page) is still explicitly out of scope, still Supabase-only. Mirror Room has no equivalent review page either — no `GET /v1/rooms/mirror` list endpoint exists, so the dashboard can't show Mirror Room session history, only the entry-point card to start a new one.
 > 6. Root MFA is still not done — deprioritized since day-to-day work goes through the already-admin, already-MFA'd IAM user `RadBarOn`, not root.
 > 7. **The Grow webhook is a bigger gap than "missing signature verification" — do not re-scope it as a small HMAC patch.** Session 10 pulled Grow's real developer docs and found `apps/web/src/lib/grow.ts`/`.../api/webhooks/grow/route.ts` are built against a fictional API shape: no HMAC/signature-header scheme exists in Grow's real docs, the payload shape and event types are entirely different from what the code expects, and the auth model (`UserId`/`PageCode`/`APIKey`) doesn't match either. See `PHASE_AUDIT.md`'s Session 10 update for the full finding. A real fix means rebuilding this against Grow's actual API — likely as part of the still-unbuilt Credits ledger (Slice 1), not a standalone patch. Presented to the user, who chose to defer rather than disable-and-flag or research further this session.
 > 8. `api-stack.ts`'s CORS `allowOrigins` is still hardcoded to `http://localhost:3000` only — add the real deployed frontend origin once one exists.
+> 9. **Naming, settled this session, apply going forward**: Digital Twin → "InnerSelf", Dashboard → "InnerOS" in all user-facing copy (internal code/types/routes keep their existing names in both cases). Dashboard's existing live UI was already swept to InnerOS in Session 10; InnerSelf has no UI yet to apply to.
 >
 > **Standing guardrail**: `packages/shared-types` and every consumer (`apps/web`, `infra/cdk`) MUST stay on the same major Zod version — see the guardrail below and Session 5 part 4 for why (it broke real code once already).
 >
@@ -171,6 +174,67 @@ This project has **no human development team**. It is built entirely by Claude C
 ---
 
 ## Session History
+
+### 2026-08-20 — Session 10, part 4 (built Digital Twin v1 — extraction pipeline + confirm/reject API — deployed and live-verified)
+- Second of the user's three stated priorities this session (Cognito audit → Digital Twin → Library review).
+- **Scope decision, put to the user before writing code**: `MVP_ARCHITECTURE.md`'s own Slice 1 wording is
+  "data + confirm/reject, no fixed viz" and its API table lists only `GET /v1/twin` +
+  confirm/reject — no signal-creation endpoint. But nothing anywhere in the codebase had ever written a
+  `TwinSignalItem`, so building just the read/confirm/reject API would have shipped a permanently-empty
+  feature (unlike `library/recommendations.ts`'s honestly-empty precedent, this would have had literally no
+  path to ever become non-empty). Asked the user: API-only (matches the roadmap doc's literal Slice 1 scope)
+  vs. also building the AI extraction pipeline. **User chose the full pipeline.**
+- **Naming**: mid-session, the user asked to call Digital Twin "InnerSelf" and Dashboard "InnerOS" going
+  forward. Clarified scope before applying: user-facing copy only (internal code — `TwinSignalItem`,
+  `dynamo/twin.ts`, `/v1/twin`, the `/dashboard` route — stays as-is, avoiding an unplanned code-wide rename
+  with no user-visible benefit), and confirmed the user wanted the already-live Dashboard UI text updated
+  now, not deferred to future work. Updated every visible "Dashboard"/"dashboard" string across `apps/web`
+  (back-links, error-page copy, "Back to dashboard" buttons/aria-labels) to "InnerOS" — none of the
+  `router.push('/dashboard')` calls or the route itself changed. No Digital Twin UI exists yet to rename to
+  "InnerSelf" — that naming applies whenever a future session builds one.
+- **New Prompt Registry domain, `twin`** (`infra/cdk/scripts/twin-prompts.seed.ts`, one prompt,
+  `extract_signals`): forced tool-use (ADR 0005), shared across both room types via a `{{roomType}}`
+  variable rather than duplicated per room. Deliberately restricts the extractable domain enum to
+  `pattern`/`trigger`/`value`/`commitment` — the spec's full 6-domain Signal model also lists
+  `current_focus`/`direction`, but those are sourced from Onboarding/Roadmap, which don't exist, so asking
+  the model to reach for them from room content would just be inventing false signals.
+- **New shared helper** (`infra/cdk/lambda/rooms/twin-signals.ts`, `extractCandidateSignals()`) — called from
+  both `decision-steps/commitment.ts` and `mirror-steps/commitment.ts` (the one point in each flow the spec's
+  own "not every chat turn updates the Digital Twin" trust rule points to: genuine session completion, not
+  per-step). Builds a plain-text session summary from already-decrypted content (`gatherDecisionContext` for
+  Decision Room, the flat `MirrorContent` object for Mirror Room), calls the new prompt, and writes any
+  result above a 0.5-confidence floor as a `candidate` `TwinSignalItem`. **Never throws** — a Twin-extraction
+  failure must not block the room's own completion; errors are swallowed after a generic, no-raw-content log
+  line, same convention as `library/topic-detail.ts`'s personalization. No new IAM/timeout changes needed for
+  `roomsCommandFn` — it already has both the Bedrock grant and the 29s timeout from earlier this session.
+- **Three new endpoints** (`infra/cdk/lambda/twin/{list,confirm,reject,helpers}.ts`), using response
+  schemas that turned out to already exist in `packages/shared-types/src/api/dashboard-twin-credits.ts`
+  since Session 4 (`TwinListResponseSchema`, `TwinSignalActionResponseSchema`) — reused verbatim rather than
+  duplicated. `confirm`/`reject` resolve the bare `{id}` path param (a `signalId`, no domain) by querying the
+  caller's own `TWIN#SIGNAL#*` partition and filtering in Lambda — avoids a GSI for a lookup this small, and
+  is structurally ownership-scoped since the query never looks outside `userPk(requireUserId(event))`. Both
+  actions are allowed from any current status (not just `candidate`) — the spec's "Confirm · Not quite ·
+  Explore this" framing implies correction is normal, not a one-way ratchet.
+- **Verified in order, before deploying anything**: `typecheck:cdk` clean; `synth` + direct inspection of the
+  synthesized template (all 3 routes present with the JWT authorizer attached); a throwaway script calling
+  `callPromptModel` directly against real Bedrock with two sample session summaries — a rich one (correctly
+  extracted 4 distinct, well-separated signals: trigger/pattern/value/commitment) and a thin one (correctly
+  returned zero signals, proving the "don't stretch for content" instruction holds).
+- **Deployed to `Dpnr-Api` and seeded the new `twin` domain, both with the user's explicit go-ahead.**
+  Live-verified end to end with a throwaway Cognito user: drove the complete real 6-step Mirror Room flow via
+  direct authenticated `fetch` calls against the live API (faster than a full browser UI pass for this
+  verification's purpose, and just as valid since it exercises the same `command.ts`/`commitment.ts` code
+  path), confirmed `GET /v1/twin` returned exactly the 4 signals the direct-Bedrock test predicted the shape
+  of, then called confirm on one and reject on another and confirmed both status transitions stuck on a
+  follow-up `GET /v1/twin`. Checked `RoomsCommandFn`'s CloudWatch logs — zero errors. Fully cleaned up
+  (Cognito user + all 7 DynamoDB rows, including all 4 `TWIN#SIGNAL#*` items, deleted; confirmed partition
+  count 0).
+- No new ADR — the domain-restriction and confidence-floor choices are implementation details of a feature
+  the user explicitly asked to build, not irreversible architectural calls; the InnerSelf/InnerOS naming was
+  a direct product decision from the user, not something this session decided unilaterally.
+- Did not touch: any actual Digital Twin / My Evolution Map UI (none was built — "no fixed viz" per the
+  roadmap doc, and the user's scope answer didn't ask for one), Library's product review (next, per the
+  user's stated order), Companion's model stub, root MFA, or the Grow webhook rebuild.
 
 ### 2026-08-20 — Session 10, part 3 (audited and fixed /account, checkout, /api/user/* for the Cognito cutover)
 - User asked to work through three priorities in order: this Cognito audit, then Digital Twin, then Library's
