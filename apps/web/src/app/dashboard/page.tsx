@@ -110,11 +110,22 @@ function DashboardContent() {
 
       <Link
         href="/decision/new"
-        className="flex items-center justify-between w-full bg-purple-600 hover:bg-purple-500 active:scale-[0.98] text-white rounded-2xl px-5 py-4 mb-6 transition-all shadow-lg shadow-purple-900/30"
+        className="flex items-center justify-between w-full bg-purple-600 hover:bg-purple-500 active:scale-[0.98] text-white rounded-2xl px-5 py-4 mb-3 transition-all shadow-lg shadow-purple-900/30"
       >
         <div>
           <p className="font-medium text-base">Start a Decision</p>
           <p className="text-purple-200/60 text-xs mt-0.5">~25 minutes · 7 guided steps</p>
+        </div>
+        <span className="text-2xl">+</span>
+      </Link>
+
+      <Link
+        href="/mirror/new"
+        className="flex items-center justify-between w-full bg-white/5 border border-white/10 hover:border-white/20 active:scale-[0.98] text-white rounded-2xl px-5 py-4 mb-6 transition-all"
+      >
+        <div>
+          <p className="font-medium text-base">Start a Mirror Room session</p>
+          <p className="text-white/40 text-xs mt-0.5">~12 minutes · 6 guided steps</p>
         </div>
         <span className="text-2xl">+</span>
       </Link>

@@ -92,6 +92,10 @@ export const MirrorRoomFullResponseSchema = z.object({
   mirrorId: z.string(),
   status: MirrorSessionStatusSchema,
   currentStepId: z.string().optional(),
+  // Sourced from the generic SessionItem (dynamo/session.ts), same as
+  // DecisionRoomFullResponseSchema's own field — lets a client resume
+  // exactly (POST /v1/rooms/mirror requires expectedSessionVersion).
+  sessionVersion: z.number().int().min(0).optional(),
   situation: z.string().optional(),
   trigger: z.string().optional(),
   thought: z.string().optional(),

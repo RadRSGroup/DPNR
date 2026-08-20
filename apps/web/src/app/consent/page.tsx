@@ -14,7 +14,7 @@ const POINTS = [
   {
     icon: '✦',
     title: 'AI processes your content',
-    body: 'Your decision text is sent to OpenAI to generate reflections. OpenAI does not use API inputs to train their models by default.',
+    body: 'Your decision text is sent to Amazon Bedrock (Claude) to generate reflections, within our own AWS account. It is not used to train any model.',
   },
   {
     icon: '📊',

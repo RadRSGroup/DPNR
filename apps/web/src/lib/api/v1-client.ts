@@ -3,6 +3,7 @@ import type {
   RoomCommandResponse,
   ConsentResponse,
   DecisionRoomFullResponse,
+  MirrorRoomFullResponse,
 } from '@dpnr/shared-types'
 import { getIdToken } from '../cognito/client'
 
@@ -50,6 +51,12 @@ export async function submitRoomCommand(request: RoomCommandRequest): Promise<Ro
 export async function getDecisionFull(id: string): Promise<DecisionRoomFullResponse> {
   const res = await authedFetch(`/v1/rooms/decision/${id}/full`)
   return parseOrThrow<DecisionRoomFullResponse>(res)
+}
+
+/** GET /v1/rooms/mirror/{id}/full — used by mirror/new/page.tsx's `?resume=` handling. */
+export async function getMirrorFull(id: string): Promise<MirrorRoomFullResponse> {
+  const res = await authedFetch(`/v1/rooms/mirror/${id}/full`)
+  return parseOrThrow<MirrorRoomFullResponse>(res)
 }
 
 /** POST /v1/user/consent — the write path this session built (docs/PHASE_AUDIT.md §2.2). */
