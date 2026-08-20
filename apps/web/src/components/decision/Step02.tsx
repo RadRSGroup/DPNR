@@ -2,17 +2,17 @@
 import { useState, useRef } from 'react'
 import StepShell from './StepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
-import { useAI } from '@/lib/useAI'
+import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { DecisionOption } from '@/lib/types'
 
 interface Step02Props {
   decisionTitle: string
-  decisionId?: string
   tier?: string
   initialNarrative?: string
   initialOptionA?: DecisionOption
   initialOptionB?: DecisionOption
+  onRefine: RefineFn
   onComplete: (narrative: string, optionA: DecisionOption, optionB: DecisionOption) => void
   onBack?: () => void
   onSkip?: () => void
@@ -20,17 +20,17 @@ interface Step02Props {
 
 const CHAR_LIMITS: Record<string, number> = { free: 500, core: 1500, pro: 3000 }
 
-export default function Step02({ decisionTitle, decisionId, tier = 'free', initialNarrative = '', initialOptionA, initialOptionB, onComplete, onBack, onSkip }: Step02Props) {
+export default function Step02({ decisionTitle, tier = 'free', initialNarrative = '', initialOptionA, initialOptionB, onRefine, onComplete, onBack, onSkip }: Step02Props) {
   const [narrative, setNarrative] = useState(initialNarrative)
   const [optionA, setOptionA] = useState<DecisionOption>(initialOptionA ?? { label: 'A', content: '', approved: false })
   const [optionB, setOptionB] = useState<DecisionOption>(initialOptionB ?? { label: 'B', content: '', approved: false })
   const [parsed, setParsed] = useState(!!(initialOptionA?.content && initialOptionB?.content))
-  const { callAI, loading, error, tokenCapReached, dismissTokenCap } = useAI()
+  const { callAI, loading, error, tokenCapReached, dismissTokenCap } = useAI(onRefine)
   const charLimit = CHAR_LIMITS[tier] ?? 500
 
   async function handleParse() {
     const res = await callAI<{ optionA: string; optionB: string }>(
-      'parse_options', { narrative }, decisionId
+      'parse_options', { narrative }
     )
     if (res) {
       setOptionA({ label: 'A', content: res.optionA, approved: false })

@@ -1,20 +1,18 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAI } from '@/lib/useAI'
+import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
-import { DecisionOption, TOTAL_STEPS } from '@/lib/types'
+import { TOTAL_STEPS } from '@/lib/types'
 
 export type SummaryType = 'pros_cons' | 'fears_desires' | 'values_needs' | 'values' | 'needs' | 'projections'
 
 interface Props {
   decisionTitle: string
   stepType: SummaryType
-  optionA: DecisionOption
-  optionB: DecisionOption
   tagsA: Record<string, string[]>
   tagsB: Record<string, string[]>
-  decisionId?: string
+  onRefine: RefineFn
   onContinue: () => void
   onBack?: () => void
 }
@@ -58,25 +56,22 @@ const CTA_LABEL: Record<SummaryType, string> = {
 const AGREEMENT_OPTIONS = ['Accurate', 'Refine this', 'Not sure', 'Partly True']
 
 export default function SectionSummaryScreen({
-  decisionTitle, stepType, optionA, optionB, tagsA, tagsB, decisionId, onContinue, onBack,
+  decisionTitle, stepType, tagsA, tagsB, onRefine, onContinue, onBack,
 }: Props) {
   const router = useRouter()
   const [agreement, setAgreement] = useState<string | null>(null)
   const [wordFromUs, setWordFromUs] = useState('')
   const [reflection, setReflection] = useState('')
-  const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI()
+  const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI(onRefine)
 
   const step = STEP_NUM[stepType]
 
   useEffect(() => {
     async function fetch() {
-      const selectionsA = Object.values(tagsA).flat()
-      const selectionsB = Object.values(tagsB).flat()
-      const res = await callAI<{ wordFromUs: string; reflection: string }>(
-        'section_summary',
-        { step: stepType, decisionTitle, optionA: optionA.content, optionB: optionB.content, selectionsA, selectionsB },
-        decisionId,
-      )
+      // The backend re-derives step/decisionTitle/options/selections from
+      // the session itself (gatherDecisionContext) — REFINE here takes no
+      // meaningful input, matching every other post-Step05/06/07 interstitial.
+      const res = await callAI<{ wordFromUs: string; reflection: string }>('section_summary', {})
       if (res) {
         setWordFromUs(res.wordFromUs ?? '')
         setReflection(res.reflection ?? '')

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import StepShell from './StepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
-import { useAI } from '@/lib/useAI'
+import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { EMOTION_COLORS, BODY_LOCATIONS, EmotionColor, TOTAL_STEPS } from '@/lib/types'
 
@@ -11,19 +11,18 @@ const PRESET_EMOTION_LABELS: string[] = EMOTION_COLORS.map(e => e.label)
 
 interface Step03Props {
   decisionTitle: string
-  decisionId?: string
-  narrative?: string
   initialBodyLocation?: string
   initialEmotion?: string
   initialReflection?: string
-  onComplete: (bodyLocation: string, emotion: string, reflection: string) => void
+  onRefine: RefineFn
+  onComplete: (bodyLocation: string, emotion: string, reflection: string, response: UserResponse, userRefinement?: string) => void
   onBack?: () => void
   onSkip?: () => void
 }
 
-type UserResponse = 'accurate' | 'refine' | 'not_sure' | 'partly_true'
+export type UserResponse = 'accurate' | 'refine' | 'not_sure' | 'partly_true'
 
-export default function Step03({ decisionTitle, decisionId, narrative, initialBodyLocation, initialEmotion, initialReflection, onComplete, onBack, onSkip }: Step03Props) {
+export default function Step03({ decisionTitle, initialBodyLocation, initialEmotion, initialReflection, onRefine, onComplete, onBack, onSkip }: Step03Props) {
   const router = useRouter()
   const isPreset = (v?: string): v is EmotionColor => !!v && PRESET_EMOTION_LABELS.includes(v)
   const [bodyLocation, setBodyLocation] = useState<string | null>(initialBodyLocation ?? null)
@@ -36,7 +35,7 @@ export default function Step03({ decisionTitle, decisionId, narrative, initialBo
   const [reflection, setReflection] = useState<string | null>(initialReflection ?? null)
   const [response, setResponse] = useState<UserResponse | null>(null)
   const [userRefinement, setUserRefinement] = useState('')
-  const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI()
+  const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI(onRefine)
 
   const resolvedEmotion = emotion ?? (customEmotion.trim() || null)
 
@@ -44,18 +43,15 @@ export default function Step03({ decisionTitle, decisionId, narrative, initialBo
     if (!bodyLocation || !resolvedEmotion) return
     const res = await callAI<{ reflection: string }>(
       'emotion_reflection',
-      { title: decisionTitle, bodyLocation, emotion: resolvedEmotion, narrative },
-      decisionId
+      { bodyLocation, emotion: resolvedEmotion }
     )
     if (res?.reflection) setReflection(res.reflection)
   }
 
   function handleContinue() {
-    if (!bodyLocation || !resolvedEmotion || !reflection) return
-    const finalReflection = response === 'refine' && userRefinement.trim()
-      ? userRefinement.trim()
-      : reflection
-    onComplete(bodyLocation, resolvedEmotion, finalReflection)
+    if (!bodyLocation || !resolvedEmotion || !reflection || !response) return
+    if (response === 'refine' && !userRefinement.trim()) return
+    onComplete(bodyLocation, resolvedEmotion, reflection, response, response === 'refine' ? userRefinement.trim() : undefined)
   }
 
   if (reflection) {

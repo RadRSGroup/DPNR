@@ -3,19 +3,19 @@ import { useEffect, useState } from 'react'
 import StepShell from './StepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import Chip from '@/components/ui/Chip'
-import { useAI } from '@/lib/useAI'
+import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { DecisionOption, PRESET_TAGS } from '@/lib/types'
 
 interface Step06Props {
   decisionTitle: string
-  decisionId?: string
   optionA: DecisionOption
   optionB: DecisionOption
   initialValuesA?: string[]
   initialNeedsA?: string[]
   initialValuesB?: string[]
   initialNeedsB?: string[]
+  onRefine: RefineFn
   onComplete: (valuesA: string[], needsA: string[], valuesB: string[], needsB: string[]) => void
   onBack?: () => void
   onSkip?: () => void
@@ -28,7 +28,7 @@ const ROUNDS: { round: Round; label: string; icon: string }[] = [
   { round: 'needs',  label: 'Needs',  icon: '🫀' },
 ]
 
-export default function Step06({ decisionTitle, decisionId, optionA, optionB, initialValuesA, initialNeedsA, initialValuesB, initialNeedsB, onComplete, onBack, onSkip }: Step06Props) {
+export default function Step06({ decisionTitle, optionA, optionB, initialValuesA, initialNeedsA, initialValuesB, initialNeedsB, onRefine, onComplete, onBack, onSkip }: Step06Props) {
   const [roundIdx, setRoundIdx] = useState(0)
   const [currentOption, setCurrentOption] = useState<'A' | 'B'>('A')
   const [selected, setSelected] = useState<Record<string, Record<Round, string[]>>>({
@@ -38,7 +38,7 @@ export default function Step06({ decisionTitle, decisionId, optionA, optionB, in
   const [suggestedA, setSuggestedA] = useState<{ values: string[]; needs: string[] }>({ values: [], needs: [] })
   const [suggestedB, setSuggestedB] = useState<{ values: string[]; needs: string[] }>({ values: [], needs: [] })
   const [customInput, setCustomInput] = useState('')
-  const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI()
+  const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI(onRefine)
 
   const currentRound = ROUNDS[roundIdx]
   const isLastRound = roundIdx === ROUNDS.length - 1
@@ -53,8 +53,7 @@ export default function Step06({ decisionTitle, decisionId, optionA, optionB, in
     const o = opt === 'A' ? optionA : optionB
     const res = await callAI<{ values: string[]; needs: string[] }>(
       'values_needs_tags',
-      { optionLabel: o.label, optionText: o.content },
-      decisionId
+      { optionLabel: o.label }
     )
     if (res) {
       const setter = opt === 'A' ? setSuggestedA : setSuggestedB

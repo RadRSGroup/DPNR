@@ -1,15 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
 import StepShell from './StepShell'
-import { useAI } from '@/lib/useAI'
+import { useAI, RefineFn } from '@/lib/useAI'
 
 interface SummaryInsightScreenProps {
   decisionTitle: string
-  narrative: string
-  optionA: string
-  optionB: string
-  allTags: string[]
-  decisionId?: string
+  onRefine: RefineFn
   onContinue: () => void
   onBack: () => void
 }
@@ -24,21 +20,18 @@ const AGREEMENT_OPTIONS: { key: Agreement; label: string }[] = [
 ]
 
 export default function SummaryInsightScreen({
-  decisionTitle, narrative, optionA, optionB, allTags, decisionId,
+  decisionTitle, onRefine,
   onContinue, onBack,
 }: SummaryInsightScreenProps) {
   const [insight, setInsight] = useState<string | null>(null)
   const [agreement, setAgreement] = useState<Agreement | null>(null)
-  const { callAI, loading } = useAI()
+  const { callAI, loading } = useAI(onRefine)
 
   useEffect(() => {
     let ignore = false
     async function fetchInsight() {
-      const res = await callAI<{ insight: string }>(
-        'summary_insight',
-        { decisionTitle, narrative, optionA, optionB, allTags },
-        decisionId,
-      )
+      // SUMMARY_INSIGHT's REFINE re-derives everything server-side — no client input needed.
+      const res = await callAI<{ insight: string }>('summary_insight', {})
       if (!ignore && res?.insight) setInsight(res.insight)
     }
     fetchInsight()

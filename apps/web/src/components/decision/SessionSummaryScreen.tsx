@@ -1,26 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
 import StepShell from './StepShell'
-import { useAI } from '@/lib/useAI'
+import { useAI, RefineFn } from '@/lib/useAI'
 
 interface SessionSummaryScreenProps {
   decisionTitle: string
-  narrative: string
-  optionA: string
-  optionB: string
-  emotionColor?: string
-  emotionBodyLocation?: string
-  emotionReflection?: string
-  tagsA?: Record<string, string[]>
-  tagsB?: Record<string, string[]>
-  valuesA?: string[]
-  needsA?: string[]
-  valuesB?: string[]
-  needsB?: string[]
-  projectionsA?: string[]
-  projectionsB?: string[]
-  chosenLean?: string
-  decisionId?: string
+  onRefine: RefineFn
   onContinue: () => void
   onBack: () => void
 }
@@ -43,20 +28,18 @@ const AGREEMENT_OPTIONS: { key: Agreement; label: string }[] = [
 ]
 
 export default function SessionSummaryScreen({
-  decisionTitle, narrative, optionA, optionB,
-  emotionColor, emotionBodyLocation, emotionReflection,
-  tagsA, tagsB, valuesA, needsA, valuesB, needsB,
-  projectionsA, projectionsB, chosenLean, decisionId,
-  onContinue, onBack,
+  decisionTitle, onRefine, onContinue, onBack,
 }: SessionSummaryScreenProps) {
   const [summaries, setSummaries] = useState<Record<string, string>>({})
   const [situation, setSituation] = useState('')
   const [agreement, setAgreement] = useState<Agreement | null>(null)
-  const { callAI, loading } = useAI()
+  const { callAI, loading } = useAI(onRefine)
 
   useEffect(() => {
     let ignore = false
     async function fetch() {
+      // SESSION_SUMMARY's REFINE re-derives everything server-side
+      // (gatherDecisionContext) — no client input needed.
       const res = await callAI<{
         situation: string
         bodyAwareness: string
@@ -64,16 +47,7 @@ export default function SessionSummaryScreen({
         desireVsFear: string
         valuesAndNeeds: string
         futureSelf: string
-      }>(
-        'session_summary',
-        {
-          decisionTitle, narrative, optionA, optionB,
-          emotionColor, emotionBodyLocation, emotionReflection,
-          tagsA, tagsB, valuesA, needsA, valuesB, needsB,
-          projectionsA, projectionsB, chosenLean,
-        },
-        decisionId,
-      )
+      }>('session_summary', {})
       if (!ignore && res) {
         const { situation: sit, ...rest } = res
         setSituation(sit ?? '')

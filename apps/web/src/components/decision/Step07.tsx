@@ -2,18 +2,18 @@
 import { useEffect, useState } from 'react'
 import StepShell from './StepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
-import { useAI } from '@/lib/useAI'
+import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { DecisionOption } from '@/lib/types'
 interface Step07Props {
   decisionTitle: string
-  decisionId?: string
   optionA: DecisionOption
   optionB: DecisionOption
   initialSelectedA?: string[]
   initialSelectedB?: string[]
   initialChosenLean?: string
   initialReflectionNote?: string
+  onRefine: RefineFn
   onComplete: (projectionsA: string[], projectionsB: string[], chosenLean?: string, reflectionNote?: string) => void
   onBack?: () => void
   onSkip?: () => void
@@ -22,9 +22,9 @@ interface Step07Props {
 type Phase = 'projections' | 'reflect'
 
 export default function Step07({
-  decisionTitle, decisionId, optionA, optionB,
+  decisionTitle, optionA, optionB,
   initialSelectedA, initialSelectedB, initialChosenLean, initialReflectionNote,
-  onComplete, onBack, onSkip
+  onRefine, onComplete, onBack, onSkip
 }: Step07Props) {
   const [phase, setPhase] = useState<Phase>('projections')
   const [currentOption, setCurrentOption] = useState<'A' | 'B'>('A')
@@ -40,7 +40,7 @@ export default function Step07({
   )
   const [reflectionNote, setReflectionNote] = useState(initialReflectionNote ?? '')
 
-  const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI()
+  const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI(onRefine)
 
   const statements = currentOption === 'A' ? statementsA : statementsB
   const selected = currentOption === 'A' ? selectedA : selectedB
@@ -49,11 +49,9 @@ export default function Step07({
   useEffect(() => {
     let ignore = false
     async function fetchProjections(label: 'A' | 'B') {
-      const opt = label === 'A' ? optionA : optionB
       const res = await callAI<{ statements: string[] }>(
         'future_projection',
-        { optionLabel: label, optionText: opt.content, decisionTitle },
-        decisionId
+        { optionLabel: label }
       )
       if (!ignore && res?.statements) {
         if (label === 'A') setStatementsA(res.statements)
@@ -162,7 +160,13 @@ export default function Step07({
               ))
             )}
 
-            {statements.length > 0 && (
+            {!loading && (
+              // Was previously gated on statements.length > 0, which left no
+              // way to add a projection at all once loading finished with
+              // zero AI-suggested statements (the current live stub returns
+              // an empty array for this prompt) — the FUTURE_PROJECTION step
+              // requires at least one statement per option, so that was a
+              // genuine dead end, not just a missed AI suggestion.
               <div className="flex gap-2 pt-1">
                 <input
                   value={currentOption === 'A' ? customA : customB}

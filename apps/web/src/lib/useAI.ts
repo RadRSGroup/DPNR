@@ -1,42 +1,40 @@
 'use client'
 import { useState } from 'react'
 
-export function useAI() {
+/** Bound to one step's REFINE call (page.tsx) — returns the command's `result`, or null on failure. */
+export type RefineFn = (params: Record<string, unknown>) => Promise<Record<string, unknown> | null>
+
+/**
+ * Public shape (`callAI`/`loading`/`error`/`tokenCapReached`/`dismissTokenCap`) is unchanged from the
+ * Supabase-era version so every step component's JSX keeps compiling — only the transport changes: this
+ * now calls the step's own REFINE command (via `onRefine`, bound in page.tsx to `submitRoomCommand`)
+ * instead of the old `/api/ai` route. `tokenCapReached` stays permanently false — the old per-user
+ * token-budget gate (402 `token_cap_reached`) has no `/v1` equivalent yet (Credits is unbuilt).
+ */
+export function useAI(onRefine: RefineFn) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [tokenCapReached, setTokenCapReached] = useState(false)
 
-  async function callAI<T>(type: string, params: Record<string, unknown>, decisionId?: string): Promise<T | null> {
+  async function callAI<T>(_type: string, params: Record<string, unknown>): Promise<T | null> {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, decisionId, ...params }),
-      })
-      const json = await res.json()
-      if (!res.ok) {
-        if (res.status === 402) {
-          setTokenCapReached(true)
-          setError('token_cap_reached')
-        } else {
-          setError(json.error ?? 'AI call failed')
-        }
+      const res = await onRefine(params)
+      if (res === null) {
+        setError('AI call failed')
         return null
       }
-      return json.result as T
-    } catch {
-      setError('Network error')
-      return null
+      return res as T
     } finally {
       setLoading(false)
     }
   }
 
-  function dismissTokenCap() {
-    setTokenCapReached(false)
+  return {
+    callAI,
+    loading,
+    error,
+    tokenCapReached: false,
+    dismissTokenCap: () => {},
   }
-
-  return { callAI, loading, error, tokenCapReached, dismissTokenCap }
 }

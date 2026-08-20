@@ -2,7 +2,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { STEP_LABELS, TOTAL_STEPS } from '@/lib/types'
-import { useAI } from '@/lib/useAI'
 
 interface StepShellProps {
   step: number
@@ -11,6 +10,25 @@ interface StepShellProps {
   onBack?: () => void
   onSkip?: () => void
   minutesLeft?: number
+}
+
+// The "?" info button used to call an AI `step_info` prompt (apps/web-only,
+// pre-/v1 port). No step in the 14-step command contract implements an
+// equivalent action — it was an orphaned Prompt Registry entry with nothing
+// in decision-steps/*.ts ever resolving it. Rather than call a dead route,
+// this is now static copy per step; revisit if a real backend equivalent
+// ever exists.
+const STEP_INFO: Record<number, string> = {
+  1: 'Naming your decision clearly is the first step toward making it with intention rather than reacting to it.',
+  2: 'Writing out both real options — even roughly — turns a foggy dilemma into something you can actually compare.',
+  3: 'Emotions often show up in the body before the mind can name them. Noticing where helps you trust what you\'re feeling.',
+  4: 'Different lenses surface different truths. Pick the one that matches what feels most alive in this decision right now.',
+  5: 'Sit with each option honestly — the goal isn\'t to talk yourself into one, it\'s to see both clearly.',
+  6: 'Values and needs are usually what a decision is really about, underneath the practical details.',
+  7: 'Imagining a year ahead helps surface a gut sense of direction that pure logic sometimes misses.',
+  8: 'This is a chance to see the whole shape of what you explored, before moving toward a next step.',
+  9: 'An outside reflection of your own process can surface a thread you didn\'t consciously connect yourself.',
+  10: 'A next step only has to be small enough to actually happen — momentum matters more than size.',
 }
 
 const STEP_REFLECTIONS: Record<number, string> = {
@@ -36,18 +54,9 @@ export default function StepShell({
 }: StepShellProps) {
   const router = useRouter()
   const [infoOpen, setInfoOpen] = useState(false)
-  const [infoText, setInfoText] = useState<string | null>(null)
-  const { callAI, loading: aiLoading } = useAI()
 
-  async function handleInfo() {
+  function handleInfo() {
     setInfoOpen(true)
-    if (infoText) return
-    const res = await callAI<{ info: string }>('step_info', {
-      step,
-      stepLabel: STEP_LABELS[step],
-      decisionTitle: decisionTitle || 'your decision',
-    })
-    if (res?.info) setInfoText(res.info)
   }
 
   return (
@@ -164,17 +173,7 @@ export default function StepShell({
                 ✕
               </button>
             </div>
-            {aiLoading && !infoText ? (
-              <div className="flex items-center gap-2 text-white/40 text-sm">
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                </svg>
-                Generating guidance…
-              </div>
-            ) : (
-              <p className="text-white/70 text-sm leading-relaxed">{infoText ?? '—'}</p>
-            )}
+            <p className="text-white/70 text-sm leading-relaxed">{STEP_INFO[step] ?? '—'}</p>
           </div>
         </div>
       )}

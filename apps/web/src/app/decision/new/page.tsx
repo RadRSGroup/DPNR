@@ -5,7 +5,7 @@ import WelcomeScreen from '@/components/decision/WelcomeScreen'
 import MomentScreen from '@/components/decision/MomentScreen'
 import Step01 from '@/components/decision/Step01'
 import Step02 from '@/components/decision/Step02'
-import Step03 from '@/components/decision/Step03'
+import Step03, { type UserResponse } from '@/components/decision/Step03'
 import Step04 from '@/components/decision/Step04'
 import Step05 from '@/components/decision/Step05'
 import Step06 from '@/components/decision/Step06'
@@ -17,40 +17,100 @@ import SummaryInsightScreen from '@/components/decision/SummaryInsightScreen'
 import SessionSummaryScreen from '@/components/decision/SessionSummaryScreen'
 import ClarityToActionScreen from '@/components/decision/ClarityToActionScreen'
 import CommitmentScreen from '@/components/decision/CommitmentScreen'
-import { DecisionState, DecisionOption, Lens } from '@/lib/types'
-import { createClient } from '@/lib/supabase/client'
-import {
-  createDecision,
-  updateDecision,
-  upsertOptions,
-  upsertEmotionMap,
-  replaceAllTagsForOption,
-  replaceProjections,
-  upsertReflectionOutcome,
-} from '@/lib/supabase/decisions'
+import { DecisionOption, Lens } from '@/lib/types'
+import type { RefineFn } from '@/lib/useAI'
+import { getCurrentSession } from '@/lib/cognito/client'
+import { submitRoomCommand, getDecisionFull, ApiError } from '@/lib/api/v1-client'
+import type {
+  RoomCommandResponse,
+  DecisionRoomStepId,
+  DecisionRoomSectionSummaryStepId,
+  DecisionRoomPostFlowStepId,
+} from '@dpnr/shared-types'
 
-const INITIAL_STATE: DecisionState = {
-  title: '',
-  narrative: '',
-  currentStep: 1,
+/** The 14 symbolic step ids the /v1/rooms/decision command contract knows about — see decision-steps/index.ts. */
+type DecisionStepId = DecisionRoomStepId | DecisionRoomSectionSummaryStepId | DecisionRoomPostFlowStepId
+
+/**
+ * "Back" target per step, hardcoded rather than derived from flow order —
+ * SESSION_SUMMARY is a deliberate exception (goes to FUTURE_PROJECTION, not
+ * FUTURE_PROJECTION_SUMMARY), matching the original app's actual behavior:
+ * its onBack cleared both postFlow and pendingSummary, which fell through
+ * to the Step07 render, skipping the interstitial entirely. Preserved
+ * faithfully rather than "fixed."
+ */
+const BACK_MAP: Record<DecisionStepId, DecisionStepId | null> = {
+  NAME_DECISION: null,
+  MAP_OPTIONS: 'NAME_DECISION',
+  BODY_EMOTION: 'MAP_OPTIONS',
+  CHOOSE_LENS: 'BODY_EMOTION',
+  DEEP_EXPLORATION: 'CHOOSE_LENS',
+  DEEP_EXPLORATION_SUMMARY: 'DEEP_EXPLORATION',
+  VALUES_NEEDS: 'DEEP_EXPLORATION_SUMMARY',
+  VALUES_NEEDS_SUMMARY: 'VALUES_NEEDS',
+  FUTURE_PROJECTION: 'VALUES_NEEDS_SUMMARY',
+  FUTURE_PROJECTION_SUMMARY: 'FUTURE_PROJECTION',
+  SESSION_SUMMARY: 'FUTURE_PROJECTION',
+  SUMMARY_INSIGHT: 'SESSION_SUMMARY',
+  CLARITY_ACTION: 'SUMMARY_INSIGHT',
+  COMMITMENT: 'CLARITY_ACTION',
+}
+
+/**
+ * "Skip this step without submitting it" — a purely local jump, no backend
+ * call, exactly matching the original's own `skip()` (`currentStep + 1`,
+ * never persisted). Only the steps that had an onSkip button in the
+ * original are listed. FUTURE_PROJECTION deliberately has none here — the
+ * original's own skip() would have advanced past the max step (7 -> 8),
+ * hitting the switch's default case and silently resetting to Step01; not
+ * worth replicating that latent dead-end, so its top-level Skip button is
+ * simply omitted (see the FUTURE_PROJECTION case below).
+ */
+const SKIP_MAP: Partial<Record<DecisionStepId, DecisionStepId>> = {
+  MAP_OPTIONS: 'BODY_EMOTION',
+  BODY_EMOTION: 'CHOOSE_LENS',
+  CHOOSE_LENS: 'DEEP_EXPLORATION',
+  DEEP_EXPLORATION: 'VALUES_NEEDS',
+  VALUES_NEEDS: 'FUTURE_PROJECTION',
+}
+
+/** Steps from CHOOSE_LENS onward all assume both options exist — same fallback the original had for currentStep >= 4. */
+const STEPS_REQUIRING_OPTIONS: DecisionStepId[] = [
+  'CHOOSE_LENS', 'DEEP_EXPLORATION', 'DEEP_EXPLORATION_SUMMARY',
+  'VALUES_NEEDS', 'VALUES_NEEDS_SUMMARY', 'FUTURE_PROJECTION', 'FUTURE_PROJECTION_SUMMARY',
+  'SESSION_SUMMARY', 'SUMMARY_INSIGHT', 'CLARITY_ACTION', 'COMMITMENT',
+]
+
+interface LocalDecisionState {
+  title: string
+  subtitle?: string
+  narrative: string
+  optionA?: DecisionOption
+  optionB?: DecisionOption
+  emotionBodyLocation?: string
+  emotionColor?: string
+  emotionReflection?: string
+  lens?: Lens
+}
+
+const INITIAL_STATE: LocalDecisionState = { title: '', narrative: '' }
+
+/** Strips the server-built `Leaning: X.` prefix and trailing ` Commitment: ...` suffix a resumed outcome's reflection carries — see future-projection.ts/commitment.ts. */
+function parseReflectionNote(reflection?: string | null): string | undefined {
+  if (!reflection) return undefined
+  const withoutCommitment = reflection.replace(/ Commitment:.*$/, '')
+  const withoutLeanPrefix = withoutCommitment.replace(/^Leaning: (A|B|undecided)\.\s*/, '')
+  return withoutLeanPrefix.trim() || undefined
 }
 
 function NewDecisionContent() {
   const router = useRouter()
   const params = useSearchParams()
   const resumeId = params.get('resume')
-  const stepParam = params.get('step') ? parseInt(params.get('step')!) : null
 
   const [introStep, setIntroStep] = useState<-1 | 0 | null>(resumeId ? null : -1)
-  const [pendingSummary, setPendingSummary] = useState<{
-    type: SummaryType
-    tagsA: Record<string, string[]>
-    tagsB: Record<string, string[]>
-    onConfirm: () => void
-  } | null>(null)
   const [celebrating, setCelebrating] = useState(false)
 
-  // Session data accumulated across steps for end-of-flow screens
   const [sessionData, setSessionData] = useState<{
     tags05?: Record<string, string[]>
     valuesA?: string[]; needsA?: string[]; valuesB?: string[]; needsB?: string[]
@@ -58,9 +118,6 @@ function NewDecisionContent() {
     chosenLean?: string; reflectionNote?: string
   }>({})
 
-  // Post-flow screen state
-  type PostFlow = 'session_summary' | 'insight' | 'clarity_action' | 'commitment' | null
-  const [postFlow, setPostFlow] = useState<PostFlow>(null)
   const [clarityNextStep, setClarityNextStep] = useState('')
 
   const [completedSummary, setCompletedSummary] = useState<{
@@ -72,316 +129,197 @@ function NewDecisionContent() {
     commitment?: string
     decisionId?: string
   } | null>(null)
+
   const [userName, setUserName] = useState('')
-  const [state, setState] = useState<DecisionState>(INITIAL_STATE)
-  const [optionIds, setOptionIds] = useState<{ idA?: string; idB?: string }>({})
+  const [state, setState] = useState<LocalDecisionState>(INITIAL_STATE)
   const [resumeLoading, setResumeLoading] = useState(!!resumeId)
+
+  const [currentStepId, setCurrentStepId] = useState<DecisionStepId>('NAME_DECISION')
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [sessionVersion, setSessionVersion] = useState(0)
+  const [pendingKeys, setPendingKeys] = useState<Record<string, string>>({})
+  const [syncNotice, setSyncNotice] = useState<string | null>(null)
+  const [fatalError, setFatalError] = useState<string | null>(null)
 
   useEffect(() => {
     async function checkAuth() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-      const name = user.user_metadata?.full_name || user.email || ''
-      setUserName(name)
+      const session = await getCurrentSession()
+      if (!session) { router.push('/login'); return }
+      const email = session.getIdToken().payload.email as string | undefined
+      setUserName(email ?? '')
     }
     checkAuth()
   }, [router])
 
   useEffect(() => {
     if (!resumeId) return
-    async function loadResume() {
+    let ignore = false
+    async function loadResume(id: string) {
       try {
-        const supabase = createClient()
-        const { data } = await supabase
-          .from('decisions')
-          .select(`
-            id, title, subtitle, narrative, current_step, lens,
-            options (
-              id, label, content, approved,
-              option_tags ( tag_type, label ),
-              projections ( statement, selected )
-            ),
-            emotion_maps ( body_location, emotion_color, ai_reflection ),
-            outcomes ( id, reflection, chosen_option_id )
-          `)
-          .eq('id', resumeId)
-          .single()
-        if (!data) return
+        const full = await getDecisionFull(id)
+        if (ignore) return
 
-        const optA = data.options?.find((o: { label: string }) => o.label === 'A')
-        const optB = data.options?.find((o: { label: string }) => o.label === 'B')
-        const emotion = data.emotion_maps?.[0]
+        setSessionId(full.decisionId)
+        setSessionVersion(full.sessionVersion ?? 0)
+        setCurrentStepId((full.currentStepId as DecisionStepId) ?? 'NAME_DECISION')
 
-        // Parse the [Reflection] outcome for lean + note
-        const reflectionOutcome = (data.outcomes ?? []).find(
-          (o: { reflection: string }) => o.reflection?.startsWith('[Reflection]')
-        )
-        let chosenLean: string | undefined
-        let reflectionNote: string | undefined
-        if (reflectionOutcome) {
-          const raw = reflectionOutcome.reflection.replace('[Reflection] ', '')
-          const lines = raw.split('\n').filter(Boolean)
-          const leanLine = lines.find((l: string) => l.startsWith('Leaning') || l.startsWith('Still undecided'))
-          const noteLine = lines.find((l: string) => !l.startsWith('Leaning') && !l.startsWith('Still undecided') && !l.startsWith('Commitment:'))
-          if (leanLine?.startsWith('Leaning towards Option A')) chosenLean = 'A'
-          else if (leanLine?.startsWith('Leaning towards Option B')) chosenLean = 'B'
-          else if (leanLine?.startsWith('Still undecided')) chosenLean = 'undecided'
-          reflectionNote = noteLine
-        }
-
-        // Extract tags by type for each option
-        const tagsFor = (opt: { option_tags?: { tag_type: string; label: string }[] } | undefined, type: string) =>
-          (opt?.option_tags ?? []).filter((t: { tag_type: string }) => t.tag_type === type).map((t: { label: string }) => t.label)
-
-        // Extract selected projections per option.
-        // Fallback: if all rows have selected=false (old data bug), return all of them so the
-        // user sees their projections rather than a blank list that triggers a fresh AI call.
-        const projectionsFor = (opt: { projections?: { statement: string; selected: boolean }[] } | undefined) => {
-          const all = opt?.projections ?? []
-          const selected = all.filter((p: { selected: boolean }) => p.selected)
-          return (selected.length > 0 ? selected : all).map((p: { statement: string }) => p.statement)
-        }
+        const optA = full.options.find(o => o.label === 'A')
+        const optB = full.options.find(o => o.label === 'B')
+        const tagsFor = (opt: typeof optA, type: string) =>
+          (opt?.tags ?? []).filter(t => t.tagType === type).map(t => t.label)
+        const projectionsFor = (opt: typeof optA) =>
+          (opt?.projections ?? []).filter(p => p.selected).map(p => p.statement)
 
         setState({
-          id: data.id,
-          title: data.title ?? '',
-          subtitle: data.subtitle ?? undefined,
-          narrative: data.narrative ?? '',
-          currentStep: stepParam ?? data.current_step ?? 1,
-          lens: (data.lens as Lens) ?? undefined,
+          title: full.title,
+          subtitle: full.subtitle ?? undefined,
+          narrative: full.narrative ?? '',
+          lens: full.lens ?? undefined,
           optionA: optA ? { label: 'A', content: optA.content, approved: optA.approved } : undefined,
           optionB: optB ? { label: 'B', content: optB.content, approved: optB.approved } : undefined,
-          emotionBodyLocation: emotion?.body_location ?? undefined,
-          emotionColor: emotion?.emotion_color ?? undefined,
-          emotionReflection: emotion?.ai_reflection ?? undefined,
+          emotionBodyLocation: full.emotion?.bodyLocation ?? undefined,
+          emotionColor: full.emotion?.emotionColor ?? undefined,
+          emotionReflection: full.emotion?.aiReflection ?? undefined,
         })
-        if (optA && optB) setOptionIds({ idA: optA.id, idB: optB.id })
 
+        const latestOutcome = full.outcomes[full.outcomes.length - 1]
         setSessionData({
           tags05: {
-            pro:    tagsFor(optA, 'pro'),
-            con:    tagsFor(optA, 'con'),
-            desire: tagsFor(optA, 'desire'),
-            fear:   tagsFor(optA, 'fear'),
-            B_pro:    tagsFor(optB, 'pro'),
-            B_con:    tagsFor(optB, 'con'),
-            B_desire: tagsFor(optB, 'desire'),
-            B_fear:   tagsFor(optB, 'fear'),
+            pro: tagsFor(optA, 'pro'), con: tagsFor(optA, 'con'), desire: tagsFor(optA, 'desire'), fear: tagsFor(optA, 'fear'),
+            B_pro: tagsFor(optB, 'pro'), B_con: tagsFor(optB, 'con'), B_desire: tagsFor(optB, 'desire'), B_fear: tagsFor(optB, 'fear'),
           },
-          valuesA: tagsFor(optA, 'value'),
-          needsA:  tagsFor(optA, 'need'),
-          valuesB: tagsFor(optB, 'value'),
-          needsB:  tagsFor(optB, 'need'),
-          projectionsA: projectionsFor(optA),
-          projectionsB: projectionsFor(optB),
-          chosenLean,
-          reflectionNote,
+          valuesA: tagsFor(optA, 'value'), needsA: tagsFor(optA, 'need'),
+          valuesB: tagsFor(optB, 'value'), needsB: tagsFor(optB, 'need'),
+          projectionsA: projectionsFor(optA), projectionsB: projectionsFor(optB),
+          chosenLean: latestOutcome ? (latestOutcome.chosenOptionLabel ?? 'undecided') : undefined,
+          reflectionNote: parseReflectionNote(latestOutcome?.reflection),
         })
       } catch {
-        // fall through — start fresh if load fails
+        // fall through — start fresh if resume fails, matching the original's own try/catch fallback
       } finally {
-        setResumeLoading(false)
+        if (!ignore) setResumeLoading(false)
       }
     }
-    loadResume()
-  }, [resumeId, stepParam])
+    loadResume(resumeId)
+    return () => { ignore = true }
+  }, [resumeId])
 
-  if (resumeLoading) {
-    return (
-      <div className="relative min-h-screen max-w-[393px] mx-auto flex items-center justify-center">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
-        <div className="w-8 h-8 border-2 border-purple-500/40 border-t-purple-500 rounded-full animate-spin" />
-      </div>
-    )
-  }
-
-  // ── Post-flow screens (Step 08 → 09 → 10 → Last Step) ──
-  if (postFlow === 'session_summary' && state.optionA && state.optionB) {
-    return (
-      <SessionSummaryScreen
-        decisionTitle={state.title}
-        narrative={state.narrative}
-        optionA={state.optionA.content}
-        optionB={state.optionB.content}
-        emotionColor={state.emotionColor}
-        emotionBodyLocation={state.emotionBodyLocation}
-        emotionReflection={state.emotionReflection}
-        tagsA={{ pro: sessionData.tags05?.pro ?? [], con: sessionData.tags05?.con ?? [], desire: sessionData.tags05?.desire ?? [], fear: sessionData.tags05?.fear ?? [] }}
-        tagsB={{ pro: sessionData.tags05?.B_pro ?? [], con: sessionData.tags05?.B_con ?? [], desire: sessionData.tags05?.B_desire ?? [], fear: sessionData.tags05?.B_fear ?? [] }}
-        valuesA={sessionData.valuesA}
-        needsA={sessionData.needsA}
-        valuesB={sessionData.valuesB}
-        needsB={sessionData.needsB}
-        projectionsA={sessionData.projectionsA}
-        projectionsB={sessionData.projectionsB}
-        chosenLean={sessionData.chosenLean}
-        decisionId={state.id}
-        onContinue={() => setPostFlow('insight')}
-        onBack={() => { setPostFlow(null); setPendingSummary(null) }}
-      />
-    )
-  }
-
-  if (postFlow === 'insight' && state.optionA && state.optionB) {
-    const allTags = [...(sessionData.projectionsA ?? []), ...(sessionData.projectionsB ?? [])]
-    return (
-      <SummaryInsightScreen
-        decisionTitle={state.title}
-        narrative={state.narrative}
-        optionA={state.optionA.content}
-        optionB={state.optionB.content}
-        allTags={allTags}
-        decisionId={state.id}
-        onContinue={() => setPostFlow('clarity_action')}
-        onBack={() => setPostFlow('session_summary')}
-      />
-    )
-  }
-
-  if (postFlow === 'clarity_action' && state.optionA && state.optionB) {
-    return (
-      <ClarityToActionScreen
-        decisionTitle={state.title}
-        narrative={state.narrative}
-        optionA={state.optionA.content}
-        optionB={state.optionB.content}
-        chosenLean={sessionData.chosenLean}
-        decisionId={state.id}
-        onCommit={(nextStep) => { setClarityNextStep(nextStep); setPostFlow('commitment') }}
-        onSkip={() => setPostFlow('commitment')}
-        onBack={() => setPostFlow('insight')}
-      />
-    )
-  }
-
-  if (postFlow === 'commitment') {
-    return (
-      <CommitmentScreen
-        decisionTitle={state.title}
-        nextStep={clarityNextStep || undefined}
-        onDone={finishFlow}
-        onBack={() => setPostFlow('clarity_action')}
-      />
-    )
-  }
-
-  if (completedSummary && celebrating) {
-    return (
-      <CelebrationScreen
-        userName={userName}
-        decisionTitle={completedSummary.title}
-        onContinue={() => setCelebrating(false)}
-      />
-    )
-  }
-
-  if (completedSummary) {
-    return (
-      <CompletionScreen
-        userName={userName}
-        decisionTitle={completedSummary.title}
-        optionA={completedSummary.optionA}
-        optionB={completedSummary.optionB}
-        chosenLean={completedSummary.chosenLean}
-        reflectionNote={completedSummary.reflectionNote}
-        commitment={completedSummary.commitment}
-        decisionId={completedSummary.decisionId}
-        onDone={() => router.push('/dashboard?completed=true')}
-      />
-    )
-  }
-
-  if (introStep === -1) {
-    return <WelcomeScreen userName={userName} onNext={() => setIntroStep(0)} />
-  }
-
-  if (introStep === 0) {
-    return <MomentScreen onNext={() => setIntroStep(null)} onBack={() => setIntroStep(-1)} />
-  }
-
-  function update(patch: Partial<DecisionState>) {
+  function update(patch: Partial<LocalDecisionState>) {
     setState(prev => ({ ...prev, ...patch }))
   }
 
+  async function handleCommandError(err: unknown) {
+    if (err instanceof ApiError) {
+      if (err.status === 401) { router.push('/login?next=/decision/new'); return }
+      if (err.code === 'consent_required') { router.push('/consent?next=/decision/new'); return }
+      if (err.code === 'session_completed') { router.push('/dashboard'); return }
+      if (err.code === 'session_version_conflict' && sessionId) {
+        try {
+          const full = await getDecisionFull(sessionId)
+          setSessionVersion(full.sessionVersion ?? sessionVersion)
+          setCurrentStepId((full.currentStepId as DecisionStepId) ?? currentStepId)
+          setSyncNotice('This session moved on — you’ve been synced to the latest step.')
+        } catch {
+          setFatalError('Something went wrong. Please go back to the dashboard and try again.')
+        }
+        return
+      }
+    }
+    setFatalError('Something went wrong. Please go back to the dashboard and try again.')
+  }
+
+  async function callCommand(
+    stepId: DecisionStepId,
+    action: 'SUBMIT_STEP' | 'REFINE' | 'SKIP',
+    input: Record<string, unknown>
+  ): Promise<RoomCommandResponse | null> {
+    const sid = sessionId ?? crypto.randomUUID()
+    if (!sessionId) setSessionId(sid)
+    const keyId = `${stepId}:${action}`
+    const key = pendingKeys[keyId] ?? crypto.randomUUID()
+    if (!pendingKeys[keyId]) setPendingKeys(prev => ({ ...prev, [keyId]: key }))
+    try {
+      const res = await submitRoomCommand({
+        sessionId: sid,
+        flowId: 'DECISION',
+        stepId,
+        action,
+        expectedSessionVersion: sessionVersion,
+        idempotencyKey: key,
+        input,
+      })
+      // Bumped on EVERY successful response, REFINE included — command.ts
+      // advances sessionVersion unconditionally, so skipping this on REFINE
+      // would 409 the very next SUBMIT_STEP.
+      setSessionVersion(res.sessionVersion)
+      setPendingKeys(prev => {
+        const next = { ...prev }
+        delete next[keyId]
+        return next
+      })
+      return res
+    } catch (err) {
+      await handleCommandError(err)
+      return null
+    }
+  }
+
+  function submitStep(stepId: DecisionStepId, input: Record<string, unknown>) {
+    return callCommand(stepId, 'SUBMIT_STEP', input)
+  }
+
+  async function submitStepAndAdvance(stepId: DecisionStepId, input: Record<string, unknown>) {
+    const res = await callCommand(stepId, 'SUBMIT_STEP', input)
+    if (res?.nextStepId) setCurrentStepId(res.nextStepId as DecisionStepId)
+    return res
+  }
+
+  function makeRefine(stepId: DecisionStepId): RefineFn {
+    return async (refineInput) => {
+      const res = await callCommand(stepId, 'REFINE', refineInput)
+      return res?.result ?? null
+    }
+  }
+
   function goBack() {
-    if (state.currentStep > 1) update({ currentStep: state.currentStep - 1 })
+    const prev = BACK_MAP[currentStepId]
+    if (prev) setCurrentStepId(prev)
     else router.push('/dashboard')
   }
 
-  function skip() {
-    update({ currentStep: state.currentStep + 1 })
+  function skipStep() {
+    const next = SKIP_MAP[currentStepId]
+    if (next) setCurrentStepId(next)
   }
 
   async function completeStep01(title: string, subtitle?: string) {
-    try {
-      if (state.id) {
-        // Resume/edit mode — update existing decision, don't create a duplicate
-        await updateDecision(state.id, { title, subtitle, current_step: 2 })
-        update({ title, subtitle, currentStep: 2 })
-      } else {
-        const id = await createDecision(title, subtitle)
-        update({ title, subtitle, id, currentStep: 2 })
-      }
-    } catch (e) {
-      console.error('completeStep01 error:', e)
-      update({ title, subtitle, currentStep: 2 })
-    }
+    update({ title, subtitle })
+    await submitStepAndAdvance('NAME_DECISION', { title, subtitle })
   }
 
   async function completeStep02(narrative: string, optionA: DecisionOption, optionB: DecisionOption) {
-    update({ narrative, optionA, optionB, currentStep: 3 })
-    if (state.id) {
-      try {
-        await updateDecision(state.id, { narrative, current_step: 3 })
-        const { idA, idB } = await upsertOptions(state.id, optionA.content, optionB.content)
-        setOptionIds({ idA, idB })
-      } catch (e) { console.error('Step02 save error:', e) }
-    }
+    update({ narrative, optionA, optionB })
+    await submitStepAndAdvance('MAP_OPTIONS', {
+      narrative,
+      optionA: { content: optionA.content, approved: optionA.approved },
+      optionB: { content: optionB.content, approved: optionB.approved },
+    })
   }
 
-  async function completeStep03(bodyLocation: string, emotionColor: string, reflection: string) {
-    update({ emotionBodyLocation: bodyLocation, emotionColor, emotionReflection: reflection, currentStep: 4 })
-    if (state.id) {
-      try {
-        await updateDecision(state.id, { current_step: 4 })
-        await upsertEmotionMap(state.id, bodyLocation, emotionColor, reflection)
-      } catch {
-        // non-fatal
-      }
-    }
+  async function completeStep03(bodyLocation: string, emotion: string, reflection: string, response: UserResponse, userRefinement?: string) {
+    update({ emotionBodyLocation: bodyLocation, emotionColor: emotion, emotionReflection: reflection })
+    await submitStepAndAdvance('BODY_EMOTION', {
+      bodyLocation, emotionColor: emotion, aiReflection: reflection, response, userRefinement,
+    })
   }
 
   async function completeStep04(lens: Lens) {
-    update({ lens, currentStep: 5 })
-    if (state.id) {
-      try {
-        await updateDecision(state.id, { lens, current_step: 5 })
-      } catch {}
-    }
+    update({ lens })
+    await submitStepAndAdvance('CHOOSE_LENS', { lens })
   }
 
   async function completeStep05(tags: Record<string, string[]>) {
-    if (state.id) {
-      try {
-        if (optionIds.idA) {
-          await replaceAllTagsForOption(optionIds.idA, {
-            pro:    tags.A_pro    ?? [],
-            con:    tags.A_con    ?? [],
-            desire: tags.A_desire ?? [],
-            fear:   tags.A_fear   ?? [],
-          })
-        }
-        if (optionIds.idB) {
-          await replaceAllTagsForOption(optionIds.idB, {
-            pro:    tags.B_pro    ?? [],
-            con:    tags.B_con    ?? [],
-            desire: tags.B_desire ?? [],
-            fear:   tags.B_fear   ?? [],
-          })
-        }
-      } catch (e) { console.error('Step05 save error:', e) }
-    }
+    const toEntries = (arr?: string[]) => (arr ?? []).map(label => ({ label, aiSuggested: false }))
     setSessionData(prev => ({
       ...prev,
       tags05: {
@@ -389,73 +327,45 @@ function NewDecisionContent() {
         B_pro: tags.B_pro ?? [], B_con: tags.B_con ?? [], B_desire: tags.B_desire ?? [], B_fear: tags.B_fear ?? [],
       },
     }))
-    const summaryType: SummaryType = (state.lens ?? 'pros_cons') === 'pros_cons' ? 'pros_cons' : 'fears_desires'
-    setPendingSummary({
-      type: summaryType,
-      tagsA: { pro: tags.A_pro ?? [], con: tags.A_con ?? [], desire: tags.A_desire ?? [], fear: tags.A_fear ?? [] },
-      tagsB: { pro: tags.B_pro ?? [], con: tags.B_con ?? [], desire: tags.B_desire ?? [], fear: tags.B_fear ?? [] },
-      onConfirm: () => {
-        setPendingSummary(null)
-        update({ currentStep: 6 })
-        if (state.id) updateDecision(state.id, { current_step: 6 }).catch(() => {})
-      },
+    await submitStepAndAdvance('DEEP_EXPLORATION', {
+      tagsA: { pro: toEntries(tags.A_pro), con: toEntries(tags.A_con), desire: toEntries(tags.A_desire), fear: toEntries(tags.A_fear) },
+      tagsB: { pro: toEntries(tags.B_pro), con: toEntries(tags.B_con), desire: toEntries(tags.B_desire), fear: toEntries(tags.B_fear) },
     })
   }
 
   async function completeStep06(valuesA: string[], needsA: string[], valuesB: string[], needsB: string[]) {
-    if (state.id) {
-      try {
-        if (optionIds.idA) await replaceAllTagsForOption(optionIds.idA, { value: valuesA, need: needsA })
-        if (optionIds.idB) await replaceAllTagsForOption(optionIds.idB, { value: valuesB, need: needsB })
-      } catch {}
-    }
+    const toEntries = (arr: string[]) => arr.map(label => ({ label, aiSuggested: false }))
     setSessionData(prev => ({ ...prev, valuesA, needsA, valuesB, needsB }))
-    setPendingSummary({
-      type: 'values_needs',
-      tagsA: { values: valuesA, needs: needsA },
-      tagsB: { values: valuesB, needs: needsB },
-      onConfirm: () => {
-        setPendingSummary(null)
-        update({ currentStep: 7 })
-        if (state.id) updateDecision(state.id, { current_step: 7 }).catch(() => {})
-      },
+    await submitStepAndAdvance('VALUES_NEEDS', {
+      valuesA: toEntries(valuesA), needsA: toEntries(needsA), valuesB: toEntries(valuesB), needsB: toEntries(needsB),
     })
   }
 
   async function completeStep07(projectionsA: string[], projectionsB: string[], chosenLean?: string, reflectionNote?: string) {
-    if (state.id) {
-      try {
-        await updateDecision(state.id, { status: 'completed', current_step: 7 })
-        if (optionIds.idA) await replaceProjections(optionIds.idA, projectionsA.map(s => ({ statement: s, selected: true })))
-        if (optionIds.idB) await replaceProjections(optionIds.idB, projectionsB.map(s => ({ statement: s, selected: true })))
-        const leanLabel = chosenLean === 'A' || chosenLean === 'B' ? chosenLean : null
-        const chosenOptionId = leanLabel === 'A' ? optionIds.idA : leanLabel === 'B' ? optionIds.idB : undefined
-        const parts: string[] = []
-        if (leanLabel) parts.push(`Leaning towards Option ${leanLabel}`)
-        else if (chosenLean === 'undecided') parts.push('Still undecided')
-        if (reflectionNote) parts.push(reflectionNote)
-        await upsertReflectionOutcome({
-          decisionId: state.id,
-          reflection: `[Reflection] ${parts.join('\n')}`,
-          chosenOptionId,
-        })
-      } catch (e) { console.error('Step07 save error:', e) }
-    }
+    const toEntries = (arr: string[]) => arr.map(statement => ({ statement, isCustom: false }))
     setSessionData(prev => ({ ...prev, projectionsA, projectionsB, chosenLean, reflectionNote }))
-    // Start the post-flow: projections section summary → session summary → insight → clarity → commitment
-    setPendingSummary({
-      type: 'projections',
-      tagsA: { projections: projectionsA },
-      tagsB: { projections: projectionsB },
-      onConfirm: () => {
-        setPendingSummary(null)
-        setPostFlow('session_summary')
-      },
+    await submitStepAndAdvance('FUTURE_PROJECTION', {
+      projectionsA: toEntries(projectionsA),
+      projectionsB: toEntries(projectionsB),
+      chosenLean: chosenLean ?? 'undecided',
+      reflectionNote,
     })
   }
 
+  async function handleClarityCommit(nextStep: string) {
+    setClarityNextStep(nextStep)
+    await submitStepAndAdvance('CLARITY_ACTION', { nextStep })
+  }
+
+  async function handleClaritySkip() {
+    setClarityNextStep('')
+    const res = await callCommand('CLARITY_ACTION', 'SKIP', {})
+    if (res?.nextStepId) setCurrentStepId(res.nextStepId as DecisionStepId)
+  }
+
   async function finishFlow(commitment: string) {
-    setCelebrating(true)
+    const res = await submitStep('COMMITMENT', { commitment: commitment.trim() || undefined })
+    if (!res) return
     setCompletedSummary({
       title: state.title,
       optionA: state.optionA?.content,
@@ -463,196 +373,290 @@ function NewDecisionContent() {
       chosenLean: sessionData.chosenLean,
       reflectionNote: sessionData.reflectionNote,
       commitment,
-      decisionId: state.id,
+      decisionId: sessionId ?? undefined,
     })
-    setPostFlow(null)
-    if (state.id && commitment.trim()) {
-      try {
-        const supabase = createClient()
-        const { data: existing } = await supabase
-          .from('outcomes')
-          .select('id, reflection')
-          .eq('decision_id', state.id)
-          .like('reflection', '[Reflection]%')
-          .single()
-        if (existing) {
-          const base = existing.reflection.replace(/\nCommitment:.*$/, '')
-          await supabase.from('outcomes')
-            .update({ reflection: `${base}\nCommitment: ${commitment.trim()}` })
-            .eq('id', existing.id)
-        }
-      } catch {}
+    setCelebrating(true)
+  }
+
+  function renderStep() {
+    if (resumeLoading) {
+      return (
+        <div className="relative min-h-screen max-w-[393px] mx-auto flex items-center justify-center">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+          <div className="w-8 h-8 border-2 border-purple-500/40 border-t-purple-500 rounded-full animate-spin" />
+        </div>
+      )
     }
-  }
 
-  if (pendingSummary && state.optionA && state.optionB) {
-    return (
-      <SectionSummaryScreen
-        decisionTitle={state.title}
-        stepType={pendingSummary.type}
-        optionA={state.optionA}
-        optionB={state.optionB}
-        tagsA={pendingSummary.tagsA}
-        tagsB={pendingSummary.tagsB}
-        decisionId={state.id}
-        onContinue={pendingSummary.onConfirm}
-        onBack={() => setPendingSummary(null)}
-      />
-    )
-  }
+    if (fatalError) {
+      return (
+        <div className="relative min-h-screen max-w-[393px] mx-auto flex flex-col items-center justify-center px-6 text-center space-y-4">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+          <p className="text-white/70 text-sm">{fatalError}</p>
+          <button onClick={() => router.push('/dashboard')} className="text-purple-400 text-sm underline">
+            Back to dashboard
+          </button>
+        </div>
+      )
+    }
 
-  if (!state.optionA || !state.optionB) {
-    // Steps 4+ require options — fall back to step 2 to re-enter them
-    if (state.currentStep >= 4) {
+    if (completedSummary && celebrating) {
+      return (
+        <CelebrationScreen
+          userName={userName}
+          decisionTitle={completedSummary.title}
+          onContinue={() => setCelebrating(false)}
+        />
+      )
+    }
+
+    if (completedSummary) {
+      return (
+        <CompletionScreen
+          userName={userName}
+          decisionTitle={completedSummary.title}
+          optionA={completedSummary.optionA}
+          optionB={completedSummary.optionB}
+          chosenLean={completedSummary.chosenLean}
+          reflectionNote={completedSummary.reflectionNote}
+          commitment={completedSummary.commitment}
+          decisionId={completedSummary.decisionId}
+          onDone={() => router.push('/dashboard?completed=true')}
+        />
+      )
+    }
+
+    if (introStep === -1) {
+      return <WelcomeScreen userName={userName} onNext={() => setIntroStep(0)} />
+    }
+
+    if (introStep === 0) {
+      return <MomentScreen onNext={() => setIntroStep(null)} onBack={() => setIntroStep(-1)} />
+    }
+
+    if (STEPS_REQUIRING_OPTIONS.includes(currentStepId) && (!state.optionA || !state.optionB)) {
       return (
         <Step02
           decisionTitle={state.title}
-          decisionId={state.id}
           initialNarrative={state.narrative}
+          onRefine={makeRefine('MAP_OPTIONS')}
           onComplete={completeStep02}
           onBack={goBack}
-          onSkip={skip}
+          onSkip={skipStep}
         />
       )
     }
-    if (state.currentStep === 1) {
-      return <Step01 initialTitle={state.title} initialSubtitle={state.subtitle} onComplete={completeStep01} onBack={goBack} />
-    }
-    if (state.currentStep === 2) {
-      return (
-        <Step02
-          decisionTitle={state.title}
-          decisionId={state.id}
-          initialNarrative={state.narrative}
-          initialOptionA={state.optionA}
-          initialOptionB={state.optionB}
-          onComplete={completeStep02}
-          onBack={goBack}
-          onSkip={skip}
-        />
-      )
-    }
-    if (state.currentStep === 3) {
-      return (
-        <Step03
-          decisionTitle={state.title}
-          decisionId={state.id}
-          narrative={state.narrative}
-          initialBodyLocation={state.emotionBodyLocation}
-          initialEmotion={state.emotionColor}
-          initialReflection={state.emotionReflection}
-          onComplete={completeStep03}
-          onBack={goBack}
-          onSkip={skip}
-        />
-      )
+
+    switch (currentStepId) {
+      case 'NAME_DECISION':
+        return (
+          <Step01
+            initialTitle={state.title}
+            initialSubtitle={state.subtitle}
+            onRefine={makeRefine('NAME_DECISION')}
+            onComplete={completeStep01}
+            onBack={goBack}
+          />
+        )
+      case 'MAP_OPTIONS':
+        return (
+          <Step02
+            decisionTitle={state.title}
+            initialNarrative={state.narrative}
+            initialOptionA={state.optionA}
+            initialOptionB={state.optionB}
+            onRefine={makeRefine('MAP_OPTIONS')}
+            onComplete={completeStep02}
+            onBack={goBack}
+            onSkip={skipStep}
+          />
+        )
+      case 'BODY_EMOTION':
+        return (
+          <Step03
+            decisionTitle={state.title}
+            initialBodyLocation={state.emotionBodyLocation}
+            initialEmotion={state.emotionColor}
+            initialReflection={state.emotionReflection}
+            onRefine={makeRefine('BODY_EMOTION')}
+            onComplete={completeStep03}
+            onBack={goBack}
+            onSkip={skipStep}
+          />
+        )
+      case 'CHOOSE_LENS':
+        return (
+          <Step04
+            decisionTitle={state.title}
+            optionA={state.optionA!}
+            optionB={state.optionB!}
+            initialLens={state.lens}
+            onComplete={completeStep04}
+            onBack={goBack}
+            onSkip={skipStep}
+          />
+        )
+      case 'DEEP_EXPLORATION':
+        return (
+          <Step05
+            decisionTitle={state.title}
+            optionA={state.optionA!}
+            optionB={state.optionB!}
+            lens={state.lens ?? 'pros_cons'}
+            initialTagsA={sessionData.tags05 ? {
+              pro: sessionData.tags05.pro ?? [], con: sessionData.tags05.con ?? [],
+              desire: sessionData.tags05.desire ?? [], fear: sessionData.tags05.fear ?? [],
+            } : undefined}
+            initialTagsB={sessionData.tags05 ? {
+              pro: sessionData.tags05.B_pro ?? [], con: sessionData.tags05.B_con ?? [],
+              desire: sessionData.tags05.B_desire ?? [], fear: sessionData.tags05.B_fear ?? [],
+            } : undefined}
+            onRefine={makeRefine('DEEP_EXPLORATION')}
+            onComplete={completeStep05}
+            onBack={goBack}
+            onSkip={skipStep}
+          />
+        )
+      case 'DEEP_EXPLORATION_SUMMARY': {
+        const summaryType: SummaryType = (state.lens ?? 'pros_cons') === 'pros_cons' ? 'pros_cons' : 'fears_desires'
+        return (
+          <SectionSummaryScreen
+            decisionTitle={state.title}
+            stepType={summaryType}
+            tagsA={{
+              pro: sessionData.tags05?.pro ?? [], con: sessionData.tags05?.con ?? [],
+              desire: sessionData.tags05?.desire ?? [], fear: sessionData.tags05?.fear ?? [],
+            }}
+            tagsB={{
+              pro: sessionData.tags05?.B_pro ?? [], con: sessionData.tags05?.B_con ?? [],
+              desire: sessionData.tags05?.B_desire ?? [], fear: sessionData.tags05?.B_fear ?? [],
+            }}
+            onRefine={makeRefine('DEEP_EXPLORATION_SUMMARY')}
+            onContinue={() => submitStepAndAdvance('DEEP_EXPLORATION_SUMMARY', {})}
+            onBack={goBack}
+          />
+        )
+      }
+      case 'VALUES_NEEDS':
+        return (
+          <Step06
+            decisionTitle={state.title}
+            optionA={state.optionA!}
+            optionB={state.optionB!}
+            initialValuesA={sessionData.valuesA}
+            initialNeedsA={sessionData.needsA}
+            initialValuesB={sessionData.valuesB}
+            initialNeedsB={sessionData.needsB}
+            onRefine={makeRefine('VALUES_NEEDS')}
+            onComplete={completeStep06}
+            onBack={goBack}
+            onSkip={skipStep}
+          />
+        )
+      case 'VALUES_NEEDS_SUMMARY':
+        return (
+          <SectionSummaryScreen
+            decisionTitle={state.title}
+            stepType="values_needs"
+            tagsA={{ values: sessionData.valuesA ?? [], needs: sessionData.needsA ?? [] }}
+            tagsB={{ values: sessionData.valuesB ?? [], needs: sessionData.needsB ?? [] }}
+            onRefine={makeRefine('VALUES_NEEDS_SUMMARY')}
+            onContinue={() => submitStepAndAdvance('VALUES_NEEDS_SUMMARY', {})}
+            onBack={goBack}
+          />
+        )
+      case 'FUTURE_PROJECTION':
+        return (
+          <Step07
+            decisionTitle={state.title}
+            optionA={state.optionA!}
+            optionB={state.optionB!}
+            initialSelectedA={sessionData.projectionsA}
+            initialSelectedB={sessionData.projectionsB}
+            initialChosenLean={sessionData.chosenLean}
+            initialReflectionNote={sessionData.reflectionNote}
+            onRefine={makeRefine('FUTURE_PROJECTION')}
+            onComplete={completeStep07}
+            onBack={goBack}
+          />
+        )
+      case 'FUTURE_PROJECTION_SUMMARY':
+        return (
+          <SectionSummaryScreen
+            decisionTitle={state.title}
+            stepType="projections"
+            tagsA={{ projections: sessionData.projectionsA ?? [] }}
+            tagsB={{ projections: sessionData.projectionsB ?? [] }}
+            onRefine={makeRefine('FUTURE_PROJECTION_SUMMARY')}
+            onContinue={() => submitStepAndAdvance('FUTURE_PROJECTION_SUMMARY', {})}
+            onBack={goBack}
+          />
+        )
+      case 'SESSION_SUMMARY':
+        return (
+          <SessionSummaryScreen
+            decisionTitle={state.title}
+            onRefine={makeRefine('SESSION_SUMMARY')}
+            onContinue={() => submitStepAndAdvance('SESSION_SUMMARY', {})}
+            onBack={goBack}
+          />
+        )
+      case 'SUMMARY_INSIGHT':
+        return (
+          <SummaryInsightScreen
+            decisionTitle={state.title}
+            onRefine={makeRefine('SUMMARY_INSIGHT')}
+            onContinue={() => submitStepAndAdvance('SUMMARY_INSIGHT', {})}
+            onBack={goBack}
+          />
+        )
+      case 'CLARITY_ACTION':
+        return (
+          <ClarityToActionScreen
+            decisionTitle={state.title}
+            onRefine={makeRefine('CLARITY_ACTION')}
+            onCommit={handleClarityCommit}
+            onSkip={handleClaritySkip}
+            onBack={goBack}
+          />
+        )
+      case 'COMMITMENT':
+        return (
+          <CommitmentScreen
+            decisionTitle={state.title}
+            nextStep={clarityNextStep || undefined}
+            onDone={finishFlow}
+            onBack={goBack}
+          />
+        )
+      default:
+        return (
+          <Step01
+            initialTitle={state.title}
+            initialSubtitle={state.subtitle}
+            onRefine={makeRefine('NAME_DECISION')}
+            onComplete={completeStep01}
+            onBack={goBack}
+          />
+        )
     }
   }
 
-  switch (state.currentStep) {
-    case 1: return (
-      <Step01
-        initialTitle={state.title}
-        initialSubtitle={state.subtitle}
-        onComplete={completeStep01}
-        onBack={goBack}
-      />
-    )
-    case 2: return (
-      <Step02
-        decisionTitle={state.title}
-        decisionId={state.id}
-        initialNarrative={state.narrative}
-        initialOptionA={state.optionA}
-        initialOptionB={state.optionB}
-        onComplete={completeStep02}
-        onBack={goBack}
-        onSkip={skip}
-      />
-    )
-    case 3: return (
-      <Step03
-        decisionTitle={state.title}
-        decisionId={state.id}
-        narrative={state.narrative}
-        initialBodyLocation={state.emotionBodyLocation}
-        initialEmotion={state.emotionColor}
-        initialReflection={state.emotionReflection}
-        onComplete={completeStep03}
-        onBack={goBack}
-        onSkip={skip}
-      />
-    )
-    case 4: return (
-      <Step04
-        decisionTitle={state.title}
-        optionA={state.optionA!}
-        optionB={state.optionB!}
-        initialLens={state.lens}
-        onComplete={completeStep04}
-        onBack={goBack}
-        onSkip={skip}
-      />
-    )
-    case 5: return (
-      <Step05
-        decisionTitle={state.title}
-        decisionId={state.id}
-        narrative={state.narrative}
-        optionA={state.optionA!}
-        optionB={state.optionB!}
-        lens={state.lens ?? 'pros_cons'}
-        initialTagsA={sessionData.tags05 ? {
-          pro: sessionData.tags05.pro ?? [],
-          con: sessionData.tags05.con ?? [],
-          desire: sessionData.tags05.desire ?? [],
-          fear: sessionData.tags05.fear ?? [],
-        } : undefined}
-        initialTagsB={sessionData.tags05 ? {
-          pro: sessionData.tags05.B_pro ?? [],
-          con: sessionData.tags05.B_con ?? [],
-          desire: sessionData.tags05.B_desire ?? [],
-          fear: sessionData.tags05.B_fear ?? [],
-        } : undefined}
-        onComplete={completeStep05}
-        onBack={goBack}
-        onSkip={skip}
-      />
-    )
-    case 6: return (
-      <Step06
-        decisionTitle={state.title}
-        decisionId={state.id}
-        optionA={state.optionA!}
-        optionB={state.optionB!}
-        initialValuesA={sessionData.valuesA}
-        initialNeedsA={sessionData.needsA}
-        initialValuesB={sessionData.valuesB}
-        initialNeedsB={sessionData.needsB}
-        onComplete={completeStep06}
-        onBack={goBack}
-        onSkip={skip}
-      />
-    )
-    case 7: return (
-      <Step07
-        decisionTitle={state.title}
-        decisionId={state.id}
-        optionA={state.optionA!}
-        optionB={state.optionB!}
-        initialSelectedA={sessionData.projectionsA}
-        initialSelectedB={sessionData.projectionsB}
-        initialChosenLean={sessionData.chosenLean}
-        initialReflectionNote={sessionData.reflectionNote}
-        onComplete={completeStep07}
-        onBack={goBack}
-        onSkip={skip}
-      />
-    )
-    default: return (
-      <Step01 initialTitle={state.title} initialSubtitle={state.subtitle} onComplete={completeStep01} onBack={goBack} />
-    )
-  }
+  return (
+    <>
+      {syncNotice && (
+        <div className="fixed top-4 inset-x-0 z-50 flex justify-center px-4">
+          <button
+            onClick={() => setSyncNotice(null)}
+            className="bg-purple-900/90 border border-purple-500/40 text-white text-xs rounded-full px-4 py-2 shadow-lg"
+          >
+            {syncNotice}
+          </button>
+        </div>
+      )}
+      {renderStep()}
+    </>
+  )
 }
 
 export default function NewDecisionPage() {

@@ -40,10 +40,18 @@ function setSessionCookie(session: CognitoUserSession): void {
   const maxAge = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000))
   document.cookie = `${SESSION_COOKIE}=1; path=/; max-age=${maxAge}; samesite=lax`
 
+  // Only ever SET this cookie from a genuinely-true claim — never clear it
+  // from a false one. The ID token's `custom:consent` claim is stale for up
+  // to idTokenValidity (1hr) after a real consent grant (markConsentedLocally
+  // already documents this), so a session check running in that window would
+  // otherwise clobber the optimistic cookie right back to "not consented",
+  // bouncing an already-consented user back to /consent. Real sign-out
+  // clears it separately via clearSessionCookie(), which isn't based on this
+  // stale-claim read at all.
   const consented = idToken.payload['custom:consent'] === 'true'
-  document.cookie = consented
-    ? `${CONSENT_COOKIE}=1; path=/; max-age=${maxAge}; samesite=lax`
-    : `${CONSENT_COOKIE}=; path=/; max-age=0`
+  if (consented) {
+    document.cookie = `${CONSENT_COOKIE}=1; path=/; max-age=${maxAge}; samesite=lax`
+  }
 }
 
 function clearSessionCookie(): void {

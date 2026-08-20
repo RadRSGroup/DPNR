@@ -2,6 +2,7 @@ import type {
   RoomCommandRequest,
   RoomCommandResponse,
   ConsentResponse,
+  DecisionRoomFullResponse,
 } from '@dpnr/shared-types'
 import { getIdToken } from '../cognito/client'
 
@@ -45,10 +46,10 @@ export async function submitRoomCommand(request: RoomCommandRequest): Promise<Ro
   return parseOrThrow<RoomCommandResponse>(res)
 }
 
-/** GET /v1/rooms/decision/{id}/full — the same aggregate read `decision/[id]/page.tsx` will eventually use; not called by the guided-creation-flow port itself. */
-export async function getDecisionFull(id: string): Promise<unknown> {
+/** GET /v1/rooms/decision/{id}/full — used both by `decision/new/page.tsx`'s `?resume=` handling and, eventually, `decision/[id]/page.tsx`. */
+export async function getDecisionFull(id: string): Promise<DecisionRoomFullResponse> {
   const res = await authedFetch(`/v1/rooms/decision/${id}/full`)
-  return parseOrThrow(res)
+  return parseOrThrow<DecisionRoomFullResponse>(res)
 }
 
 /** POST /v1/user/consent — the write path this session built (docs/PHASE_AUDIT.md §2.2). */

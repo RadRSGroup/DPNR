@@ -68,6 +68,15 @@ export const DecisionRoomFullResponseSchema = z.object({
     .nullable(), // null until step 3 has run
   outcomes: z.array(DecisionRoomOutcomeViewSchema),
   summary: z.string().nullable(), // null until the post-session pipeline has produced one
+  // Symbolic step-engine position, sourced from the generic SessionItem
+  // (dynamo/session.ts), not DecisionItem — undefined only if a DecisionItem
+  // somehow exists with no matching SessionItem (shouldn't happen in
+  // practice, but the read must not hard-fail on it). Lets a client resume
+  // at the exact one of 14 command-contract steps instead of just the
+  // coarse 1-7 `currentStep` above, which can't distinguish e.g.
+  // VALUES_NEEDS from VALUES_NEEDS_SUMMARY or SESSION_SUMMARY from COMMITMENT.
+  currentStepId: z.string().optional(),
+  sessionVersion: z.number().int().min(0).optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })

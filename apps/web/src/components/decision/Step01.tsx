@@ -2,19 +2,20 @@
 import { useState } from 'react'
 import StepShell from './StepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
-import { useAI } from '@/lib/useAI'
+import { useAI, RefineFn } from '@/lib/useAI'
 
 interface Step01Props {
   initialTitle?: string
   initialSubtitle?: string
+  onRefine: RefineFn
   onComplete: (title: string, subtitle?: string) => void
   onBack?: () => void
 }
 
-export default function Step01({ initialTitle = '', initialSubtitle, onComplete, onBack }: Step01Props) {
+export default function Step01({ initialTitle = '', initialSubtitle, onRefine, onComplete, onBack }: Step01Props) {
   const [title, setTitle] = useState(initialTitle)
   const [subtitle, setSubtitle] = useState<string | undefined>(initialSubtitle)
-  const { callAI, loading } = useAI()
+  const { callAI, loading } = useAI(onRefine)
 
   async function handleSuggestSubtitle() {
     if (!title.trim()) return

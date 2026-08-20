@@ -15,6 +15,7 @@ import {
   type DecisionRoomOptionView,
   type DecisionRoomTagView,
   type DecisionRoomProjectionView,
+  type SessionItem,
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { stubDecryptField } from '../lib/crypto-stub'
@@ -40,10 +41,12 @@ type EmotionContent = {
  * guessed id belonging to another user simply returns nothing, since
  * DynamoDB isolates by `pk`, never by a client-controlled value elsewhere.
  *
- * Only what NAME_DECISION/MAP_OPTIONS (lambda/rooms/command.ts) actually
- * write exists today — emotion/tags/projections/outcomes/summary read back
- * as null/empty until steps 3–7 are implemented. That's an honest
- * reflection of what's stored, not a bug.
+ * All 14 command-contract steps (lambda/rooms/decision-steps/*.ts) write
+ * real data by this point — emotion/tags/projections/outcomes read back
+ * exactly what was persisted. `summary` is the one field that stays null
+ * forever under the current implementation: DecisionSummaryItem is read
+ * here but no step handler ever writes one (no post-session pipeline
+ * exists yet) — an honest reflection of what's stored, not a bug.
  */
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
@@ -54,7 +57,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       throw new HttpError(400, 'missing_id', 'Path must include a decision id.')
     }
 
-    const [decisionResult, optionAResult, optionBResult, emotionResult, tagsResult, projectionsResult, outcomesResult, summaryResult] =
+    const [decisionResult, optionAResult, optionBResult, emotionResult, tagsResult, projectionsResult, outcomesResult, summaryResult, sessionResult] =
       await Promise.all([
         ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.decisionRoom(decisionId) } })),
         ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.decisionOption(decisionId, 'A') } })),
@@ -82,6 +85,10 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
           })
         ),
         ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.decisionSummary(decisionId) } })),
+        // decisionId === sessionId for Decision Room (name-decision.ts creates
+        // the DecisionItem with decisionId: ctx.sessionId) — same key, no
+        // extra lookup needed to find the associated SessionItem.
+        ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.session(decisionId) } })),
       ])
 
     const decisionItem = decisionResult.Item as DecisionItem | undefined
@@ -136,6 +143,8 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const summaryItem = summaryResult.Item as DecisionSummaryItem | undefined
     const summary = summaryItem ? stubDecryptField<SummaryContent>(summaryItem.content).summary : null
 
+    const sessionItem = sessionResult.Item as SessionItem | undefined
+
     const body: DecisionRoomFullResponse = {
       decisionId,
       status: decisionItem.status,
@@ -149,6 +158,8 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       emotion,
       outcomes,
       summary,
+      currentStepId: sessionItem?.currentStepId,
+      sessionVersion: sessionItem?.sessionVersion,
       createdAt: decisionItem.createdAt,
       updatedAt: decisionItem.updatedAt,
     }

@@ -3,25 +3,24 @@ import { useEffect, useState } from 'react'
 import StepShell from './StepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import Chip from '@/components/ui/Chip'
-import { useAI } from '@/lib/useAI'
+import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { Lens, DecisionOption, PRESET_TAGS } from '@/lib/types'
 
 interface Step05Props {
   decisionTitle: string
-  decisionId?: string
-  narrative: string
   optionA: DecisionOption
   optionB: DecisionOption
   lens: Lens
   initialTagsA?: Record<string, string[]>
   initialTagsB?: Record<string, string[]>
+  onRefine: RefineFn
   onComplete: (tags: Record<string, string[]>) => void
   onBack?: () => void
   onSkip?: () => void
 }
 
-export default function Step05({ decisionTitle, decisionId, narrative, optionA, optionB, lens, initialTagsA, initialTagsB, onComplete, onBack, onSkip }: Step05Props) {
+export default function Step05({ decisionTitle, optionA, optionB, lens, initialTagsA, initialTagsB, onRefine, onComplete, onBack, onSkip }: Step05Props) {
   const sections = lens === 'pros_cons'
     ? [{ type: 'pro', label: 'Pros', icon: '✓' }, { type: 'con', label: 'Cons', icon: '✗' }]
     : [{ type: 'desire', label: 'Desires', icon: '✦' }, { type: 'fear', label: 'Fears', icon: '⚡' }]
@@ -33,7 +32,7 @@ export default function Step05({ decisionTitle, decisionId, narrative, optionA, 
   const [suggestedA, setSuggestedA] = useState<Record<string, string[]>>({})
   const [suggestedB, setSuggestedB] = useState<Record<string, string[]>>({})
   const [customInput, setCustomInput] = useState('')
-  const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI()
+  const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI(onRefine)
 
   const currentSection = sections[sectionIdx]
   const isLastSection = sectionIdx === sections.length - 1
@@ -51,16 +50,19 @@ export default function Step05({ decisionTitle, decisionId, narrative, optionA, 
     if (lens === 'pros_cons') {
       const res = await callAI<{ pros: string[]; cons: string[] }>(
         'pros_cons_tags',
-        { optionLabel: o.label, optionText: o.content, narrative },
-        decisionId
+        { optionLabel: o.label }
       )
       if (res) {
         const setter = opt === 'A' ? setSuggestedA : setSuggestedB
         setter({ pro: res.pros, con: res.cons })
       }
-    } else if (lens === 'fears_desires') {
+    } else {
+      // fears_desires AND values_needs both land here — matches
+      // deep-exploration.ts's tagKindForLens. optionLabel is required by
+      // the backend's RefineInput even for this branch (a real bug in the
+      // pre-port UI: the old /api/ai call never sent it here at all).
       const res = await callAI<{ desires: string[]; fears: string[] }>(
-        'fear_desire_tags', { narrative }, decisionId
+        'fear_desire_tags', { optionLabel: o.label }
       )
       if (res) {
         const setter = opt === 'A' ? setSuggestedA : setSuggestedB

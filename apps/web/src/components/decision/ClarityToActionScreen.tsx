@@ -1,15 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
 import StepShell from './StepShell'
-import { useAI } from '@/lib/useAI'
+import { useAI, RefineFn } from '@/lib/useAI'
 
 interface ClarityToActionScreenProps {
   decisionTitle: string
-  narrative: string
-  optionA: string
-  optionB: string
-  chosenLean?: string
-  decisionId?: string
+  onRefine: RefineFn
   onCommit: (nextStep: string, bodyFeelings: string[]) => void
   onSkip: () => void
   onBack: () => void
@@ -21,22 +17,19 @@ const BODY_FEELINGS = [
 ]
 
 export default function ClarityToActionScreen({
-  decisionTitle, narrative, optionA, optionB, chosenLean, decisionId,
+  decisionTitle, onRefine,
   onCommit, onSkip, onBack,
 }: ClarityToActionScreenProps) {
   const [suggestedStep, setSuggestedStep] = useState('')
   const [nextStep, setNextStep] = useState('')
   const [selectedFeelings, setSelectedFeelings] = useState<string[]>([])
-  const { callAI, loading } = useAI()
+  const { callAI, loading } = useAI(onRefine)
 
   useEffect(() => {
     let ignore = false
     async function fetchSuggestion() {
-      const res = await callAI<{ nextStep: string }>(
-        'clarity_action',
-        { decisionTitle, narrative, optionA, optionB, chosenLean },
-        decisionId,
-      )
+      // CLARITY_ACTION's REFINE re-derives everything server-side — no client input needed.
+      const res = await callAI<{ nextStep: string }>('clarity_action', {})
       if (!ignore && res?.nextStep) {
         setSuggestedStep(res.nextStep)
         setNextStep(res.nextStep)
