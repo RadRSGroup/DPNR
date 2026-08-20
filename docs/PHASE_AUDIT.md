@@ -391,3 +391,15 @@ research further this session — no code changed. This is also legacy Supabase-
 Credits ledger (Slice 1) is meant to replace, not port, so a real fix may belong there instead of as a
 standalone patch. **Do not re-scope this as "just add HMAC verification" in a future session** — start from
 this finding.
+
+**Update, Session 10, part 3**: while building `GET /v1/user/export` (a real GDPR-export endpoint, replacing
+the Supabase-only `/api/user/export` route that never worked for Cognito users), found that
+`SessionItem.lastResponse` (set by `infra/cdk/lambda/rooms/command.ts` on every command, used for
+idempotency-check short-circuiting) stores the **full command response in plaintext** — for a `REFINE`
+result this includes real generated content (e.g. a decision's suggested options), not routed through
+`stubEncryptField`/`[ENCRYPTED]` like every other content field. Confirmed live: a real export dump showed
+`lastResponse.result.title` as cleartext next to properly-decrypted `content` fields from the same item
+family. Not something introduced this session — this is how `command.ts` was written back in Session 5 —
+and not fixed here (out of scope for the account-audit task; the export endpoint just honestly surfaces
+what's actually stored). Flagging for whoever works on Phase 6 encryption: `lastResponse` needs the same
+`[ENCRYPTED]` treatment as every other content field, or a documented reason it's exempt.

@@ -146,3 +146,29 @@ export async function getIdToken(): Promise<string | null> {
   const session = await getCurrentSession()
   return session ? session.getIdToken().getJwtToken() : null
 }
+
+/**
+ * Deletes the caller's own Cognito user — a genuine self-service Cognito
+ * SDK operation that works with just the authenticated session, no admin
+ * IAM grant needed (unlike Supabase, whose JS client has no equivalent,
+ * which is why the old `/api/user/delete` route needed a service-role
+ * admin client). Callers should delete the DynamoDB partition first
+ * (`DELETE /v1/account`) since a signed-out/deleted Cognito session can no
+ * longer authenticate that call.
+ */
+export function deleteCognitoUser(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const user = userPool.getCurrentUser()
+    if (!user) {
+      reject(new Error('No active session.'))
+      return
+    }
+    user.getSession((sessionErr: Error | null) => {
+      if (sessionErr) {
+        reject(sessionErr)
+        return
+      }
+      user.deleteUser((err) => (err ? reject(err) : resolve()))
+    })
+  })
+}

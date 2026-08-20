@@ -172,6 +172,70 @@ This project has **no human development team**. It is built entirely by Claude C
 
 ## Session History
 
+### 2026-08-20 — Session 10, part 3 (audited and fixed /account, checkout, /api/user/* for the Cognito cutover)
+- User asked to work through three priorities in order: this Cognito audit, then Digital Twin, then Library's
+  product review. This part covers the first.
+- **Confirmed the exact breakage by reading the code, not assuming**: `/account`, `/api/checkout`,
+  `/api/user/{export,delete,consent}`, and `/api/auth/signout` were all still 100% Supabase-based
+  (`supabase.auth.getUser()`), so every one of them either 401'd or silently no-op'd for any real Cognito
+  user since Session 7 part 4's login swap — including **the sign-out button itself**, a real bug this
+  session found that no prior session had caught (clicking "Sign out" hit a dead Supabase route and never
+  touched the real Cognito session at all).
+- **Built two new real `/v1` endpoints**, closing gaps `packages/shared-types/src/api/account.ts` had
+  already scaffolded response shapes for since Session 4: `GET /v1/user/export` (`infra/cdk/lambda/account/export.ts`
+  — queries the caller's whole `USER#<id>` partition in one `Query`, decrypts every `[ENCRYPTED]`-shaped
+  `content` field via `stubDecryptField`, returns a flat complete dump) and `DELETE /v1/account`
+  (`infra/cdk/lambda/account/delete.ts` — same partition query, batch-deletes every item in chunks of 25 with
+  retry on `UnprocessedItems`). **Deliberately does NOT call Cognito's admin API to delete the identity** —
+  `amazon-cognito-identity-js`'s `CognitoUser.deleteUser()` is a genuine self-service operation that works
+  with just the caller's own session, so the client calls that directly (new `deleteCognitoUser()` in
+  `lib/cognito/client.ts`) right after the Lambda succeeds, avoiding an admin IAM grant entirely. Order
+  matters and is deliberate: DynamoDB first, Cognito identity second — if the second call ever fails, the
+  failure mode is a dead login with zero data (safe, satisfies erasure) rather than a live login with
+  orphaned data.
+- **Rewrote `/account/page.tsx` and `/pricing/page.tsx`** to use Cognito (`getCurrentSession`) and the new
+  `/v1` endpoints instead of Supabase, and fixed the dead sign-out button to call the real `signOut()`.
+  Tier/subscription display is now an honest static "Free — Beta" instead of a fabricated per-user Supabase
+  read — there is no real tier/Credits system on the new backend yet (Slice 1, unbuilt), so showing anything
+  else would be inventing data. Correspondingly, `pricing/page.tsx`'s upgrade buttons are now disabled
+  ("Coming soon") instead of calling `/api/checkout`, which was **already going to fail for two independent
+  reasons** even with working auth — see the Grow finding below. `/api/checkout/route.ts` itself was left in
+  place (not deleted) with a doc comment explaining why it's currently unreachable, as a reference for
+  whoever rebuilds Credits/checkout for real.
+- **Deleted four now-fully-dead Supabase-only Next.js API routes**: `/api/auth/signout`, `/api/user/export`,
+  `/api/user/delete`, `/api/user/consent` (the last was already orphaned before this session — nothing called
+  it even before the rewrite, since real consent goes through `/v1/user/consent` directly).
+- **A real, security-relevant finding surfaced while building the export endpoint, not fixed here (out of
+  scope, flagged for Phase 6)**: `command.ts`'s `SessionItem.lastResponse` caches full command responses in
+  **plaintext**, including real generated content for `REFINE` results — the only content field in the
+  codebase that isn't routed through `stubEncryptField`. Confirmed live via a real export dump. Full detail
+  in `docs/PHASE_AUDIT.md`'s Session 10 part 3 update.
+- **Security review**: the `security-review` skill's own tooling failed on a `git diff origin/HEAD...` merge-base
+  error in this checkout (environment/repo-history quirk, not something this session's task should chase) —
+  substituted a manual review covering ownership/IDOR (both new Lambdas key exclusively off
+  `userPk(requireUserId(event))`, no client-supplied id anywhere), IAM least-privilege (scoped
+  `grantReadData`/`grantReadWriteData`, no wildcards), logging (only ever an item *count* on failure, never
+  key contents), and the deletion-ordering failure mode above.
+- **Verified for real, live, end to end**: `typecheck:cdk`, `synth` (inspected the synthesized template —
+  both new routes present with the JWT authorizer attached), `apps/web` lint + build all green (had to clear
+  a stale `.next` cache once — it still referenced the just-deleted routes' type declarations, not a real
+  error). Deployed to `Dpnr-Api` with the user's explicit go-ahead. Live-verified with a throwaway Cognito
+  user driven through the real UI: signed up (worked around a real testing-only quirk — the signup page's
+  custom consent checkbox has its `onClick` on the inner `<div>`, not the `<label>`, so a `computer`-tool
+  click on the visually-correct spot didn't register; fixed by dispatching the click via `element.click()` in
+  JS instead), created a real Decision Room session, called `GET /v1/user/export` directly (via the page's own
+  stored ID token) and confirmed the dump contained the real decision title correctly decrypted alongside
+  correctly-untouched plaintext bookkeeping fields, then drove the real "Delete my account" flow through the
+  UI. Confirmed server-side after: `aws cognito-idp admin-get-user` → `UserNotFoundException` (identity
+  gone), `aws dynamodb query` on the user's partition → count `0` (data gone).
+- No new ADR — every fix here closes a gap against already-documented intent (the account/export/delete
+  response shapes were already scaffolded in `api/account.ts` since Session 4; deleting dead Supabase routes
+  isn't an architectural decision) or is a bugfix (the sign-out button). The Cognito-self-delete-vs-admin-API
+  choice is a real design call but a small, easily-reversible implementation detail, not the kind of
+  irreversible call ADRs are for.
+- Did not touch: Digital Twin, Library's product review (both next, per the user's stated order), Companion's
+  model stub, root MFA, or the Grow webhook rebuild itself (still deferred, unchanged from part 2).
+
 ### 2026-08-20 — Session 10, part 2 (Grow webhook investigated at user's request — real finding, no code change, deferred)
 - User asked to work the highest-priority item next, which from part 1's session-start Q&A was the Grow
   webhook signature stub (`verifyGrowSignature()` always returns `true`). Before touching code, pulled

@@ -2,12 +2,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { getCurrentSession, deleteCognitoUser, signOut } from '@/lib/cognito/client'
+import { exportUserData, deleteAccountData } from '@/lib/api/v1-client'
 
 export default function AccountPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
-  const [tier, setTier] = useState('free')
   const [loading, setLoading] = useState(true)
   const [downloading, setDownloading] = useState(false)
   const [deleteStep, setDeleteStep] = useState<'idle' | 'confirm' | 'deleting'>('idle')
@@ -15,12 +15,10 @@ export default function AccountPage() {
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-      setEmail(user.email ?? '')
-      const { data: profile } = await supabase.from('user_profiles').select('tier').eq('user_id', user.id).single()
-      setTier(profile?.tier ?? 'free')
+      const session = await getCurrentSession()
+      if (!session) { router.push('/login'); return }
+      const sessionEmail = session.getIdToken().payload.email as string | undefined
+      setEmail(sessionEmail ?? '')
       setLoading(false)
     }
     load()
@@ -29,9 +27,8 @@ export default function AccountPage() {
   async function handleDownload() {
     setDownloading(true)
     try {
-      const res = await fetch('/api/user/export')
-      if (!res.ok) { alert('Export failed. Please try again.'); return }
-      const blob = await res.blob()
+      const data = await exportUserData()
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -49,10 +46,11 @@ export default function AccountPage() {
     if (deleteConfirm.toLowerCase() !== 'delete my account') return
     setDeleteStep('deleting')
     try {
-      const res = await fetch('/api/user/delete', { method: 'DELETE' })
-      if (!res.ok) { alert('Deletion failed. Please contact support.'); setDeleteStep('confirm'); return }
-      const supabase = createClient()
-      await supabase.auth.signOut()
+      // Delete the DynamoDB partition first — a signed-out/deleted Cognito
+      // session can no longer authenticate the /v1/account call.
+      await deleteAccountData()
+      await deleteCognitoUser()
+      signOut()
       router.push('/?deleted=true')
     } catch {
       alert('Deletion failed. Please contact support.')
@@ -79,21 +77,17 @@ export default function AccountPage() {
 
       <div className="space-y-4">
 
-        {/* Plan */}
+        {/* Plan — Credits/billing isn't built on the new backend yet (MVP_ARCHITECTURE.md
+            Slice 1), and checkout is on hold pending a real Grow integration (see
+            docs/PHASE_AUDIT.md's Session 10 update) — every account is honestly on the
+            free Beta tier today, not a stored, per-user value. */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
           <p className="text-white/40 text-xs uppercase tracking-wide mb-3">Subscription</p>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-white text-sm font-medium capitalize">{tier} plan</p>
-              <p className="text-white/30 text-xs mt-0.5">
-                {tier === 'free' ? '~5 AI decisions/mo' : tier === 'core' ? '~55 AI decisions/mo' : 'Unlimited AI decisions'}
-              </p>
+              <p className="text-white text-sm font-medium">Free — Beta</p>
+              <p className="text-white/30 text-xs mt-0.5">Paid plans are coming soon</p>
             </div>
-            {tier !== 'pro' && (
-              <Link href="/pricing" className="text-purple-400 text-xs hover:text-purple-300 border border-purple-700/40 rounded-full px-3 py-1.5 transition-colors">
-                Upgrade
-              </Link>
-            )}
           </div>
         </div>
 
@@ -182,9 +176,9 @@ export default function AccountPage() {
 
         {/* Sign out */}
         <button
-          onClick={async () => {
-            await fetch('/api/auth/signout', { method: 'POST' })
-            window.location.href = '/login'
+          onClick={() => {
+            signOut()
+            router.push('/login')
           }}
           className="w-full py-3.5 rounded-2xl border border-white/10 text-white/40 hover:text-white/60 hover:border-white/20 text-sm transition-all"
         >

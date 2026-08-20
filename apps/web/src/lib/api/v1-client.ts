@@ -4,6 +4,8 @@ import type {
   ConsentResponse,
   DecisionRoomFullResponse,
   MirrorRoomFullResponse,
+  UserExportResponse,
+  DeleteAccountResponse,
 } from '@dpnr/shared-types'
 import { getIdToken } from '../cognito/client'
 
@@ -63,4 +65,20 @@ export async function getMirrorFull(id: string): Promise<MirrorRoomFullResponse>
 export async function grantConsent(): Promise<ConsentResponse> {
   const res = await authedFetch('/v1/user/consent', { method: 'POST' })
   return parseOrThrow<ConsentResponse>(res)
+}
+
+/** GET /v1/user/export — GDPR data export, used by /account's "Download my data." */
+export async function exportUserData(): Promise<UserExportResponse> {
+  const res = await authedFetch('/v1/user/export')
+  return parseOrThrow<UserExportResponse>(res)
+}
+
+/**
+ * DELETE /v1/account — deletes the DynamoDB partition only. Callers must
+ * also call `deleteCognitoUser()` (lib/cognito/client.ts) to remove the
+ * actual identity — see that function's doc comment for why it's split.
+ */
+export async function deleteAccountData(): Promise<DeleteAccountResponse> {
+  const res = await authedFetch('/v1/account', { method: 'DELETE' })
+  return parseOrThrow<DeleteAccountResponse>(res)
 }

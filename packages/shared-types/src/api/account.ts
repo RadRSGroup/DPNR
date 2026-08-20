@@ -51,14 +51,35 @@ export const ChangePasswordResponseSchema = z.object({
 export type ChangePasswordResponse = z.infer<typeof ChangePasswordResponseSchema>
 
 /**
- * DELETE /v1/account — full GDPR erasure: Cognito user + entire USER#<id>
- * partition (MVP_ARCHITECTURE.md §8). Response shape ported from the
- * existing apps/web/src/app/api/user/delete/route.ts convention.
+ * DELETE /v1/account — the DynamoDB half of full GDPR erasure: deletes
+ * every item under the caller's USER#<id> partition (MVP_ARCHITECTURE.md
+ * §8). Deliberately does NOT delete the Cognito user itself — Cognito's own
+ * SDK has a genuine self-service `CognitoUser.deleteUser()` that works with
+ * just the caller's own session, no admin IAM grant needed, so the client
+ * calls that directly right after this succeeds (apps/web/src/lib/cognito/client.ts)
+ * rather than this Lambda needing `cognito-idp:AdminDeleteUser` on itself.
  */
 export const DeleteAccountResponseSchema = z.object({
   deleted: z.literal(true),
 })
 export type DeleteAccountResponse = z.infer<typeof DeleteAccountResponseSchema>
+
+/**
+ * GET /v1/user/export — GDPR data-export ("Download or delete anytime",
+ * spec's product-system table). Every item under the caller's USER#<id>
+ * partition, `[ENCRYPTED]` fields decrypted, `pk` dropped (an internal
+ * storage detail, not user-facing data) and `sk` kept as an honest label
+ * for which record is which. Deliberately a flat, complete dump rather than
+ * a hand-curated per-feature shape — single-table design means new item
+ * types (Twin signals, Companion messages, ...) show up here automatically
+ * as they're built, with no export-route changes needed.
+ */
+export const UserExportItemSchema = z.object({ sk: z.string() }).catchall(z.unknown())
+export const UserExportResponseSchema = z.object({
+  exportedAt: z.string().datetime(),
+  items: z.array(UserExportItemSchema),
+})
+export type UserExportResponse = z.infer<typeof UserExportResponseSchema>
 
 /**
  * GET /v1/keys — the crypto envelope a returning client needs to re-derive

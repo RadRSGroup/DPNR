@@ -1,5 +1,4 @@
 'use client'
-import { useState } from 'react'
 import Link from 'next/link'
 
 const TIERS = [
@@ -39,31 +38,6 @@ const TIERS = [
 ]
 
 export default function PricingPage() {
-  const [loadingTier, setLoadingTier] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  async function handleUpgrade(tier: 'core' | 'pro') {
-    setLoadingTier(tier)
-    setError(null)
-    try {
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier }),
-      })
-      const json = await res.json()
-      if (!res.ok) {
-        setError(json.error ?? 'Checkout failed. Please try again.')
-        return
-      }
-      window.location.assign(json.checkoutUrl)
-    } catch {
-      setError('Network error. Please try again.')
-    } finally {
-      setLoadingTier(null)
-    }
-  }
-
   return (
     <div className="relative min-h-screen max-w-[393px] mx-auto px-5 pb-16">
       <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
@@ -74,11 +48,9 @@ export default function PricingPage() {
         <p className="text-white/40 text-sm mt-2">Billed monthly in Israeli Shekel (ILS)</p>
       </div>
 
-      {error && (
-        <div className="mb-5 bg-red-900/30 border border-red-700/40 rounded-2xl px-4 py-3">
-          <p className="text-red-400 text-sm">{error}</p>
-        </div>
-      )}
+      <div className="mb-5 bg-purple-900/20 border border-purple-700/30 rounded-2xl px-4 py-3">
+        <p className="text-purple-300 text-sm">Paid plans are coming soon during Beta — everyone is on Free for now.</p>
+      </div>
 
       <div className="space-y-4">
         {TIERS.map(tier => (
@@ -117,15 +89,10 @@ export default function PricingPage() {
 
             {tier.cta ? (
               <button
-                onClick={() => handleUpgrade(tier.id as 'core' | 'pro')}
-                disabled={loadingTier !== null}
-                className={`w-full rounded-2xl px-5 py-3.5 text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50 ${
-                  tier.highlight
-                    ? 'bg-purple-600 hover:bg-purple-500 text-white'
-                    : 'bg-white/10 hover:bg-white/15 text-white'
-                }`}
+                disabled
+                className="w-full rounded-2xl px-5 py-3.5 text-sm font-medium bg-white/5 text-white/30 cursor-not-allowed"
               >
-                {loadingTier === tier.id ? 'Redirecting…' : tier.cta}
+                Coming soon
               </button>
             ) : (
               <div className="w-full rounded-2xl px-5 py-3.5 text-sm text-white/30 text-center bg-white/5">
@@ -137,7 +104,7 @@ export default function PricingPage() {
       </div>
 
       <p className="text-center text-white/20 text-xs mt-8">
-        Payments processed securely via Grow · Cancel anytime
+        We&apos;ll email everyone when paid plans open up.
       </p>
     </div>
   )

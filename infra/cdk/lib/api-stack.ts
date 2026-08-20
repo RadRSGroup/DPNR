@@ -185,6 +185,20 @@ export class ApiStack extends Stack {
     })
     props.applicationTable.grantReadWriteData(userConsentFn)
 
+    const userExportFn = new lambda.NodejsFunction(this, 'UserExportFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/account/export.ts'),
+      description: 'GET /v1/user/export — GDPR data export, the whole USER#<id> partition decrypted.',
+    })
+    props.applicationTable.grantReadData(userExportFn)
+
+    const accountDeleteFn = new lambda.NodejsFunction(this, 'AccountDeleteFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/account/delete.ts'),
+      description: 'DELETE /v1/account — deletes the whole USER#<id> partition (Cognito identity deleted client-side, see delete.ts).',
+    })
+    props.applicationTable.grantReadWriteData(accountDeleteFn)
+
     this.httpApi.addRoutes({
       path: '/v1/dashboard',
       methods: [apigwv2.HttpMethod.GET],
@@ -196,6 +210,20 @@ export class ApiStack extends Stack {
       path: '/v1/user/consent',
       methods: [apigwv2.HttpMethod.POST],
       integration: new integrations.HttpLambdaIntegration('UserConsentIntegration', userConsentFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/user/export',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('UserExportIntegration', userExportFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/account',
+      methods: [apigwv2.HttpMethod.DELETE],
+      integration: new integrations.HttpLambdaIntegration('AccountDeleteIntegration', accountDeleteFn),
       authorizer: this.cognitoAuthorizer,
     })
 

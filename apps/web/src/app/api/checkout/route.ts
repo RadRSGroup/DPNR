@@ -1,6 +1,19 @@
 import { createClient } from '@/lib/supabase/server'
 import { createGrowCheckoutSession } from '@/lib/grow'
 
+/**
+ * UNREACHABLE as of Session 10 — `pricing/page.tsx`'s upgrade buttons are
+ * disabled rather than calling this, for two independent reasons neither of
+ * which this route fixes: (1) `supabase.auth.getUser()` below always
+ * returns null for a real Cognito-only user (Session 7's login swap never
+ * ported this route), and (2) `createGrowCheckoutSession` (lib/grow.ts)
+ * calls a fabricated Grow endpoint — Grow's real API has a completely
+ * different auth/checkout model, see docs/PHASE_AUDIT.md's Session 10
+ * update. Left in place (not deleted) as a real reference for whichever
+ * future session rebuilds Credits/checkout against Grow's actual API and
+ * the new Cognito/DynamoDB backend — don't re-enable the pricing page's
+ * buttons without fixing both of the above first.
+ */
 export async function POST(req: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
