@@ -10,7 +10,7 @@ export default function Home() {
       <div className="max-w-sm w-full text-center space-y-8">
         <div className="space-y-2">
           <p className="text-purple-400 text-sm tracking-widest uppercase">DPNR</p>
-          <h1 className="text-4xl font-light text-white">Decision Room</h1>
+          <h1 className="text-4xl font-light text-white">Workshop Rooms</h1>
           <p className="text-white/50 text-base mt-3">
             Map your decision.<br />Hear yourself clearly.
           </p>

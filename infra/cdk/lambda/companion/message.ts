@@ -6,23 +6,31 @@ import {
   Sk,
   userPk,
   CompanionMessageRequestSchema,
+  CompanionDirectiveSchema,
+  type CompanionDirective,
   type CompanionMessageResponse,
   type SessionItem,
   type SessionMessageItem,
   type CompanionActiveSessionPointerItem,
 } from '@dpnr/shared-types'
-import { requireUserId, parseBody, jsonResponse, errorResponse } from '../lib/http'
+import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { requireConsent } from '../lib/consent'
 import { stubEncryptField, stubDecryptField } from '../lib/crypto-stub'
-import { callCompanionModel, type CompanionTurn } from './model-stub'
+import { resolvePromptVersion } from '../lib/prompt-registry'
+import { callPromptModel } from '../lib/model-call'
+import { listActiveTopics } from '../lib/library-catalog'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
+const PROMPT_REGISTRY_TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME as string
+const LIBRARY_CATALOG_TABLE_NAME = process.env.LIBRARY_CATALOG_TABLE_NAME as string
+
+type CompanionTurn = { role: 'user' | 'assistant'; text: string }
 
 // Two different tunables, deliberately not shared: this bounds how much
-// history the (future) model call gets as context. CONTEXT_MESSAGE_LIMIT
-// in context.ts bounds a client's full chat-resume view — a different
-// concern with a different right answer.
+// history the model call gets as context. CONTEXT_MESSAGE_LIMIT in
+// context.ts bounds a client's full chat-resume view — a different concern
+// with a different right answer.
 const MODEL_CONTEXT_MESSAGES = 20
 
 // Idempotency: only guards an immediate client retry (e.g. a timed-out
@@ -85,23 +93,19 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       role: m.role,
       text: stubDecryptField<MessageContent>(m.content).text,
     }))
-    const modelResult = await callCompanionModel(history, body.text)
+    const { reply, directive } = await callCompanionModel(history, body.text)
 
     const replyAt = new Date().toISOString()
     const assistantMessage: SessionMessageItem = {
       pk,
       sk: Sk.sessionMessage(sessionId, replyAt),
       role: 'assistant',
-      content: stubEncryptField<MessageContent>({ text: modelResult.reply }),
+      content: stubEncryptField<MessageContent>({ text: reply }),
       createdAt: replyAt,
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: assistantMessage }))
 
-    const response: CompanionMessageResponse = {
-      sessionId,
-      reply: modelResult.reply,
-      directive: modelResult.directive,
-    }
+    const response: CompanionMessageResponse = { sessionId, reply, directive }
     return jsonResponse(200, response)
   } catch (err) {
     return errorResponse(err)
@@ -162,4 +166,63 @@ async function queryRecentMessages(
   )
   const items = (result.Items ?? []) as SessionMessageItem[]
   return items.reverse() // chronological order for conversation history
+}
+
+/**
+ * Real Bedrock call via the `companion/respond` Prompt Registry domain
+ * (infra/cdk/scripts/companion-prompts.seed.ts) — replaces the former
+ * `callCompanionModel` stub (companion/model-stub.ts, deleted this
+ * session). `history` excludes the just-submitted turn (queried before it's
+ * written, see the handler above); `userText` is that turn.
+ */
+async function callCompanionModel(
+  history: CompanionTurn[],
+  userText: string
+): Promise<{ reply: string; directive: CompanionDirective | null }> {
+  const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'companion', 'respond')
+  const topics = await listActiveTopics(ddb, LIBRARY_CATALOG_TABLE_NAME)
+
+  const conversationHistory =
+    history.length > 0
+      ? history.map((m) => `${m.role === 'user' ? 'User' : 'Companion'}: ${m.text}`).join('\n')
+      : '(no prior messages — this is the start of the conversation)'
+  const libraryTopics =
+    topics.length > 0 ? topics.map((t) => `- ${t.slug}: ${t.title}`).join('\n') : '(none available)'
+
+  const result = await callPromptModel(version, {
+    conversationHistory,
+    libraryTopics,
+    currentMessage: userText,
+  })
+  if (typeof result === 'string') {
+    throw new HttpError(502, 'model_call_failed', 'Companion prompt did not return forced tool-use output.')
+  }
+
+  const reply = typeof result.reply === 'string' ? result.reply : ''
+  return { reply, directive: buildDirective(result, topics.map((t) => t.slug)) }
+}
+
+/**
+ * Turns the model's flat `directiveKind` + optional fields into a real
+ * `CompanionDirective`, or `null` if the model's output doesn't actually
+ * form a valid one (missing `roomType` for `open_room`, a `topicSlug` that
+ * isn't in the live catalog, etc.) — a bad routing suggestion degrades to
+ * "just reply", never a thrown error, same tolerance principle
+ * twin-signals.ts and the continuity composers use for their own model
+ * output. `promptRef` isn't stored anywhere yet — Companion has no
+ * per-message content item to attach it to the way Rooms/Library do.
+ */
+function buildDirective(result: Record<string, unknown>, validTopicSlugs: string[]): CompanionDirective | null {
+  const candidate =
+    result.directiveKind === 'open_room'
+      ? { kind: 'open_room', roomType: result.roomType }
+      : result.directiveKind === 'open_dashboard'
+        ? { kind: 'open_dashboard' }
+        : result.directiveKind === 'open_library_topic' && validTopicSlugs.includes(result.topicSlug as string)
+          ? { kind: 'open_library_topic', topicSlug: result.topicSlug }
+          : null
+  if (!candidate) return null
+
+  const parsed = CompanionDirectiveSchema.safeParse(candidate)
+  return parsed.success ? parsed.data : null
 }

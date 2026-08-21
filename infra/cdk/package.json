@@ -10,7 +10,8 @@
     "diff": "cdk diff",
     "deploy": "cdk deploy",
     "seed:prompt-registry": "ts-node --prefer-ts-exts scripts/seed-prompt-registry.ts",
-    "seed:library-catalog": "ts-node --prefer-ts-exts scripts/seed-library-catalog.ts"
+    "seed:library-catalog": "ts-node --prefer-ts-exts scripts/seed-library-catalog.ts",
+    "seed:plans-catalog": "ts-node --prefer-ts-exts scripts/seed-plans-catalog.ts"
   },
   "dependencies": {
     "@dpnr/shared-types": "*",

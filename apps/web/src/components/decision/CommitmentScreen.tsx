@@ -19,7 +19,7 @@ export default function CommitmentScreen({ decisionTitle, nextStep, onDone, onBa
   const [commitment, setCommitment] = useState(nextStep ?? '')
   const [reviewDate] = useState<string | null>(null)
 
-  const calendarTitle = commitment.trim() || `Decision Room check-in: "${decisionTitle}"`
+  const calendarTitle = commitment.trim() || `Workshop Rooms check-in: "${decisionTitle}"`
   const calendarDate = reviewDate ?? addDays(7)
 
   return (
@@ -68,7 +68,7 @@ export default function CommitmentScreen({ decisionTitle, nextStep, onDone, onBa
           <CalendarButtons
             title={calendarTitle}
             date={calendarDate}
-            description={`Decision Room check-in for: "${decisionTitle}"`}
+            description={`Workshop Rooms check-in for: "${decisionTitle}"`}
           />
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
-import { Sk, type TwinSignalItem, type TwinSignalSource } from '@dpnr/shared-types'
+import { Sk, type TwinSignalItem, type TwinSignalSource, type SessionSummaryItem } from '@dpnr/shared-types'
 import { stubEncryptField } from '../lib/crypto-stub'
 import { resolvePromptVersion } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
@@ -31,7 +31,8 @@ export async function extractCandidateSignals(
   source: TwinSignalSource,
   roomType: 'Decision Room' | 'Mirror Room',
   sessionSummary: string
-): Promise<void> {
+): Promise<string[]> {
+  const writtenSignalIds: string[] = []
   try {
     const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'twin', 'extract_signals')
     const result = await callPromptModel(version, { roomType, sessionSummary })
@@ -66,11 +67,51 @@ export async function extractCandidateSignals(
         updatedAt: now,
       }
       await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: item }))
+      writtenSignalIds.push(signalId)
     }
   } catch (err) {
     // Never let Twin extraction fail the room's own completion. Log only a
     // generic message — never the model result or session summary, per the
     // "no raw payloads in logs" guardrail.
     console.error('Twin signal extraction failed (non-fatal):', err instanceof Error ? err.message : 'unknown error')
+  }
+  return writtenSignalIds
+}
+
+/**
+ * Persists the same plain-text summary `extractCandidateSignals` was just
+ * given as a real `SESSION#<id>#SUMMARY` item — closing a real gap:
+ * `SessionSummaryItem` (`dynamo/session.ts`) has existed since early
+ * sessions but nothing ever actually wrote one; Daily Card/Weekly Recap
+ * composition (`continuity/compose-*.ts`) need real stored summaries to
+ * read, not just Twin signals, per `MVP_ARCHITECTURE.md` §5.7/§6.
+ *
+ * `promptRef` isn't a real Prompt Registry reference here — this summary is
+ * hand-assembled from session fields (see each `commitment.ts` caller), not
+ * AI-generated — so it uses an `inline:` marker rather than a fabricated
+ * `domain/name@vN` string, so a reader of this field never mistakes it for
+ * a real registry lookup key.
+ *
+ * Same never-throws convention as `extractCandidateSignals` — a summary
+ * write failing must not block the room finishing either.
+ */
+export async function persistSessionSummary(
+  pk: string,
+  sessionId: string,
+  summary: string,
+  candidateSignalIds: string[],
+  inlineRef: string
+): Promise<void> {
+  try {
+    const item: SessionSummaryItem = {
+      pk,
+      sk: Sk.sessionSummary(sessionId),
+      content: stubEncryptField({ summary, candidateSignalIds }),
+      promptRef: `inline:${inlineRef}`,
+      createdAt: new Date().toISOString(),
+    }
+    await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: item }))
+  } catch (err) {
+    console.error('Session summary persist failed (non-fatal):', err instanceof Error ? err.message : 'unknown error')
   }
 }

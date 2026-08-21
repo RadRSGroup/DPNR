@@ -116,7 +116,7 @@ export default function SignupPage() {
 
       <div className="mb-10 text-center">
         <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR</p>
-        <h1 className="text-white text-2xl font-light">Decision Room</h1>
+        <h1 className="text-white text-2xl font-light">Workshop Rooms</h1>
         <p className="text-white/40 text-sm mt-2">Create your free account</p>
       </div>
 

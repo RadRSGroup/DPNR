@@ -15,12 +15,11 @@ const STRUCTURED_OUTPUT_TOOL_NAME = 'record_structured_output'
 
 /**
  * Resolves a filled Prompt Registry entry through a real Bedrock Converse
- * call. This is the generic counterpart to companion/model-stub.ts (that
- * one's still a stub — Companion has no Prompt Registry domain yet, see
- * docs/AGENT_LOG.md): any caller that has already resolved a
- * PromptVersionItem (via lib/prompt-registry.ts) and has real substitution
- * values can use this, rather than each feature (Rooms, Library) inventing
- * its own call.
+ * call. The one shared call every domain uses (Rooms, Library, Twin
+ * extraction, Continuity's composers, and now Companion) — any caller that
+ * has already resolved a PromptVersionItem (via lib/prompt-registry.ts) and
+ * has real substitution values can use this, rather than each feature
+ * inventing its own call.
  *
  * Per ADR 0005: a non-null `outputSchema` forces a single tool call built
  * from that schema and reads the result from the tool_use block's `input`

@@ -1,11 +1,14 @@
 import type { APIGatewayProxyHandlerV2WithJWTAuthorizer } from 'aws-lambda'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb'
+import { DynamoDBDocumentClient, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import {
   Sk,
   userPk,
   type RoadmapItem,
   type CreditsBalanceItem,
+  type DailyCardItem,
+  type DailyCardResponse,
+  type CommitmentItem,
   type DashboardResponse,
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
@@ -14,9 +17,9 @@ import { stubDecryptField } from '../lib/crypto-stub'
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
 
-// Beta Trial/Credits ledger (MVP_ARCHITECTURE.md §5.6) isn't built yet — no
-// flow grants a CREDITS item to anyone. Used only when that item is absent,
-// so a user with no ledger entry yet reads as "0, low" rather than crashing.
+// Fallback only — every real user gets a CREDITS item from the starter-trial
+// grant (auth/post-confirmation.ts). Used so a user somehow without one yet
+// reads as "0, low" rather than crashing.
 const DEFAULT_LOW_BALANCE_THRESHOLD = 5
 
 type RoadmapContent = {
@@ -40,10 +43,19 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   try {
     const userId = requireUserId(event)
     const pk = userPk(userId)
+    const today = new Date().toISOString().slice(0, 10)
 
-    const [roadmapResult, creditsResult] = await Promise.all([
+    const [roadmapResult, creditsResult, dailyCardResult, commitmentsResult] = await Promise.all([
       ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.roadmap() } })),
       ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.credits() } })),
+      ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.dailyCard(today) } })),
+      ddb.send(
+        new QueryCommand({
+          TableName: TABLE_NAME,
+          KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+          ExpressionAttributeValues: { ':pk': pk, ':prefix': 'COMMITMENT#' },
+        })
+      ),
     ])
 
     const roadmapItem = roadmapResult.Item as RoadmapItem | undefined
@@ -54,15 +66,32 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const lowBalanceThreshold = creditsItem?.lowBalanceThreshold ?? DEFAULT_LOW_BALANCE_THRESHOLD
     const creditsLow = creditsBalance <= lowBalanceThreshold
 
-    // Daily Card / commitments (MVP_ARCHITECTURE.md §5.7/§6) don't exist yet
-    // — the only continuity cue derivable from what's actually stored today
-    // is nudging toward the first roadmap-suggested space. Revisit once
-    // that pipeline is real; don't invent richer logic against data that
-    // isn't there.
-    const continuityCue =
-      roadmap && roadmap.suggestedSpaces.length > 0
-        ? { kind: 'recommended_space' as const, text: `Consider exploring: ${roadmap.suggestedSpaces[0]}` }
-        : null
+    const dailyCardItem = dailyCardResult.Item as DailyCardItem | undefined
+    const openCommitments = ((commitmentsResult.Items ?? []) as CommitmentItem[])
+      .filter((c) => c.status === 'open')
+      .sort((a, b) => (a.reviewDate ?? '9999-99-99').localeCompare(b.reviewDate ?? '9999-99-99'))
+
+    // Priority order per spec §2 Golden Path B step 3 ("Daily Card, relevant
+    // continuation, upcoming commitment, Roadmap cue... only when useful"):
+    // today's Daily Card first (freshest, deliberately composed for today),
+    // then the soonest-due open commitment, then a roadmap-suggested space
+    // as the least specific fallback. "continuation" (a synthesized
+    // welcome-back summary) isn't produced here — that's Companion's own
+    // proactive-opening concern, not this aggregate read's, and there's no
+    // such synthesis built yet (docs/PHASE_AUDIT.md §4.6).
+    const continuityCue = dailyCardItem
+      ? {
+          kind: 'daily_card' as const,
+          text: stubDecryptField<{ text: string; kind: DailyCardResponse['kind'] }>(dailyCardItem.content).text,
+        }
+      : openCommitments[0]
+        ? {
+            kind: 'commitment' as const,
+            text: stubDecryptField<{ description: string }>(openCommitments[0].content).description,
+          }
+        : roadmap && roadmap.suggestedSpaces.length > 0
+          ? { kind: 'recommended_space' as const, text: `Consider exploring: ${roadmap.suggestedSpaces[0]}` }
+          : null
 
     const body: DashboardResponse = {
       roadmap,

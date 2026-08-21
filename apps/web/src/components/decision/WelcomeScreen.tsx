@@ -38,7 +38,7 @@ export default function WelcomeScreen({ userName, onNext }: Props) {
         <div className="w-full text-center space-y-5">
 
           <h1 className="text-white text-2xl font-light leading-snug">
-            Welcome {firstName}<br />to Your Decision Room
+            Welcome {firstName}<br />to Your Workshop Rooms
           </h1>
 
           <p className="text-white/50 text-sm leading-relaxed">

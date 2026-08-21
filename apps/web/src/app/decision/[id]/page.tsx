@@ -807,9 +807,9 @@ export default function DecisionDetailPage() {
                   className="text-white/25 text-xs hover:text-white/50 transition-colors">Edit</button>
               </div>
               <CalendarButtons
-                title={`Decision Room check-in: "${decision.title}"`}
+                title={`Workshop Rooms check-in: "${decision.title}"`}
                 date={decision.review_date}
-                description={`Revisit your decision about "${decision.title}" in Decision Room.`}
+                description={`Revisit your decision about "${decision.title}" in Workshop Rooms.`}
               />
             </div>
           ) : (

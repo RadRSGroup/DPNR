@@ -7,7 +7,7 @@ export default function TermsPage() {
 
       <div className="pt-14 pb-8">
         <Link href="/signup" className="text-purple-400 text-sm">← Back</Link>
-        <p className="text-purple-400 text-xs tracking-widest uppercase mt-6 mb-2">DPNR · Decision Room</p>
+        <p className="text-purple-400 text-xs tracking-widest uppercase mt-6 mb-2">DPNR · Workshop Rooms</p>
         <h1 className="text-white text-2xl font-light">Terms of Use</h1>
         <p className="text-white/30 text-xs mt-2">Effective date: June 2026 · Last updated: June 2026</p>
       </div>
@@ -15,17 +15,17 @@ export default function TermsPage() {
       <div className="prose prose-invert prose-sm max-w-none space-y-8 text-white/70 text-sm leading-relaxed">
 
         <Section title="1. Acceptance of Terms">
-          <p>By creating an account or using Decision Room (&quot;the Service&quot;), you agree to be bound by these Terms of Use and our Privacy & Data Policy. If you do not agree, do not use the Service.</p>
+          <p>By creating an account or using Workshop Rooms (&quot;the Service&quot;), you agree to be bound by these Terms of Use and our Privacy & Data Policy. If you do not agree, do not use the Service.</p>
           <p>These terms apply to all users, including free-tier and paid subscribers.</p>
         </Section>
 
         <Section title="2. Description of Service">
-          <p>Decision Room is an AI-assisted personal decision-making application. It guides users through a structured 7-step process to explore, map, and reflect on meaningful decisions. The Service uses OpenAI&apos;s language models to generate reflections, suggestions, and projections based on content you provide.</p>
+          <p>Workshop Rooms is an AI-assisted personal decision-making application. It guides users through a structured 7-step process to explore, map, and reflect on meaningful decisions. The Service uses OpenAI&apos;s language models to generate reflections, suggestions, and projections based on content you provide.</p>
           <p><strong className="text-white/90">The Service is not a mental health service, therapy, or medical advice platform.</strong> It is a self-reflective tool. If you are in distress, please seek professional support.</p>
         </Section>
 
         <Section title="3. Eligibility">
-          <p>You must be at least 16 years old to use Decision Room. By registering, you confirm that you meet this requirement.</p>
+          <p>You must be at least 16 years old to use Workshop Rooms. By registering, you confirm that you meet this requirement.</p>
         </Section>
 
         <Section title="4. User Accounts">
@@ -58,7 +58,7 @@ export default function TermsPage() {
         </Section>
 
         <Section title="7. Data Use for Service Improvement">
-          <p>To improve Decision Room&apos;s AI quality, product design, and user experience, we may analyse usage patterns and content in anonymised, aggregated form. This means:</p>
+          <p>To improve Workshop Rooms&apos; AI quality, product design, and user experience, we may analyse usage patterns and content in anonymised, aggregated form. This means:</p>
           <ul>
             <li><strong className="text-white/90">Anonymisation:</strong> Personal identifiers (name, email, account ID) are removed before any analytical use.</li>
             <li><strong className="text-white/90">Aggregation:</strong> Insights are derived from patterns across many users — no individual decision narrative is read or attributed.</li>

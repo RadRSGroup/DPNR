@@ -6,7 +6,7 @@ function toICSDate(d: string) {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
-  const title       = searchParams.get('title') ?? 'Decision Room Check-in'
+  const title       = searchParams.get('title') ?? 'Workshop Rooms Check-in'
   const date        = searchParams.get('date') ?? ''
   const description = searchParams.get('description') ?? ''
 
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   const ics = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Decision Room//DPNR//EN',
+    'PRODID:-//Workshop Rooms//DPNR//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',

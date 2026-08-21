@@ -4,7 +4,7 @@ import { parseValue } from '../../lib/http'
 import { stubEncryptField, stubDecryptField } from '../../lib/crypto-stub'
 import { ddb, TABLE_NAME } from '../db'
 import { getMirrorSession, type MirrorContent } from './helpers'
-import { extractCandidateSignals } from '../twin-signals'
+import { extractCandidateSignals, persistSessionSummary } from '../twin-signals'
 import type { StepDefinition } from '../types'
 
 const SubmitInput = z.object({ commitment: z.string().optional() })
@@ -55,7 +55,8 @@ export const commitmentStep: StepDefinition = {
       .filter(Boolean)
       .join('\n')
     // Awaited — see decision-steps/commitment.ts's identical note on why.
-    await extractCandidateSignals(ctx.pk, ctx.sessionId, 'mirror_room', 'Mirror Room', summary)
+    const signalIds = await extractCandidateSignals(ctx.pk, ctx.sessionId, 'mirror_room', 'Mirror Room', summary)
+    await persistSessionSummary(ctx.pk, ctx.sessionId, summary, signalIds, 'mirror_room.commitment_summary')
 
     return { nextStepId: null, result: { commitment: commitment ?? null }, sessionComplete: true }
   },

@@ -34,6 +34,9 @@ import { DECISION_ROOM_PROMPT_SEEDS, type PromptSeed } from './decision-room-pro
 import { MIRROR_ROOM_PROMPT_SEEDS } from './mirror-room-prompts.seed'
 import { LIBRARY_PROMPT_SEEDS } from './library-prompts.seed'
 import { TWIN_PROMPT_SEEDS } from './twin-prompts.seed'
+import { DAILY_CARD_PROMPT_SEEDS } from './daily-card-prompts.seed'
+import { WEEKLY_RECAP_PROMPT_SEEDS } from './weekly-recap-prompts.seed'
+import { COMPANION_PROMPT_SEEDS } from './companion-prompts.seed'
 
 const TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME ?? 'dpnr-prompt-registry'
 
@@ -61,6 +64,24 @@ const DOMAINS: { domain: string; seeds: PromptSeed[]; author: string; sourceNote
     seeds: TWIN_PROMPT_SEEDS,
     author: 'design:twin-prompts',
     sourceNote: 'Net-new — designed Claude-native, not ported from anywhere (see twin-prompts.seed.ts).',
+  },
+  {
+    domain: 'daily_card',
+    seeds: DAILY_CARD_PROMPT_SEEDS,
+    author: 'design:daily-card-prompts',
+    sourceNote: 'Net-new — designed Claude-native, not ported from anywhere (see daily-card-prompts.seed.ts).',
+  },
+  {
+    domain: 'weekly_recap',
+    seeds: WEEKLY_RECAP_PROMPT_SEEDS,
+    author: 'design:weekly-recap-prompts',
+    sourceNote: 'Net-new — designed Claude-native, not ported from anywhere (see weekly-recap-prompts.seed.ts).',
+  },
+  {
+    domain: 'companion',
+    seeds: COMPANION_PROMPT_SEEDS,
+    author: 'design:companion-prompts',
+    sourceNote: 'Net-new — designed Claude-native, not ported from anywhere (see companion-prompts.seed.ts).',
   },
 ]
 

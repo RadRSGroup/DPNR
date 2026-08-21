@@ -3,25 +3,23 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { getDecisions, getTokenUsage } from '@/lib/supabase/decisions'
+import { getCurrentSession } from '@/lib/cognito/client'
+import { getDashboard } from '@/lib/api/v1-client'
+import type { DashboardResponse } from '@dpnr/shared-types'
 
-type Decision = {
-  id: string
-  title: string
-  subtitle: string | null
-  status: string
-  current_step: number
-  updated_at: string
-}
+// This page previously listed every past decision via the old Supabase
+// `getDecisions()` query — dropped in this rewrite onto the real
+// `GET /v1/dashboard` (docs/PHASE_AUDIT.md §4.6), which has no equivalent
+// "list my decisions" field in its contract. An honest gap, not a silent
+// regression: a future session adding a real decision-history read should
+// restore this rather than reinventing it from Dashboard's own aggregate.
 
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime()
-  const days = Math.floor(diff / 86400000)
-  if (days === 0) return 'Today'
-  if (days === 1) return 'Yesterday'
-  if (days < 7) return `${days} days ago`
-  return new Date(iso).toLocaleDateString()
+const CUE_ICON: Record<NonNullable<DashboardResponse['continuityCue']>['kind'], string> = {
+  daily_card: '✦',
+  continuation: '↩',
+  commitment: '◆',
+  roadmap_cue: '◈',
+  recommended_space: '◈',
 }
 
 function DashboardContent() {
@@ -29,34 +27,28 @@ function DashboardContent() {
   const params = useSearchParams()
   const justCompleted = params.get('completed') === 'true'
 
-  const [decisions, setDecisions] = useState<Decision[]>([])
-  const [tokenData, setTokenData] = useState<{ used: number; cap: number; tier: string } | null>(null)
   const [userInitial, setUserInitial] = useState('?')
+  const [dashboard, setDashboard] = useState<DashboardResponse | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
       try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) { router.push('/login'); return }
+        const session = await getCurrentSession()
+        if (!session) { router.push('/login'); return }
+        const email = session.getIdToken().payload.email as string | undefined
+        setUserInitial(email?.[0]?.toUpperCase() ?? '?')
 
-        const email = user.email ?? ''
-        setUserInitial(email[0]?.toUpperCase() ?? '?')
-
-        const [dec, tok] = await Promise.all([getDecisions(), getTokenUsage()])
-        setDecisions(dec ?? [])
-        setTokenData(tok)
+        const data = await getDashboard()
+        setDashboard(data)
       } catch {
-        // silently degrade
+        // silently degrade — the page below already handles a null dashboard
       } finally {
         setLoading(false)
       }
     }
     load()
   }, [router])
-
-  const tokenPct = tokenData ? Math.min(100, Math.round((tokenData.used / tokenData.cap) * 100)) : 0
 
   return (
     <div className="relative min-h-screen max-w-[393px] mx-auto px-5 pb-10">
@@ -66,7 +58,7 @@ function DashboardContent() {
         <div>
           <p className="text-purple-400 text-xs tracking-widest uppercase">DPNR</p>
           <div className="flex items-center gap-2 mt-0.5">
-            <h1 className="text-white text-xl font-light">Decision Room</h1>
+            <h1 className="text-white text-xl font-light">InnerOS</h1>
             <span className="text-[10px] font-semibold tracking-widest uppercase text-yellow-400 border border-yellow-400/40 rounded-full px-2 py-0.5">Beta</span>
           </div>
         </div>
@@ -85,26 +77,51 @@ function DashboardContent() {
         </div>
       )}
 
-      {/* Token usage bar */}
-      <div className="mb-6 bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
-        <div className="flex justify-between text-xs text-white/40">
-          <span>Monthly AI usage</span>
-          <span>{loading ? '…' : `${tokenData?.used.toLocaleString() ?? 0} / ${tokenData?.cap.toLocaleString() ?? 15000} tokens`}</span>
+      {/* Continuity cue — the single most-relevant thing to surface right
+          now, per spec §2 Golden Path B step 3. Priority order (today's
+          Daily Card, then an upcoming commitment, then a roadmap-suggested
+          space) is decided server-side (dashboard/handler.ts); this just
+          renders whichever one came back, or nothing at all. */}
+      {!loading && dashboard?.continuityCue && (
+        <div className="mb-4 bg-white/5 border border-white/10 rounded-2xl p-4 flex gap-3">
+          <span className="text-lg flex-shrink-0">{CUE_ICON[dashboard.continuityCue.kind]}</span>
+          <p className="text-white/80 text-sm leading-relaxed">{dashboard.continuityCue.text}</p>
         </div>
-        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all ${tokenPct > 80 ? 'bg-red-500' : 'bg-purple-500'}`}
-            style={{ width: `${tokenPct}%` }}
-          />
+      )}
+
+      {/* Credits — replaces the retired per-tier token-usage bar
+          (MVP_ARCHITECTURE.md §5.3's migration table: tier caps → Credits
+          ledger). Session 11 built the real ledger; this is its first
+          frontend reader. */}
+      <div className="mb-6 bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between">
+        <div>
+          <p className="text-xs text-white/40">Credits</p>
+          <p className="text-white text-lg font-light mt-0.5">
+            {loading ? '…' : (dashboard?.creditsBalance ?? 0)}
+          </p>
         </div>
-        {tokenData?.tier === 'free' && (
-          <p className="text-white/30 text-xs">Free tier · <Link href="/pricing" className="text-purple-400 hover:text-purple-300 underline">Upgrade for 150k tokens</Link></p>
+        {!loading && dashboard?.creditsLow && (
+          <Link href="/pricing" className="text-purple-400 hover:text-purple-300 text-xs underline">
+            Running low · Upgrade
+          </Link>
         )}
-        {tokenData?.tier === 'core' && (
-          <p className="text-white/30 text-xs">Core tier · <Link href="/pricing" className="text-purple-400 hover:text-purple-300 underline">Upgrade to Pro</Link></p>
-        )}
-        {tokenData?.tier === 'pro' && (
-          <p className="text-white/30 text-xs">Pro tier</p>
+      </div>
+
+      {/* Roadmap — always null today (nothing generates one yet, see
+          docs/PHASE_AUDIT.md §4.6); an honest empty state beats inventing
+          content. Render real content the moment onboarding produces one —
+          no shape change needed here. */}
+      <div className="mb-6 bg-white/5 border border-white/10 rounded-2xl p-4">
+        <p className="text-white/40 text-xs uppercase tracking-wide mb-2">Your Roadmap</p>
+        {dashboard?.roadmap ? (
+          <div className="space-y-1">
+            <p className="text-white text-sm">{dashboard.roadmap.currentFocus}</p>
+            <p className="text-white/50 text-xs">{dashboard.roadmap.direction}</p>
+          </div>
+        ) : (
+          <p className="text-white/30 text-sm">
+            Your Roadmap will appear here once DPNR has enough to work with.
+          </p>
         )}
       </div>
 
@@ -121,7 +138,7 @@ function DashboardContent() {
 
       <Link
         href="/mirror/new"
-        className="flex items-center justify-between w-full bg-white/5 border border-white/10 hover:border-white/20 active:scale-[0.98] text-white rounded-2xl px-5 py-4 mb-6 transition-all"
+        className="flex items-center justify-between w-full bg-white/5 border border-white/10 hover:border-white/20 active:scale-[0.98] text-white rounded-2xl px-5 py-4 transition-all"
       >
         <div>
           <p className="font-medium text-base">Start a Mirror Room session</p>
@@ -129,37 +146,6 @@ function DashboardContent() {
         </div>
         <span className="text-2xl">+</span>
       </Link>
-
-      <div className="space-y-3">
-        <p className="text-white/40 text-xs uppercase tracking-wide">Your Decisions</p>
-        {loading && (
-          <div className="space-y-3">
-            {[1, 2].map(i => (
-              <div key={i} className="bg-white/5 border border-white/10 rounded-2xl px-4 py-4 animate-pulse h-16" />
-            ))}
-          </div>
-        )}
-        {!loading && decisions.map(d => (
-          <Link
-            key={d.id}
-            href={`/decision/${d.id}`}
-            className="flex items-center justify-between bg-white/5 border border-white/10 hover:border-white/20 rounded-2xl px-4 py-4 transition-all"
-          >
-            <div>
-              <p className="text-white text-sm font-medium">&quot;{d.title}&quot;</p>
-              <p className="text-white/30 text-xs mt-1">
-                {d.status === 'completed' ? '✓ Completed' : `Step ${d.current_step}/7 in progress`} · {timeAgo(d.updated_at)}
-              </p>
-            </div>
-            <span className="text-white/20 text-lg">›</span>
-          </Link>
-        ))}
-        {!loading && decisions.length === 0 && (
-          <p className="text-white/30 text-sm text-center py-8">
-            No decisions yet.<br />Start your first one above.
-          </p>
-        )}
-      </div>
     </div>
   )
 }

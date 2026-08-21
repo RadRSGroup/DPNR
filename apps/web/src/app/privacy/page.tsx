@@ -7,7 +7,7 @@ export default function PrivacyPage() {
 
       <div className="pt-14 pb-8">
         <Link href="/signup" className="text-purple-400 text-sm">← Back</Link>
-        <p className="text-purple-400 text-xs tracking-widest uppercase mt-6 mb-2">DPNR · Decision Room</p>
+        <p className="text-purple-400 text-xs tracking-widest uppercase mt-6 mb-2">DPNR · Workshop Rooms</p>
         <h1 className="text-white text-2xl font-light">Privacy & Data Policy</h1>
         <p className="text-white/30 text-xs mt-2">Effective date: June 2026 · Last updated: June 2026</p>
       </div>
@@ -15,7 +15,7 @@ export default function PrivacyPage() {
       <div className="space-y-8 text-white/70 text-sm leading-relaxed">
 
         <Section title="What We Collect">
-          <p>When you use Decision Room we collect:</p>
+          <p>When you use Workshop Rooms we collect:</p>
           <ul>
             <li><strong className="text-white/90">Account data:</strong> Email address, hashed password (or OAuth token), and subscription tier.</li>
             <li><strong className="text-white/90">Decision content:</strong> Titles, narratives, option descriptions, emotion maps, tags, projections, journal check-ins, and outcomes — everything you type into the app.</li>

@@ -7,6 +7,8 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 import * as iam from 'aws-cdk-lib/aws-iam'
 import * as lambda from 'aws-cdk-lib/aws-lambda-nodejs'
 import { Runtime } from 'aws-cdk-lib/aws-lambda'
+import * as events from 'aws-cdk-lib/aws-events'
+import * as targets from 'aws-cdk-lib/aws-events-targets'
 import { CfnOutput } from 'aws-cdk-lib'
 import * as path from 'path'
 import { Construct } from 'constructs'
@@ -30,6 +32,7 @@ export interface ApiStackProps extends StackProps {
   applicationTable: dynamodb.Table
   promptRegistryTable: dynamodb.Table
   libraryCatalogTable: dynamodb.Table
+  plansCatalogTable: dynamodb.Table
   isProduction?: boolean
 }
 
@@ -166,10 +169,19 @@ export class ApiStack extends Stack {
 
     const companionMessageFn = new lambda.NodejsFunction(this, 'CompanionMessageFn', {
       ...sharedProductLambdaProps,
+      timeout: bedrockCallTimeout,
       entry: path.join(__dirname, '../lambda/companion/message.ts'),
-      description: 'POST /v1/companion/message — chat turn + (stubbed) model call.',
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
+        LIBRARY_CATALOG_TABLE_NAME: props.libraryCatalogTable.tableName,
+      },
+      description: 'POST /v1/companion/message — chat turn + real Bedrock call with topic-routing directive.',
     })
     props.applicationTable.grantReadWriteData(companionMessageFn)
+    props.promptRegistryTable.grantReadData(companionMessageFn)
+    props.libraryCatalogTable.grantReadData(companionMessageFn)
+    grantBedrockConverse(companionMessageFn)
 
     const companionContextFn = new lambda.NodejsFunction(this, 'CompanionContextFn', {
       ...sharedProductLambdaProps,
@@ -392,6 +404,152 @@ export class ApiStack extends Stack {
       path: '/v1/library/recommendations',
       methods: [apigwv2.HttpMethod.GET],
       integration: new integrations.HttpLambdaIntegration('LibraryRecommendationsIntegration', libraryRecommendationsFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    const createCommitmentFn = new lambda.NodejsFunction(this, 'CreateCommitmentFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/continuity/create-commitment.ts'),
+      description: 'POST /v1/commitments.',
+    })
+    props.applicationTable.grantReadWriteData(createCommitmentFn)
+
+    const listCommitmentsFn = new lambda.NodejsFunction(this, 'ListCommitmentsFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/continuity/list-commitments.ts'),
+      description: 'GET /v1/commitments.',
+    })
+    props.applicationTable.grantReadData(listCommitmentsFn)
+
+    this.httpApi.addRoutes({
+      path: '/v1/commitments',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('CreateCommitmentIntegration', createCommitmentFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/commitments',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('ListCommitmentsIntegration', listCommitmentsFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    const getCreditsFn = new lambda.NodejsFunction(this, 'GetCreditsFn', {
+      runtime: Runtime.NODEJS_24_X,
+      bundling: { minify: true, sourceMap: true },
+      environment: { APPLICATION_TABLE_NAME: props.applicationTable.tableName },
+      entry: path.join(__dirname, '../lambda/credits/get-credits.ts'),
+      description: 'GET /v1/credits — current ledger balance.',
+    })
+    props.applicationTable.grantReadData(getCreditsFn)
+
+    const getPlansFn = new lambda.NodejsFunction(this, 'GetPlansFn', {
+      runtime: Runtime.NODEJS_24_X,
+      bundling: { minify: true, sourceMap: true },
+      environment: { PLANS_CATALOG_TABLE_NAME: props.plansCatalogTable.tableName },
+      entry: path.join(__dirname, '../lambda/credits/get-plans.ts'),
+      description: 'GET /v1/plans — active credit-pack/subscription catalog.',
+    })
+    props.plansCatalogTable.grantReadData(getPlansFn)
+
+    this.httpApi.addRoutes({
+      path: '/v1/credits',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('GetCreditsIntegration', getCreditsFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/plans',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('GetPlansIntegration', getPlansFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    // Not behind API Gateway — no 30s integration ceiling applies, unlike
+    // bedrockCallTimeout above. A batch loop over every consented user
+    // (Scan + a Bedrock call each) needs real headroom; 5 minutes is ample
+    // at today's real user count (a handful of beta users) and stays well
+    // under Lambda's own 15-minute hard ceiling. Revisit (Step Functions Map
+    // fan-out, not just a bigger number) once user count actually grows —
+    // same scale caveat both composer files' own doc comments flag.
+    const compositionBatchTimeout = Duration.minutes(5)
+
+    const composeDailyCardFn = new lambda.NodejsFunction(this, 'ComposeDailyCardFn', {
+      ...sharedProductLambdaProps,
+      timeout: compositionBatchTimeout,
+      entry: path.join(__dirname, '../lambda/continuity/compose-daily-card.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
+      },
+      description: 'Scheduled daily — composes DAILYCARD#<date> for every consented user with real material.',
+    })
+    props.applicationTable.grantReadWriteData(composeDailyCardFn)
+    props.promptRegistryTable.grantReadData(composeDailyCardFn)
+    grantBedrockConverse(composeDailyCardFn)
+
+    const composeWeeklyRecapFn = new lambda.NodejsFunction(this, 'ComposeWeeklyRecapFn', {
+      ...sharedProductLambdaProps,
+      timeout: compositionBatchTimeout,
+      entry: path.join(__dirname, '../lambda/continuity/compose-weekly-recap.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
+      },
+      description: 'Scheduled weekly — composes WEEKLYRECAP#<isoWeek> for every consented user with real material from the last 7 days.',
+    })
+    props.applicationTable.grantReadWriteData(composeWeeklyRecapFn)
+    props.promptRegistryTable.grantReadData(composeWeeklyRecapFn)
+    grantBedrockConverse(composeWeeklyRecapFn)
+
+    // Plain aws-events.Rule cron, not the newer dedicated EventBridge
+    // Scheduler service MVP_ARCHITECTURE.md §6 names — functionally
+    // equivalent for a fixed daily/weekly invocation, already part of core
+    // aws-cdk-lib (no new dependency, no separate assignment-role setup the
+    // dedicated Scheduler service needs). Flagged as a deliberate
+    // substitution, not silently done — revisit only if per-user or
+    // per-window scheduling (which the dedicated Scheduler service is
+    // actually for) becomes a real requirement, e.g. for commitment
+    // reminders at a user-chosen reviewDate.
+    new events.Rule(this, 'DailyCardScheduleRule', {
+      schedule: events.Schedule.cron({ minute: '0', hour: '6' }), // 06:00 UTC daily
+      targets: [new targets.LambdaFunction(composeDailyCardFn)],
+      description: 'Triggers Daily Card composition once per day.',
+    })
+
+    new events.Rule(this, 'WeeklyRecapScheduleRule', {
+      schedule: events.Schedule.cron({ minute: '0', hour: '6', weekDay: 'MON' }), // 06:00 UTC every Monday
+      targets: [new targets.LambdaFunction(composeWeeklyRecapFn)],
+      description: 'Triggers Weekly Recap composition once per week.',
+    })
+
+    const getDailyCardFn = new lambda.NodejsFunction(this, 'GetDailyCardFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/continuity/get-daily-card.ts'),
+      description: 'GET /v1/daily-card — pure cache hit over what compose-daily-card.ts already wrote.',
+    })
+    props.applicationTable.grantReadData(getDailyCardFn)
+
+    const getWeeklyRecapFn = new lambda.NodejsFunction(this, 'GetWeeklyRecapFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/continuity/get-weekly-recap.ts'),
+      description: 'GET /v1/weekly-recap — pure cache hit over what compose-weekly-recap.ts already wrote.',
+    })
+    props.applicationTable.grantReadData(getWeeklyRecapFn)
+
+    this.httpApi.addRoutes({
+      path: '/v1/daily-card',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('GetDailyCardIntegration', getDailyCardFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/weekly-recap',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('GetWeeklyRecapIntegration', getWeeklyRecapFn),
       authorizer: this.cognitoAuthorizer,
     })
 

@@ -5,7 +5,7 @@ import { parseValue, HttpError } from '../../lib/http'
 import { stubEncryptField, stubDecryptField } from '../../lib/crypto-stub'
 import { ddb, TABLE_NAME } from './db'
 import { gatherDecisionContext } from './decision-context'
-import { extractCandidateSignals } from '../twin-signals'
+import { extractCandidateSignals, persistSessionSummary } from '../twin-signals'
 import type { StepDefinition } from './types'
 
 const SubmitInput = z.object({ commitment: z.string().optional() })
@@ -69,7 +69,8 @@ export const commitmentStep: StepDefinition = {
     // to this response: extractCandidateSignals() never throws (errors are
     // swallowed internally, see its own doc comment), so it can't turn this
     // into a failed COMMITMENT.
-    await extractCandidateSignals(ctx.pk, ctx.sessionId, 'decision_room', 'Decision Room', summary)
+    const signalIds = await extractCandidateSignals(ctx.pk, ctx.sessionId, 'decision_room', 'Decision Room', summary)
+    await persistSessionSummary(ctx.pk, ctx.sessionId, summary, signalIds, 'decision_room.commitment_summary')
 
     return { nextStepId: null, result: { commitment: commitment ?? null }, sessionComplete: true }
   },

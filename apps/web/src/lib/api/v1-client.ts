@@ -6,6 +6,7 @@ import type {
   MirrorRoomFullResponse,
   UserExportResponse,
   DeleteAccountResponse,
+  DashboardResponse,
 } from '@dpnr/shared-types'
 import { getIdToken } from '../cognito/client'
 
@@ -81,4 +82,10 @@ export async function exportUserData(): Promise<UserExportResponse> {
 export async function deleteAccountData(): Promise<DeleteAccountResponse> {
   const res = await authedFetch('/v1/account', { method: 'DELETE' })
   return parseOrThrow<DeleteAccountResponse>(res)
+}
+
+/** GET /v1/dashboard — aggregate read used by /dashboard (MVP_ARCHITECTURE.md §4). */
+export async function getDashboard(): Promise<DashboardResponse> {
+  const res = await authedFetch('/v1/dashboard')
+  return parseOrThrow<DashboardResponse>(res)
 }

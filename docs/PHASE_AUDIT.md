@@ -2,7 +2,14 @@
 
 **Written:** 2026-08-19, dedicated audit session (no feature work performed). **Updated same day, follow-up
 session:** §2.2/§4.1/§4.2 (the consent-gate findings) are now **fixed**, not just flagged — see the update
-notes inline at each section. Everything else in this document is unchanged from the original audit pass.
+notes inline at each section. **Updated 2026-08-21, Session 12 (documentation-only correction, no
+re-audit)**: §2.4/§1 updated for Companion's real Bedrock wiring; §3.2/§6 item 5 corrected — the GDPR
+export-route gap that section described was already fixed in Session 10 part 3, this document just hadn't
+caught up. **Updated 2026-08-21, Session 12 part 2 (new finding, targeted verification, no full re-audit)**:
+§4.6 — the spec's two Golden Paths (§2) are not actually satisfiable end to end today; see that section and
+§6 item 8. **Updated 2026-08-21, Session 12 part 3**: §4.6's fix was scoped into four workstreams; one
+(the Dashboard frontend port) is now done, deployed, and live-verified — see §4.6's own update note. The
+other three (Companion UI, proactive continuation/context, onboarding+Roadmap) remain open.
 
 **Purpose:** this is the
 single place to check what's actually built and verified, as opposed to what a session's narrative log
@@ -36,11 +43,11 @@ to it instead, per that file's own protocol.
 | Phase | Scope (cite) | Status | Verified how (this session) |
 |---|---|---|---|
 | **0 — Platform foundation** | §7: Cognito, `/v1` API Gateway+Lambda skeleton, DynamoDB (app+Registry+Tickets), Bedrock swap, Prompt Registry skeleton, `proxy.ts` extended | **Done, live** | Live AWS: `aws sts get-caller-identity`, `aws cloudformation describe-stacks` (all 3 stacks + CDKToolkit `CREATE_COMPLETE`), `aws dynamodb list-tables` (5 tables exist), `curl {ApiUrl}/v1/health` → real 200, unauthenticated `POST /v1/rooms/decision` → 401 (authorizer enforced), `aws cognito-idp list-user-pools` (pool + both triggers wired), `aws budgets describe-budgets` (both alerts exist). Local: fresh `npm run build:shared-types && npm run typecheck:cdk && npm run synth` — all green, only the pre-documented cosmetic cross-stack-reference-strength warning. |
-| **1 — Slice 1: Product spine** | §7: account/consent/onboarding, Companion, Dashboard, Digital Twin v1 (data+confirm/reject), Roadmap, Beta Trial+Credits | **Partial, but Twin's own scope is now done (Session 10)** | See §2.1–§2.3 below. Companion/Dashboard handlers are real DynamoDB code. **Digital Twin v1 is now real and live-verified** (Session 10): `GET /v1/twin`, confirm/reject, and a Bedrock-driven extraction pipeline fired from both rooms' `COMMITMENT` steps — see `AGENT_LOG.md` Session 10 part 4. Credits is still schema-only (zero handlers, zero routes); Roadmap is still unbuilt (`dashboard/handler.ts` correctly degrades to `roadmap: null`); the Auth/account API row (§4 table row 1, minus consent/export/delete which Session 10 also built) is still otherwise unbuilt. (This row's older "consent gate unsatisfiable" claim predates §2.2's own fix — see that section, not repeated here to avoid amplifying a stale claim.) |
+| **1 — Slice 1: Product spine** | §7: account/consent/onboarding, Companion, Dashboard, Digital Twin v1 (data+confirm/reject), Roadmap, Beta Trial+Credits | **Backend pieces real; the two Golden Paths this slice exists to deliver are still NOT fully satisfiable end to end — see §4.6 (one of four workstreams done)** | See §2.1–§2.3 below. `GET /v1/dashboard`'s Lambda is real DynamoDB code, and — as of Session 12 part 3 — **`apps/web/src/app/dashboard/page.tsx` now actually calls it**, extended to also surface Daily Card/commitment continuity cues, live-verified; it had never called it before (§4.6). **Companion now calls real Bedrock** (Session 12, see §2.4) with a live routing directive — `POST /v1/companion/message`/`GET /v1/companion/context` are both real and live-verified end to end, but there is still no frontend chat UI to drive them from, no onboarding flow, and no proactive "opens with a continuation" behavior (§4.6). **Digital Twin v1 is now real and live-verified** (Session 10): `GET /v1/twin`, confirm/reject, and a Bedrock-driven extraction pipeline fired from both rooms' `COMMITMENT` steps — see `AGENT_LOG.md` Session 10 part 4. **Credits ledger built and live-verified (Session 11)**: `grantCredits`/`consumeCredits` primitives (`lib/credits.ts`), a starter-trial grant wired into the Cognito post-confirmation trigger, `GET /v1/credits`, `GET /v1/plans` (Plans catalog table now seeded), all live-verified against the real deployed API — see AGENT_LOG.md Session 11. `POST /v1/credits/purchase` is NOT built (blocked on the payment-provider decision) and `consumeCredits` is NOT wired into any Room/Companion/Library call site yet (blocked on the "billable action" decision, still true even after Companion's own Session 12 Bedrock wiring) — see §2.3 below, updated. Roadmap is still unbuilt entirely (no onboarding flow to generate it from, no generation logic at all — §4.6); the Auth/account API row (§4 table row 1, minus consent/export/delete which Session 10 also built) is still otherwise unbuilt. (This row's older "consent gate unsatisfiable" claim predates §2.2's own fix — see that section, not repeated here to avoid amplifying a stale claim.) |
 | **2 — Slice 2: Mirror Room** | §7: flow-engine reuse, new prompt set, candidate Twin updates | **Backend + frontend both done and live-verified end to end (Session 9)** | Backend: 6-step flow (`mirror-steps/*.ts`), 2 prompts live-seeded, design product-reviewed (AGENT_LOG Session 6). Frontend (Session 9, greenfield — no legacy UI existed): `apps/web/src/components/mirror/*` + `mirror/new/page.tsx`, styled to match Decision Room's design system, built to the real free-text contract (Figma's richer scenario-catalog concept explicitly deferred, confirmed with the user). Real browser session driven through all 6 steps + Commitment + Completion with a throwaway Cognito user, cross-checked against `aws dynamodb get-item` (`status:'completed'`, all 11 content fields correct), `?resume=` tested. Found and fixed a real `mirror-full.ts` bug this session (`currentStepId` sourced from the wrong item — see AGENT_LOG Session 9) and deployed the fix live. `command.ts`'s consent check **does** cover Mirror Room (§4.1 already notes this fixed session-of-discovery) — the "not consent-gated" claim in a prior version of this row was stale, corrected here. Model call still routes through the shared stub (§2.4) — unchanged. |
 | **3 — Slice 3: Content Library** | §7: catalog table, taxonomy, AI explanation, recommendations | **Reads done and live-seeded; personalization real (Bedrock, Session 10); recommendations honestly empty** | `aws dynamodb scan --table-name dpnr-library-catalog --select COUNT` → 12 items (6 topics × version+alias, matches). `recommendations.ts` read directly — returns `[]` by design, documented why. **The 6 topics' content was explicitly product-reviewed and approved as-is by the user in Session 10** — no longer a draft, same status Decision Room/Mirror Room's content already has. Personalization (`topic-detail.ts`) now calls real Bedrock, not the old stub, per Session 10's Bedrock-wiring work. |
 | **4 — Slice 4: Decision Room port** | §5.3/§7: port 7-step+summary UI to `/v1`; swap AI to Bedrock | **Done and live-verified end to end (guided-creation flow only — post-completion review page still deferred)** | `apps/web/src/app/decision/new/page.tsx` + all 7 step components + 4 post-flow/summary screens now call `submitRoomCommand`/`getDecisionFull`, zero `lib/supabase/decisions.ts` calls left in that flow. Real browser session driven through all 14 steps against the live API with a throwaway Cognito user, cross-checked against `aws dynamodb get-item`/`query` at multiple points (SessionItem reached `status:'completed'`/`currentStepId:'COMMITMENT'`; outcome's reflection carries the real commitment text). `session_version_conflict` resync and `session_completed` redirect both fired for real during this pass, not just unit-tested. AI calls still route through the model stub (§2.4) — unchanged by this session. |
-| **5 — Slice 5: Continuity layer** | §7: Daily Card, Weekly Recap, commitments/reminders, EventBridge pipeline | **Not started** | Schemas exist (`dynamo/continuity.ts`); zero Lambda handlers, zero CDK routes, zero EventBridge rules anywhere in `infra/cdk/lib`. No `session.completed` event is even published by `rooms/command.ts` — sessions complete silently today, so there is nothing yet for a pipeline to consume even once built. |
+| **5 — Slice 5: Continuity layer** | §7: Daily Card, Weekly Recap, commitments/reminders, EventBridge pipeline | **Done and live-verified end to end (Session 11, both parts) — only the reminder-notification piece remains, blocked on an open decision** | **Session 11 part 1**: `POST /v1/commitments`/`GET /v1/commitments` built and live-verified. **Session 11 part 2**: Daily Card + Weekly Recap fully built and live-verified too — `compose-daily-card.ts`/`compose-weekly-recap.ts` (scheduled via a plain `aws-events.Rule` cron, not the dedicated EventBridge Scheduler service `MVP_ARCHITECTURE.md` §6 names — a deliberate, flagged substitution, functionally equivalent for a fixed daily/weekly invocation) compose real, personalized `DAILYCARD#<date>`/`WEEKLYRECAP#<isoWeek>` items from confirmed Twin signals + session summaries; `GET /v1/daily-card`/`GET /v1/weekly-recap` are pure cache-hit reads. Manually invoked both composer Lambdas (simulating the schedule rather than waiting a day/week) and confirmed via the real API that the composed content was specific and clearly personalized, not generic — and confirmed no urgency/streak language, i.e. the spec's anti-addiction rule actually held against a live model, not just in the prompt text. A real, previously-undocumented gap was found and closed along the way: `SessionSummaryItem` had existed in the schema since early sessions but nothing had ever written one — see §2.3 below, updated. No reminder ever fires from a commitment's `reviewDate` — deliberately out of scope, blocked on the "what is a reminder" decision (AGENT_LOG.md); this is the one piece of Slice 5 still not built. `rooms/command.ts` still doesn't publish any `session.completed` event — not needed for what got built (Twin extraction and now session-summary persistence both run synchronously inline instead, see §2.3), but would be if a future async consumer ever needs one. |
 | **6 — Slice 6: Production hardening (encryption)** | §7: client-side E2E encryption, crypto contract, recovery-code UX, security review, CloudTrail alarms, real webhook HMAC | **Not started — and carries a live, latent infrastructure risk** | `crypto-stub.ts` read directly: plaintext-in-DynamoDB, guarded by `PLAINTEXT_CRYPTO_STUB_ACK`. Traced the guard's wiring end to end (`api-stack.ts` → `bin/dpnr.ts`) — see §4.5: **the real, live deployment today has this stub active**, because `isProduction` was never passed at deploy time. No real user data exists yet (`aws dynamodb scan --table-name dpnr-application --select COUNT` → 0), so this is latent, not realized — but there is currently no deploy-time control preventing it. |
 
 ---
@@ -102,15 +109,21 @@ gate.** `POST /v1/companion/message` — the one handler that actually enforces 
 is a genuine, verifiable, unexamined gap: no ADR or AGENT_LOG entry flags it, and it would silently block
 the very first real Companion interaction the moment the frontend is pointed at the live API.
 
-### 2.3 Digital Twin & Credits: confirmed schema-only
+### 2.3 Digital Twin & Credits — Twin done (Session 10), Credits ledger now real too (Session 11)
 
-`packages/shared-types/src/dynamo/twin.ts` (`TwinSignalItemSchema`, `RoadmapItemSchema`) and
-`.../account.ts` (`CreditsBalanceItemSchema`, `CreditsTransactionItemSchema`) are fully specified. Zero
-Lambda handlers or CDK routes exist for either. `dashboard/handler.ts` (read directly) correctly degrades
-to `roadmap: null` / `creditsBalance: 0` when these items don't exist — this part is honest, not broken.
-Accurately reflected as not-started in `AGENT_LOG.md`.
+`packages/shared-types/src/dynamo/twin.ts` (`TwinSignalItemSchema`, `RoadmapItemSchema`) is fully specified
+and Twin itself is real (Session 10, see §1's row 1). **Credits is no longer schema-only**: `lib/credits.ts`
+has `grantCredits` (used by the Cognito post-confirmation trigger to grant a starter Beta Trial balance —
+`STARTER_TRIAL_CREDITS = 50`, an unconfirmed placeholder, not a real pricing decision) and `consumeCredits`
+(an atomic `ConditionExpression: balance >= amount` deduction, real and live-verifiable, but **not called
+from anywhere yet** — wiring it into `rooms/command.ts`/`companion/message.ts`/`library/topic-detail.ts`
+needs the "billable action" decision first, see AGENT_LOG.md). `GET /v1/credits` and `GET /v1/plans` are
+built and live-verified against the real deployed API and the real (now-seeded) `dpnr-plans-catalog` table.
+`POST /v1/credits/purchase` remains unbuilt — blocked on the payment-provider decision (same doc). Roadmap
+(`RoadmapItemSchema`) is still fully unbuilt; `dashboard/handler.ts` correctly degrades to `roadmap: null`
+when it doesn't exist.
 
-### 2.4 Companion is still model-stubbed; Decision Room/Mirror Room/Library now call real Bedrock
+### 2.4 Every AI surface now calls real Bedrock — Companion (Session 12) was the last one stubbed
 
 **Updated Session 10**: `lib/model-call.ts` (renamed from `lib/model-call-stub.ts`) now makes a real
 Bedrock Converse call — forced tool-use when a Prompt Registry entry has an `outputSchema`, plain text
@@ -121,8 +134,28 @@ both calling conventions, plus an actual browser session through Decision Room's
 text. `RoomsCommandFn` and `LibraryTopicDetailFn` both got a scoped `bedrock:InvokeModel`/
 `InvokeModelWithResponseStream` IAM grant and a timeout bump (3s default → 29s) to accommodate it.
 
-**Still stubbed**: Companion (`companion/model-stub.ts`) — out of scope for Session 10, no Prompt Registry
-domain exists for it yet (see `AGENT_LOG.md`).
+**Updated Session 12**: Companion (`companion/message.ts`) is no longer stubbed either — a new `companion`
+Prompt Registry domain (`respond`) calls the same shared `lib/model-call.ts`, with a structured routing
+directive (`open_room`/`open_dashboard`/`open_library_topic`/`none`) grounded in the live Library catalog so
+it can never name a topic slug that doesn't exist. `companion/model-stub.ts` deleted. Live-verified against
+the real deployed API with a throwaway user: a decision-style message correctly routed to Decision Room, a
+commitments question routed to the exact real Library topic, and CloudWatch logs showed zero errors — see
+`AGENT_LOG.md` Session 12. **Nothing in this product is still on the model stub** — every prompt-driven
+feature (Decision Room, Mirror Room, Library, Twin extraction, Daily Card, Weekly Recap, Companion) now
+calls real Bedrock.
+
+### 2.5 `SessionSummaryItem` had existed since early sessions but nothing ever wrote one — **FIXED, Session 11 part 2**
+
+`dynamo/session.ts`'s `SessionSummaryItemSchema` (`SESSION#<id>#SUMMARY`) was schema-complete from an early
+session onward, but no handler anywhere ever `PutCommand`'d one — Session 10's Twin-signal extraction
+(`rooms/twin-signals.ts`) builds a plain-text summary in memory purely to feed the extraction prompt, then
+discards it, never persisting it in the shape the schema (and `MVP_ARCHITECTURE.md` §5.7/§6's own pipeline
+description) anticipated. This blocked Daily Card/Weekly Recap entirely, since both are supposed to read
+real stored session summaries. Fixed by adding `persistSessionSummary()` alongside
+`extractCandidateSignals()` in the same file, called from both rooms' `COMMITMENT` steps right after
+extraction — same summary text already computed, no new AI call. Live-verified via `aws dynamodb query`:
+confirmed a real `SESSION#<id>#SUMMARY` item now exists with the actual composed summary text and the real
+Twin-signal ids it's linked to, not just that the code compiles.
 
 ---
 
@@ -157,7 +190,16 @@ no relational or edge data, no graph store anywhere in `infra/cdk`.
 authoritative spec's own terms, restated architecturally, and holding up under code inspection three
 independent ways. Nothing found this session should reopen it.
 
-### 3.2 "Mobile Capsule of a Digital Identity" — **deliberate scoping decision, still valid; one smaller stale-code issue found underneath it**
+### 3.2 "Mobile Capsule of a Digital Identity" — **deliberate scoping decision, still valid; the stale-code issue found underneath it is fixed**
+
+> **Update (Session 12, documentation-only — this audit wasn't re-run, just corrected against a fact
+> Session 10 part 3 already established)**: the "smaller issue" below, as originally written, is now stale.
+> Session 10 part 3 (`docs/AGENT_LOG.md`) deleted the old Supabase-only `apps/web/src/app/api/user/export/route.ts`
+> entirely and replaced it with a real `GET /v1/user/export` Lambda (`infra/cdk/lambda/account/export.ts`)
+> that queries the caller's whole `USER#<id>` partition in DynamoDB and decrypts every `[ENCRYPTED]`-shaped
+> field — i.e. it already covers Companion messages, Room sessions, and Digital Twin signals, not just the
+> old Supabase tables. This document simply wasn't updated to reflect that fix at the time. Preserved below
+> for history; the "data-completeness bug" it describes no longer exists.
 
 PDF page 2 frames the capsule as a full personal graph DB the user owns and can move between storage
 backends. The MVP Build Spec frames it more narrowly and as a **deferral, not a permanent exclusion**:
@@ -165,19 +207,16 @@ backends. The MVP Build Spec frames it more narrowly and as a **deferral, not a 
 Portability is a future capability unless required for the Beta MVP."* `MVP_ARCHITECTURE.md` §10 lists it
 under "What NOT to build for this MVP," consistent with that framing.
 
-The only real export code today is `apps/web/src/app/api/user/export/route.ts` — read directly. It is a
-plaintext, unencrypted GDPR JSON dump, with no capsule format and no import path, which matches the "not
-required for MVP" framing exactly.
-
-**A smaller, separate issue found underneath this**: the export route queries **only the old Supabase
-schema** (`user_profiles`, `decisions`, `token_usage`) — it doesn't touch the new DynamoDB data model at
-all. If a real user existed today with Companion messages, Mirror Room sessions, or Digital Twin signals,
-a GDPR export request would silently omit all of it. This isn't the Mobile Capsule question (encryption/
-portability) — it's a data-completeness bug waiting to happen, and worth fixing whenever this route is next
-touched, independently of any capsule decision.
+**Original finding (2026-08-19), preserved for context, now stale per the update above**: the only real
+export code was `apps/web/src/app/api/user/export/route.ts` — a plaintext, unencrypted GDPR JSON dump, with
+no capsule format and no import path, which matched the "not required for MVP" framing exactly, but queried
+**only the old Supabase schema** (`user_profiles`, `decisions`, `token_usage`) and would have silently
+omitted a real user's Companion messages, Mirror Room sessions, or Digital Twin signals from an export
+request.
 
 **Judgment: the capsule deferral itself is deliberate and still valid.** The export-route staleness
-underneath it is a separate, smaller, unexamined gap.
+underneath it was a separate, smaller, real gap — already closed the same day this audit found it (Session
+10 part 3), this document just hadn't caught up to say so.
 
 ### 3.3 The never-before-reviewed SRS is stale and superseded — recommend marking it as such
 
@@ -323,6 +362,80 @@ future session, not something this audit is recommending unilaterally, since the
 way by design since Session 1 (no CI, agent-only development, "small working increments" over process
 overhead). Noted here so the weight of "verified" claims is calibrated correctly going forward.
 
+### 4.6 Neither of the spec's two Golden Paths (§2) is actually satisfiable end to end — found 2026-08-21, Session 12 part 2
+
+> **Update (Session 12 part 3, same day)**: scoped the fix into four workstreams (A: port `dashboard/page.tsx`
+> off Supabase onto the real `GET /v1/dashboard`; B: build a Companion chat UI; C: proactive Companion
+> continuation + real cross-session context restoration; D: Companion-led onboarding + Roadmap generation —
+> its own dedicated product-design pass, not a quick add-on). User chose **A only** this session, and
+> confirmed Companion should become the actual post-login default landing page (replacing Dashboard) once B
+> is built — recorded for whoever builds B, not acted on yet since B hasn't started.
+>
+> **A is done, deployed, and live-verified.** `dashboard/page.tsx` now calls the real `GET /v1/dashboard`
+> (no more `lib/supabase/client`/`getDecisions()`/`getTokenUsage()`); `dashboard/handler.ts` was extended to
+> also read today's Daily Card and the soonest-due open commitment, filling `continuityCue` with real content
+> for the first time instead of always being `null` in practice. Verified with a real fresh signup: Credits
+> balance (50) rendered correctly from the live ledger, the Roadmap empty-state rendered honestly (still
+> `null` — D not built), and after creating one real commitment via the live API, the Dashboard correctly
+> surfaced it as a `commitment`-kind continuity cue after redeploying `DashboardFn`. Deliberately dropped the
+> old page's Supabase-era "list every past decision" section — no `/v1` equivalent exists yet; flagged
+> in-code as an honest gap for a future session, not silently regressed. CloudWatch confirmed zero errors;
+> Cognito user + all 4 DynamoDB rows cleaned up afterward, partition count confirmed 0.
+>
+> **B, C, and D remain exactly as described below — Golden Path A is still broken at step 5, and Golden Path
+> B is still broken at step 2 (no proactive continuation).** Companion still has no frontend, still doesn't
+> pull Twin signals into its own context, and there is still no onboarding flow or Roadmap generation
+> anywhere in the code.
+
+The MVP spec states plainly: *"These are the two journeys that must work end-to-end before the MVP is
+considered usable."* Neither one is, today — checked by reading the actual frontend code, not just the
+backend routes this document otherwise tracks. This is a materially different (and larger) gap than "Auth
+API surface unbuilt" (§2.1) or any single missing endpoint — it's the product's two defining user journeys,
+and the backend-completeness view this document has used everywhere else understates how far from working
+they are.
+
+**Golden Path A (first-time user), broken at step 5 of 14**: "Companion-led conversational onboarding — use
+Main Chat as the onboarding interface." No onboarding conversation flow exists anywhere in the code. Nothing
+infers an initial focus/theme/direction (step 6), nothing generates a first My Evolution Map from onboarding
+specifically (step 7 — Twin signals are only ever written from a completed Room session, never from
+onboarding, since there is no onboarding to extract from), and Roadmap generation (step 8) doesn't exist at
+all — confirmed by `dashboard/handler.ts`'s own comment, "Beta Trial/Credits ledger... isn't built yet" is
+now stale (Credits *is* real, Session 11) but the adjacent Roadmap gap it was describing is still accurate.
+Step 9 ("keep user in Main Chat by default... Dashboard one tap away") fails structurally: there is no
+Companion frontend page at all — no route, no chat UI, not even a client helper function
+(`apps/web/src/lib/api/v1-client.ts` has zero Companion calls, confirmed by grep). The app's actual entry
+point, `apps/web/src/app/page.tsx`, is a Decision-Room-first marketing page ("Start a Decision" / "Sign In")
+— the direct opposite of the spec's own "Core Experience Principle — Gate 1 First."
+
+**Golden Path B (returning user), broken at steps 2–4 of 6**: step 2 requires "the Companion opens with a
+relevant continuation" — a proactive greeting. `companion/message.ts` is purely reactive: `POST
+/v1/companion/message` only ever replies to a message the user sends, and `GET /v1/companion/context`
+returns raw stored history with no synthesized "welcome back" summary. Step 3 requires surfacing "a Daily
+Card, relevant continuation, upcoming commitment, Roadmap cue... only when useful" — `dashboard/handler.ts`
+(lines 57–65) still has a code comment reading "Daily Card / commitments... don't exist yet," which is now
+false (both were built in Session 11) but nobody revisited this handler afterward: `continuityCue` only ever
+derives from the still-unbuilt Roadmap, so it is always `null` in practice regardless of what a user has
+actually done. Step 4 requires Companion/Dashboard/Twin/Rooms/Library to be "directly accessible" with
+"Dashboard [as] the primary navigation hub" — **the more severe half of this finding**:
+`apps/web/src/app/dashboard/page.tsx` was never migrated off the pre-migration Supabase stack at all. It
+still calls `createClient()` from `lib/supabase/client` and `getDecisions()`/`getTokenUsage()` against the
+old Supabase tables, shows a "Monthly AI usage / tokens" bar from the retired tier-cap model (superseded by
+the real Credits ledger, per `MVP_ARCHITECTURE.md` §5.3's own migration table), and links only to Decision
+Room and Mirror Room. No Companion, Library, Digital Twin, Credits balance, Roadmap, Daily Card, or
+Commitments appear anywhere on it. This is a real regression against this document's own prior confidence:
+`docs/AGENT_LOG.md` Session 10 part 3 ported `/account` and `/pricing` to the real `/v1` backend explicitly,
+and no session's log entry ever claims to have touched `/dashboard`'s frontend — the real `GET /v1/dashboard`
+Lambda (built early, confirmed real and live) has apparently never had a real caller. This should have been
+caught earlier; it wasn't, because every session's own verification (this document's §4.5 caveat included)
+checked backend routes and Lambda behavior, never asked "does the actual shipped page call this."
+
+**Judgment**: not a single missing feature but a coherence gap — enough of Gate 1's individual backend
+pieces are real (Companion's Bedrock call, Twin, Credits, Daily Card, Dashboard's Lambda) that it would be
+easy to read this document's phase table as "Slice 1 is mostly done." The two Golden Paths say otherwise:
+today, a real user cannot experience Main-Chat-first onboarding, a proactive Companion continuation, or a
+Dashboard that reflects any of Slice 1's own real backend work. Scoping the fix is this session's next step
+— tracked in `AGENT_LOG.md`'s handoff, not decided unilaterally here.
+
 ---
 
 ## 5. Live AWS state — this session's independent snapshot (2026-08-19)
@@ -362,12 +475,19 @@ one that made them.
    just a documented boundary) remains open as a lower-priority tracking item — see §4.3's update.
 4. **SRS document status** (§3.3): mark the old SRS docx/md files as superseded, or confirm they should be
    ignored — currently ambiguous to a future reader.
-5. **Export route data completeness** (§3.2): decide whether/when to extend the GDPR export route to cover
-   the new DynamoDB data model, independent of any Mobile Capsule decision.
+5. ~~**Export route data completeness** (§3.2)~~ — **done**: Session 10 part 3 replaced the old
+   Supabase-only export route with a real `GET /v1/user/export` covering the whole DynamoDB partition; this
+   document just hadn't been updated to say so until Session 12.
 6. **Whole-product cost model** (§3.4): schedule rebuilding it once real usage projections exist (e.g.,
    once the Decision Room frontend port gives a first real traffic pattern to model against).
 7. **Auth/account API surface** (§2.1/§4.4): confirm this is simply next-in-line unbuilt work, not
    something that was supposed to happen alongside Phase 0.
+8. **Neither Golden Path (§2/§4.6) fully works end to end** — scoped into four workstreams (Session 12 part
+   3): (A) ~~port `dashboard/page.tsx` off Supabase onto `GET /v1/dashboard`~~ **done**; (B) build a
+   Companion frontend — user confirmed it should become the default post-login landing page once built; (C)
+   proactive Companion "continuation" opening + real cross-session context restoration; (D) Companion-led
+   onboarding flow + Roadmap generation, its own dedicated product-design pass. B/C/D remain open — see
+   §4.6 for the full breakdown.
 
 Everything else in this document (no graph DB, no Mobile Capsule, Grow webhook stub, no VPC yet, Library
 topics awaiting review) is already a deliberate, documented, still-valid decision — re-confirmed this
