@@ -119,21 +119,13 @@ export default function CompanionPage() {
           <p className="text-purple-400 text-xs tracking-widest uppercase">DPNR</p>
           <h1 className="text-white text-xl font-light">Companion</h1>
         </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/dashboard"
-            className="text-purple-400 hover:text-purple-300 text-xs underline"
-          >
-            InnerOS
-          </Link>
-          <Link
-            href="/account"
-            className="w-9 h-9 rounded-full bg-purple-600/30 border border-purple-700/40 flex items-center justify-center text-purple-300 text-sm hover:bg-purple-600/50 transition-colors"
-            title="Account settings"
-          >
-            {userInitial}
-          </Link>
-        </div>
+        <Link
+          href="/account"
+          className="w-9 h-9 rounded-full bg-purple-600/30 border border-purple-700/40 flex items-center justify-center text-purple-300 text-sm hover:bg-purple-600/50 transition-colors"
+          title="Account settings"
+        >
+          {userInitial}
+        </Link>
       </div>
 
       {/* Today's Daily Card — spec §3/§4: its primary surface is "Dashboard +
@@ -224,6 +216,42 @@ export default function CompanionPage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Direct navigation to the wider platform from Main Chat itself — spec
+          Table 2's own "Surface / Navigation behavior" row: Main Chat "can
+          open Dashboard, Rooms, Library... inline or by transition," not
+          only by routing through Dashboard first. Relocated below the chat
+          (was a thin pill row under the header) and styled like Dashboard's
+          own "Explore" tile grid — same four destinations, same tile shape. */}
+      <div className="px-5 pt-2">
+        <p className="text-white/40 text-xs uppercase tracking-wide mb-2">Explore</p>
+        <div className="grid grid-cols-4 gap-2">
+          <Link
+            href="/dashboard"
+            className="bg-white/5 border border-white/10 hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all"
+          >
+            <p className="text-white text-xs font-medium">InnerOS</p>
+          </Link>
+          <Link
+            href="/rooms"
+            className="bg-white/5 border border-white/10 hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all"
+          >
+            <p className="text-white text-xs font-medium">Work Rooms</p>
+          </Link>
+          <Link
+            href="/twin"
+            className="bg-white/5 border border-white/10 hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all"
+          >
+            <p className="text-white text-xs font-medium">InnerSelf</p>
+          </Link>
+          <Link
+            href="/library"
+            className="bg-white/5 border border-white/10 hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all"
+          >
+            <p className="text-white text-xs font-medium">Library</p>
+          </Link>
+        </div>
       </div>
 
       <div className="px-5 pb-8 pt-3 flex items-end gap-2">
