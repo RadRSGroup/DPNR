@@ -16,6 +16,9 @@ import type {
   LibraryTopicsResponse,
   RoadmapProposalAcceptResponse,
   RoadmapProposalRejectResponse,
+  CreditsResponse,
+  DailyCardFeedbackRequest,
+  DailyCardFeedbackResponse,
 } from '@dpnr/shared-types'
 import { getIdToken } from '../cognito/client'
 
@@ -97,6 +100,18 @@ export async function deleteAccountData(): Promise<DeleteAccountResponse> {
 export async function getDashboard(): Promise<DashboardResponse> {
   const res = await authedFetch('/v1/dashboard')
   return parseOrThrow<DashboardResponse>(res)
+}
+
+/** GET /v1/credits — current ledger balance, used by /account (real, live since Session 11 — no prior caller). */
+export async function getCredits(): Promise<CreditsResponse> {
+  const res = await authedFetch('/v1/credits')
+  return parseOrThrow<CreditsResponse>(res)
+}
+
+/** POST /v1/daily-card/feedback — dismiss and/or relevance feedback; called from Dashboard and Companion alike. */
+export async function sendDailyCardFeedback(request: DailyCardFeedbackRequest): Promise<DailyCardFeedbackResponse> {
+  const res = await authedFetch('/v1/daily-card/feedback', { method: 'POST', body: JSON.stringify(request) })
+  return parseOrThrow<DailyCardFeedbackResponse>(res)
 }
 
 /** POST /v1/companion/message — one chat turn; may come back with a navigation directive. */

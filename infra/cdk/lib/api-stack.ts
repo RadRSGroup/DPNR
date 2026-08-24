@@ -596,10 +596,24 @@ export class ApiStack extends Stack {
     })
     props.applicationTable.grantReadData(getWeeklyRecapFn)
 
+    const dailyCardFeedbackFn = new lambda.NodejsFunction(this, 'DailyCardFeedbackFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/continuity/daily-card-feedback.ts'),
+      description: 'POST /v1/daily-card/feedback — records dismiss/relevance feedback on today\'s card.',
+    })
+    props.applicationTable.grantWriteData(dailyCardFeedbackFn)
+
     this.httpApi.addRoutes({
       path: '/v1/daily-card',
       methods: [apigwv2.HttpMethod.GET],
       integration: new integrations.HttpLambdaIntegration('GetDailyCardIntegration', getDailyCardFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/daily-card/feedback',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('DailyCardFeedbackIntegration', dailyCardFeedbackFn),
       authorizer: this.cognitoAuthorizer,
     })
 

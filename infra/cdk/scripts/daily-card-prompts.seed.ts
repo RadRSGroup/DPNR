@@ -13,10 +13,13 @@
  * (`outputSchema` set) per ADR 0005, matching `DailyCardItemSchema`'s
  * content shape (`dynamo/continuity.ts`).
  *
- * Has never been run against a live model with real user data — a
- * design-level first draft, same status Mirror Room's/twin's prompts had
- * before their own product review. Flag for review before treating the
- * actual composed *content* as final.
+ * Live-verified once against a real model with real user data (Session 11
+ * — see docs/AGENT_LOG.md): a throwaway user's actual Mirror Room session
+ * produced specific, non-generic output with no streak/urgency language.
+ * That's one manual smoke test, not a tone/cadence product review at
+ * scale — the actual composed *content* should still be flagged for a real
+ * product review before being treated as final, same status Mirror Room's/
+ * twin's prompts had before theirs.
  */
 import type { PromptSeed } from './decision-room-prompts.seed'
 

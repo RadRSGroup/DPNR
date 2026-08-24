@@ -1,12 +1,19 @@
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  // A logged-in user reaching this page (e.g. from /account) should return
+  // there, not bounce to /signup — the old hardcoded link ignored session
+  // state entirely. Server-rendered so this needs no client-side fetch.
+  const hasSession = (await cookies()).get('dpnr_session')?.value === '1'
+  const backHref = hasSession ? '/account' : '/signup'
+
   return (
     <div className="relative min-h-screen max-w-[680px] mx-auto px-5 pb-20">
       <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
 
       <div className="pt-14 pb-8">
-        <Link href="/signup" className="text-purple-400 text-sm">← Back</Link>
+        <Link href={backHref} className="text-purple-400 text-sm">← Back</Link>
         <p className="text-purple-400 text-xs tracking-widest uppercase mt-6 mb-2">DPNR · Workshop Rooms</p>
         <h1 className="text-white text-2xl font-light">Terms of Use</h1>
         <p className="text-white/30 text-xs mt-2">Effective date: June 2026 · Last updated: June 2026</p>

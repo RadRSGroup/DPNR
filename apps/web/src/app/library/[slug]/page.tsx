@@ -10,6 +10,7 @@ import type { LibraryTopicDetailResponse } from '@dpnr/shared-types'
 export default function LibraryTopicPage() {
   const router = useRouter()
   const params = useParams<{ slug: string }>()
+  const [userInitial, setUserInitial] = useState('?')
   const [topic, setTopic] = useState<LibraryTopicDetailResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -19,6 +20,9 @@ export default function LibraryTopicPage() {
       try {
         const session = await getCurrentSession()
         if (!session) { router.push('/login'); return }
+        const email = session.getIdToken().payload.email as string | undefined
+        setUserInitial(email?.[0]?.toUpperCase() ?? '?')
+
         const data = await getLibraryTopic(params.slug)
         setTopic(data)
       } catch {
@@ -36,9 +40,21 @@ export default function LibraryTopicPage() {
 
       <div className="pt-14 pb-6 flex items-center justify-between">
         <p className="text-purple-400 text-xs tracking-widest uppercase">DPNR</p>
-        <Link href="/library" className="text-purple-400 hover:text-purple-300 text-xs underline">
-          Library
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/library" className="text-purple-400 hover:text-purple-300 text-xs underline">
+            Library
+          </Link>
+          <Link href="/dashboard" className="text-purple-400 hover:text-purple-300 text-xs underline">
+            InnerOS
+          </Link>
+          <Link
+            href="/account"
+            className="w-9 h-9 rounded-full bg-purple-600/30 border border-purple-700/40 flex items-center justify-center text-purple-300 text-sm hover:bg-purple-600/50 transition-colors"
+            title="Account settings"
+          >
+            {userInitial}
+          </Link>
+        </div>
       </div>
 
       {loading && <p className="text-white/30 text-sm text-center pt-8">Loading…</p>}

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { CommitmentStatusSchema } from '../dynamo/continuity'
+import { CommitmentStatusSchema, DailyCardFeedbackSchema } from '../dynamo/continuity'
 
 /**
  * Daily Card / Weekly Recap / Commitments (MVP_ARCHITECTURE.md §5.7).
@@ -12,8 +12,19 @@ export const DailyCardResponseSchema = z.object({
   date: z.string().date(),
   kind: z.enum(['thought', 'question', 'reminder', 'micro_practice']),
   text: z.string(),
+  dismissedAt: z.string().datetime().nullable(),
+  feedback: DailyCardFeedbackSchema.nullable(),
 })
 export type DailyCardResponse = z.infer<typeof DailyCardResponseSchema>
+
+/** POST /v1/daily-card/feedback — records dismiss and/or relevance feedback on today's card. */
+export const DailyCardFeedbackRequestSchema = z.object({
+  dismissed: z.boolean().optional(),
+  feedback: DailyCardFeedbackSchema.optional(),
+})
+export type DailyCardFeedbackRequest = z.infer<typeof DailyCardFeedbackRequestSchema>
+export const DailyCardFeedbackResponseSchema = z.object({ ok: z.literal(true) })
+export type DailyCardFeedbackResponse = z.infer<typeof DailyCardFeedbackResponseSchema>
 
 /** GET /v1/weekly-recap */
 export const WeeklyRecapResponseSchema = z.object({

@@ -2,20 +2,29 @@
  * Content Library catalog seed data (MVP_ARCHITECTURE.md §5.5, §3.2). No
  * spec docx section for authored topic content was available when these
  * were first written (same access gap Session 5 had for Mirror Room's
- * prompts) — all 6 topics below were Session 6's own first-authored draft,
- * written Claude-native in the same warm/curious/non-diagnostic voice
- * already established for `decision_room`/`mirror_room`/`library` prompts,
- * not ported from anywhere. **Approved as-is by the user in Session 10** —
- * treat this content as settled, same status Decision Room/Mirror Room's
- * own content already has, not a draft awaiting review.
+ * prompts) — all 6 topics' *content* were Session 6's own first-authored
+ * draft, written Claude-native in the same warm/curious/non-diagnostic
+ * voice already established for `decision_room`/`mirror_room`/`library`
+ * prompts, not ported from anywhere. **Approved as-is by the user in
+ * Session 10** — treat the content (title/body) as settled, same status
+ * Decision Room/Mirror Room's own content already has, not a draft
+ * awaiting review.
  *
- * `taxonomyCategory` names are this session's own choice, loosely aligned
- * to `TwinSignalDomainSchema`'s 6 values (`packages/shared-types/src/dynamo/twin.ts`)
- * so a future signal-domain → topic-category recommendation mapping
- * (`lambda/library/recommendations.ts`'s still-open gap) has an obvious
- * place to start — this alignment is a convenience, not a commitment;
- * whoever builds that mapping should treat it as a hypothesis to check,
- * not an existing contract.
+ * `taxonomyCategory` values were re-seeded in a later session once the
+ * spec docx (§4 "Library taxonomy") became available — the original
+ * categories ("Patterns & Habits", "Triggers", "Direction & Focus",
+ * "Commitments & Follow-Through") were this project's own invention,
+ * loosely aligned to `TwinSignalDomainSchema` before anyone had the real
+ * taxonomy to check against. The spec defines exactly 6 categories: Inner
+ * World, Values & Needs, Energy & Motivation, Patterns & Beliefs,
+ * Relationships, Direction & Creation, each with 4-5 named subtopics. The
+ * 6 topics below are now mapped onto that real taxonomy by content fit —
+ * **honestly leaving Energy & Motivation and Relationships with zero
+ * topics**, since none of the 6 existing topics' approved content actually
+ * fits either one; inventing new topics to fill them was out of scope for
+ * a category re-mapping (spec's own "not required to build hundreds of
+ * items" note applies here — a real Relationships/Energy & Motivation
+ * topic is future content work, not a re-seed).
  */
 
 export interface TopicSeed {
@@ -29,7 +38,7 @@ export const LIBRARY_TOPIC_SEEDS: TopicSeed[] = [
   {
     slug: 'understanding-your-patterns',
     title: 'Understanding Your Patterns',
-    taxonomyCategory: 'Patterns & Habits',
+    taxonomyCategory: 'Patterns & Beliefs', // spec §4: "Awareness Patterns" subtopic
     body: `A pattern isn't a flaw — it's a strategy that made sense once. Most of the patterns you notice in yourself today, whether it's going quiet in conflict or over-preparing before anything important, started as a reasonable response to something real. The problem isn't that the pattern exists; it's that it can keep running long after the situation that shaped it has changed.
 
 Noticing a pattern is different from judging it. The first useful question usually isn't "why do I keep doing this?" but "what was this trying to protect, or get me, at the time it started?" That question tends to open things up instead of closing them down.
@@ -39,7 +48,7 @@ Patterns also tend to hide in plain sight because they feel like "just how I am.
   {
     slug: 'what-triggers-you',
     title: 'What Triggers You, and Why',
-    taxonomyCategory: 'Triggers',
+    taxonomyCategory: 'Inner World', // spec §4: "Emotional Triggers" subtopic
     body: `A trigger is rarely about the thing that just happened — it's usually about what that thing reminds your nervous system of. A comment that seems small to everyone else in the room can land hard because it echoes something from years earlier. That's not oversensitivity; it's your body doing exactly what memory is for.
 
 Triggers are also specific, not general. "I get anxious in meetings" is a starting point, but "I get anxious when someone interrupts me mid-sentence in a meeting" is something you can actually investigate. The more precisely you can describe the moment — who, what, when, what you noticed in your body first — the more the trigger stops feeling random.
@@ -59,7 +68,7 @@ A useful move is to ask both questions separately about the same situation: what
   {
     slug: 'body-awareness-basics',
     title: 'Body Awareness: Listening to What You Feel',
-    taxonomyCategory: 'Inner World',
+    taxonomyCategory: 'Inner World', // spec §4: "Pain & Healing" subtopic
     body: `Emotions show up in the body before they show up as words. Tightness in the chest, a dropped stomach, a jaw that's been clenched for an hour without you noticing — these are often the earliest, clearest signal that something matters, arriving well before you can articulate what it is.
 
 Most people are trained to skip straight to the explanation ("I'm stressed because of the deadline") without ever pausing at the sensation itself. That skip isn't wrong, but it can mean the actual signal — the specific location, the specific quality of tightness or heaviness or restlessness — never gets used as information.
@@ -69,7 +78,7 @@ A body scan doesn't have to be elaborate. Noticing one sensation, naming where i
   {
     slug: 'finding-your-direction',
     title: 'Finding Direction When Everything Feels Urgent',
-    taxonomyCategory: 'Direction & Focus',
+    taxonomyCategory: 'Direction & Creation', // spec §4: "Purpose & Meaning" / "Freedom & Choice" subtopics
     body: `Urgency and importance get confused constantly, and almost everything that shouts the loudest is urgent, not important. A full inbox creates a feeling of direction — something to do right now — without actually pointing anywhere. That feeling can be mistaken for having a focus, when it's really just having a queue.
 
 Real direction usually comes from a much quieter place: a sense of what you'd regret not having tried, or what you keep returning to in idle moments even when nothing is forcing you to. It rarely announces itself as loudly as the next deadline does.
@@ -79,7 +88,7 @@ One way to separate the two: at the end of a demanding week, ask what you actual
   {
     slug: 'why-commitments-dont-stick',
     title: "Why Commitments Don't Stick (and What Helps)",
-    taxonomyCategory: 'Commitments & Follow-Through',
+    taxonomyCategory: 'Direction & Creation', // spec §4: "Decision Making" / "Change & Transition" subtopics
     body: `A commitment usually fails for one of two very different reasons, and they need opposite fixes. Sometimes it fails because it was never really wanted — made under social pressure, or to sound like the "right" answer in the moment. Other times it fails because it was genuinely wanted, but nothing about daily life actually changed to make room for it.
 
 Treating both failures the same way — as a willpower problem — misses what's actually going on in each case. A commitment nobody really wanted needs re-examining, not more discipline. A commitment that keeps losing to daily life needs a smaller, more concrete first step, not a bigger promise.

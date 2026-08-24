@@ -7,6 +7,7 @@ import {
   type SessionMessageItem,
   type CompanionActiveSessionPointerItem,
   type CompanionContextResponse,
+  type DailyCardItem,
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { stubEncryptField, stubDecryptField } from '../lib/crypto-stub'
@@ -73,13 +74,17 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         // case (e.g. a manual data reset), not a brand-new user. Nothing
         // to continue from and onboarding is already done; plain empty
         // state, same as before this session.
-        const body: CompanionContextResponse = { sessionId: null, messages: [] }
+        const body: CompanionContextResponse = { sessionId: null, messages: [], dailyCard: await getUndismissedDailyCard(pk) }
         return jsonResponse(200, body)
       }
 
       const sessionId = await getOrCreateActiveCompanionSession(ddb, TABLE_NAME, pk)
       const opener = await synthesizeOnboardingOpener(pk, sessionId)
-      const body: CompanionContextResponse = { sessionId, messages: opener ? [opener] : [] }
+      const body: CompanionContextResponse = {
+        sessionId,
+        messages: opener ? [opener] : [],
+        dailyCard: await getUndismissedDailyCard(pk),
+      }
       return jsonResponse(200, body)
     }
 
@@ -105,10 +110,36 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const continuation = await maybeSynthesizeContinuation(userId, pk, pointer.sessionId, messages)
     if (continuation) messages.push(continuation)
 
-    const body: CompanionContextResponse = { sessionId: pointer.sessionId, messages }
+    const body: CompanionContextResponse = {
+      sessionId: pointer.sessionId,
+      messages,
+      dailyCard: await getUndismissedDailyCard(pk),
+    }
     return jsonResponse(200, body)
   } catch (err) {
     return errorResponse(err)
+  }
+}
+
+/**
+ * Today's Daily Card, if one exists and hasn't been dismissed — spec §3/§4's
+ * "Dashboard + Main Chat" dual surface for Daily Card (see the response
+ * schema's own doc comment). A plain read, no model call, so failures here
+ * degrade to `null` rather than breaking context resume.
+ */
+async function getUndismissedDailyCard(pk: string): Promise<CompanionContextResponse['dailyCard']> {
+  try {
+    const today = new Date().toISOString().slice(0, 10)
+    const result = await ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.dailyCard(today) } }))
+    const item = result.Item as DailyCardItem | undefined
+    if (!item || item.dismissedAt) return null
+
+    const { text, kind } = stubDecryptField<{ text: string; kind: 'thought' | 'question' | 'reminder' | 'micro_practice' }>(
+      item.content
+    )
+    return { kind, text, feedback: item.feedback ?? null }
+  } catch {
+    return null
   }
 }
 

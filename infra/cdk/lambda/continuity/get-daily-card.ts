@@ -28,7 +28,13 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     }
 
     const { text, kind } = stubDecryptField<{ text: string; kind: DailyCardResponse['kind'] }>(item.content)
-    const body: DailyCardResponse = { date: today, kind, text }
+    const body: DailyCardResponse = {
+      date: today,
+      kind,
+      text,
+      dismissedAt: item.dismissedAt ?? null,
+      feedback: item.feedback ?? null,
+    }
     return jsonResponse(200, body)
   } catch (err) {
     return errorResponse(err)

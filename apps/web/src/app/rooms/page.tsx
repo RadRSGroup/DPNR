@@ -1,5 +1,7 @@
 'use client'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { getCurrentSession } from '@/lib/cognito/client'
 
 /**
  * "Work Rooms" hub — Decision Room and Mirror Room are both Rooms; this is
@@ -29,6 +31,17 @@ const ROOMS = [
 ]
 
 export default function RoomsPage() {
+  const [userInitial, setUserInitial] = useState('?')
+
+  useEffect(() => {
+    async function load() {
+      const session = await getCurrentSession()
+      const email = session?.getIdToken().payload.email as string | undefined
+      setUserInitial(email?.[0]?.toUpperCase() ?? '?')
+    }
+    load()
+  }, [])
+
   return (
     <div className="relative min-h-screen max-w-[393px] mx-auto px-5 pb-10">
       <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
@@ -38,9 +51,18 @@ export default function RoomsPage() {
           <p className="text-purple-400 text-xs tracking-widest uppercase">DPNR</p>
           <h1 className="text-white text-xl font-light">Workshop Rooms</h1>
         </div>
-        <Link href="/dashboard" className="text-purple-400 hover:text-purple-300 text-xs underline">
-          InnerOS
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard" className="text-purple-400 hover:text-purple-300 text-xs underline">
+            InnerOS
+          </Link>
+          <Link
+            href="/account"
+            className="w-9 h-9 rounded-full bg-purple-600/30 border border-purple-700/40 flex items-center justify-center text-purple-300 text-sm hover:bg-purple-600/50 transition-colors"
+            title="Account settings"
+          >
+            {userInitial}
+          </Link>
+        </div>
       </div>
 
       <p className="text-white/40 text-sm leading-relaxed mb-6">

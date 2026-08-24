@@ -27,12 +27,20 @@ export const InsightItemSchema = z.object({
 })
 export type InsightItem = z.infer<typeof InsightItemSchema>
 
+export const DailyCardFeedbackSchema = z.enum(['relevant', 'not_relevant'])
+export type DailyCardFeedback = z.infer<typeof DailyCardFeedbackSchema>
+
 export const DailyCardItemSchema = z.object({
   pk: z.string(),
   sk: z.string(), // Sk.dailyCard(isoDate)
   content: EncryptedBlobSchema, // wraps { text: string, kind: 'thought'|'question'|'reminder'|'micro_practice' }
   promptRef: z.string(),
   createdAt: z.string().datetime(),
+  // Data captured per spec §4 Daily Card contract ("Open/dismiss/save response;
+  // explicit relevance feedback if provided") — plain structural fields, not
+  // personal content, so unencrypted like every other non-content field here.
+  dismissedAt: z.string().datetime().nullable().optional(),
+  feedback: DailyCardFeedbackSchema.nullable().optional(),
 })
 export type DailyCardItem = z.infer<typeof DailyCardItemSchema>
 

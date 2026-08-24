@@ -15,6 +15,7 @@ import type { LibraryTopicSummary } from '@dpnr/shared-types'
  */
 export default function LibraryPage() {
   const router = useRouter()
+  const [userInitial, setUserInitial] = useState('?')
   const [topics, setTopics] = useState<LibraryTopicSummary[] | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -23,6 +24,9 @@ export default function LibraryPage() {
       try {
         const session = await getCurrentSession()
         if (!session) { router.push('/login'); return }
+        const email = session.getIdToken().payload.email as string | undefined
+        setUserInitial(email?.[0]?.toUpperCase() ?? '?')
+
         const data = await getLibraryTopics()
         setTopics(data.topics)
       } catch {
@@ -48,9 +52,18 @@ export default function LibraryPage() {
           <p className="text-purple-400 text-xs tracking-widest uppercase">DPNR</p>
           <h1 className="text-white text-xl font-light">Library</h1>
         </div>
-        <Link href="/dashboard" className="text-purple-400 hover:text-purple-300 text-xs underline">
-          InnerOS
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard" className="text-purple-400 hover:text-purple-300 text-xs underline">
+            InnerOS
+          </Link>
+          <Link
+            href="/account"
+            className="w-9 h-9 rounded-full bg-purple-600/30 border border-purple-700/40 flex items-center justify-center text-purple-300 text-sm hover:bg-purple-600/50 transition-colors"
+            title="Account settings"
+          >
+            {userInitial}
+          </Link>
+        </div>
       </div>
 
       {loading && <p className="text-white/30 text-sm text-center pt-8">Loading…</p>}

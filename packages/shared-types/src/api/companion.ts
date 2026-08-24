@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { DailyCardFeedbackSchema } from '../dynamo/continuity'
 
 /**
  * Companion — chat-first router (MVP_ARCHITECTURE.md §5.1). A Bedrock
@@ -41,5 +42,17 @@ export const CompanionContextResponseSchema = z.object({
       createdAt: z.string().datetime(),
     })
   ),
+  // Today's Daily Card, only when it exists and hasn't been dismissed yet —
+  // spec §3/§4: Daily Card's primary surface is "Dashboard + Main Chat",
+  // not Dashboard alone. Dismissing/giving feedback from here uses the same
+  // POST /v1/daily-card/feedback endpoint Dashboard's own card uses, since
+  // the state lives on the item, not either page.
+  dailyCard: z
+    .object({
+      kind: z.enum(['thought', 'question', 'reminder', 'micro_practice']),
+      text: z.string(),
+      feedback: DailyCardFeedbackSchema.nullable(),
+    })
+    .nullable(),
 })
 export type CompanionContextResponse = z.infer<typeof CompanionContextResponseSchema>

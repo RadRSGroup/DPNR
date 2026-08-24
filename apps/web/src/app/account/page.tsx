@@ -3,12 +3,14 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentSession, deleteCognitoUser, signOut } from '@/lib/cognito/client'
-import { exportUserData, deleteAccountData } from '@/lib/api/v1-client'
+import { exportUserData, deleteAccountData, getCredits } from '@/lib/api/v1-client'
+import type { CreditsResponse } from '@dpnr/shared-types'
 
 export default function AccountPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(true)
+  const [credits, setCredits] = useState<CreditsResponse | null>(null)
   const [downloading, setDownloading] = useState(false)
   const [deleteStep, setDeleteStep] = useState<'idle' | 'confirm' | 'deleting'>('idle')
   const [deleteConfirm, setDeleteConfirm] = useState('')
@@ -20,6 +22,11 @@ export default function AccountPage() {
       const sessionEmail = session.getIdToken().payload.email as string | undefined
       setEmail(sessionEmail ?? '')
       setLoading(false)
+      try {
+        setCredits(await getCredits())
+      } catch {
+        // Degrades to no Credits card — same tolerance every other page here uses.
+      }
     }
     load()
   }, [router])
@@ -77,10 +84,33 @@ export default function AccountPage() {
 
       <div className="space-y-4">
 
-        {/* Plan — Credits/billing isn't built on the new backend yet (MVP_ARCHITECTURE.md
-            Slice 1), and checkout is on hold pending a real Grow integration (see
-            docs/PHASE_AUDIT.md's Session 10 update) — every account is honestly on the
-            free Beta tier today, not a stored, per-user value. */}
+        {/* Credits — the real ledger (GET /v1/credits, live since Session 11) had no
+            Account-page caller until now; Dashboard's own reader was the only one.
+            Purchasing more (POST /v1/credits/purchase) isn't built yet — pending the
+            real Grow integration (see docs/PHASE_AUDIT.md's Session 10 update) — so
+            "Upgrade" only links to /pricing, it doesn't complete a purchase. */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+          <p className="text-white/40 text-xs uppercase tracking-wide mb-3">Credits</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-white text-lg font-light">{credits ? credits.balance : '…'}</p>
+              {credits?.isExhausted && (
+                <p className="text-red-400/80 text-xs mt-0.5">Out of credits</p>
+              )}
+              {credits && !credits.isExhausted && credits.isLow && (
+                <p className="text-yellow-400/80 text-xs mt-0.5">Running low</p>
+              )}
+            </div>
+            {credits && (credits.isLow || credits.isExhausted) && (
+              <Link href="/pricing" className="text-purple-400 hover:text-purple-300 text-xs underline">
+                Upgrade
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Plan — every account is honestly on the free Beta tier today, not a stored,
+            per-user value; paid plans/packages aren't purchasable yet (see above). */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
           <p className="text-white/40 text-xs uppercase tracking-wide mb-3">Subscription</p>
           <div className="flex items-center justify-between">

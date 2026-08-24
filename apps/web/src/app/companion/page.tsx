@@ -3,8 +3,8 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getCurrentSession } from '@/lib/cognito/client'
-import { getCompanionContext, sendCompanionMessage } from '@/lib/api/v1-client'
-import type { CompanionDirective } from '@dpnr/shared-types'
+import { getCompanionContext, sendCompanionMessage, sendDailyCardFeedback } from '@/lib/api/v1-client'
+import type { CompanionDirective, CompanionContextResponse } from '@dpnr/shared-types'
 import DirectiveCard from '@/components/companion/DirectiveCard'
 
 interface ChatMessage {
@@ -36,6 +36,7 @@ export default function CompanionPage() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [userInitial, setUserInitial] = useState('?')
+  const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -48,6 +49,7 @@ export default function CompanionPage() {
 
         const context = await getCompanionContext()
         setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt })))
+        setDailyCard(context.dailyCard)
       } catch {
         // Degrades to an empty chat — same tolerance the Dashboard page uses.
       } finally {
@@ -56,6 +58,20 @@ export default function CompanionPage() {
     }
     load()
   }, [router])
+
+  async function handleDailyCardFeedback(action: 'dismiss' | 'relevant' | 'not_relevant') {
+    if (action === 'dismiss') {
+      setDailyCard(null)
+    } else {
+      setDailyCard((prev) => (prev ? { ...prev, feedback: action } : prev))
+    }
+    try {
+      await sendDailyCardFeedback(action === 'dismiss' ? { dismissed: true } : { feedback: action })
+    } catch {
+      // Same tolerance as Dashboard's own version — a failed write just
+      // means it may resurface next load.
+    }
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
@@ -119,6 +135,54 @@ export default function CompanionPage() {
           </Link>
         </div>
       </div>
+
+      {/* Today's Daily Card — spec §3/§4: its primary surface is "Dashboard +
+          Main Chat", not Dashboard alone. Same feedback endpoint as
+          Dashboard's own card; dismissing here hides it there too. */}
+      {dailyCard && (
+        <div className="px-5 pb-3">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+            <div className="flex gap-3">
+              <span className="text-lg flex-shrink-0">✦</span>
+              <div className="flex-1">
+                <p className="text-white/40 text-xs uppercase tracking-wide mb-1">Today</p>
+                <p className="text-white/80 text-sm leading-relaxed">{dailyCard.text}</p>
+              </div>
+              <button
+                onClick={() => handleDailyCardFeedback('dismiss')}
+                className="text-white/30 hover:text-white/60 text-sm flex-shrink-0"
+                title="Dismiss"
+              >
+                ×
+              </button>
+            </div>
+            <div className="flex items-center gap-2 mt-3 pl-8">
+              <button
+                onClick={() => handleDailyCardFeedback('relevant')}
+                disabled={dailyCard.feedback !== null}
+                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                  dailyCard.feedback === 'relevant'
+                    ? 'border-purple-500/50 text-purple-300 bg-purple-900/20'
+                    : 'border-white/10 text-white/40 hover:text-white/60 disabled:opacity-40'
+                }`}
+              >
+                Useful
+              </button>
+              <button
+                onClick={() => handleDailyCardFeedback('not_relevant')}
+                disabled={dailyCard.feedback !== null}
+                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                  dailyCard.feedback === 'not_relevant'
+                    ? 'border-purple-500/50 text-purple-300 bg-purple-900/20'
+                    : 'border-white/10 text-white/40 hover:text-white/60 disabled:opacity-40'
+                }`}
+              >
+                Not for me
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 space-y-3 pb-2">
         {loading && <p className="text-white/30 text-sm text-center pt-8">Loading…</p>}

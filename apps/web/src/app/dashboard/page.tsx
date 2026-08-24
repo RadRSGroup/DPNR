@@ -4,8 +4,16 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import { getCurrentSession } from '@/lib/cognito/client'
-import { getDashboard, acceptRoadmapProposal, rejectRoadmapProposal } from '@/lib/api/v1-client'
+import { getDashboard, acceptRoadmapProposal, rejectRoadmapProposal, sendDailyCardFeedback } from '@/lib/api/v1-client'
 import type { DashboardResponse } from '@dpnr/shared-types'
+
+const CUE_LABEL: Record<NonNullable<DashboardResponse['continuityCue']>['kind'], string> = {
+  daily_card: 'Today',
+  continuation: 'Continuing on',
+  commitment: 'Upcoming commitment',
+  roadmap_cue: 'Worth exploring',
+  recommended_space: 'Worth exploring',
+}
 
 // This page previously listed every past decision via the old Supabase
 // `getDecisions()` query — dropped in this rewrite onto the real
@@ -31,6 +39,21 @@ function DashboardContent() {
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [proposalPending, setProposalPending] = useState(false)
+  const [cueDismissed, setCueDismissed] = useState(false)
+  const [cueFeedback, setCueFeedback] = useState<'relevant' | 'not_relevant' | null>(null)
+
+  async function handleCueFeedback(action: 'dismiss' | 'relevant' | 'not_relevant') {
+    if (action === 'dismiss') setCueDismissed(true)
+    else setCueFeedback(action)
+    try {
+      await sendDailyCardFeedback(
+        action === 'dismiss' ? { dismissed: true } : { feedback: action }
+      )
+    } catch {
+      // Local state already reflects the action; a failed write just means
+      // it may resurface next load — same tolerance every other page here uses.
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -101,10 +124,50 @@ function DashboardContent() {
           Daily Card, then an upcoming commitment, then a roadmap-suggested
           space) is decided server-side (dashboard/handler.ts); this just
           renders whichever one came back, or nothing at all. */}
-      {!loading && dashboard?.continuityCue && (
-        <div className="mb-4 bg-white/5 border border-white/10 rounded-2xl p-4 flex gap-3">
-          <span className="text-lg flex-shrink-0">{CUE_ICON[dashboard.continuityCue.kind]}</span>
-          <p className="text-white/80 text-sm leading-relaxed">{dashboard.continuityCue.text}</p>
+      {!loading && dashboard?.continuityCue && !cueDismissed && (
+        <div className="mb-4 bg-white/5 border border-white/10 rounded-2xl p-4">
+          <div className="flex gap-3">
+            <span className="text-lg flex-shrink-0">{CUE_ICON[dashboard.continuityCue.kind]}</span>
+            <div className="flex-1">
+              <p className="text-white/40 text-xs uppercase tracking-wide mb-1">{CUE_LABEL[dashboard.continuityCue.kind]}</p>
+              <p className="text-white/80 text-sm leading-relaxed">{dashboard.continuityCue.text}</p>
+            </div>
+            {dashboard.continuityCue.kind === 'daily_card' && (
+              <button
+                onClick={() => handleCueFeedback('dismiss')}
+                className="text-white/30 hover:text-white/60 text-sm flex-shrink-0"
+                title="Dismiss"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          {dashboard.continuityCue.kind === 'daily_card' && (
+            <div className="flex items-center gap-2 mt-3 pl-8">
+              <button
+                onClick={() => handleCueFeedback('relevant')}
+                disabled={cueFeedback !== null}
+                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                  cueFeedback === 'relevant'
+                    ? 'border-purple-500/50 text-purple-300 bg-purple-900/20'
+                    : 'border-white/10 text-white/40 hover:text-white/60 disabled:opacity-40'
+                }`}
+              >
+                Useful
+              </button>
+              <button
+                onClick={() => handleCueFeedback('not_relevant')}
+                disabled={cueFeedback !== null}
+                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                  cueFeedback === 'not_relevant'
+                    ? 'border-purple-500/50 text-purple-300 bg-purple-900/20'
+                    : 'border-white/10 text-white/40 hover:text-white/60 disabled:opacity-40'
+                }`}
+              >
+                Not for me
+              </button>
+            </div>
+          )}
         </div>
       )}
 

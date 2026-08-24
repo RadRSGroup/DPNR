@@ -1,42 +1,16 @@
 'use client'
 import Link from 'next/link'
 
-const TIERS = [
-  {
-    id: 'free',
-    name: 'Free',
-    price: '$0',
-    period: '',
-    tokens: '15,000',
-    sessions: '~7',
-    features: ['~7 AI-guided decisions/mo', 'Full 7-step flow', 'Basic history'],
-    cta: null,
-    highlight: false,
-  },
-  {
-    id: 'core',
-    name: 'Core',
-    price: '$15',
-    period: '/mo',
-    tokens: '150,000',
-    sessions: '~55',
-    features: ['~55 AI-guided decisions/mo', 'Full 7-step flow', 'Full history', 'Priority AI response'],
-    cta: 'Upgrade to Core',
-    highlight: true,
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: '$25',
-    period: '/mo',
-    tokens: '400,000',
-    sessions: 'Unlimited',
-    features: ['Unlimited AI-guided decisions', 'Full 7-step flow', 'Full history', 'Priority AI response', 'Early access to new features'],
-    cta: 'Upgrade to Pro',
-    highlight: false,
-  },
-]
-
+/**
+ * Rewritten to match the real Credits model (MVP_ARCHITECTURE.md §5.6,
+ * spec §Beta Trial & Credits contract) — the old copy here described a
+ * 3-tier token-cap subscription (Free/Core $15/Pro $25, ILS billing) that
+ * predates the Credits ledger and was never true of the new backend.
+ * POST /v1/credits/purchase still isn't built (blocked on the real Grow
+ * integration, see docs/PHASE_AUDIT.md's Session 10 update), so this stays
+ * an honest "coming soon" page, not a working checkout — but it no longer
+ * describes a commercial model the product doesn't actually have.
+ */
 export default function PricingPage() {
   return (
     <div className="relative min-h-screen max-w-[393px] mx-auto px-5 pb-16">
@@ -44,67 +18,61 @@ export default function PricingPage() {
 
       <div className="pt-14 pb-8">
         <Link href="/dashboard" className="text-purple-400 text-sm">← Back</Link>
-        <h1 className="text-white text-2xl font-light mt-6">Choose your plan</h1>
-        <p className="text-white/40 text-sm mt-2">Billed monthly in Israeli Shekel (ILS)</p>
+        <h1 className="text-white text-2xl font-light mt-6">Credits & Packages</h1>
+        <p className="text-white/40 text-sm mt-2">
+          DPNR runs on Credits, not a fixed monthly tier — you spend them only on real, meaningful actions.
+        </p>
       </div>
 
       <div className="mb-5 bg-purple-900/20 border border-purple-700/30 rounded-2xl px-4 py-3">
-        <p className="text-purple-300 text-sm">Paid plans are coming soon during Beta — everyone is on Free for now.</p>
+        <p className="text-purple-300 text-sm">
+          Every Beta account starts with free starter Credits — no payment method required. Credit packs and
+          plans are coming soon; everyone stays on their starter balance until then.
+        </p>
       </div>
 
       <div className="space-y-4">
-        {TIERS.map(tier => (
-          <div
-            key={tier.id}
-            className={`rounded-3xl p-5 border transition-all ${
-              tier.highlight
-                ? 'bg-purple-900/30 border-purple-500/50'
-                : 'bg-white/5 border-white/10'
-            }`}
-          >
-            {tier.highlight && (
-              <div className="mb-3">
-                <span className="text-xs bg-purple-600 text-white px-2.5 py-1 rounded-full font-medium">Most popular</span>
-              </div>
-            )}
-            <div className="flex items-end justify-between mb-4">
-              <div>
-                <h2 className="text-white font-medium text-lg">{tier.name}</h2>
-                <p className="text-white/40 text-xs mt-0.5">{tier.tokens} tokens · {tier.sessions} decisions/mo</p>
-              </div>
-              <div className="text-right">
-                <span className="text-white text-2xl font-light">{tier.price}</span>
-                <span className="text-white/40 text-sm">{tier.period}</span>
-              </div>
+        <div className="rounded-3xl p-5 border bg-white/5 border-white/10">
+          <div className="flex items-end justify-between mb-3">
+            <div>
+              <h2 className="text-white font-medium text-lg">Starter Credits</h2>
+              <p className="text-white/40 text-xs mt-0.5">Included free at signup</p>
             </div>
-
-            <ul className="space-y-2 mb-5">
-              {tier.features.map(f => (
-                <li key={f} className="flex items-center gap-2 text-sm text-white/60">
-                  <span className="text-purple-400 text-xs">✓</span>
-                  {f}
-                </li>
-              ))}
-            </ul>
-
-            {tier.cta ? (
-              <button
-                disabled
-                className="w-full rounded-2xl px-5 py-3.5 text-sm font-medium bg-white/5 text-white/30 cursor-not-allowed"
-              >
-                Coming soon
-              </button>
-            ) : (
-              <div className="w-full rounded-2xl px-5 py-3.5 text-sm text-white/30 text-center bg-white/5">
-                Current plan
-              </div>
-            )}
           </div>
-        ))}
+          <ul className="space-y-2">
+            <li className="flex items-center gap-2 text-sm text-white/60">
+              <span className="text-purple-400 text-xs">✓</span>
+              No card or payment method needed
+            </li>
+            <li className="flex items-center gap-2 text-sm text-white/60">
+              <span className="text-purple-400 text-xs">✓</span>
+              Spent only on meaningful actions — never a surprise charge
+            </li>
+            <li className="flex items-center gap-2 text-sm text-white/60">
+              <span className="text-purple-400 text-xs">✓</span>
+              Your balance is always visible from Account
+            </li>
+          </ul>
+        </div>
+
+        <div className="rounded-3xl p-5 border bg-white/5 border-white/10 opacity-60">
+          <div className="flex items-end justify-between mb-3">
+            <div>
+              <h2 className="text-white font-medium text-lg">Credit packs & plans</h2>
+              <p className="text-white/40 text-xs mt-0.5">Coming soon during Beta</p>
+            </div>
+          </div>
+          <button
+            disabled
+            className="w-full rounded-2xl px-5 py-3.5 text-sm font-medium bg-white/5 text-white/30 cursor-not-allowed"
+          >
+            Coming soon
+          </button>
+        </div>
       </div>
 
       <p className="text-center text-white/20 text-xs mt-8">
-        We&apos;ll email everyone when paid plans open up.
+        We&apos;ll email everyone when Credit packs and plans open up.
       </p>
     </div>
   )

@@ -30,7 +30,8 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/companion') ||
     pathname.startsWith('/twin') ||
     pathname.startsWith('/rooms') ||
-    pathname.startsWith('/library')
+    pathname.startsWith('/library') ||
+    pathname.startsWith('/mirror')
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup')
   const isConsentPage = pathname.startsWith('/consent')
 
@@ -76,6 +77,7 @@ export const config = {
     '/twin/:path*',
     '/rooms/:path*',
     '/library/:path*',
+    '/mirror/:path*',
     '/login',
     '/signup',
     '/consent',
