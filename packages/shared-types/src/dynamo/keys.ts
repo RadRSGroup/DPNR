@@ -13,6 +13,7 @@ export const Sk = {
   creditsTxn: (isoTimestamp: string): string => `CREDITS#TXN#${isoTimestamp}`,
   roadmap: (): 'ROADMAP' => 'ROADMAP',
   roadmapVersion: (version: number): string => `ROADMAP#v${version}`,
+  roadmapProposal: (): 'ROADMAP#PROPOSED' => 'ROADMAP#PROPOSED',
   twinSignal: (domain: string, signalId: string): string => `TWIN#SIGNAL#${domain}#${signalId}`,
   session: (sessionId: string): string => `SESSION#${sessionId}`,
   // Pointer to the user's current Companion session, so handlers can GetItem

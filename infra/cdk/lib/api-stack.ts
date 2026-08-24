@@ -185,10 +185,21 @@ export class ApiStack extends Stack {
 
     const companionContextFn = new lambda.NodejsFunction(this, 'CompanionContextFn', {
       ...sharedProductLambdaProps,
+      // Session 14: this now sometimes calls Bedrock (a synthesized
+      // "welcome back" opener, see context.ts's CONTINUATION_GAP_HOURS) and
+      // writes the result back — same timeout/env/grant shape as
+      // companionMessageFn above, not a pure read anymore.
+      timeout: bedrockCallTimeout,
       entry: path.join(__dirname, '../lambda/companion/context.ts'),
-      description: 'GET /v1/companion/context — recent turns for resuming a chat.',
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
+      },
+      description: 'GET /v1/companion/context — recent turns for resuming a chat; may synthesize a real continuation.',
     })
-    props.applicationTable.grantReadData(companionContextFn)
+    props.applicationTable.grantReadWriteData(companionContextFn)
+    props.promptRegistryTable.grantReadData(companionContextFn)
+    grantBedrockConverse(companionContextFn)
 
     const userConsentFn = new lambda.NodejsFunction(this, 'UserConsentFn', {
       ...sharedProductLambdaProps,
@@ -220,10 +231,22 @@ export class ApiStack extends Stack {
 
     const twinConfirmFn = new lambda.NodejsFunction(this, 'TwinConfirmFn', {
       ...sharedProductLambdaProps,
+      // Bumped from the plain shared props (Session 16) — confirming a
+      // signal now also runs the Roadmap-revision check inline
+      // (lib/roadmap-revision.ts), which may call Bedrock, same "compute
+      // after the triggering action" choice already made for Twin
+      // extraction itself.
+      timeout: bedrockCallTimeout,
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
+      },
       entry: path.join(__dirname, '../lambda/twin/confirm.ts'),
-      description: 'POST /v1/twin/signals/{id}/confirm.',
+      description: 'POST /v1/twin/signals/{id}/confirm — also runs the Roadmap-revision check.',
     })
     props.applicationTable.grantReadWriteData(twinConfirmFn)
+    props.promptRegistryTable.grantReadData(twinConfirmFn)
+    grantBedrockConverse(twinConfirmFn)
 
     const twinRejectFn = new lambda.NodejsFunction(this, 'TwinRejectFn', {
       ...sharedProductLambdaProps,
@@ -231,6 +254,20 @@ export class ApiStack extends Stack {
       description: 'POST /v1/twin/signals/{id}/reject.',
     })
     props.applicationTable.grantReadWriteData(twinRejectFn)
+
+    const roadmapProposalAcceptFn = new lambda.NodejsFunction(this, 'RoadmapProposalAcceptFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/roadmap/accept.ts'),
+      description: 'POST /v1/roadmap/proposal/accept — a pending Roadmap revision becomes the live Roadmap.',
+    })
+    props.applicationTable.grantReadWriteData(roadmapProposalAcceptFn)
+
+    const roadmapProposalRejectFn = new lambda.NodejsFunction(this, 'RoadmapProposalRejectFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/roadmap/reject.ts'),
+      description: 'POST /v1/roadmap/proposal/reject — discards a pending Roadmap revision.',
+    })
+    props.applicationTable.grantReadWriteData(roadmapProposalRejectFn)
 
     this.httpApi.addRoutes({
       path: '/v1/dashboard',
@@ -278,6 +315,20 @@ export class ApiStack extends Stack {
       path: '/v1/twin/signals/{id}/reject',
       methods: [apigwv2.HttpMethod.POST],
       integration: new integrations.HttpLambdaIntegration('TwinRejectIntegration', twinRejectFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/roadmap/proposal/accept',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('RoadmapProposalAcceptIntegration', roadmapProposalAcceptFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/roadmap/proposal/reject',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('RoadmapProposalRejectIntegration', roadmapProposalRejectFn),
       authorizer: this.cognitoAuthorizer,
     })
 
@@ -370,6 +421,12 @@ export class ApiStack extends Stack {
         LIBRARY_CATALOG_TABLE_NAME: props.libraryCatalogTable.tableName,
         APPLICATION_TABLE_NAME: props.applicationTable.tableName,
         PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
+        // Missing until this session — this handler decrypts confirmed Twin
+        // signal content to build the personalized explanation
+        // (lib/crypto-stub.ts throws loudly without this), but nothing had
+        // exercised that path against a user with confirmed signals before
+        // the Digital Twin/Library frontends existed to make it reachable.
+        PLAINTEXT_CRYPTO_STUB_ACK: props.isProduction ? 'false' : 'true',
       },
       entry: path.join(__dirname, '../lambda/library/topic-detail.ts'),
       description: 'GET /v1/library/topics/{slug} — topic + personalized explanation from confirmed Twin signals.',

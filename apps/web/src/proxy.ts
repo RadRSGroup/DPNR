@@ -11,13 +11,26 @@ import { NextRequest, NextResponse } from 'next/server'
  * The real security boundary is unchanged: API Gateway's JWT authorizer on
  * every `/v1` call, plus each handler's own `requireConsent()`/ownership
  * check (ADR 0004).
+ *
+ * Default post-login landing changed to `/companion` this session
+ * (docs/AGENT_LOG.md Session 13 — Companion frontend UI, workstream B) —
+ * the user confirmed this in Session 12 part 3, ahead of Companion having
+ * a page to route to; it does now. Dashboard (`/dashboard`) is unchanged
+ * and stays one tap away, per the spec's own Golden Path B step 4 — this
+ * is only which page a fresh login/consent lands on first.
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const hasSession = request.cookies.get('dpnr_session')?.value === '1'
   const hasConsent = request.cookies.get('dpnr_consented')?.value === '1'
 
-  const isProtected = pathname.startsWith('/dashboard') || pathname.startsWith('/decision')
+  const isProtected =
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/decision') ||
+    pathname.startsWith('/companion') ||
+    pathname.startsWith('/twin') ||
+    pathname.startsWith('/rooms') ||
+    pathname.startsWith('/library')
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup')
   const isConsentPage = pathname.startsWith('/consent')
 
@@ -40,7 +53,7 @@ export async function proxy(request: NextRequest) {
   // Already consented — skip consent page
   if (isConsentPage && hasConsent) {
     const url = request.nextUrl.clone()
-    url.pathname = request.nextUrl.searchParams.get('next') ?? '/dashboard'
+    url.pathname = request.nextUrl.searchParams.get('next') ?? '/companion'
     url.searchParams.delete('next')
     return NextResponse.redirect(url)
   }
@@ -48,7 +61,7 @@ export async function proxy(request: NextRequest) {
   // Already authenticated — skip auth pages
   if (isAuthPage && hasSession) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/companion'
     return NextResponse.redirect(url)
   }
 
@@ -56,5 +69,15 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/decision/:path*', '/login', '/signup', '/consent'],
+  matcher: [
+    '/dashboard/:path*',
+    '/decision/:path*',
+    '/companion/:path*',
+    '/twin/:path*',
+    '/rooms/:path*',
+    '/library/:path*',
+    '/login',
+    '/signup',
+    '/consent',
+  ],
 }

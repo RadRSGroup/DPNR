@@ -5,6 +5,7 @@ import {
   Sk,
   userPk,
   type RoadmapItem,
+  type RoadmapProposalItem,
   type CreditsBalanceItem,
   type DailyCardItem,
   type DailyCardResponse,
@@ -29,6 +30,8 @@ type RoadmapContent = {
   suggestedSpaces: string[]
 }
 
+type RoadmapProposalContent = RoadmapContent & { rationale: string }
+
 /**
  * GET /v1/dashboard — aggregate read (MVP_ARCHITECTURE.md §4). Read-only
  * over the caller's own data; no consent gate (see lib/consent.ts's doc
@@ -45,8 +48,9 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const pk = userPk(userId)
     const today = new Date().toISOString().slice(0, 10)
 
-    const [roadmapResult, creditsResult, dailyCardResult, commitmentsResult] = await Promise.all([
+    const [roadmapResult, roadmapProposalResult, creditsResult, dailyCardResult, commitmentsResult] = await Promise.all([
       ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.roadmap() } })),
+      ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.roadmapProposal() } })),
       ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.credits() } })),
       ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.dailyCard(today) } })),
       ddb.send(
@@ -60,6 +64,11 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
 
     const roadmapItem = roadmapResult.Item as RoadmapItem | undefined
     const roadmap = roadmapItem ? stubDecryptField<RoadmapContent>(roadmapItem.content) : null
+
+    const roadmapProposalItem = roadmapProposalResult.Item as RoadmapProposalItem | undefined
+    const roadmapProposal = roadmapProposalItem
+      ? stubDecryptField<RoadmapProposalContent>(roadmapProposalItem.content)
+      : null
 
     const creditsItem = creditsResult.Item as CreditsBalanceItem | undefined
     const creditsBalance = creditsItem?.balance ?? 0
@@ -95,6 +104,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
 
     const body: DashboardResponse = {
       roadmap,
+      roadmapProposal,
       continuityCue,
       creditsBalance,
       creditsLow,

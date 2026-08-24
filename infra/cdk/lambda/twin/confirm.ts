@@ -3,7 +3,10 @@ import { UpdateCommand } from '@aws-sdk/lib-dynamodb'
 import { HttpError } from '../lib/http'
 import type { TwinSignalActionResponse } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
+import { maybeProposeRoadmapRevision } from '../lib/roadmap-revision'
 import { ddb, TABLE_NAME, findSignalById } from './helpers'
+
+const PROMPT_REGISTRY_TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME as string
 
 /**
  * POST /v1/twin/signals/{id}/confirm — spec §5 Trust rules: a candidate
@@ -12,6 +15,12 @@ import { ddb, TABLE_NAME, findSignalById } from './helpers'
  * the spec's own "Confirm · Not quite · Explore this" framing implies
  * back-and-forth, not a one-way ratchet, so re-confirming a rejected signal
  * is a legitimate correction, not an error.
+ *
+ * Also the trigger point for a possible Roadmap-revision proposal (Session
+ * 16, the user's own direct choice — see lib/roadmap-revision.ts) — run
+ * inline, synchronously, same "compute after the triggering action, no
+ * separate event pipeline" choice Session 10 already made for Twin
+ * extraction itself.
  */
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
@@ -32,6 +41,8 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         ExpressionAttributeValues: { ':status': 'confirmed', ':now': now },
       })
     )
+
+    await maybeProposeRoadmapRevision(ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME, userId)
 
     const response: TwinSignalActionResponse = { signalId, status: 'confirmed' }
     return jsonResponse(200, response)

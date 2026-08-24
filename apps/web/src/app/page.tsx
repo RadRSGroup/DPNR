@@ -10,7 +10,10 @@ export default function Home() {
       <div className="max-w-sm w-full text-center space-y-8">
         <div className="space-y-2">
           <p className="text-purple-400 text-sm tracking-widest uppercase">DPNR</p>
-          <h1 className="text-4xl font-light text-white">Workshop Rooms</h1>
+          <div className="relative inline-block">
+            <h1 className="text-4xl font-light text-white">InnerOS</h1>
+            <span className="absolute top-1/2 left-full -translate-y-1/2 ml-2 text-[10px] font-semibold tracking-widest uppercase text-yellow-400 border border-yellow-400/40 rounded-full px-2 py-0.5 whitespace-nowrap">Beta</span>
+          </div>
           <p className="text-white/50 text-base mt-3">
             Map your decision.<br />Hear yourself clearly.
           </p>
@@ -18,7 +21,7 @@ export default function Home() {
 
         <div className="space-y-3">
           <Link
-            href="/dashboard"
+            href="/rooms"
             className="block w-full bg-purple-600 hover:bg-purple-500 text-white rounded-2xl py-4 text-base font-medium transition-colors"
           >
             Start a Decision

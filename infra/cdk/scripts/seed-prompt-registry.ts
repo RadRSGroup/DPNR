@@ -37,6 +37,7 @@ import { TWIN_PROMPT_SEEDS } from './twin-prompts.seed'
 import { DAILY_CARD_PROMPT_SEEDS } from './daily-card-prompts.seed'
 import { WEEKLY_RECAP_PROMPT_SEEDS } from './weekly-recap-prompts.seed'
 import { COMPANION_PROMPT_SEEDS } from './companion-prompts.seed'
+import { ROADMAP_PROMPT_SEEDS } from './roadmap-prompts.seed'
 
 const TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME ?? 'dpnr-prompt-registry'
 
@@ -82,6 +83,12 @@ const DOMAINS: { domain: string; seeds: PromptSeed[]; author: string; sourceNote
     seeds: COMPANION_PROMPT_SEEDS,
     author: 'design:companion-prompts',
     sourceNote: 'Net-new — designed Claude-native, not ported from anywhere (see companion-prompts.seed.ts).',
+  },
+  {
+    domain: 'roadmap',
+    seeds: ROADMAP_PROMPT_SEEDS,
+    author: 'design:roadmap-prompts',
+    sourceNote: 'Net-new — designed Claude-native, not ported from anywhere (see roadmap-prompts.seed.ts).',
   },
 ]
 

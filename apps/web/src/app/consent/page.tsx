@@ -31,7 +31,7 @@ const POINTS = [
 function ConsentContent() {
   const router = useRouter()
   const params = useSearchParams()
-  const next = params.get('next') ?? '/dashboard'
+  const next = params.get('next') ?? '/companion' // default post-login landing — see proxy.ts's doc comment
 
   const [accepting, setAccepting] = useState(false)
   const [error, setError] = useState<string | null>(null)

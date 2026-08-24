@@ -17,6 +17,20 @@ export const DashboardResponseSchema = z.object({
       suggestedSpaces: z.array(z.string()),
     })
     .nullable(), // null until onboarding has produced one
+  // A pending revision (Session 16) — present only when roadmap/revise has
+  // decided the accumulated confirmed evidence warrants one. Never applied
+  // automatically; the person must accept it via
+  // POST /v1/roadmap/proposal/accept (spec §5 Trust rules, extended to the
+  // Roadmap itself at the user's direct instruction).
+  roadmapProposal: z
+    .object({
+      currentFocus: z.string(),
+      theme: z.string(),
+      direction: z.string(),
+      suggestedSpaces: z.array(z.string()),
+      rationale: z.string(),
+    })
+    .nullable(),
   continuityCue: z
     .object({
       kind: z.enum(['daily_card', 'continuation', 'commitment', 'roadmap_cue', 'recommended_space']),
@@ -50,6 +64,19 @@ export const TwinSignalActionResponseSchema = z.object({
   status: TwinSignalStatusSchema,
 })
 export type TwinSignalActionResponse = z.infer<typeof TwinSignalActionResponseSchema>
+
+/** POST /v1/roadmap/proposal/accept — the proposed content becomes the live Roadmap. */
+export const RoadmapProposalAcceptResponseSchema = z.object({
+  currentFocus: z.string(),
+  theme: z.string(),
+  direction: z.string(),
+  suggestedSpaces: z.array(z.string()),
+})
+export type RoadmapProposalAcceptResponse = z.infer<typeof RoadmapProposalAcceptResponseSchema>
+
+/** POST /v1/roadmap/proposal/reject — the proposal is discarded; the live Roadmap is untouched. */
+export const RoadmapProposalRejectResponseSchema = z.object({ ok: z.literal(true) })
+export type RoadmapProposalRejectResponse = z.infer<typeof RoadmapProposalRejectResponseSchema>
 
 /** GET /v1/credits */
 export const CreditsResponseSchema = z.object({

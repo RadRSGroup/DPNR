@@ -7,6 +7,15 @@ import type {
   UserExportResponse,
   DeleteAccountResponse,
   DashboardResponse,
+  CompanionMessageRequest,
+  CompanionMessageResponse,
+  CompanionContextResponse,
+  LibraryTopicDetailResponse,
+  TwinListResponse,
+  TwinSignalActionResponse,
+  LibraryTopicsResponse,
+  RoadmapProposalAcceptResponse,
+  RoadmapProposalRejectResponse,
 } from '@dpnr/shared-types'
 import { getIdToken } from '../cognito/client'
 
@@ -88,4 +97,57 @@ export async function deleteAccountData(): Promise<DeleteAccountResponse> {
 export async function getDashboard(): Promise<DashboardResponse> {
   const res = await authedFetch('/v1/dashboard')
   return parseOrThrow<DashboardResponse>(res)
+}
+
+/** POST /v1/companion/message — one chat turn; may come back with a navigation directive. */
+export async function sendCompanionMessage(request: CompanionMessageRequest): Promise<CompanionMessageResponse> {
+  const res = await authedFetch('/v1/companion/message', { method: 'POST', body: JSON.stringify(request) })
+  return parseOrThrow<CompanionMessageResponse>(res)
+}
+
+/** GET /v1/companion/context — recent turns, used by /companion to resume the active chat on load. */
+export async function getCompanionContext(): Promise<CompanionContextResponse> {
+  const res = await authedFetch('/v1/companion/context')
+  return parseOrThrow<CompanionContextResponse>(res)
+}
+
+/** GET /v1/library/topics/{slug} — used by /companion to render an `open_library_topic` directive inline, and by /library/[slug]. */
+export async function getLibraryTopic(slug: string): Promise<LibraryTopicDetailResponse> {
+  const res = await authedFetch(`/v1/library/topics/${encodeURIComponent(slug)}`)
+  return parseOrThrow<LibraryTopicDetailResponse>(res)
+}
+
+/** GET /v1/library/topics — the public catalog listing, used by /library. */
+export async function getLibraryTopics(): Promise<LibraryTopicsResponse> {
+  const res = await authedFetch('/v1/library/topics')
+  return parseOrThrow<LibraryTopicsResponse>(res)
+}
+
+/** POST /v1/roadmap/proposal/accept — a pending Roadmap revision (surfaced via GET /v1/dashboard) becomes the live Roadmap. */
+export async function acceptRoadmapProposal(): Promise<RoadmapProposalAcceptResponse> {
+  const res = await authedFetch('/v1/roadmap/proposal/accept', { method: 'POST' })
+  return parseOrThrow<RoadmapProposalAcceptResponse>(res)
+}
+
+/** POST /v1/roadmap/proposal/reject — discards a pending Roadmap revision. */
+export async function rejectRoadmapProposal(): Promise<RoadmapProposalRejectResponse> {
+  const res = await authedFetch('/v1/roadmap/proposal/reject', { method: 'POST' })
+  return parseOrThrow<RoadmapProposalRejectResponse>(res)
+}
+
+/** GET /v1/twin — every Digital Twin ("InnerSelf") signal the caller has, any status. */
+export async function getTwin(): Promise<TwinListResponse> {
+  const res = await authedFetch('/v1/twin')
+  return parseOrThrow<TwinListResponse>(res)
+}
+
+/** POST /v1/twin/signals/{id}/confirm | reject — legal from any current status, not a one-way ratchet. */
+export async function confirmTwinSignal(signalId: string): Promise<TwinSignalActionResponse> {
+  const res = await authedFetch(`/v1/twin/signals/${encodeURIComponent(signalId)}/confirm`, { method: 'POST' })
+  return parseOrThrow<TwinSignalActionResponse>(res)
+}
+
+export async function rejectTwinSignal(signalId: string): Promise<TwinSignalActionResponse> {
+  const res = await authedFetch(`/v1/twin/signals/${encodeURIComponent(signalId)}/reject`, { method: 'POST' })
+  return parseOrThrow<TwinSignalActionResponse>(res)
 }

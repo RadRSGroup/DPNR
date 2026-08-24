@@ -1,7 +1,7 @@
 import type { APIGatewayProxyHandlerV2WithJWTAuthorizer } from 'aws-lambda'
 import { randomUUID } from 'node:crypto'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
+import { DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import {
   Sk,
   userPk,
@@ -9,9 +9,9 @@ import {
   CompanionDirectiveSchema,
   type CompanionDirective,
   type CompanionMessageResponse,
-  type SessionItem,
   type SessionMessageItem,
-  type CompanionActiveSessionPointerItem,
+  type RoadmapItem,
+  type TwinSignalItem,
 } from '@dpnr/shared-types'
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { requireConsent } from '../lib/consent'
@@ -19,6 +19,9 @@ import { stubEncryptField, stubDecryptField } from '../lib/crypto-stub'
 import { resolvePromptVersion } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
 import { listActiveTopics } from '../lib/library-catalog'
+import { gatherContinuityContext } from '../continuity/gather-context'
+import { roadmapExists } from '../lib/roadmap'
+import { getOrCreateActiveCompanionSession } from './session'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
@@ -43,7 +46,15 @@ const MODEL_CONTEXT_MESSAGES = 20
 // not a correctness incident.
 const IDEMPOTENCY_LOOKBACK = 5
 
+// Session 15 (workstream D): a safety valve, not a target — spec says "ask
+// only what is needed," not a fixed count. If the model still hasn't set
+// readyForRoadmap after this many of the person's own turns, the next call
+// is forced to conclude with its best-effort inference rather than asking
+// forever. An unconfirmed placeholder, same status as CONTINUATION_GAP_HOURS.
+const MAX_ONBOARDING_USER_TURNS = 8
+
 type MessageContent = { text: string }
+type RoadmapContent = { currentFocus: string; theme: string; direction: string; suggestedSpaces: string[] }
 
 /**
  * POST /v1/companion/message. Ownership is structural (see dashboard
@@ -60,7 +71,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
 
     await requireConsent(ddb, TABLE_NAME, userId)
 
-    const sessionId = await getOrCreateActiveCompanionSession(pk)
+    const sessionId = await getOrCreateActiveCompanionSession(ddb, TABLE_NAME, pk)
     const recentMessages = await queryRecentMessages(pk, sessionId, MODEL_CONTEXT_MESSAGES)
 
     const duplicate = recentMessages
@@ -93,7 +104,11 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       role: m.role,
       text: stubDecryptField<MessageContent>(m.content).text,
     }))
-    const { reply, directive } = await callCompanionModel(history, body.text)
+
+    const hasRoadmap = await roadmapExists(ddb, TABLE_NAME, pk)
+    const { reply, directive } = hasRoadmap
+      ? await callCompanionModel(userId, history, body.text)
+      : await runOnboardingTurn(pk, sessionId, history, body.text)
 
     const replyAt = new Date().toISOString()
     const assistantMessage: SessionMessageItem = {
@@ -110,43 +125,6 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   } catch (err) {
     return errorResponse(err)
   }
-}
-
-// Known, acceptable race: two concurrent first-messages from the same user
-// (rare — effectively simultaneous requests before any session exists) could
-// each miss the GetItem below and create two sessions; the second PutCommand
-// on the pointer item wins, and the first session becomes an orphaned,
-// harmless item. Not a correctness or security issue for a chat feature —
-// worth a ConditionExpression + retry only if this ever shows up for real.
-async function getOrCreateActiveCompanionSession(pk: string): Promise<string> {
-  const pointerResult = await ddb.send(
-    new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.companionActiveSession() } })
-  )
-  const pointer = pointerResult.Item as CompanionActiveSessionPointerItem | undefined
-  if (pointer) return pointer.sessionId
-
-  const sessionId = randomUUID()
-  const now = new Date().toISOString()
-  const session: SessionItem = {
-    pk,
-    sk: Sk.session(sessionId),
-    sessionId,
-    roomType: 'companion',
-    status: 'active',
-    sessionVersion: 0,
-    startedAt: now,
-  }
-  const pointerItem: CompanionActiveSessionPointerItem = {
-    pk,
-    sk: Sk.companionActiveSession(),
-    sessionId,
-    updatedAt: now,
-  }
-  await Promise.all([
-    ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: session })),
-    ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: pointerItem })),
-  ])
-  return sessionId
 }
 
 /** Most recent `limit` messages for this session, in chronological order. */
@@ -174,13 +152,25 @@ async function queryRecentMessages(
  * `callCompanionModel` stub (companion/model-stub.ts, deleted this
  * session). `history` excludes the just-submitted turn (queried before it's
  * written, see the handler above); `userText` is that turn.
+ *
+ * Session 14 (workstream C, part 2): also pulls the caller's confirmed
+ * Digital Twin signals into the prompt via `gatherContinuityContext` — the
+ * same shared read the Continuity composers and this handler's own
+ * `context.ts` continuation synthesis use — so every reply is informed by
+ * what's already known, not just the raw chat history. Only `confirmedSignals`
+ * is used here; `sessionSummaries` (the other half of that read) isn't —
+ * `respond` is a per-turn reactive reply, not a cross-session synthesis, so
+ * pulling in session summaries here would duplicate what `continuation`
+ * already does at open-time for no stated benefit.
  */
 async function callCompanionModel(
+  userId: string,
   history: CompanionTurn[],
   userText: string
 ): Promise<{ reply: string; directive: CompanionDirective | null }> {
   const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'companion', 'respond')
   const topics = await listActiveTopics(ddb, LIBRARY_CATALOG_TABLE_NAME)
+  const { confirmedSignals } = await gatherContinuityContext(userId)
 
   const conversationHistory =
     history.length > 0
@@ -188,9 +178,17 @@ async function callCompanionModel(
       : '(no prior messages — this is the start of the conversation)'
   const libraryTopics =
     topics.length > 0 ? topics.map((t) => `- ${t.slug}: ${t.title}`).join('\n') : '(none available)'
+  const confirmedSignalsText =
+    confirmedSignals.length > 0
+      ? confirmedSignals
+          .slice(0, 5)
+          .map((s) => `- (${s.domain}) ${s.description}`)
+          .join('\n')
+      : '(nothing confirmed yet)'
 
   const result = await callPromptModel(version, {
     conversationHistory,
+    confirmedSignals: confirmedSignalsText,
     libraryTopics,
     currentMessage: userText,
   })
@@ -225,4 +223,120 @@ function buildDirective(result: Record<string, unknown>, validTopicSlugs: string
 
   const parsed = CompanionDirectiveSchema.safeParse(candidate)
   return parsed.success ? parsed.data : null
+}
+
+/**
+ * Session 15 (workstream D): runs one turn of the `companion/onboard`
+ * prompt instead of `respond`, for every user without a Roadmap yet — the
+ * spec's Golden Path A steps 5–8 ("Companion-led conversational onboarding"
+ * through "Generate initial Roadmap"). Never carries a directive — routing
+ * into a Room/Dashboard/Library is step 10, which only happens once a
+ * Roadmap exists and the *next* message goes through the normal `respond`
+ * path instead; `onboard` itself stays focused on one thing.
+ *
+ * When the model sets `readyForRoadmap`, this writes the real `RoadmapItem`
+ * plus two Twin signals (`current_focus`, `direction`) in the same call —
+ * both **written as already `confirmed`**, not `candidate` like every other
+ * signal source. Deliberate, user-confirmed exception (not the general
+ * trust-rule default): the person is directly stating their own focus in
+ * conversation, not being inferred about from indirect behavior — the
+ * spec's own trust rule distinguishes "facts explicitly stated by the user"
+ * from AI inferences, and there is no Twin confirm/reject frontend at all
+ * yet for a `candidate` signal to ever be acted on. Revisit this choice
+ * once a real Twin UI exists.
+ */
+async function runOnboardingTurn(
+  pk: string,
+  sessionId: string,
+  history: CompanionTurn[],
+  userText: string
+): Promise<{ reply: string; directive: CompanionDirective | null }> {
+  const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'companion', 'onboard')
+
+  const conversationHistory =
+    history.length > 0
+      ? history.map((m) => `${m.role === 'user' ? 'User' : 'Companion'}: ${m.text}`).join('\n')
+      : '(no prior messages — this is the start of the conversation)'
+  const userTurnCount = history.filter((m) => m.role === 'user').length + 1 // +1 for the turn being answered now
+  const conclusionInstruction =
+    userTurnCount >= MAX_ONBOARDING_USER_TURNS
+      ? 'You must set readyForRoadmap to true now and give your honest best-effort currentFocus/theme/direction from everything shared so far, even if it feels incomplete — do not ask another question.'
+      : ''
+
+  const result = await callPromptModel(version, {
+    conversationHistory,
+    currentMessage: userText,
+    conclusionInstruction,
+  })
+  if (typeof result === 'string') {
+    throw new HttpError(502, 'model_call_failed', 'Onboarding prompt did not return forced tool-use output.')
+  }
+
+  const reply = typeof result.reply === 'string' ? result.reply : ''
+  if (result.readyForRoadmap === true) {
+    await persistInitialRoadmap(pk, sessionId, result)
+  }
+  return { reply, directive: null }
+}
+
+async function persistInitialRoadmap(pk: string, sessionId: string, result: Record<string, unknown>): Promise<void> {
+  const currentFocus = typeof result.currentFocus === 'string' ? result.currentFocus : ''
+  const theme = typeof result.theme === 'string' ? result.theme : ''
+  const direction = typeof result.direction === 'string' ? result.direction : ''
+  // Never trust the model's own judgment of "ready" as license to skip
+  // validating what it actually produced — same tolerance every other
+  // model-output consumer in this codebase applies. An empty/missing field
+  // here means the model set readyForRoadmap without real substance; skip
+  // persisting rather than write a hollow Roadmap the person never
+  // actually confirmed having.
+  if (!currentFocus || !theme || !direction) return
+
+  const suggestedSpaces = Array.isArray(result.suggestedSpaces)
+    ? result.suggestedSpaces.filter((s): s is string => typeof s === 'string')
+    : []
+
+  const now = new Date().toISOString()
+  const roadmapItem: RoadmapItem = {
+    pk,
+    sk: Sk.roadmap(),
+    content: stubEncryptField<RoadmapContent>({ currentFocus, theme, direction, suggestedSpaces }),
+    version: 1,
+    updatedAt: now,
+  }
+
+  const currentFocusSignalId = randomUUID()
+  const directionSignalId = randomUUID()
+  const signals: TwinSignalItem[] = [
+    {
+      pk,
+      sk: Sk.twinSignal('current_focus', currentFocusSignalId),
+      signalId: currentFocusSignalId,
+      domain: 'current_focus',
+      status: 'confirmed',
+      confidence: 1,
+      source: 'onboarding',
+      sourceSessionId: sessionId,
+      content: stubEncryptField<{ description: string }>({ description: currentFocus }),
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      pk,
+      sk: Sk.twinSignal('direction', directionSignalId),
+      signalId: directionSignalId,
+      domain: 'direction',
+      status: 'confirmed',
+      confidence: 1,
+      source: 'onboarding',
+      sourceSessionId: sessionId,
+      content: stubEncryptField<{ description: string }>({ description: direction }),
+      createdAt: now,
+      updatedAt: now,
+    },
+  ]
+
+  await Promise.all([
+    ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: roadmapItem })),
+    ...signals.map((item) => ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: item }))),
+  ])
 }
