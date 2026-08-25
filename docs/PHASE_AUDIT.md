@@ -154,9 +154,11 @@ the very first real Companion interaction the moment the frontend is pointed at 
 and Twin itself is real (Session 10, see §1's row 1). **Credits is no longer schema-only**: `lib/credits.ts`
 has `grantCredits` (used by the Cognito post-confirmation trigger to grant a starter Beta Trial balance —
 `STARTER_TRIAL_CREDITS = 50`, an unconfirmed placeholder, not a real pricing decision) and `consumeCredits`
-(an atomic `ConditionExpression: balance >= amount` deduction, real and live-verifiable, but **not called
-from anywhere yet** — wiring it into `rooms/command.ts`/`companion/message.ts`/`library/topic-detail.ts`
-needs the "billable action" decision first, see AGENT_LOG.md). `GET /v1/credits` and `GET /v1/plans` are
+(an atomic `ConditionExpression: balance >= amount` deduction). **Updated Session 18**: `consumeCredits` is
+now actually wired in — `rooms/command.ts` charges 1 credit per Room `REFINE` action, `companion/message.ts`
+charges 1 credit per real Companion reply (onboarding stays free) — both live-verified end to end, including
+the real `402 credits_exhausted` path and its new `CreditsExhaustedModal`. `library/topic-detail.ts` was not
+included in that decision (only Rooms/Companion were) and still doesn't charge. `GET /v1/credits` and `GET /v1/plans` are
 built and live-verified against the real deployed API and the real (now-seeded) `dpnr-plans-catalog` table.
 `POST /v1/credits/purchase` remains unbuilt — blocked on the payment-provider decision (same doc). Roadmap
 (`RoadmapItemSchema`) is still fully unbuilt; `dashboard/handler.ts` correctly degrades to `roadmap: null`

@@ -10,6 +10,7 @@ import {
 } from '@dpnr/shared-types'
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { requireConsent } from '../lib/consent'
+import { consumeCredits, ROOM_REFINE_COST } from '../lib/credits'
 import { ddb, TABLE_NAME } from './db'
 import { decisionFlow } from './decision-steps'
 import { mirrorFlow } from './mirror-steps'
@@ -94,6 +95,14 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     }
     if (!step.allowedActions.includes(body.action)) {
       throw new HttpError(400, 'action_not_allowed', `Action "${body.action}" isn't valid for step "${body.stepId}".`)
+    }
+
+    // REFINE calls the model (generates a fresh draft); SUBMIT_STEP/SKIP/RESUME
+    // only persist what's already been refined — billable action is REFINE
+    // alone (user's own confirmed decision, Session 18). One insertion point
+    // covers every step's REFINE handler since they all dispatch through here.
+    if (body.action === 'REFINE') {
+      await consumeCredits(ddb, TABLE_NAME, pk, ROOM_REFINE_COST, 'room_refine')
     }
 
     const stepResult = await step.handle({

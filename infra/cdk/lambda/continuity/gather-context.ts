@@ -1,5 +1,5 @@
 import { QueryCommand } from '@aws-sdk/lib-dynamodb'
-import { userPk, type TwinSignalItem, type SessionSummaryItem } from '@dpnr/shared-types'
+import { userPk, type TwinSignalItem, type SessionSummaryItem, type CommitmentItem } from '@dpnr/shared-types'
 import { stubDecryptField } from '../lib/crypto-stub'
 import { ddb, TABLE_NAME } from './helpers'
 
@@ -67,4 +67,37 @@ export async function gatherContinuityContext(
     }))
 
   return { confirmedSignals, sessionSummaries }
+}
+
+export interface DueCommitment {
+  description: string
+  reviewDate: string
+}
+
+/**
+ * Open commitments whose `reviewDate` has arrived, earliest-due first —
+ * the material for Daily Card's `reminder` kind (compose-daily-card.ts
+ * only). Deliberately separate from `gatherContinuityContext` above: that
+ * function also backs Companion's per-message `respond` call
+ * (companion/message.ts), and a due-commitment lookup has no reason to run
+ * on every chat turn — only the once-daily composer needs it.
+ */
+export async function getDueCommitments(userId: string): Promise<DueCommitment[]> {
+  const today = new Date().toISOString().slice(0, 10)
+
+  const result = await ddb.send(
+    new QueryCommand({
+      TableName: TABLE_NAME,
+      KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+      ExpressionAttributeValues: { ':pk': userPk(userId), ':prefix': 'COMMITMENT#' },
+    })
+  )
+
+  return ((result.Items ?? []) as CommitmentItem[])
+    .filter((c) => c.status === 'open' && c.reviewDate !== null && c.reviewDate <= today)
+    .sort((a, b) => (a.reviewDate as string).localeCompare(b.reviewDate as string))
+    .map((c) => ({
+      description: stubDecryptField<{ description: string }>(c.content).description,
+      reviewDate: c.reviewDate as string,
+    }))
 }

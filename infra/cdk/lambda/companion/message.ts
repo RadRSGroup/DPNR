@@ -15,6 +15,7 @@ import {
 } from '@dpnr/shared-types'
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { requireConsent } from '../lib/consent'
+import { consumeCredits, COMPANION_MESSAGE_COST } from '../lib/credits'
 import { stubEncryptField, stubDecryptField } from '../lib/crypto-stub'
 import { resolvePromptVersion } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
@@ -106,6 +107,12 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     }))
 
     const hasRoadmap = await roadmapExists(ddb, TABLE_NAME, pk)
+    // Only a real Companion reply is billable — onboarding turns stay free
+    // (user's own confirmed decision, Session 18), same rule already applied
+    // to Room REFINE-vs-SUBMIT_STEP in rooms/command.ts.
+    if (hasRoadmap) {
+      await consumeCredits(ddb, TABLE_NAME, pk, COMPANION_MESSAGE_COST, 'companion_message')
+    }
     const { reply, directive } = hasRoadmap
       ? await callCompanionModel(userId, history, body.text)
       : await runOnboardingTurn(pk, sessionId, history, body.text)

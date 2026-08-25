@@ -3,9 +3,10 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getCurrentSession } from '@/lib/cognito/client'
-import { getCompanionContext, sendCompanionMessage, sendDailyCardFeedback } from '@/lib/api/v1-client'
+import { getCompanionContext, sendCompanionMessage, sendDailyCardFeedback, ApiError } from '@/lib/api/v1-client'
 import type { CompanionDirective, CompanionContextResponse } from '@dpnr/shared-types'
 import DirectiveCard from '@/components/companion/DirectiveCard'
+import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -37,6 +38,7 @@ export default function CompanionPage() {
   const [sending, setSending] = useState(false)
   const [userInitial, setUserInitial] = useState('?')
   const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
+  const [creditsExhausted, setCreditsExhausted] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -92,11 +94,19 @@ export default function CompanionPage() {
         ...prev,
         { role: 'assistant', text: res.reply, createdAt: new Date().toISOString(), directive: res.directive },
       ])
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', text: 'Something went wrong on my end — try sending that again.', createdAt: new Date().toISOString(), failed: true },
-      ])
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'credits_exhausted') {
+        // Mark the just-sent user turn as failed rather than adding a fake
+        // assistant reply — the modal itself explains why, no need to also
+        // say "something went wrong" over a message that never even reached the model.
+        setMessages((prev) => prev.map((m, i) => (i === prev.length - 1 ? { ...m, failed: true } : m)))
+        setCreditsExhausted(true)
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', text: 'Something went wrong on my end — try sending that again.', createdAt: new Date().toISOString(), failed: true },
+        ])
+      }
     } finally {
       setSending(false)
     }
@@ -113,6 +123,7 @@ export default function CompanionPage() {
     <div className="relative h-dvh flex flex-col bg-[#0a0a0f] overflow-hidden max-w-[393px] mx-auto">
       <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
+      {creditsExhausted && <CreditsExhaustedModal onClose={() => setCreditsExhausted(false)} />}
 
       <div className="flex items-center justify-between px-5 pt-14 pb-3">
         <div>
@@ -194,7 +205,7 @@ export default function CompanionPage() {
               <div
                 className={
                   m.role === 'user'
-                    ? 'bg-purple-600 text-white rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed'
+                    ? `bg-purple-600 text-white rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed ${m.failed ? 'opacity-50' : ''}`
                     : `bg-white/5 border border-white/10 text-white/85 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed ${m.failed ? 'border-red-500/30 text-red-300/80' : ''}`
                 }
               >

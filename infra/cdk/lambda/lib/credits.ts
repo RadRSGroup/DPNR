@@ -6,6 +6,14 @@ import { HttpError } from './http'
 /** Used whenever a CREDITS item doesn't exist yet — same default `dashboard/handler.ts` degrades to. */
 export const DEFAULT_LOW_BALANCE_THRESHOLD = 5
 
+/**
+ * Cost per billable action — the user's own confirmed decision (Session 18),
+ * not a placeholder. Onboarding turns (runOnboardingTurn in
+ * companion/message.ts) are deliberately excluded, same session's decision.
+ */
+export const ROOM_REFINE_COST = 1
+export const COMPANION_MESSAGE_COST = 1
+
 export type CreditsGrantType = 'grant_trial' | 'grant_purchase' | 'refund'
 
 /**

@@ -4,7 +4,9 @@ import { stubEncryptField } from '../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
 import { ddb, TABLE_NAME } from './helpers'
-import { gatherContinuityContext } from './gather-context'
+import { gatherContinuityContext, getDueCommitments } from './gather-context'
+
+const DUE_COMMITMENTS_LIMIT = 2
 
 const RECENT_SIGNALS_LIMIT = 5
 const NONE_YET = '(none yet)'
@@ -71,15 +73,22 @@ export const handler = async (): Promise<void> => {
 }
 
 async function composeForUser(userId: string): Promise<boolean> {
-  const { confirmedSignals, sessionSummaries } = await gatherContinuityContext(userId)
+  const [{ confirmedSignals, sessionSummaries }, dueCommitments] = await Promise.all([
+    gatherContinuityContext(userId),
+    getDueCommitments(userId),
+  ])
 
   const recentSignalsList = confirmedSignals
     .slice(0, RECENT_SIGNALS_LIMIT)
     .map((s) => `- (${s.domain}) ${s.description}`)
     .join('\n')
   const recentSummary = sessionSummaries[0]?.summary
+  const dueCommitmentsList = dueCommitments
+    .slice(0, DUE_COMMITMENTS_LIMIT)
+    .map((c) => `- ${c.description}`)
+    .join('\n')
 
-  if (!recentSignalsList && !recentSummary) {
+  if (!recentSignalsList && !recentSummary && !dueCommitmentsList) {
     return false // nothing real to draw on — never compose a card from nothing
   }
 
@@ -87,6 +96,7 @@ async function composeForUser(userId: string): Promise<boolean> {
   const modelResult = await callPromptModel(version, {
     confirmedSignals: recentSignalsList || NONE_YET,
     recentSummary: recentSummary || NONE_YET,
+    dueCommitments: dueCommitmentsList || NONE_YET,
   })
   if (typeof modelResult === 'string') {
     throw new Error('daily_card/compose did not return the forced structured output.')

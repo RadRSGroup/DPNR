@@ -17,6 +17,7 @@ import SummaryInsightScreen from '@/components/decision/SummaryInsightScreen'
 import SessionSummaryScreen from '@/components/decision/SessionSummaryScreen'
 import ClarityToActionScreen from '@/components/decision/ClarityToActionScreen'
 import CommitmentScreen from '@/components/decision/CommitmentScreen'
+import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
 import { DecisionOption, Lens } from '@/lib/types'
 import type { RefineFn } from '@/lib/useAI'
 import { getCurrentSession } from '@/lib/cognito/client'
@@ -140,6 +141,7 @@ function NewDecisionContent() {
   const [pendingKeys, setPendingKeys] = useState<Record<string, string>>({})
   const [syncNotice, setSyncNotice] = useState<string | null>(null)
   const [fatalError, setFatalError] = useState<string | null>(null)
+  const [creditsExhausted, setCreditsExhausted] = useState(false)
 
   useEffect(() => {
     async function checkAuth() {
@@ -213,6 +215,7 @@ function NewDecisionContent() {
       if (err.status === 401) { router.push('/login?next=/decision/new'); return }
       if (err.code === 'consent_required') { router.push('/consent?next=/decision/new'); return }
       if (err.code === 'session_completed') { router.push('/dashboard'); return }
+      if (err.code === 'credits_exhausted') { setCreditsExhausted(true); return }
       if (err.code === 'session_version_conflict' && sessionId) {
         try {
           const full = await getDecisionFull(sessionId)
@@ -654,6 +657,7 @@ function NewDecisionContent() {
           </button>
         </div>
       )}
+      {creditsExhausted && <CreditsExhaustedModal onClose={() => setCreditsExhausted(false)} />}
       {renderStep()}
     </>
   )

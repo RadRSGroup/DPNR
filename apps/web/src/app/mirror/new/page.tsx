@@ -9,6 +9,7 @@ import Step04LifeImpact from '@/components/mirror/Step04LifeImpact'
 import Step05Synthesis from '@/components/mirror/Step05Synthesis'
 import CommitmentScreen from '@/components/mirror/CommitmentScreen'
 import CompletionScreen from '@/components/mirror/CompletionScreen'
+import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
 import type { RefineFn } from '@/lib/useAI'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { submitRoomCommand, getMirrorFull, ApiError } from '@/lib/api/v1-client'
@@ -64,6 +65,7 @@ function NewMirrorContent() {
   const [pendingKeys, setPendingKeys] = useState<Record<string, string>>({})
   const [syncNotice, setSyncNotice] = useState<string | null>(null)
   const [fatalError, setFatalError] = useState<string | null>(null)
+  const [creditsExhausted, setCreditsExhausted] = useState(false)
 
   useEffect(() => {
     async function checkAuth() {
@@ -119,6 +121,7 @@ function NewMirrorContent() {
       if (err.status === 401) { router.push('/login?next=/mirror/new'); return }
       if (err.code === 'consent_required') { router.push('/consent?next=/mirror/new'); return }
       if (err.code === 'session_completed') { router.push('/dashboard'); return }
+      if (err.code === 'credits_exhausted') { setCreditsExhausted(true); return }
       if (err.code === 'session_version_conflict' && sessionId) {
         try {
           const full = await getMirrorFull(sessionId)
@@ -348,6 +351,7 @@ function NewMirrorContent() {
           </button>
         </div>
       )}
+      {creditsExhausted && <CreditsExhaustedModal onClose={() => setCreditsExhausted(false)} />}
       {renderStep()}
     </>
   )
