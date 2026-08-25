@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import WelcomeScreen from '@/components/decision/WelcomeScreen'
+import DecisionRoomLanding from '@/components/decision/DecisionRoomLanding'
 import MomentScreen from '@/components/decision/MomentScreen'
 import Step01 from '@/components/decision/Step01'
 import Step02 from '@/components/decision/Step02'
@@ -430,7 +430,7 @@ function NewDecisionContent() {
     }
 
     if (introStep === -1) {
-      return <WelcomeScreen userName={userName} onNext={() => setIntroStep(0)} />
+      return <DecisionRoomLanding userName={userName} onStart={() => setIntroStep(0)} />
     }
 
     if (introStep === 0) {

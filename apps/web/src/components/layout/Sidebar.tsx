@@ -1,13 +1,23 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { User, Wallet, Headphones, ChevronRight } from 'lucide-react'
 import RingLogo from '@/components/icons/RingLogo'
+import { getCredits } from '@/lib/api/v1-client'
 import { PRIMARY_NAV } from './nav-items'
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const [credits, setCredits] = useState<number | null>(null)
+
+  useEffect(() => {
+    getCredits().then((c) => setCredits(c.balance)).catch(() => {
+      // Sidebar renders on every page, including ones with no session yet
+      // (e.g. mid-redirect) — a failed fetch just leaves the generic label.
+    })
+  }, [])
 
   return (
     <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 border-r border-[var(--color-border-glass)] bg-black/20 min-h-screen p-4">
@@ -45,7 +55,12 @@ export default function Sidebar() {
 
       <div className="mt-6 pt-4 border-t border-[var(--color-border-glass)] flex flex-col gap-1">
         <SidebarMiniCard href="/twin" icon={<UserCircleGlow />} title="InnerSelf" subtitle="Your Digital Twin" />
-        <SidebarMiniCard href="/account" icon={<Wallet className="w-[18px] h-[18px]" />} title="My Wallet" subtitle="View credits" />
+        <SidebarMiniCard
+          href="/account"
+          icon={<Wallet className="w-[18px] h-[18px]" />}
+          title="My Wallet"
+          subtitle={credits !== null ? `${credits} credits` : 'View credits'}
+        />
         <SidebarMiniCard href="/account" icon={<User className="w-[18px] h-[18px]" />} title="My Profile" subtitle="Settings" />
       </div>
 
