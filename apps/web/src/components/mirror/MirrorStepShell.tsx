@@ -60,9 +60,9 @@ export default function MirrorStepShell({
   const [infoOpen, setInfoOpen] = useState(false)
 
   return (
-    <div className="relative h-dvh flex flex-col bg-[#0a0a0f] overflow-hidden max-w-[393px] mx-auto">
+    <div className="relative h-dvh flex flex-col bg-[var(--color-bg-base)] overflow-hidden max-w-[393px] mx-auto">
       {/* Galaxy background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-canvas-from)] via-[var(--color-bg-canvas-via)] to-[var(--color-bg-canvas-to)] -z-10" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
 
       {/* Top bar */}
@@ -75,7 +75,7 @@ export default function MirrorStepShell({
         </button>
 
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-purple-500/40 flex items-center justify-center text-xs">
+          <div className="w-6 h-6 rounded-full bg-[var(--color-violet-500)]/40 flex items-center justify-center text-xs">
             ✦
           </div>
           <span className="text-white/40 text-xs">Mirror Room</span>
@@ -97,9 +97,9 @@ export default function MirrorStepShell({
             key={i}
             className={`h-1.5 rounded-full transition-all duration-500 ${
               i + 1 < step
-                ? 'bg-purple-400 w-5'
+                ? 'bg-[var(--color-violet-400)] w-5'
                 : i + 1 === step
-                ? 'bg-purple-300 w-8 shadow-[0_0_6px_rgba(167,139,250,0.8)]'
+                ? 'bg-[var(--color-violet-400)] w-8 shadow-[var(--shadow-glow-violet)]'
                 : 'bg-white/15 w-4'
             }`}
           />
@@ -146,11 +146,11 @@ export default function MirrorStepShell({
           onClick={() => setInfoOpen(false)}
         >
           <div
-            className="w-full bg-[#1a0826] border border-purple-700/40 rounded-3xl p-6 space-y-4"
+            className="w-full bg-[var(--color-violet-900)] border border-[var(--color-violet-600)]/40 rounded-3xl p-6 space-y-4"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <p className="text-purple-300 text-xs uppercase tracking-widest">
+              <p className="text-[var(--color-violet-300)] text-xs uppercase tracking-widest">
                 Step {String(step).padStart(2, '0')} · {STEP_LABELS[step]}
               </p>
               <button

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import WelcomeScreen from '@/components/mirror/WelcomeScreen'
+import MirrorRoomLanding from '@/components/mirror/MirrorRoomLanding'
 import Step01Situation from '@/components/mirror/Step01Situation'
 import Step02AutomaticReaction from '@/components/mirror/Step02AutomaticReaction'
 import Step03Pattern from '@/components/mirror/Step03Pattern'
@@ -263,7 +263,7 @@ function NewMirrorContent() {
     }
 
     if (showWelcome) {
-      return <WelcomeScreen userName={userName} onNext={() => setShowWelcome(false)} />
+      return <MirrorRoomLanding userName={userName} onStart={() => setShowWelcome(false)} />
     }
 
     switch (currentStepId) {

@@ -14,6 +14,7 @@ import type {
   TwinListResponse,
   TwinSignalActionResponse,
   LibraryTopicsResponse,
+  LibraryRecommendationsResponse,
   RoadmapProposalAcceptResponse,
   RoadmapProposalRejectResponse,
   CreditsResponse,
@@ -149,6 +150,12 @@ export async function getLibraryTopic(slug: string): Promise<LibraryTopicDetailR
 export async function getLibraryTopics(): Promise<LibraryTopicsResponse> {
   const res = await authedFetch('/v1/library/topics')
   return parseOrThrow<LibraryTopicsResponse>(res)
+}
+
+/** GET /v1/library/recommendations — deployed but currently always empty (see the Lambda's own doc comment); used by /library so it starts rendering the moment real recommendations exist, with no further frontend work. */
+export async function getLibraryRecommendations(): Promise<LibraryRecommendationsResponse> {
+  const res = await authedFetch('/v1/library/recommendations')
+  return parseOrThrow<LibraryRecommendationsResponse>(res)
 }
 
 /** POST /v1/roadmap/proposal/accept — a pending Roadmap revision (surfaced via GET /v1/dashboard) becomes the live Roadmap. */
