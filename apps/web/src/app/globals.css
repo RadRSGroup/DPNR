@@ -1,8 +1,61 @@
 @import "tailwindcss";
 
+/*
+ * Raw palette — static values only (Tailwind v4 generates utilities from
+ * these at build time, so nothing here can reference a runtime-switchable
+ * variable). Gives every page bg-violet-500 / text-amber-400 / etc.
+ */
+@theme {
+  --font-display: var(--font-display), Georgia, serif;
+
+  --color-violet-950: #12071f;
+  --color-violet-900: #1a0826;
+  --color-violet-800: #2a1240;
+  --color-violet-600: #7c3aed;
+  --color-violet-500: #8b5cf6;
+  --color-violet-400: #a78bfa;
+  --color-magenta-500: #ec4899;
+  --color-amber-400: #f5b942;
+  --color-amber-300: #fbcb6b;
+
+  --radius-card: 1.25rem;
+  --radius-card-lg: 1.75rem;
+
+  --shadow-glow-violet: 0 0 24px 0 rgba(139, 92, 246, 0.35);
+}
+
+/*
+ * Semantic layer — plain custom properties referencing the raw palette
+ * above. A future dark/light toggle only needs to override this block
+ * (e.g. under `[data-theme="light"]`), not the raw palette or any
+ * component code. Consumed via arbitrary-value utilities, e.g.
+ * `bg-[var(--color-bg-base)]`.
+ */
 :root {
   --background: #0a0a0f;
   --foreground: #ffffff;
+
+  --color-bg-base: #0a0a0f;
+  --color-bg-canvas-from: var(--color-violet-900);
+  --color-bg-canvas-via: var(--color-violet-950);
+  --color-bg-canvas-to: #0a0a0f;
+
+  --color-surface-glass: rgba(255, 255, 255, 0.05);
+  --color-border-glass: rgba(255, 255, 255, 0.1);
+  --color-surface-glass-strong: rgba(255, 255, 255, 0.08);
+
+  --color-text-primary: #ffffff;
+  --color-text-secondary: rgba(255, 255, 255, 0.6);
+  --color-text-tertiary: rgba(255, 255, 255, 0.4);
+
+  --color-accent: var(--color-violet-500);
+  --color-accent-strong: var(--color-violet-600);
+  --gradient-brand: linear-gradient(
+    135deg,
+    var(--color-violet-500),
+    var(--color-magenta-500),
+    var(--color-amber-400)
+  );
 }
 
 body {

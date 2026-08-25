@@ -4,6 +4,7 @@ import { HttpError } from '../lib/http'
 import type { TwinSignalActionResponse } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
 import { maybeProposeRoadmapRevision } from '../lib/roadmap-revision'
+import { maybeClassifySignal } from '../lib/signal-classification'
 import { ddb, TABLE_NAME, findSignalById } from './helpers'
 
 const PROMPT_REGISTRY_TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME as string
@@ -17,10 +18,12 @@ const PROMPT_REGISTRY_TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME as str
  * is a legitimate correction, not an error.
  *
  * Also the trigger point for a possible Roadmap-revision proposal (Session
- * 16, the user's own direct choice — see lib/roadmap-revision.ts) — run
- * inline, synchronously, same "compute after the triggering action, no
- * separate event pipeline" choice Session 10 already made for Twin
- * extraction itself.
+ * 16, the user's own direct choice — see lib/roadmap-revision.ts) and for
+ * life-domain/archetype classification (Session 19, same direct choice of
+ * trigger — see lib/signal-classification.ts) — both run inline,
+ * synchronously, same "compute after the triggering action, no separate
+ * event pipeline" choice Session 10 already made for Twin extraction
+ * itself.
  */
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
@@ -43,6 +46,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     )
 
     await maybeProposeRoadmapRevision(ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME, userId)
+    await maybeClassifySignal(ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME, signal)
 
     const response: TwinSignalActionResponse = { signalId, status: 'confirmed' }
     return jsonResponse(200, response)

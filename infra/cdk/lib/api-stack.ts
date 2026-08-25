@@ -631,6 +631,17 @@ export class ApiStack extends Stack {
     props.promptRegistryTable.grantReadData(composeWeeklyRecapFn)
     grantBedrockConverse(composeWeeklyRecapFn)
 
+    // No Bedrock call — computeAlignmentScore is plain arithmetic over
+    // already-real data, no PROMPT_REGISTRY_TABLE_NAME/grantBedrockConverse
+    // needed unlike the two composers above.
+    const snapshotAlignmentScoreFn = new lambda.NodejsFunction(this, 'SnapshotAlignmentScoreFn', {
+      ...sharedProductLambdaProps,
+      timeout: compositionBatchTimeout,
+      entry: path.join(__dirname, '../lambda/continuity/snapshot-alignment-score.ts'),
+      description: 'Scheduled daily — writes ALIGNMENT#SNAPSHOT#<date> for every consented user with enough data for a real score.',
+    })
+    props.applicationTable.grantReadWriteData(snapshotAlignmentScoreFn)
+
     // Plain aws-events.Rule cron, not the newer dedicated EventBridge
     // Scheduler service MVP_ARCHITECTURE.md §6 names — functionally
     // equivalent for a fixed daily/weekly invocation, already part of core
@@ -650,6 +661,12 @@ export class ApiStack extends Stack {
       schedule: events.Schedule.cron({ minute: '0', hour: '6', weekDay: 'MON' }), // 06:00 UTC every Monday
       targets: [new targets.LambdaFunction(composeWeeklyRecapFn)],
       description: 'Triggers Weekly Recap composition once per week.',
+    })
+
+    new events.Rule(this, 'AlignmentScoreSnapshotScheduleRule', {
+      schedule: events.Schedule.cron({ minute: '15', hour: '6' }), // 06:15 UTC daily — after the Daily Card run, same window
+      targets: [new targets.LambdaFunction(snapshotAlignmentScoreFn)],
+      description: 'Triggers Alignment Score snapshot composition once per day.',
     })
 
     const getDailyCardFn = new lambda.NodejsFunction(this, 'GetDailyCardFn', {

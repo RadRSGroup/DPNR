@@ -37,6 +37,25 @@ export const RoadmapProposalItemSchema = z.object({
 export type RoadmapProposalItem = z.infer<typeof RoadmapProposalItemSchema>
 
 /**
+ * USER#<id> / ALIGNMENT#SNAPSHOT#<isoDate> — one item per user per day
+ * (Session 19), written by the same scheduled-batch pattern
+ * `compose-daily-card.ts`/`compose-weekly-recap.ts` already use. Plaintext
+ * (just a number, no personal content) — exists purely so "My Evolution"
+ * can chart the real Alignment Score over time instead of only ever
+ * showing today's live-computed value. Starts empty for every user; the
+ * chart is short/sparse until enough days accumulate — that's honest,
+ * not a bug.
+ */
+export const AlignmentScoreSnapshotItemSchema = z.object({
+  pk: z.string(),
+  sk: z.string(), // Sk.alignmentScoreSnapshot(isoDate)
+  date: z.string().date(),
+  score: z.number().min(0).max(100),
+  createdAt: z.string().datetime(),
+})
+export type AlignmentScoreSnapshotItem = z.infer<typeof AlignmentScoreSnapshotItemSchema>
+
+/**
  * Digital Twin signal model (spec §5 "Signal model" / "Trust rules").
  * domain/status/confidence/source stay plaintext — they're what the
  * confirm/reject UI and the pipeline's write-path logic need to operate
@@ -65,6 +84,43 @@ export const TwinSignalSourceSchema = z.enum([
 ])
 export type TwinSignalSource = z.infer<typeof TwinSignalSourceSchema>
 
+/**
+ * Life Domains taxonomy (Session 19) — the 7 categories Growth Tracker/My
+ * Evolution Map/Dashboard all show percentages for. Labels match the
+ * visual design reference exactly (`docs/UI reference for platform.pdf`).
+ */
+export const LifeDomainCategorySchema = z.enum([
+  'self_inner_world',
+  'relationships',
+  'career_purpose',
+  'health_body',
+  'money_abundance',
+  'creativity_expression',
+  'spirituality',
+])
+export type LifeDomainCategory = z.infer<typeof LifeDomainCategorySchema>
+
+export const LIFE_DOMAIN_LABELS: Record<LifeDomainCategory, string> = {
+  self_inner_world: 'Self & Inner World',
+  relationships: 'Relationships',
+  career_purpose: 'Career & Purpose',
+  health_body: 'Health & Body',
+  money_abundance: 'Money & Abundance',
+  creativity_expression: 'Creativity & Expression',
+  spirituality: 'Spirituality',
+}
+
+/** Archetype taxonomy (Session 19) — same reference, "Leading Archetypes". */
+export const ArchetypeSchema = z.enum(['healer', 'seeker', 'visionary', 'protector'])
+export type Archetype = z.infer<typeof ArchetypeSchema>
+
+export const ARCHETYPE_LABELS: Record<Archetype, string> = {
+  healer: 'Healer',
+  seeker: 'Seeker',
+  visionary: 'Visionary',
+  protector: 'Protector',
+}
+
 export const TwinSignalItemSchema = z.object({
   pk: z.string(),
   sk: z.string(), // Sk.twinSignal(domain, signalId)
@@ -75,6 +131,15 @@ export const TwinSignalItemSchema = z.object({
   source: TwinSignalSourceSchema,
   sourceSessionId: z.string().optional(),
   content: EncryptedBlobSchema, // wraps { description: string }
+  // Set at confirm-time (Session 19) by a real `twin/classify_signal`
+  // Bedrock call (twin/confirm.ts → lib/signal-classification.ts) — absent
+  // for signals confirmed before this existed, or if classification failed
+  // (never blocks the confirm action itself; see that lib's doc comment).
+  // Life Domains/Leading Archetypes on the Dashboard only aggregate over
+  // signals that actually have these set — no fabricated 0%-everywhere
+  // taxonomy for someone with zero classified signals.
+  lifeDomain: LifeDomainCategorySchema.optional(),
+  archetype: ArchetypeSchema.optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })

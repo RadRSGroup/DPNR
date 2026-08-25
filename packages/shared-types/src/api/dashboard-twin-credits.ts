@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { TwinSignalDomainSchema, TwinSignalStatusSchema } from '../dynamo/twin'
+import { TwinSignalDomainSchema, TwinSignalStatusSchema, LifeDomainCategorySchema, ArchetypeSchema } from '../dynamo/twin'
 
 /**
  * Aggregate read for GET /v1/dashboard (MVP_ARCHITECTURE.md §4) — one call,
@@ -41,6 +41,26 @@ export const DashboardResponseSchema = z.object({
     .nullable(),
   creditsBalance: z.number().int().min(0),
   creditsLow: z.boolean(),
+  // Alignment Score v1: how well the person is living out what they've told
+  // DPNR matters to them. 60% commitment follow-through rate (completed vs
+  // dropped, among CommitmentItems that have actually been resolved) + 40%
+  // values clarity (how many domain='value' Twin signals are confirmed,
+  // capped at 5 confirmed = 100%). Null until there's enough real data to
+  // say anything (no resolved commitments AND no confirmed values) — an
+  // honest gap, not a fabricated number. Weights/cap are a first pass
+  // (Session 19), not product-reviewed; revisit once real usage data exists.
+  alignmentScore: z.number().min(0).max(100).nullable(),
+  // Real daily snapshots (AlignmentScoreSnapshotItem), last 30 days,
+  // ascending by date. Empty until snapshot-alignment-score.ts has run at
+  // least once for this user — sparse-by-design, not padded with fabricated
+  // history.
+  alignmentHistory: z.array(z.object({ date: z.string(), score: z.number() })),
+  // Real aggregates over confirmed signals that have been classified (Session
+  // 19, twin/classify_signal) — only entries for categories with at least
+  // one classified signal; empty arrays until the person has any. Percent
+  // is share of classified-and-confirmed signals in that category, rounded.
+  lifeDomains: z.array(z.object({ domain: LifeDomainCategorySchema, percent: z.number() })),
+  archetypes: z.array(z.object({ archetype: ArchetypeSchema, percent: z.number() })),
 })
 export type DashboardResponse = z.infer<typeof DashboardResponseSchema>
 

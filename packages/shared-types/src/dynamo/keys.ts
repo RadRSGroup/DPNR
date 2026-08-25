@@ -38,6 +38,7 @@ export const Sk = {
   commitment: (commitmentId: string): string => `COMMITMENT#${commitmentId}`,
   insight: (insightId: string): string => `INSIGHT#${insightId}`,
   dailyCard: (isoDate: string): string => `DAILYCARD#${isoDate}`,
+  alignmentScoreSnapshot: (isoDate: string): string => `ALIGNMENT#SNAPSHOT#${isoDate}`,
   weeklyRecap: (isoWeek: string): string => `WEEKLYRECAP#${isoWeek}`,
   libraryProgress: (topicSlug: string): string => `LIBRARY#PROGRESS#${topicSlug}`,
   usage: (billingPeriod: string): string => `USAGE#${billingPeriod}`,

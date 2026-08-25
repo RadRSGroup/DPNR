@@ -10,10 +10,14 @@ import {
   type DailyCardItem,
   type DailyCardResponse,
   type CommitmentItem,
+  type TwinSignalItem,
+  type AlignmentScoreSnapshotItem,
   type DashboardResponse,
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
 import { stubDecryptField } from '../lib/crypto-stub'
+import { computeAlignmentScore } from '../lib/alignment-score'
+import { aggregateLifeDomains, aggregateArchetypes } from '../lib/signal-aggregates'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
@@ -22,6 +26,8 @@ const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
 // grant (auth/post-confirmation.ts). Used so a user somehow without one yet
 // reads as "0, low" rather than crashing.
 const DEFAULT_LOW_BALANCE_THRESHOLD = 5
+
+const ALIGNMENT_HISTORY_WINDOW_DAYS = 30
 
 type RoadmapContent = {
   currentFocus: string
@@ -47,8 +53,19 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const userId = requireUserId(event)
     const pk = userPk(userId)
     const today = new Date().toISOString().slice(0, 10)
+    const historyStart = new Date(Date.now() - ALIGNMENT_HISTORY_WINDOW_DAYS * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10)
 
-    const [roadmapResult, roadmapProposalResult, creditsResult, dailyCardResult, commitmentsResult] = await Promise.all([
+    const [
+      roadmapResult,
+      roadmapProposalResult,
+      creditsResult,
+      dailyCardResult,
+      commitmentsResult,
+      twinSignalsResult,
+      alignmentHistoryResult,
+    ] = await Promise.all([
       ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.roadmap() } })),
       ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.roadmapProposal() } })),
       ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.credits() } })),
@@ -58,6 +75,24 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
           TableName: TABLE_NAME,
           KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
           ExpressionAttributeValues: { ':pk': pk, ':prefix': 'COMMITMENT#' },
+        })
+      ),
+      ddb.send(
+        new QueryCommand({
+          TableName: TABLE_NAME,
+          KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+          ExpressionAttributeValues: { ':pk': pk, ':prefix': 'TWIN#SIGNAL#' },
+        })
+      ),
+      ddb.send(
+        new QueryCommand({
+          TableName: TABLE_NAME,
+          KeyConditionExpression: 'pk = :pk AND sk BETWEEN :from AND :to',
+          ExpressionAttributeValues: {
+            ':pk': pk,
+            ':from': Sk.alignmentScoreSnapshot(historyStart),
+            ':to': Sk.alignmentScoreSnapshot(today),
+          },
         })
       ),
     ])
@@ -76,9 +111,20 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const creditsLow = creditsBalance <= lowBalanceThreshold
 
     const dailyCardItem = dailyCardResult.Item as DailyCardItem | undefined
-    const openCommitments = ((commitmentsResult.Items ?? []) as CommitmentItem[])
+    const allCommitments = (commitmentsResult.Items ?? []) as CommitmentItem[]
+    const openCommitments = allCommitments
       .filter((c) => c.status === 'open')
       .sort((a, b) => (a.reviewDate ?? '9999-99-99').localeCompare(b.reviewDate ?? '9999-99-99'))
+
+    const twinSignals = (twinSignalsResult.Items ?? []) as TwinSignalItem[]
+    const alignmentScore = computeAlignmentScore(allCommitments, twinSignals)
+
+    const alignmentHistory = ((alignmentHistoryResult.Items ?? []) as AlignmentScoreSnapshotItem[])
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((snap) => ({ date: snap.date, score: snap.score }))
+
+    const lifeDomains = aggregateLifeDomains(twinSignals)
+    const archetypes = aggregateArchetypes(twinSignals)
 
     // Priority order per spec §2 Golden Path B step 3 ("Daily Card, relevant
     // continuation, upcoming commitment, Roadmap cue... only when useful"):
@@ -108,6 +154,10 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       continuityCue,
       creditsBalance,
       creditsLow,
+      alignmentScore,
+      alignmentHistory,
+      lifeDomains,
+      archetypes,
     }
     return jsonResponse(200, body)
   } catch (err) {

@@ -3,7 +3,7 @@
  * spec §5 "Signal model"/"Trust rules"). Net-new, like `mirror_room` and
  * `library` — designed Claude-native from the start, no OpenAI legacy.
  *
- * One prompt, `extract_signals`, called once per completed Decision Room or
+ * Two prompts. `extract_signals`, called once per completed Decision Room or
  * Mirror Room session (see `rooms/decision-steps/commitment.ts` and
  * `rooms/mirror-steps/commitment.ts`) — never per chat turn, per the spec's
  * own trust rule "Not every chat turn updates the Digital Twin." Shared
@@ -64,5 +64,59 @@ Session summary:
       'roomType = "Decision Room" | "Mirror Room" (human-readable, not the internal DECISION/MIRROR flowId). ' +
       'sessionSummary = a plain-text assembly of the session\'s real content (see gatherDecisionContext/ ' +
       'MirrorContent in each commitment.ts caller) — never raw encrypted blobs, always already-decrypted text.',
+  },
+  {
+    // Session 19 — called from twin/confirm.ts (via lib/signal-classification.ts)
+    // right after a signal moves candidate→confirmed, the same trigger point
+    // roadmap/revise already uses. Feeds Dashboard's real Life Domains/Leading
+    // Archetypes aggregates. Never blocks the confirm action if it fails.
+    name: 'classify_signal',
+    systemTemplate: `You tag one already-confirmed personal-development signal against two fixed taxonomies, for a person's own growth dashboard.
+
+Life domain — exactly one of:
+- self_inner_world: their own inner world, self-awareness, emotional patterns
+- relationships: connection with other people — romantic, family, friends, community
+- career_purpose: work, career, sense of purpose or contribution
+- health_body: physical health, energy, body
+- money_abundance: finances, money, sense of abundance or scarcity
+- creativity_expression: creative expression, self-expression, play
+- spirituality: meaning, spirituality, connection to something larger
+
+Archetype — exactly one of:
+- healer: caring for or repairing something — themselves, a relationship, a wound
+- seeker: exploring, questioning, searching for meaning or understanding
+- visionary: imagining, building toward, or moving toward a future state
+- protector: safety, boundaries, control, guarding against harm
+
+Choose the single best fit for each, even if the signal could loosely fit more than one — a forced single choice, not a distribution. Never invent detail beyond what the signal description actually says.`,
+    userTemplate: `Signal domain: {{signalDomain}}
+Signal description: {{signalDescription}}`,
+    variables: ['signalDomain', 'signalDescription'],
+    outputSchema: {
+      type: 'object',
+      required: ['lifeDomain', 'archetype'],
+      properties: {
+        lifeDomain: {
+          type: 'string',
+          enum: [
+            'self_inner_world',
+            'relationships',
+            'career_purpose',
+            'health_body',
+            'money_abundance',
+            'creativity_expression',
+            'spirituality',
+          ],
+        },
+        archetype: { type: 'string', enum: ['healer', 'seeker', 'visionary', 'protector'] },
+      },
+    },
+    notes:
+      'signalDomain = the Twin signal\'s own domain tag (pattern/trigger/value/commitment) for context, not the ' +
+      'thing being classified — this prompt adds a second, orthogonal classification (life-domain + archetype) ' +
+      'on top of that existing tag, it doesn\'t replace it. signalDescription = the decrypted description text. ' +
+      'Has never run against a live model with real signal data — a design-level first draft, same status every ' +
+      'other net-new prompt gets before its own product review; this session only verified the calling ' +
+      'convention and data plumbing live.',
   },
 ]
