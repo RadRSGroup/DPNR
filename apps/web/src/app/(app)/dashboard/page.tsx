@@ -6,14 +6,25 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import { ArrowRight, Heart, Sparkles } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
-import { getDashboard, getTwin, acceptRoadmapProposal, rejectRoadmapProposal, sendDailyCardFeedback } from '@/lib/api/v1-client'
-import type { DashboardResponse, TwinListResponse } from '@dpnr/shared-types'
+import { getDashboard, getTwin, getCompanionContext, acceptRoadmapProposal, rejectRoadmapProposal } from '@/lib/api/v1-client'
+import type { DashboardResponse, TwinListResponse, CompanionContextResponse } from '@dpnr/shared-types'
 import { LIFE_DOMAIN_LABELS, ARCHETYPE_LABELS } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 import ProgressRing from '@/components/ui/ProgressRing'
+import DailyGuidanceCard from '@/components/companion/DailyGuidanceCard'
 
-const CUE_LABEL: Record<NonNullable<DashboardResponse['continuityCue']>['kind'], string> = {
-  daily_card: "Today's Insight",
+/**
+ * Labels for continuityCue kinds OTHER than 'daily_card' — that one now
+ * renders via the real, feedback-capable `DailyGuidanceCard` instead (see
+ * below), fetched independently via `getCompanionContext()` since
+ * `DashboardResponse.continuityCue` only ever carries `{kind, text}`, not
+ * the real item's `feedback` field DailyGuidanceCard needs. The backend
+ * picks continuityCue's kind as 'daily_card' whenever a real Daily Card
+ * exists for today (infra/cdk/lambda/dashboard/handler.ts's own priority
+ * comment), so this is never a second, different concept — it's the same
+ * item continuityCue was already describing, just shown once, correctly.
+ */
+const CUE_LABEL: Record<Exclude<NonNullable<DashboardResponse['continuityCue']>['kind'], 'daily_card'>, string> = {
   continuation: 'Continuing on',
   commitment: 'Upcoming commitment',
   roadmap_cue: 'Worth exploring',
@@ -41,23 +52,9 @@ function DashboardContent() {
   const [firstName, setFirstName] = useState('')
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null)
   const [twin, setTwin] = useState<TwinListResponse | null>(null)
+  const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
   const [loading, setLoading] = useState(true)
   const [proposalPending, setProposalPending] = useState(false)
-  const [cueDismissed, setCueDismissed] = useState(false)
-  const [cueFeedback, setCueFeedback] = useState<'relevant' | 'not_relevant' | null>(null)
-
-  async function handleCueFeedback(action: 'dismiss' | 'relevant' | 'not_relevant') {
-    if (action === 'dismiss') setCueDismissed(true)
-    else setCueFeedback(action)
-    try {
-      await sendDailyCardFeedback(
-        action === 'dismiss' ? { dismissed: true } : { feedback: action }
-      )
-    } catch {
-      // Local state already reflects the action; a failed write just means
-      // it may resurface next load — same tolerance every other page here uses.
-    }
-  }
 
   useEffect(() => {
     async function load() {
@@ -76,6 +73,10 @@ function DashboardContent() {
       } finally {
         setLoading(false)
       }
+
+      // Fetched separately, own failure boundary — a Companion-context
+      // hiccup shouldn't take down the rest of the Dashboard over one widget.
+      getCompanionContext().then((c) => setDailyCard(c.dailyCard)).catch(() => {})
     }
     load()
   }, [router])
@@ -344,56 +345,15 @@ function DashboardContent() {
 
           {/* Side column */}
           <div className="space-y-4 lg:space-y-6 mt-4 lg:mt-0">
-            {!loading && dashboard?.continuityCue && !cueDismissed && (
+            {!loading && dashboard?.continuityCue?.kind === 'daily_card' && dailyCard && (
+              <DailyGuidanceCard dailyCard={dailyCard} />
+            )}
+
+            {!loading && dashboard?.continuityCue && dashboard.continuityCue.kind !== 'daily_card' && (
               <Card className="relative overflow-hidden">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm text-white">{CUE_LABEL[dashboard.continuityCue.kind]}</p>
-                  {dashboard.continuityCue.kind === 'daily_card' && (
-                    <button onClick={() => handleCueFeedback('dismiss')} className="text-white/30 hover:text-white/60 text-sm" title="Dismiss">
-                      ×
-                    </button>
-                  )}
-                </div>
-                {dashboard.continuityCue.kind === 'daily_card' && (
-                  <div className="relative rounded-xl overflow-hidden h-32 mb-3">
-                    <Image
-                      src="/images/dashboard/daily-insight-sunset.webp"
-                      alt=""
-                      fill
-                      sizes="320px"
-                      className="object-cover"
-                    />
-                  </div>
-                )}
+                <p className="text-sm text-white mb-3">{CUE_LABEL[dashboard.continuityCue.kind]}</p>
                 <p className="text-white/70 text-sm leading-relaxed italic">&ldquo;{dashboard.continuityCue.text}&rdquo;</p>
-                {dashboard.continuityCue.kind === 'daily_card' ? (
-                  <div className="flex items-center gap-2 mt-3">
-                    <button
-                      onClick={() => handleCueFeedback('relevant')}
-                      disabled={cueFeedback !== null}
-                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                        cueFeedback === 'relevant'
-                          ? 'border-[var(--color-violet-500)]/50 text-[var(--color-violet-300)] bg-[var(--color-violet-900)]/20'
-                          : 'border-white/10 text-white/40 hover:text-white/60 disabled:opacity-40'
-                      }`}
-                    >
-                      Useful
-                    </button>
-                    <button
-                      onClick={() => handleCueFeedback('not_relevant')}
-                      disabled={cueFeedback !== null}
-                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                        cueFeedback === 'not_relevant'
-                          ? 'border-[var(--color-violet-500)]/50 text-[var(--color-violet-300)] bg-[var(--color-violet-900)]/20'
-                          : 'border-white/10 text-white/40 hover:text-white/60 disabled:opacity-40'
-                      }`}
-                    >
-                      Not for me
-                    </button>
-                  </div>
-                ) : (
-                  <Heart className="w-4 h-4 text-[var(--color-amber-400)] mt-3" />
-                )}
+                <Heart className="w-4 h-4 text-[var(--color-amber-400)] mt-3" />
               </Card>
             )}
 
