@@ -17,6 +17,8 @@ import type {
   RoadmapProposalAcceptResponse,
   RoadmapProposalRejectResponse,
   CreditsResponse,
+  CreditsPurchaseRequest,
+  CreditsPurchaseResponse,
   DailyCardFeedbackRequest,
   DailyCardFeedbackResponse,
 } from '@dpnr/shared-types'
@@ -106,6 +108,17 @@ export async function getDashboard(): Promise<DashboardResponse> {
 export async function getCredits(): Promise<CreditsResponse> {
   const res = await authedFetch('/v1/credits')
   return parseOrThrow<CreditsResponse>(res)
+}
+
+/**
+ * POST /v1/credits/purchase — initiates a Grow hosted checkout page (ADR
+ * 0008); redirect the browser to the returned `paymentPageUrl`. No caller
+ * yet — /pricing's buttons stay "coming soon" until real PlanItems are
+ * seeded (still blocked on a pack-pricing decision).
+ */
+export async function initiatePurchase(request: CreditsPurchaseRequest): Promise<CreditsPurchaseResponse> {
+  const res = await authedFetch('/v1/credits/purchase', { method: 'POST', body: JSON.stringify(request) })
+  return parseOrThrow<CreditsPurchaseResponse>(res)
 }
 
 /** POST /v1/daily-card/feedback — dismiss and/or relevance feedback; called from Dashboard and Companion alike. */

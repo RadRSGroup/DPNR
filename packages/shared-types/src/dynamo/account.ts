@@ -58,3 +58,42 @@ export const CreditsTransactionItemSchema = z.object({
   createdAt: z.string().datetime(),
 })
 export type CreditsTransactionItem = z.infer<typeof CreditsTransactionItemSchema>
+
+/**
+ * USER#<id> / PURCHASE#<purchaseId> — correlates a Grow checkout-link
+ * initiation with its later webhook (ADR 0008, Session 18). `purchaseId`
+ * (a `cField1` custom field Grow echoes back verbatim) only proves the
+ * webhook is talking about a purchase this backend actually initiated — it
+ * does NOT prove the payment really happened, since Grow's real API has no
+ * signature and its only other documented endpoint (`approveTransaction`)
+ * explicitly doesn't gate anything either. A real user could otherwise
+ * forge a "success" webhook for their own genuine `pending` purchase and
+ * grant themselves free credits.
+ *
+ * **Safety valve (Session 18, pending a real Grow verification endpoint)**:
+ * `credits/grow-webhook.ts` never calls `grantCredits` itself. A payload
+ * that passes its checks (correlation + sum match + claimed success) moves
+ * the item to `awaiting_review`, storing the claimed transaction fields for
+ * a human to cross-check against Grow's own merchant dashboard (which a
+ * forger cannot fake) before `infra/cdk/scripts/approve-pending-purchase.ts`
+ * is run to actually grant the credits and mark `completed`. Revisit this
+ * the moment Grow support confirms a real transaction-status-verification
+ * call exists — see ADR 0008.
+ */
+export const PendingPurchaseItemSchema = z.object({
+  pk: z.string(),
+  sk: z.string(), // Sk.pendingPurchase(purchaseId)
+  purchaseId: z.string(),
+  planId: z.string(),
+  status: z.enum(['pending', 'awaiting_review', 'completed', 'failed']),
+  expectedCredits: z.number().int().positive(),
+  expectedPriceMinorUnits: z.number().int().nonnegative(),
+  // Grow's own claimed transaction fields, stored unverified for manual
+  // cross-checking — never trusted as proof of payment on their own.
+  claimedTransactionId: z.string().optional(),
+  claimedTransactionToken: z.string().optional(),
+  createdAt: z.string().datetime(),
+  reviewedAt: z.string().datetime().optional(),
+  completedAt: z.string().datetime().optional(),
+})
+export type PendingPurchaseItem = z.infer<typeof PendingPurchaseItemSchema>

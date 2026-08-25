@@ -4,6 +4,7 @@ import * as authorizers from 'aws-cdk-lib/aws-apigatewayv2-authorizers'
 import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations'
 import * as cognito from 'aws-cdk-lib/aws-cognito'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager'
 import * as iam from 'aws-cdk-lib/aws-iam'
 import * as lambda from 'aws-cdk-lib/aws-lambda-nodejs'
 import { Runtime } from 'aws-cdk-lib/aws-lambda'
@@ -522,6 +523,75 @@ export class ApiStack extends Stack {
       methods: [apigwv2.HttpMethod.GET],
       integration: new integrations.HttpLambdaIntegration('GetPlansIntegration', getPlansFn),
       authorizer: this.cognitoAuthorizer,
+    })
+
+    /**
+     * Grow payment integration (ADR 0008). This project's first third-party
+     * API credential, so there's no existing secrets pattern to reuse —
+     * Secrets Manager is the standard CDK-idiomatic choice. `fromSecretNameV2`
+     * is a lazy reference: it synthesizes/deploys fine even before the named
+     * secret actually exists in this account — it only fails at Lambda
+     * invocation time. The user creates the real secret manually once real
+     * Grow credentials exist (never pasted into agent chat or committed).
+     */
+    const growCredentialsSecret = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      'GrowCredentialsSecret',
+      'dpnr/grow-credentials'
+    )
+    // Only sandbox hosts are confirmed from Grow's public docs (ADR 0008) —
+    // the production hostname is a guess, VERIFY before any real deploy with
+    // isProduction: true attempts a real charge.
+    const growBaseUrl = props.isProduction ? 'https://api.grow.link' : 'https://sandboxapi.grow.link'
+
+    const initiatePurchaseFn = new lambda.NodejsFunction(this, 'InitiatePurchaseFn', {
+      runtime: Runtime.NODEJS_24_X,
+      bundling: { minify: true, sourceMap: true },
+      environment: {
+        APPLICATION_TABLE_NAME: props.applicationTable.tableName,
+        PLANS_CATALOG_TABLE_NAME: props.plansCatalogTable.tableName,
+        GROW_CREDENTIALS_SECRET_ARN: growCredentialsSecret.secretArn,
+        GROW_BASE_URL: growBaseUrl,
+        API_BASE_URL: this.httpApi.apiEndpoint,
+        // No real deployed frontend origin yet — same caveat this stack's
+        // own CORS config already carries; update both together once one exists.
+        FRONTEND_BASE_URL: 'http://localhost:3000',
+      },
+      entry: path.join(__dirname, '../lambda/credits/initiate-purchase.ts'),
+      description: 'POST /v1/credits/purchase — initiates a Grow hosted checkout page.',
+    })
+    props.applicationTable.grantWriteData(initiatePurchaseFn)
+    props.plansCatalogTable.grantReadData(initiatePurchaseFn)
+    growCredentialsSecret.grantRead(initiatePurchaseFn)
+
+    const growWebhookFn = new lambda.NodejsFunction(this, 'GrowWebhookFn', {
+      runtime: Runtime.NODEJS_24_X,
+      bundling: { minify: true, sourceMap: true },
+      environment: {
+        APPLICATION_TABLE_NAME: props.applicationTable.tableName,
+        GROW_CREDENTIALS_SECRET_ARN: growCredentialsSecret.secretArn,
+        GROW_BASE_URL: growBaseUrl,
+      },
+      entry: path.join(__dirname, '../lambda/credits/grow-webhook.ts'),
+      description: 'POST /v1/webhooks/payment — Grow server-to-server callback, unauthenticated.',
+    })
+    props.applicationTable.grantReadWriteData(growWebhookFn)
+    growCredentialsSecret.grantRead(growWebhookFn)
+
+    this.httpApi.addRoutes({
+      path: '/v1/credits/purchase',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('InitiatePurchaseIntegration', initiatePurchaseFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/webhooks/payment',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('GrowWebhookIntegration', growWebhookFn),
+      // deliberately no authorizer — Grow calls this directly, no Cognito
+      // JWT exists on a server-to-server callback. Same omission pattern as
+      // /v1/health above.
     })
 
     // Not behind API Gateway — no 30s integration ceiling applies, unlike

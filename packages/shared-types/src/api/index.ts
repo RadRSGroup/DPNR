@@ -10,10 +10,12 @@ export * from './webhooks'
 
 /**
  * Every /v1 endpoint in MVP_ARCHITECTURE.md §4 now has a contract here.
- * Two open items to revisit, not forgotten:
+ * One open item to revisit, not forgotten:
  * - account.ts's SessionTicketRequestSchema mirrors the already-committed
  *   SessionTicketItem fields, but the actual KMS wrap handshake needs a
  *   security-review pass before the Lambda is built.
- * - webhooks.ts's GrowWebhookEventSchema field names are unconfirmed
- *   against Grow's real docs (same caveat as apps/web/src/lib/grow.ts).
+ * webhooks.ts's GrowWebhookPayloadSchema is now Grow's real shape (Session
+ * 18, see ADR 0008) — some fields (the success status value, whether this
+ * arrives as JSON or form-encoded) are still unconfirmed against a real
+ * sandbox transaction, flagged in that file's own doc comment.
  */

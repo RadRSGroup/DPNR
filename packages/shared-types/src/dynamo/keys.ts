@@ -11,6 +11,7 @@ export const Sk = {
   keys: (): 'KEYS' => 'KEYS',
   credits: (): 'CREDITS' => 'CREDITS',
   creditsTxn: (isoTimestamp: string): string => `CREDITS#TXN#${isoTimestamp}`,
+  pendingPurchase: (purchaseId: string): string => `PURCHASE#${purchaseId}`,
   roadmap: (): 'ROADMAP' => 'ROADMAP',
   roadmapVersion: (version: number): string => `ROADMAP#v${version}`,
   roadmapProposal: (): 'ROADMAP#PROPOSED' => 'ROADMAP#PROPOSED',

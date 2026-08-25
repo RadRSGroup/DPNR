@@ -160,7 +160,13 @@ charges 1 credit per real Companion reply (onboarding stays free) — both live-
 the real `402 credits_exhausted` path and its new `CreditsExhaustedModal`. `library/topic-detail.ts` was not
 included in that decision (only Rooms/Companion were) and still doesn't charge. `GET /v1/credits` and `GET /v1/plans` are
 built and live-verified against the real deployed API and the real (now-seeded) `dpnr-plans-catalog` table.
-`POST /v1/credits/purchase` remains unbuilt — blocked on the payment-provider decision (same doc). Roadmap
+**Updated Session 18, part 2**: `POST /v1/credits/purchase` and the `POST /v1/webhooks/payment` Grow callback
+are now built (`credits/initiate-purchase.ts`/`credits/grow-webhook.ts`, ADR 0008) but NOT deployed as of
+this update, and not launch-ready even once deployed — no real Grow credentials exist, several response-shape
+details are unconfirmed against a real sandbox transaction, and (a security-review finding) the webhook
+never grants credits itself; a human must run `approve-pending-purchase.ts` after manually confirming each
+transaction in Grow's own dashboard, since Grow's real API has no signature and no verification endpoint
+was found in public docs. Roadmap
 (`RoadmapItemSchema`) is still fully unbuilt; `dashboard/handler.ts` correctly degrades to `roadmap: null`
 when it doesn't exist.
 
