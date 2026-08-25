@@ -6,6 +6,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
 import Card from '@/components/ui/Card'
 import PrimaryButton from '@/components/ui/PrimaryButton'
+import DailyGuidanceCard from '@/components/companion/DailyGuidanceCard'
 import LotusIcon from '@/components/icons/LotusIcon'
 import { getCompanionContext, getTwin } from '@/lib/api/v1-client'
 import type { CompanionContextResponse, TwinListResponse } from '@dpnr/shared-types'
@@ -100,12 +101,7 @@ export default function MirrorRoomLanding({ userName, onStart }: Props) {
 
               {/* Side column */}
               <div className="space-y-4 lg:space-y-6 mt-4 lg:mt-0">
-                {dailyCard && (
-                  <Card>
-                    <p className="text-white/40 text-xs uppercase tracking-wide mb-2">Today&apos;s Insight</p>
-                    <p className="text-white/70 text-sm leading-relaxed italic">&ldquo;{dailyCard.text}&rdquo;</p>
-                  </Card>
-                )}
+                {dailyCard && <DailyGuidanceCard dailyCard={dailyCard} title="Today's Insight" />}
 
                 {confirmedPatterns.length > 0 && (
                   <Card>

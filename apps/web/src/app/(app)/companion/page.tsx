@@ -1,13 +1,13 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Heart, Cloud, Shuffle, Sparkles } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
-import { getCompanionContext, sendCompanionMessage, sendDailyCardFeedback, ApiError } from '@/lib/api/v1-client'
+import { getCompanionContext, sendCompanionMessage, ApiError } from '@/lib/api/v1-client'
 import type { CompanionDirective, CompanionContextResponse } from '@dpnr/shared-types'
 import DirectiveCard from '@/components/companion/DirectiveCard'
+import DailyGuidanceCard from '@/components/companion/DailyGuidanceCard'
 import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
 import Card from '@/components/ui/Card'
 
@@ -83,20 +83,6 @@ export default function CompanionPage() {
     load()
   }, [router])
 
-  async function handleDailyCardFeedback(action: 'dismiss' | 'relevant' | 'not_relevant') {
-    if (action === 'dismiss') {
-      setDailyCard(null)
-    } else {
-      setDailyCard((prev) => (prev ? { ...prev, feedback: action } : prev))
-    }
-    try {
-      await sendDailyCardFeedback(action === 'dismiss' ? { dismissed: true } : { feedback: action })
-    } catch {
-      // Same tolerance as Dashboard's own version — a failed write just
-      // means it may resurface next load.
-    }
-  }
-
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, sending])
@@ -168,9 +154,11 @@ export default function CompanionPage() {
 
           {/* Daily Card — mobile position, inline above the thread. Desktop
               shows the same widget in the right column instead (below). */}
-          <div className="lg:hidden px-5 pt-2">
-            <DailyGuidanceCard dailyCard={dailyCard} onFeedback={handleDailyCardFeedback} compact />
-          </div>
+          {dailyCard && (
+            <div className="lg:hidden px-5 pt-2">
+              <DailyGuidanceCard dailyCard={dailyCard} showImage={false} />
+            </div>
+          )}
 
           {showPrompts && (
             <div className="px-5 lg:px-0 pt-3 pb-1">
@@ -281,70 +269,16 @@ export default function CompanionPage() {
 
         {/* Right column — desktop only */}
         <div className="hidden lg:flex lg:flex-col lg:gap-4 lg:pb-6 lg:overflow-y-auto">
-          <DailyGuidanceCard dailyCard={dailyCard} onFeedback={handleDailyCardFeedback} />
+          {dailyCard ? (
+            <DailyGuidanceCard dailyCard={dailyCard} />
+          ) : (
+            <Card>
+              <p className="text-white/40 text-xs uppercase tracking-wide">Today&apos;s Guidance</p>
+              <p className="text-white/30 text-sm mt-2">Nothing new right now — check back tomorrow.</p>
+            </Card>
+          )}
         </div>
       </div>
     </div>
-  )
-}
-
-function DailyGuidanceCard({
-  dailyCard,
-  onFeedback,
-  compact = false,
-}: {
-  dailyCard: CompanionContextResponse['dailyCard']
-  onFeedback: (action: 'dismiss' | 'relevant' | 'not_relevant') => void
-  compact?: boolean
-}) {
-  if (!dailyCard) {
-    if (compact) return null
-    return (
-      <Card>
-        <p className="text-white/40 text-xs uppercase tracking-wide">Today&apos;s Guidance</p>
-        <p className="text-white/30 text-sm mt-2">Nothing new right now — check back tomorrow.</p>
-      </Card>
-    )
-  }
-
-  return (
-    <Card className="relative overflow-hidden">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-white/40 text-xs uppercase tracking-wide">Today&apos;s Guidance</p>
-        <button onClick={() => onFeedback('dismiss')} className="text-white/30 hover:text-white/60 text-sm" title="Dismiss">
-          ×
-        </button>
-      </div>
-      {!compact && (
-        <div className="relative rounded-xl overflow-hidden h-40 mb-3">
-          <Image src="/images/companion/pull-a-card.webp" alt="" fill sizes="320px" className="object-cover" />
-        </div>
-      )}
-      <p className="text-white/80 text-sm leading-relaxed">{dailyCard.text}</p>
-      <div className="flex items-center gap-2 mt-3">
-        <button
-          onClick={() => onFeedback('relevant')}
-          disabled={dailyCard.feedback !== null}
-          className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-            dailyCard.feedback === 'relevant'
-              ? 'border-[var(--color-violet-500)]/50 text-[var(--color-violet-300)] bg-[var(--color-violet-900)]/20'
-              : 'border-white/10 text-white/40 hover:text-white/60 disabled:opacity-40'
-          }`}
-        >
-          Useful
-        </button>
-        <button
-          onClick={() => onFeedback('not_relevant')}
-          disabled={dailyCard.feedback !== null}
-          className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-            dailyCard.feedback === 'not_relevant'
-              ? 'border-[var(--color-violet-500)]/50 text-[var(--color-violet-300)] bg-[var(--color-violet-900)]/20'
-              : 'border-white/10 text-white/40 hover:text-white/60 disabled:opacity-40'
-          }`}
-        >
-          Not for me
-        </button>
-      </div>
-    </Card>
   )
 }

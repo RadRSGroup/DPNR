@@ -7,6 +7,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
 import Card from '@/components/ui/Card'
 import PrimaryButton from '@/components/ui/PrimaryButton'
+import DailyGuidanceCard from '@/components/companion/DailyGuidanceCard'
 import { getCompanionContext } from '@/lib/api/v1-client'
 import type { CompanionContextResponse } from '@dpnr/shared-types'
 
@@ -151,12 +152,7 @@ export default function DecisionRoomLanding({ userName, onStart }: Props) {
                   </p>
                 </Card>
 
-                {dailyCard && (
-                  <Card>
-                    <p className="text-white/40 text-xs uppercase tracking-wide mb-2">Today&apos;s Guidance</p>
-                    <p className="text-white/70 text-sm leading-relaxed italic">&ldquo;{dailyCard.text}&rdquo;</p>
-                  </Card>
-                )}
+                {dailyCard && <DailyGuidanceCard dailyCard={dailyCard} />}
 
                 <div className="lg:hidden">
                   <PrimaryButton label="Start Step 1" onClick={onStart} />
