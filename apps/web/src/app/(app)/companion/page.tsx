@@ -1,12 +1,15 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { Heart, Cloud, Shuffle, Sparkles } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getCompanionContext, sendCompanionMessage, sendDailyCardFeedback, ApiError } from '@/lib/api/v1-client'
 import type { CompanionDirective, CompanionContextResponse } from '@dpnr/shared-types'
 import DirectiveCard from '@/components/companion/DirectiveCard'
 import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
+import Card from '@/components/ui/Card'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -14,6 +17,20 @@ interface ChatMessage {
   createdAt: string
   directive?: CompanionDirective | null
   failed?: boolean
+}
+
+const QUICK_PROMPTS = [
+  { icon: Heart, lead: 'Help me understand', rest: "what I'm feeling", text: "Help me understand what I'm feeling right now." },
+  { icon: Cloud, lead: 'Help me see', rest: 'the pattern', text: 'Help me see the pattern in what I keep going through.' },
+  { icon: Shuffle, lead: 'Help me make', rest: 'a decision', text: "I'm stuck on a decision — help me make it." },
+  { icon: Sparkles, lead: 'Guide me based on', rest: 'what you know about me', text: 'Guide me based on what you know about me so far.' },
+]
+
+function timeGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 18) return 'Good afternoon'
+  return 'Good evening'
 }
 
 /**
@@ -24,11 +41,14 @@ interface ChatMessage {
  * treated as final per the handoff, nothing added client-side to guess at
  * intent the backend didn't return.
  *
- * Deliberately NOT built here (still open, per the handoff): a synthesized
- * "welcome back" opening (workstream C — this page's empty state is just
- * static copy, not a real continuation) and any onboarding/Roadmap flow
- * (workstream D). This page only renders what a real message exchange
- * already returns.
+ * UI redesign (Session 20, Phase 2 of docs/AGENT_LOG.md's plan): reskinned
+ * against the "Main Chat" reference screen — real time-of-day greeting,
+ * quick-prompt starter chips (just fill the input, never auto-send), and
+ * the Daily Card moved into a "Pull a Card" widget that lives in a desktop
+ * right column and inline above the thread on mobile. The reference's own
+ * "Recent Conversations" list has no real backend equivalent — Companion is
+ * one continuous thread, not discrete named conversations — so it's
+ * deliberately not built rather than faked; see AGENT_LOG.md.
  */
 export default function CompanionPage() {
   const router = useRouter()
@@ -36,10 +56,11 @@ export default function CompanionPage() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
-  const [userInitial, setUserInitial] = useState('?')
+  const [firstName, setFirstName] = useState('')
   const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
   const [creditsExhausted, setCreditsExhausted] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     async function load() {
@@ -47,7 +68,8 @@ export default function CompanionPage() {
         const session = await getCurrentSession()
         if (!session) { router.push('/login'); return }
         const email = session.getIdToken().payload.email as string | undefined
-        setUserInitial(email?.[0]?.toUpperCase() ?? '?')
+        const namePart = email?.split('@')[0] ?? ''
+        setFirstName(namePart.charAt(0).toUpperCase() + namePart.slice(1))
 
         const context = await getCompanionContext()
         setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt })))
@@ -119,173 +141,210 @@ export default function CompanionPage() {
     }
   }
 
+  function fillPrompt(text: string) {
+    setInput(text)
+    textareaRef.current?.focus()
+  }
+
+  const showPrompts = !loading && messages.length === 0
+
   return (
-    <div className="relative h-dvh flex flex-col bg-[#0a0a0f] overflow-hidden max-w-[393px] mx-auto">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+    <div className="relative h-[calc(100dvh-4rem)] lg:h-dvh flex flex-col overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-canvas-from)] via-[var(--color-bg-canvas-via)] to-[var(--color-bg-canvas-to)] -z-10" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
       {creditsExhausted && <CreditsExhaustedModal onClose={() => setCreditsExhausted(false)} />}
 
-      <div className="flex items-center justify-between px-5 pt-14 pb-3">
-        <div>
-          <p className="text-purple-400 text-xs tracking-widest uppercase">DPNR</p>
-          <h1 className="text-white text-xl font-light">Companion</h1>
-        </div>
-        <Link
-          href="/account"
-          className="w-9 h-9 rounded-full bg-purple-600/30 border border-purple-700/40 flex items-center justify-center text-purple-300 text-sm hover:bg-purple-600/50 transition-colors"
-          title="Account settings"
-        >
-          {userInitial}
-        </Link>
-      </div>
-
-      {/* Today's Daily Card — spec §3/§4: its primary surface is "Dashboard +
-          Main Chat", not Dashboard alone. Same feedback endpoint as
-          Dashboard's own card; dismissing here hides it there too. */}
-      {dailyCard && (
-        <div className="px-5 pb-3">
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-            <div className="flex gap-3">
-              <span className="text-lg flex-shrink-0">✦</span>
-              <div className="flex-1">
-                <p className="text-white/40 text-xs uppercase tracking-wide mb-1">Today</p>
-                <p className="text-white/80 text-sm leading-relaxed">{dailyCard.text}</p>
-              </div>
-              <button
-                onClick={() => handleDailyCardFeedback('dismiss')}
-                className="text-white/30 hover:text-white/60 text-sm flex-shrink-0"
-                title="Dismiss"
-              >
-                ×
-              </button>
-            </div>
-            <div className="flex items-center gap-2 mt-3 pl-8">
-              <button
-                onClick={() => handleDailyCardFeedback('relevant')}
-                disabled={dailyCard.feedback !== null}
-                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                  dailyCard.feedback === 'relevant'
-                    ? 'border-purple-500/50 text-purple-300 bg-purple-900/20'
-                    : 'border-white/10 text-white/40 hover:text-white/60 disabled:opacity-40'
-                }`}
-              >
-                Useful
-              </button>
-              <button
-                onClick={() => handleDailyCardFeedback('not_relevant')}
-                disabled={dailyCard.feedback !== null}
-                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                  dailyCard.feedback === 'not_relevant'
-                    ? 'border-purple-500/50 text-purple-300 bg-purple-900/20'
-                    : 'border-white/10 text-white/40 hover:text-white/60 disabled:opacity-40'
-                }`}
-              >
-                Not for me
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 space-y-3 pb-2">
-        {loading && <p className="text-white/30 text-sm text-center pt-8">Loading…</p>}
-
-        {!loading && messages.length === 0 && (
-          <div className="pt-8 text-center space-y-2">
-            <p className="text-white/50 text-sm leading-relaxed">Hi — what&apos;s on your mind?</p>
-            <p className="text-white/25 text-xs">
-              I can help you think something through, or point you to a Room or a Library topic.
+      <div className="flex-1 overflow-hidden lg:grid lg:grid-cols-3 lg:gap-6 lg:px-8 lg:pt-6">
+        {/* Main column */}
+        <div className="lg:col-span-2 h-full flex flex-col overflow-hidden max-w-[393px] lg:max-w-none mx-auto w-full">
+          <div className="px-5 pt-14 pb-1 lg:pt-0 lg:px-0">
+            <h1 className="font-display text-2xl lg:text-3xl text-white flex items-center gap-2">
+              {timeGreeting()}{firstName ? `, ${firstName}` : ''} <Sparkles className="w-5 h-5 text-[var(--color-amber-400)]" />
+            </h1>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-1 hidden lg:block">
+              I&apos;m here with you. Let&apos;s continue where you are.
             </p>
           </div>
-        )}
 
-        {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={m.role === 'user' ? 'max-w-[85%]' : 'max-w-[90%]'}>
-              <div
-                className={
-                  m.role === 'user'
-                    ? `bg-purple-600 text-white rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed ${m.failed ? 'opacity-50' : ''}`
-                    : `bg-white/5 border border-white/10 text-white/85 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed ${m.failed ? 'border-red-500/30 text-red-300/80' : ''}`
-                }
-              >
-                {m.text}
+          {/* Daily Card — mobile position, inline above the thread. Desktop
+              shows the same widget in the right column instead (below). */}
+          <div className="lg:hidden px-5 pt-2">
+            <DailyGuidanceCard dailyCard={dailyCard} onFeedback={handleDailyCardFeedback} compact />
+          </div>
+
+          {showPrompts && (
+            <div className="px-5 lg:px-0 pt-3 pb-1">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
+                {QUICK_PROMPTS.map((p) => (
+                  <button
+                    key={p.text}
+                    onClick={() => fillPrompt(p.text)}
+                    className="text-left bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] hover:border-white/20 active:scale-[0.98] rounded-[var(--radius-card)] p-3 transition-all"
+                  >
+                    <p.icon className="w-4 h-4 text-[var(--color-violet-400)] mb-2" />
+                    <p className="text-white/80 text-xs leading-snug">
+                      {p.lead} <span className="text-[var(--color-violet-300)]">{p.rest}</span>
+                    </p>
+                  </button>
+                ))}
               </div>
-              {m.directive && <DirectiveCard directive={m.directive} />}
+            </div>
+          )}
+
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 lg:px-0 space-y-3 pb-2 pt-2">
+            {loading && <p className="text-white/30 text-sm text-center pt-8">Loading…</p>}
+
+            {!loading && messages.length === 0 && (
+              <div className="pt-4 text-center space-y-2">
+                <p className="text-white/50 text-sm leading-relaxed">Hi — what&apos;s on your mind?</p>
+                <p className="text-white/25 text-xs">
+                  I can help you think something through, or point you to a Room or a Library topic.
+                </p>
+              </div>
+            )}
+
+            {messages.map((m, i) => (
+              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={m.role === 'user' ? 'max-w-[85%]' : 'max-w-[90%]'}>
+                  <div
+                    className={
+                      m.role === 'user'
+                        ? `bg-[var(--color-violet-600)] text-white rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed ${m.failed ? 'opacity-50' : ''}`
+                        : `bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] text-white/85 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed ${m.failed ? 'border-red-500/30 text-red-300/80' : ''}`
+                    }
+                  >
+                    {m.text}
+                  </div>
+                  {m.directive && <DirectiveCard directive={m.directive} />}
+                </div>
+              </div>
+            ))}
+
+            {sending && (
+              <div className="flex justify-start">
+                <div className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] rounded-2xl rounded-bl-md px-4 py-2.5">
+                  <span className="flex gap-1">
+                    <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" />
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Direct navigation to the wider platform from Main Chat itself —
+              spec Table 2's own "Surface / Navigation behavior" row. On
+              desktop the sidebar already covers every destination here, so
+              this row is mobile-only. */}
+          <div className="px-5 pt-2 lg:hidden">
+            <p className="text-white/40 text-xs uppercase tracking-wide mb-2">Explore</p>
+            <div className="grid grid-cols-4 gap-2">
+              <Link href="/dashboard" className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all">
+                <p className="text-white text-xs font-medium">InnerOS</p>
+              </Link>
+              <Link href="/rooms" className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all">
+                <p className="text-white text-xs font-medium">Work Rooms</p>
+              </Link>
+              <Link href="/twin" className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all">
+                <p className="text-white text-xs font-medium">InnerSelf</p>
+              </Link>
+              <Link href="/library" className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all">
+                <p className="text-white text-xs font-medium">Library</p>
+              </Link>
             </div>
           </div>
-        ))}
 
-        {sending && (
-          <div className="flex justify-start">
-            <div className="bg-white/5 border border-white/10 rounded-2xl rounded-bl-md px-4 py-2.5">
-              <span className="flex gap-1">
-                <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" />
-              </span>
-            </div>
+          <div className="px-5 lg:px-0 pb-4 pt-3 flex items-end gap-2">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Share anything with me..."
+              rows={1}
+              disabled={loading}
+              className="flex-1 bg-[var(--color-surface-glass)] border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 text-base resize-none focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors max-h-32"
+            />
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || sending || loading}
+              className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-full bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] active:scale-[0.98] disabled:bg-white/10 disabled:cursor-not-allowed text-white transition-all"
+              aria-label="Send"
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M2 9L16 2L11 16L8 10L2 9Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" fill="currentColor" fillOpacity="0.15" />
+              </svg>
+            </button>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Direct navigation to the wider platform from Main Chat itself — spec
-          Table 2's own "Surface / Navigation behavior" row: Main Chat "can
-          open Dashboard, Rooms, Library... inline or by transition," not
-          only by routing through Dashboard first. Relocated below the chat
-          (was a thin pill row under the header) and styled like Dashboard's
-          own "Explore" tile grid — same four destinations, same tile shape. */}
-      <div className="px-5 pt-2">
-        <p className="text-white/40 text-xs uppercase tracking-wide mb-2">Explore</p>
-        <div className="grid grid-cols-4 gap-2">
-          <Link
-            href="/dashboard"
-            className="bg-white/5 border border-white/10 hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all"
-          >
-            <p className="text-white text-xs font-medium">InnerOS</p>
-          </Link>
-          <Link
-            href="/rooms"
-            className="bg-white/5 border border-white/10 hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all"
-          >
-            <p className="text-white text-xs font-medium">Work Rooms</p>
-          </Link>
-          <Link
-            href="/twin"
-            className="bg-white/5 border border-white/10 hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all"
-          >
-            <p className="text-white text-xs font-medium">InnerSelf</p>
-          </Link>
-          <Link
-            href="/library"
-            className="bg-white/5 border border-white/10 hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all"
-          >
-            <p className="text-white text-xs font-medium">Library</p>
-          </Link>
+        {/* Right column — desktop only */}
+        <div className="hidden lg:flex lg:flex-col lg:gap-4 lg:pb-6 lg:overflow-y-auto">
+          <DailyGuidanceCard dailyCard={dailyCard} onFeedback={handleDailyCardFeedback} />
         </div>
       </div>
+    </div>
+  )
+}
 
-      <div className="px-5 pb-8 pt-3 flex items-end gap-2">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Say what's going on..."
-          rows={1}
-          disabled={loading}
-          className="flex-1 bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors max-h-32"
-        />
-        <button
-          onClick={handleSend}
-          disabled={!input.trim() || sending || loading}
-          className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-full bg-purple-600 hover:bg-purple-500 active:scale-[0.98] disabled:bg-white/10 disabled:cursor-not-allowed text-white transition-all"
-          aria-label="Send"
-        >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path d="M2 9L16 2L11 16L8 10L2 9Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" fill="currentColor" fillOpacity="0.15" />
-          </svg>
+function DailyGuidanceCard({
+  dailyCard,
+  onFeedback,
+  compact = false,
+}: {
+  dailyCard: CompanionContextResponse['dailyCard']
+  onFeedback: (action: 'dismiss' | 'relevant' | 'not_relevant') => void
+  compact?: boolean
+}) {
+  if (!dailyCard) {
+    if (compact) return null
+    return (
+      <Card>
+        <p className="text-white/40 text-xs uppercase tracking-wide">Today&apos;s Guidance</p>
+        <p className="text-white/30 text-sm mt-2">Nothing new right now — check back tomorrow.</p>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="relative overflow-hidden">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-white/40 text-xs uppercase tracking-wide">Today&apos;s Guidance</p>
+        <button onClick={() => onFeedback('dismiss')} className="text-white/30 hover:text-white/60 text-sm" title="Dismiss">
+          ×
         </button>
       </div>
-    </div>
+      {!compact && (
+        <div className="relative rounded-xl overflow-hidden h-40 mb-3">
+          <Image src="/images/companion/pull-a-card.webp" alt="" fill sizes="320px" className="object-cover" />
+        </div>
+      )}
+      <p className="text-white/80 text-sm leading-relaxed">{dailyCard.text}</p>
+      <div className="flex items-center gap-2 mt-3">
+        <button
+          onClick={() => onFeedback('relevant')}
+          disabled={dailyCard.feedback !== null}
+          className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+            dailyCard.feedback === 'relevant'
+              ? 'border-[var(--color-violet-500)]/50 text-[var(--color-violet-300)] bg-[var(--color-violet-900)]/20'
+              : 'border-white/10 text-white/40 hover:text-white/60 disabled:opacity-40'
+          }`}
+        >
+          Useful
+        </button>
+        <button
+          onClick={() => onFeedback('not_relevant')}
+          disabled={dailyCard.feedback !== null}
+          className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+            dailyCard.feedback === 'not_relevant'
+              ? 'border-[var(--color-violet-500)]/50 text-[var(--color-violet-300)] bg-[var(--color-violet-900)]/20'
+              : 'border-white/10 text-white/40 hover:text-white/60 disabled:opacity-40'
+          }`}
+        >
+          Not for me
+        </button>
+      </div>
+    </Card>
   )
 }
