@@ -39,6 +39,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       commitmentId,
       status: 'open',
       reviewDate: body.reviewDate,
+      ...(body.lifeDomain ? { lifeDomain: body.lifeDomain } : {}),
       ...(body.sourceRoomType ? { sourceRoomType: body.sourceRoomType } : {}),
       ...(body.sourceSessionId ? { sourceSessionId: body.sourceSessionId } : {}),
       content: stubEncryptField<{ description: string }>({ description: body.description }),
@@ -52,6 +53,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       status: 'open',
       description: body.description,
       reviewDate: body.reviewDate,
+      lifeDomain: body.lifeDomain,
       sourceRoomType: body.sourceRoomType,
       createdAt: now,
     }

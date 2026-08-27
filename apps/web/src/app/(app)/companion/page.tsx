@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Heart, Cloud, Shuffle, Sparkles } from 'lucide-react'
@@ -143,13 +144,37 @@ export default function CompanionPage() {
       <div className="flex-1 overflow-hidden lg:grid lg:grid-cols-3 lg:gap-6 lg:px-8 lg:pt-6">
         {/* Main column */}
         <div className="lg:col-span-2 h-full flex flex-col overflow-hidden max-w-[393px] lg:max-w-none mx-auto w-full">
-          <div className="px-5 pt-14 pb-1 lg:pt-0 lg:px-0">
-            <h1 className="font-display text-2xl lg:text-3xl text-white flex items-center gap-2">
+          {/* Mobile: plain text greeting, no room for hero art here. */}
+          <div className="px-5 pt-14 pb-1 lg:hidden">
+            <h1 className="font-display text-2xl text-white flex items-center gap-2">
               {timeGreeting()}{firstName ? `, ${firstName}` : ''} <Sparkles className="w-5 h-5 text-[var(--color-amber-400)]" />
             </h1>
-            <p className="text-sm text-[var(--color-text-secondary)] mt-1 hidden lg:block">
-              I&apos;m here with you. Let&apos;s continue where you are.
-            </p>
+          </div>
+
+          {/* Desktop: one hero banner card, same idiom as DecisionRoomLanding/
+              MirrorRoomLanding — the portrait bleeds to the card's own top/
+              bottom/right edges (an expected crop, not a seam) and only
+              fades where it meets the greeting text, into this card's own
+              background color so the fade can't mismatch. */}
+          <div className="hidden lg:block relative overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-glass)] bg-[var(--color-surface-glass)] h-64 mb-4">
+            <div className="absolute right-0 top-0 bottom-0 w-80 [mask-image:linear-gradient(to_left,black_55%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_left,black_55%,transparent_100%)]">
+              <Image
+                src="/images/companion/companion-hero.webp"
+                alt=""
+                fill
+                sizes="320px"
+                className="object-cover object-top"
+                priority
+              />
+            </div>
+            <div className="relative z-10 h-full flex flex-col justify-center px-8 max-w-[55%]">
+              <h1 className="font-display text-3xl text-white flex items-center gap-2">
+                {timeGreeting()}{firstName ? `, ${firstName}` : ''} <Sparkles className="w-5 h-5 text-[var(--color-amber-400)]" />
+              </h1>
+              <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+                I&apos;m here with you. Let&apos;s continue where you are.
+              </p>
+            </div>
           </div>
 
           {/* Daily Card — mobile position, inline above the thread. Desktop

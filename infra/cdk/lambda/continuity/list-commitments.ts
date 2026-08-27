@@ -29,6 +29,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         status: item.status,
         description: stubDecryptField<{ description: string }>(item.content).description,
         reviewDate: item.reviewDate,
+        lifeDomain: item.lifeDomain,
         sourceRoomType: item.sourceRoomType,
         createdAt: item.createdAt,
       }))

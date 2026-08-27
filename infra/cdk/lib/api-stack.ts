@@ -375,6 +375,20 @@ export class ApiStack extends Stack {
     })
     props.applicationTable.grantReadData(mirrorFullFn)
 
+    const listDecisionsFn = new lambda.NodejsFunction(this, 'ListDecisionsFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/rooms/list-decisions.ts'),
+      description: 'GET /v1/rooms/decisions — summary list, most-recently-created first.',
+    })
+    props.applicationTable.grantReadData(listDecisionsFn)
+
+    const listMirrorsFn = new lambda.NodejsFunction(this, 'ListMirrorsFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/rooms/list-mirrors.ts'),
+      description: 'GET /v1/rooms/mirrors — summary list, most-recently-created first.',
+    })
+    props.applicationTable.grantReadData(listMirrorsFn)
+
     this.httpApi.addRoutes({
       path: '/v1/rooms/decision',
       methods: [apigwv2.HttpMethod.POST],
@@ -402,6 +416,20 @@ export class ApiStack extends Stack {
       path: '/v1/rooms/mirror/{id}/full',
       methods: [apigwv2.HttpMethod.GET],
       integration: new integrations.HttpLambdaIntegration('MirrorFullIntegration', mirrorFullFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/rooms/decisions',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('ListDecisionsIntegration', listDecisionsFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/rooms/mirrors',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('ListMirrorsIntegration', listMirrorsFn),
       authorizer: this.cognitoAuthorizer,
     })
 
@@ -502,6 +530,15 @@ export class ApiStack extends Stack {
     })
     props.applicationTable.grantReadData(getCreditsFn)
 
+    const listTransactionsFn = new lambda.NodejsFunction(this, 'ListTransactionsFn', {
+      runtime: Runtime.NODEJS_24_X,
+      bundling: { minify: true, sourceMap: true },
+      environment: { APPLICATION_TABLE_NAME: props.applicationTable.tableName },
+      entry: path.join(__dirname, '../lambda/credits/list-transactions.ts'),
+      description: 'GET /v1/credits/transactions — the real ledger, most-recent first.',
+    })
+    props.applicationTable.grantReadData(listTransactionsFn)
+
     const getPlansFn = new lambda.NodejsFunction(this, 'GetPlansFn', {
       runtime: Runtime.NODEJS_24_X,
       bundling: { minify: true, sourceMap: true },
@@ -515,6 +552,13 @@ export class ApiStack extends Stack {
       path: '/v1/credits',
       methods: [apigwv2.HttpMethod.GET],
       integration: new integrations.HttpLambdaIntegration('GetCreditsIntegration', getCreditsFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/credits/transactions',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('ListTransactionsIntegration', listTransactionsFn),
       authorizer: this.cognitoAuthorizer,
     })
 

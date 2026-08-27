@@ -1,5 +1,14 @@
 import { z } from 'zod'
 
+/**
+ * Cost per billable action — the user's own confirmed decision (Session 18).
+ * Lives here (not just in `infra/cdk/lambda/lib/credits.ts`) so the frontend
+ * can show the real charge (e.g. Mirror Room's "1 credit" badge) without a
+ * second, driftable copy of the number.
+ */
+export const ROOM_REFINE_COST = 1
+export const COMPANION_MESSAGE_COST = 1
+
 export const TierSchema = z.enum(['free', 'core', 'pro'])
 export type Tier = z.infer<typeof TierSchema>
 

@@ -126,6 +126,26 @@ export const CreditsPurchaseResponseSchema = z.object({
 export type CreditsPurchaseResponse = z.infer<typeof CreditsPurchaseResponseSchema>
 
 /**
+ * GET /v1/credits/transactions — the real ledger, most-recent first. Reads
+ * back the same CreditsTransactionItem rows grantCredits/consumeCredits
+ * already write (dynamo/account.ts) — nothing here is new state, just a
+ * missing read.
+ */
+export const CreditsTransactionViewSchema = z.object({
+  type: z.enum(['grant_trial', 'grant_purchase', 'consume', 'refund']),
+  amount: z.number().int(),
+  balanceAfter: z.number().int().min(0),
+  reason: z.string(),
+  createdAt: z.string().datetime(),
+})
+export type CreditsTransactionView = z.infer<typeof CreditsTransactionViewSchema>
+
+export const CreditsTransactionsResponseSchema = z.object({
+  transactions: z.array(CreditsTransactionViewSchema),
+})
+export type CreditsTransactionsResponse = z.infer<typeof CreditsTransactionsResponseSchema>
+
+/**
  * GET /v1/plans — catalog read (dynamo/global-tables.ts PlanItem), kept
  * configurable per spec §Beta Trial rather than hard-coded into product
  * logic. Only `active` plans are expected to be returned by the handler;

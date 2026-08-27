@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { CommitmentStatusSchema, DailyCardFeedbackSchema } from '../dynamo/continuity'
+import { LifeDomainCategorySchema } from '../dynamo/twin'
 
 /**
  * Daily Card / Weekly Recap / Commitments (MVP_ARCHITECTURE.md §5.7).
@@ -39,7 +40,8 @@ export type WeeklyRecapResponse = z.infer<typeof WeeklyRecapResponseSchema>
 /** POST /v1/commitments */
 export const CreateCommitmentRequestSchema = z.object({
   description: z.string().min(1),
-  reviewDate: z.string().date().nullable(),
+  reviewDate: z.string().date().nullable(), // null means "ongoing" — no target date
+  lifeDomain: LifeDomainCategorySchema.optional(),
   sourceRoomType: z.enum(['decision', 'mirror']).optional(),
   sourceSessionId: z.string().optional(),
 })
@@ -50,6 +52,7 @@ export const CommitmentViewSchema = z.object({
   status: CommitmentStatusSchema,
   description: z.string(),
   reviewDate: z.string().date().nullable(),
+  lifeDomain: LifeDomainCategorySchema.optional(),
   sourceRoomType: z.enum(['decision', 'mirror']).optional(),
   createdAt: z.string().datetime(),
 })

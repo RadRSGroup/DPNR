@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { EncryptedBlobSchema } from './crypto'
+import { LifeDomainCategorySchema } from './twin'
 
 export const CommitmentStatusSchema = z.enum(['open', 'completed', 'dropped'])
 export type CommitmentStatus = z.infer<typeof CommitmentStatusSchema>
@@ -9,7 +10,12 @@ export const CommitmentItemSchema = z.object({
   sk: z.string(), // Sk.commitment(commitmentId)
   commitmentId: z.string(),
   status: CommitmentStatusSchema,
-  reviewDate: z.string().date().nullable(),
+  reviewDate: z.string().date().nullable(), // null also means "ongoing" — no target date, not "unset"
+  // Optional life-domain tag (added for My Evolution Map's "Goals & Dreams"
+  // widget) — a commitment created before this existed, or one not tied to
+  // a specific domain, simply has none. Reuses the same 7-category taxonomy
+  // Life Domains/Leading Archetypes already use, no new taxonomy invented.
+  lifeDomain: LifeDomainCategorySchema.optional(),
   sourceRoomType: z.enum(['decision', 'mirror']).optional(),
   sourceSessionId: z.string().optional(),
   content: EncryptedBlobSchema, // wraps { description: string }

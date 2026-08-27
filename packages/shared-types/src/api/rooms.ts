@@ -111,3 +111,43 @@ export const MirrorRoomFullResponseSchema = z.object({
   updatedAt: z.string().datetime(),
 })
 export type MirrorRoomFullResponse = z.infer<typeof MirrorRoomFullResponseSchema>
+
+/**
+ * GET /v1/rooms/decisions — a summary list, most-recently-created first.
+ * Deliberately thin: no per-item "aligned %" field, since that concept
+ * doesn't map cleanly onto a single session (Alignment Score is a life-wide
+ * metric, computed in lib/alignment-score.ts — not per-decision). `title`
+ * is decrypted server-side, same as every other real field the client sees.
+ */
+export const DecisionSummaryViewSchema = z.object({
+  decisionId: z.string(),
+  title: z.string(),
+  status: DecisionStatusSchema,
+  createdAt: z.string().datetime(),
+})
+export type DecisionSummaryView = z.infer<typeof DecisionSummaryViewSchema>
+
+export const DecisionsListResponseSchema = z.object({
+  decisions: z.array(DecisionSummaryViewSchema),
+})
+export type DecisionsListResponse = z.infer<typeof DecisionsListResponseSchema>
+
+/**
+ * GET /v1/rooms/mirrors — same shape of read, for Mirror Room. No title
+ * field exists on MirrorSessionItemSchema (dynamo/mirror-room.ts) — every
+ * field lives inside its encrypted `content` blob — so `label` is a short
+ * derived string ("Reflection" or "Reflection — {lifeDomain}" when a life
+ * domain was captured), not a stored title.
+ */
+export const MirrorSummaryViewSchema = z.object({
+  mirrorId: z.string(),
+  label: z.string(),
+  status: MirrorSessionStatusSchema,
+  createdAt: z.string().datetime(),
+})
+export type MirrorSummaryView = z.infer<typeof MirrorSummaryViewSchema>
+
+export const MirrorsListResponseSchema = z.object({
+  mirrors: z.array(MirrorSummaryViewSchema),
+})
+export type MirrorsListResponse = z.infer<typeof MirrorsListResponseSchema>

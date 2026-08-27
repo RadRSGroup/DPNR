@@ -22,6 +22,12 @@ import type {
   CreditsPurchaseResponse,
   DailyCardFeedbackRequest,
   DailyCardFeedbackResponse,
+  DecisionsListResponse,
+  MirrorsListResponse,
+  CreditsTransactionsResponse,
+  CreateCommitmentRequest,
+  CreateCommitmentResponse,
+  CommitmentsResponse,
 } from '@dpnr/shared-types'
 import { getIdToken } from '../cognito/client'
 
@@ -77,6 +83,16 @@ export async function getMirrorFull(id: string): Promise<MirrorRoomFullResponse>
   return parseOrThrow<MirrorRoomFullResponse>(res)
 }
 
+export async function getDecisionsList(): Promise<DecisionsListResponse> {
+  const res = await authedFetch('/v1/rooms/decisions')
+  return parseOrThrow<DecisionsListResponse>(res)
+}
+
+export async function getMirrorsList(): Promise<MirrorsListResponse> {
+  const res = await authedFetch('/v1/rooms/mirrors')
+  return parseOrThrow<MirrorsListResponse>(res)
+}
+
 /** POST /v1/user/consent — the write path this session built (docs/PHASE_AUDIT.md §2.2). */
 export async function grantConsent(): Promise<ConsentResponse> {
   const res = await authedFetch('/v1/user/consent', { method: 'POST' })
@@ -109,6 +125,11 @@ export async function getDashboard(): Promise<DashboardResponse> {
 export async function getCredits(): Promise<CreditsResponse> {
   const res = await authedFetch('/v1/credits')
   return parseOrThrow<CreditsResponse>(res)
+}
+
+export async function getCreditsTransactions(): Promise<CreditsTransactionsResponse> {
+  const res = await authedFetch('/v1/credits/transactions')
+  return parseOrThrow<CreditsTransactionsResponse>(res)
 }
 
 /**
@@ -185,4 +206,16 @@ export async function confirmTwinSignal(signalId: string): Promise<TwinSignalAct
 export async function rejectTwinSignal(signalId: string): Promise<TwinSignalActionResponse> {
   const res = await authedFetch(`/v1/twin/signals/${encodeURIComponent(signalId)}/reject`, { method: 'POST' })
   return parseOrThrow<TwinSignalActionResponse>(res)
+}
+
+/** GET /v1/commitments — every commitment the caller has, any status. */
+export async function getCommitments(): Promise<CommitmentsResponse> {
+  const res = await authedFetch('/v1/commitments')
+  return parseOrThrow<CommitmentsResponse>(res)
+}
+
+/** POST /v1/commitments — used by My Evolution Map's "Goals & Dreams" widget. */
+export async function createCommitment(request: CreateCommitmentRequest): Promise<CreateCommitmentResponse> {
+  const res = await authedFetch('/v1/commitments', { method: 'POST', body: JSON.stringify(request) })
+  return parseOrThrow<CreateCommitmentResponse>(res)
 }

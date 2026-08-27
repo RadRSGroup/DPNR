@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { STEP_LABELS, TOTAL_STEPS } from '@/lib/types'
 
@@ -9,8 +9,26 @@ interface StepShellProps {
   children: React.ReactNode
   onBack?: () => void
   onSkip?: () => void
+  /** Starting time budget in minutes — was a static display value with no
+   * countdown at all (docs/PHASE_AUDIT.md's own "real gap, newly found").
+   * Now the seed for a real client-side countdown; 25 matches
+   * DecisionRoomLanding's own "Takes about 25 minutes" copy. */
   minutesLeft?: number
 }
+
+// "After sustained intensive reflection, offer to integrate, stop, or
+// continue later" (spec §6). Every step already persists as it's
+// submitted, so "stop" and "continue later" are the same real action —
+// this deliberately doesn't invent a third, distinct "integrate" button
+// with no behavior of its own to be distinct with (same reasoning Mirror
+// Room's own landing page already applies to its three reference entry
+// modes that all resolve to one real flow).
+//
+// Threshold is 80% of the room's own time budget, not one fixed absolute
+// — a flat 20 minutes (this room's own budget) would almost never fire
+// for Mirror Room's much shorter ~12-minute sessions. 80% of 25 gives
+// Decision Room the same ~20-minute mark either way.
+const STOPPING_CUE_FRACTION = 0.8
 
 // The "?" info button used to call an AI `step_info` prompt (apps/web-only,
 // pre-/v1 port). No step in the 14-step command contract implements an
@@ -50,10 +68,20 @@ export default function StepShell({
   children,
   onBack,
   onSkip,
-  minutesLeft = 27,
+  minutesLeft: initialMinutes = 25,
 }: StepShellProps) {
   const router = useRouter()
   const [infoOpen, setInfoOpen] = useState(false)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [stoppingCueDismissed, setStoppingCueDismissed] = useState(false)
+
+  useEffect(() => {
+    const interval = setInterval(() => setElapsedSeconds((s) => s + 1), 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const minutesLeft = Math.max(0, initialMinutes - Math.floor(elapsedSeconds / 60))
+  const showStoppingCue = !stoppingCueDismissed && elapsedSeconds >= initialMinutes * 60 * STOPPING_CUE_FRACTION
 
   function handleInfo() {
     setInfoOpen(true)
@@ -174,6 +202,34 @@ export default function StepShell({
               </button>
             </div>
             <p className="text-white/70 text-sm leading-relaxed">{STEP_INFO[step] ?? '—'}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Soft stopping cue (spec §6) — first real implementation, was
+          entirely absent before. */}
+      {showStoppingCue && (
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50 pb-8 px-5">
+          <div className="w-full bg-[var(--color-violet-900)] border border-[var(--color-violet-600)]/40 rounded-3xl p-6 space-y-4">
+            <p className="text-[var(--color-violet-300)] text-xs uppercase tracking-widest">A gentle check-in</p>
+            <p className="text-white/70 text-sm leading-relaxed">
+              You&apos;ve been in this for a while now. However you continue, what you&apos;ve already explored is
+              saved — nothing is lost by pausing here.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setStoppingCueDismissed(true)}
+                className="flex-1 py-3 rounded-2xl bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] text-white text-sm font-medium transition-colors"
+              >
+                Keep going
+              </button>
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="flex-1 py-3 rounded-2xl border border-white/15 text-white/60 hover:text-white hover:border-white/30 text-sm transition-colors"
+              >
+                Pause, continue later
+              </button>
+            </div>
           </div>
         </div>
       )}

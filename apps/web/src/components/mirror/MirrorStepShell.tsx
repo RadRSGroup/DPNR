@@ -1,14 +1,21 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 const TOTAL_STEPS = 6
+
+// Same real countdown + soft-stopping-cue treatment as
+// components/decision/StepShell.tsx — see that file for the full
+// reasoning (spec §6, threshold-as-fraction-of-budget, why there's no
+// third "integrate" button).
+const STOPPING_CUE_FRACTION = 0.8
 
 interface MirrorStepShellProps {
   step: number
   sessionTitle: string
   children: React.ReactNode
   onBack?: () => void
+  /** Starting time budget in minutes — now the seed for a real countdown. */
   minutesLeft?: number
 }
 
@@ -54,10 +61,20 @@ export default function MirrorStepShell({
   sessionTitle,
   children,
   onBack,
-  minutesLeft = 12,
+  minutesLeft: initialMinutes = 12,
 }: MirrorStepShellProps) {
   const router = useRouter()
   const [infoOpen, setInfoOpen] = useState(false)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [stoppingCueDismissed, setStoppingCueDismissed] = useState(false)
+
+  useEffect(() => {
+    const interval = setInterval(() => setElapsedSeconds((s) => s + 1), 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const minutesLeft = Math.max(0, initialMinutes - Math.floor(elapsedSeconds / 60))
+  const showStoppingCue = !stoppingCueDismissed && elapsedSeconds >= initialMinutes * 60 * STOPPING_CUE_FRACTION
 
   return (
     <div className="relative h-dvh flex flex-col bg-[var(--color-bg-base)] overflow-hidden max-w-[393px] mx-auto">
@@ -161,6 +178,33 @@ export default function MirrorStepShell({
               </button>
             </div>
             <p className="text-white/70 text-sm leading-relaxed">{STEP_INFO[step] ?? '—'}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Soft stopping cue (spec §6) — first real implementation. */}
+      {showStoppingCue && (
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50 pb-8 px-5">
+          <div className="w-full bg-[var(--color-violet-900)] border border-[var(--color-violet-600)]/40 rounded-3xl p-6 space-y-4">
+            <p className="text-[var(--color-violet-300)] text-xs uppercase tracking-widest">A gentle check-in</p>
+            <p className="text-white/70 text-sm leading-relaxed">
+              You&apos;ve been with this for a while now. However you continue, what you&apos;ve already explored is
+              saved — nothing is lost by pausing here.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setStoppingCueDismissed(true)}
+                className="flex-1 py-3 rounded-2xl bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] text-white text-sm font-medium transition-colors"
+              >
+                Keep going
+              </button>
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="flex-1 py-3 rounded-2xl border border-white/15 text-white/60 hover:text-white hover:border-white/30 text-sm transition-colors"
+              >
+                Pause, continue later
+              </button>
+            </div>
           </div>
         </div>
       )}
