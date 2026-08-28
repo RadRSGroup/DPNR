@@ -26,5 +26,5 @@ export const PRIMARY_NAV: NavItem[] = [
   { label: 'Decision Room', href: '/decision/new', icon: Compass },
   { label: 'Content & Learning', href: '/library', icon: BookOpen },
   { label: 'Growth Tracker', href: '/growth', icon: TrendingUp },
-  { label: 'My Evolution Map', href: '/evolution-map', icon: Sparkles, comingSoon: true },
+  { label: 'My Evolution Map', href: '/evolution-map', icon: Sparkles },
 ]

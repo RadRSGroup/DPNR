@@ -8,8 +8,11 @@ import { ddb, TABLE_NAME } from './helpers'
 /**
  * GET /v1/twin — every signal the caller has (any status: candidate,
  * confirmed, rejected), most-recently-updated first. `MVP_ARCHITECTURE.md`
- * §4 Slice 1 is "data + confirm/reject, no fixed viz" — this is a flat data
- * read, no My Evolution Map presentation logic belongs here.
+ * §4 Slice 1 is "data + confirm/reject, no fixed viz" — this stays a flat
+ * data read, no presentation logic. Slice 5 (My Evolution Map) added
+ * `lifeDomain`/`archetype` to the response below — real fields already on
+ * `TwinSignalItem` since Session 19's classifier, just never read back
+ * before; still flat data, not a My-Evolution-Map-specific shape.
  */
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
@@ -31,6 +34,8 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         status: item.status,
         confidence: item.confidence,
         description: stubDecryptField<{ description: string }>(item.content).description,
+        lifeDomain: item.lifeDomain,
+        archetype: item.archetype,
       }))
 
     const body: TwinListResponse = { signals }

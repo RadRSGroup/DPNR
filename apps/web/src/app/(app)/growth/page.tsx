@@ -2,15 +2,16 @@
 import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { TrendingUp, Sparkles, Layers, Waves, Heart, Users, Briefcase, Activity, Wallet, Palette, Flower2 } from 'lucide-react'
+import { TrendingUp, Sparkles, Layers, Waves } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getDashboard, getDecisionsList, getCompanionContext } from '@/lib/api/v1-client'
-import type { DashboardResponse, DecisionsListResponse, CompanionContextResponse, LifeDomainCategory } from '@dpnr/shared-types'
+import type { DashboardResponse, DecisionsListResponse, CompanionContextResponse } from '@dpnr/shared-types'
 import { LIFE_DOMAIN_LABELS, ARCHETYPE_LABELS } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 import ProgressRing from '@/components/ui/ProgressRing'
 import DailyGuidanceCard from '@/components/companion/DailyGuidanceCard'
 import RoadmapTimelineCard from '@/components/shared/RoadmapTimelineCard'
+import { DOMAIN_META } from '@/components/shared/domain-meta'
 
 /**
  * Growth Tracker (Slice 4 of the 6-slice reference-mockup parity plan,
@@ -31,16 +32,6 @@ import RoadmapTimelineCard from '@/components/shared/RoadmapTimelineCard'
  * sentiment trend — that is deliberate, not a bug or a gap for a future
  * session to quietly "complete" with fabricated numbers.
  */
-
-const DOMAIN_META: Record<LifeDomainCategory, { icon: typeof Heart; color: string; ringClass: string }> = {
-  self_inner_world: { icon: Heart, color: 'var(--color-magenta-500)', ringClass: 'stroke-[var(--color-magenta-500)]' },
-  relationships: { icon: Users, color: 'var(--color-violet-400)', ringClass: 'stroke-[var(--color-violet-400)]' },
-  career_purpose: { icon: Briefcase, color: 'var(--color-violet-500)', ringClass: 'stroke-[var(--color-violet-500)]' },
-  health_body: { icon: Activity, color: 'var(--color-amber-400)', ringClass: 'stroke-[var(--color-amber-400)]' },
-  money_abundance: { icon: Wallet, color: 'var(--color-amber-300)', ringClass: 'stroke-[var(--color-amber-300)]' },
-  creativity_expression: { icon: Palette, color: 'var(--color-violet-300)', ringClass: 'stroke-[var(--color-violet-300)]' },
-  spirituality: { icon: Flower2, color: 'var(--color-violet-600)', ringClass: 'stroke-[var(--color-violet-600)]' },
-}
 
 // `Date.now()` specifically trips apps/web's `react-hooks/purity` lint rule
 // even outside a hook (Session 24 found this) — `new Date().getTime()` does not.

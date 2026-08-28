@@ -81,6 +81,14 @@ export const TwinListResponseSchema = z.object({
       status: TwinSignalStatusSchema,
       confidence: z.number().min(0).max(1),
       description: z.string(), // decrypted server-side for this response, per §6.6 "Interactive AI call" flow
+      // Set at confirm-time by twin/classify_signal (Session 19) — absent
+      // for signals confirmed before that existed, or if classification
+      // failed. Exposed here (My Evolution Map, Slice 5) so a real per-domain
+      // "Focus Areas" drill-down can filter the caller's own already-fetched
+      // signal list instead of re-deriving classification client-side or
+      // duplicating Dashboard's aggregate logic for one filtered view.
+      lifeDomain: LifeDomainCategorySchema.optional(),
+      archetype: ArchetypeSchema.optional(),
     })
   ),
 })
