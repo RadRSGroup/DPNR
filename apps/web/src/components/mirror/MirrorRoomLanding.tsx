@@ -8,7 +8,8 @@ import Card from '@/components/ui/Card'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import DailyGuidanceCard from '@/components/companion/DailyGuidanceCard'
 import LotusIcon from '@/components/icons/LotusIcon'
-import { getCompanionContext, getTwin } from '@/lib/api/v1-client'
+import { getCompanionContext, getTwin, getMirrorsList } from '@/lib/api/v1-client'
+import { ROOM_REFINE_COST } from '@dpnr/shared-types'
 import type { CompanionContextResponse, TwinListResponse } from '@dpnr/shared-types'
 
 interface Props {
@@ -25,18 +26,24 @@ interface Props {
  * reflection wizard that follows (`MirrorStepShell` and every Step0N screen)
  * stays immersive and chrome-free.
  *
- * Three reference widgets were deliberately NOT built, all for the same
+ * Two reference widgets were deliberately NOT built, for the same
  * "don't fabricate" reason DecisionRoomLanding's own handoff already
- * documents: "Reflection Streak" (day-streak + "Inner Points") has no real
- * backend anywhere — no streak/points tracking exists, and there is no
- * `GET /v1/mirror` list endpoint to even compute a streak from client-side.
- * "Start Your Reflection"'s three entry modes (By Pattern / By Situation /
- * Trigger Archetypes) don't correspond to three real distinct flows — the
- * backend command contract is one linear flow regardless of entry point
- * (`mirror-steps/*.ts`) — so building three buttons that all do the exact
- * same thing would imply functionality that doesn't exist; one real "Start
- * Mirror" CTA stays instead. The Active/Exploring/Resolved status tabs on
- * "Your Patterns" have no matching real status taxonomy either.
+ * documents: "Start Your Reflection"'s three entry modes (By Pattern / By
+ * Situation / Trigger Archetypes) don't correspond to three real distinct
+ * flows — the backend command contract is one linear flow regardless of
+ * entry point (`mirror-steps/*.ts`) — so building three buttons that all do
+ * the exact same thing would imply functionality that doesn't exist; one
+ * real "Start Mirror" CTA stays instead. The Active/Exploring/Resolved
+ * status tabs on "Your Patterns" have no matching real status taxonomy
+ * either.
+ *
+ * The reference's "Reflection Streak" (day-streak + "Inner Points") is
+ * real data now that `GET /v1/rooms/mirrors` exists (Slice 1), but is
+ * intentionally NOT reskinned as a streak — a per-user consistency
+ * indicator ("You've shown up N times this week") replaces it instead, per
+ * the project's own already-verified anti-addiction principle
+ * (`docs/PHASE_AUDIT.md`): no points currency, no break-the-streak framing,
+ * no public/comparative element. See `weeklySessionCount` below.
  *
  * "Your Patterns" itself IS real, though: it reuses the exact same confirmed
  * `domain==='pattern'` Twin signals, ranked by confidence, Dashboard's own
@@ -48,10 +55,21 @@ export default function MirrorRoomLanding({ userName, onStart }: Props) {
   const firstName = userName.includes('@') ? userName.split('@')[0] : userName.split(' ')[0] || userName
   const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
   const [twin, setTwin] = useState<TwinListResponse | null>(null)
+  const [weeklySessionCount, setWeeklySessionCount] = useState<number | null>(null)
 
   useEffect(() => {
     getCompanionContext().then((c) => setDailyCard(c.dailyCard)).catch(() => {})
     getTwin().then(setTwin).catch(() => {})
+    // Rolling 7-day window (not calendar week) — simpler than reasoning about
+    // week boundaries/timezones, and "you've shown up N times this week"
+    // reads the same either way for a private, non-comparative count.
+    getMirrorsList()
+      .then((res) => {
+        const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+        const count = res.mirrors.filter((m) => new Date(m.createdAt).getTime() >= weekAgo).length
+        setWeeklySessionCount(count)
+      })
+      .catch(() => {})
   }, [])
 
   const confirmedPatterns = (twin?.signals ?? [])
@@ -92,8 +110,11 @@ export default function MirrorRoomLanding({ userName, onStart }: Props) {
                     <p className="text-white/50 text-sm mt-2 leading-relaxed max-w-sm">
                       This is your space to pause, observe, and explore your inner patterns. The more you see, the more you&apos;re free to choose.
                     </p>
-                    <div className="mt-4">
+                    <div className="mt-4 flex items-center gap-3">
                       <PrimaryButton label="Start Mirror" onClick={onStart} className="lg:w-auto lg:px-6" />
+                      <span className="text-white/30 text-xs">
+                        {ROOM_REFINE_COST} credit{ROOM_REFINE_COST === 1 ? '' : 's'} per refine
+                      </span>
                     </div>
                   </div>
                 </Card>
@@ -102,6 +123,21 @@ export default function MirrorRoomLanding({ userName, onStart }: Props) {
               {/* Side column */}
               <div className="space-y-4 lg:space-y-6 mt-4 lg:mt-0">
                 {dailyCard && <DailyGuidanceCard dailyCard={dailyCard} title="Today's Insight" />}
+
+                {/* Private, non-comparative consistency indicator — see the
+                    file doc comment above for why this replaces the
+                    reference's streak/points widget. Only shown once there's
+                    something real to reflect; a "0 times this week" reading
+                    would edge toward the break-the-streak framing this is
+                    meant to avoid. */}
+                {weeklySessionCount !== null && weeklySessionCount > 0 && (
+                  <Card>
+                    <p className="text-sm text-white">
+                      You&apos;ve shown up {weeklySessionCount} time{weeklySessionCount === 1 ? '' : 's'} this week
+                    </p>
+                    <p className="text-xs text-white/40 mt-1">Just for you to notice — no pressure, no streak to break.</p>
+                  </Card>
+                )}
 
                 {confirmedPatterns.length > 0 && (
                   <Card>

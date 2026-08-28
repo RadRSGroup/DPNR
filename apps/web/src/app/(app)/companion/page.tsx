@@ -133,7 +133,10 @@ export default function CompanionPage() {
     textareaRef.current?.focus()
   }
 
-  const showPrompts = !loading && messages.length === 0
+  // Stay visible alongside an active thread (not just on the empty state) —
+  // matches the reference, which shows these as permanent shortcuts rather
+  // than a first-message-only affordance.
+  const showPrompts = !loading
 
   return (
     <div className="relative h-[calc(100dvh-4rem)] lg:h-dvh flex flex-col overflow-hidden">
