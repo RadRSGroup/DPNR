@@ -12,6 +12,7 @@ import { LIFE_DOMAIN_LABELS, ARCHETYPE_LABELS } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 import ProgressRing from '@/components/ui/ProgressRing'
 import DailyGuidanceCard from '@/components/companion/DailyGuidanceCard'
+import RoadmapTimelineCard from '@/components/shared/RoadmapTimelineCard'
 
 /**
  * Labels for continuityCue kinds OTHER than 'daily_card' — that one now
@@ -185,20 +186,9 @@ function DashboardContent() {
               </div>
             </Card>
 
-            {/* My Roadmap — real currentFocus/theme/direction, no fabricated
-                4th "Intention" node (RoadmapItemSchema has no such field). */}
-            {dashboard?.roadmap && (
-              <Card>
-                <p className="text-white/40 text-xs uppercase tracking-wide mb-4">My Roadmap</p>
-                <div className="flex items-start gap-2">
-                  <RoadmapNode label="Current Focus" value={dashboard.roadmap.currentFocus} color="var(--color-amber-400)" />
-                  <div className="flex-1 h-px bg-gradient-to-r from-[var(--color-amber-400)] to-[var(--color-violet-500)] mt-2" />
-                  <RoadmapNode label="Theme" value={dashboard.roadmap.theme} color="var(--color-violet-400)" />
-                  <div className="flex-1 h-px bg-gradient-to-r from-[var(--color-violet-500)] to-[var(--color-magenta-500)] mt-2" />
-                  <RoadmapNode label="Direction" value={dashboard.roadmap.direction} color="var(--color-magenta-500)" align="right" />
-                </div>
-              </Card>
-            )}
+            {/* My Roadmap — real currentFocus/theme/direction, shared with
+                Growth Tracker (Slice 4) via RoadmapTimelineCard. */}
+            {dashboard?.roadmap && <RoadmapTimelineCard roadmap={dashboard.roadmap} />}
 
             {/* Life Domains — real aggregate over confirmed, classified Twin
                 signals (twin/classify_signal, Session 19). Only domains the
@@ -382,16 +372,6 @@ function DashboardContent() {
           </div>
         </div>
       </div>
-    </div>
-  )
-}
-
-function RoadmapNode({ label, value, color, align = 'left' }: { label: string; value: string; color: string; align?: 'left' | 'right' }) {
-  return (
-    <div className={`flex flex-col ${align === 'right' ? 'items-end text-right' : 'items-start text-left'} w-28 lg:w-36 shrink-0`}>
-      <div className="w-3 h-3 rounded-full mb-2" style={{ backgroundColor: color, boxShadow: `0 0 8px 0 ${color}` }} />
-      <p className="text-[10px] uppercase tracking-wide text-white/40">{label}</p>
-      <p className="text-sm text-white mt-0.5 line-clamp-2">{value}</p>
     </div>
   )
 }

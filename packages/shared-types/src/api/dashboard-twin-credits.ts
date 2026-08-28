@@ -61,6 +61,14 @@ export const DashboardResponseSchema = z.object({
   // is share of classified-and-confirmed signals in that category, rounded.
   lifeDomains: z.array(z.object({ domain: LifeDomainCategorySchema, percent: z.number() })),
   archetypes: z.array(z.object({ archetype: ArchetypeSchema, percent: z.number() })),
+  // Growth Tracker (Slice 4): real counts of confirmed Twin signals created
+  // in the current calendar month (UTC) — not all-time totals. Computed
+  // from the same twinSignals query this handler already makes for
+  // lifeDomains/archetypes, no new DB read. insightsGained counts every
+  // confirmed signal regardless of domain; patternsShifting is the
+  // domain='pattern' subset of that same window.
+  insightsGained: z.number().int().min(0),
+  patternsShifting: z.number().int().min(0),
 })
 export type DashboardResponse = z.infer<typeof DashboardResponseSchema>
 

@@ -126,6 +126,13 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const lifeDomains = aggregateLifeDomains(twinSignals)
     const archetypes = aggregateArchetypes(twinSignals)
 
+    // Growth Tracker (Slice 4): confirmed signals created this calendar
+    // month (UTC), same `today`/window convention as alignmentHistory above.
+    const monthStart = `${today.slice(0, 7)}-01`
+    const confirmedThisMonth = twinSignals.filter((s) => s.status === 'confirmed' && s.createdAt.slice(0, 10) >= monthStart)
+    const insightsGained = confirmedThisMonth.length
+    const patternsShifting = confirmedThisMonth.filter((s) => s.domain === 'pattern').length
+
     // Priority order per spec §2 Golden Path B step 3 ("Daily Card, relevant
     // continuation, upcoming commitment, Roadmap cue... only when useful"):
     // today's Daily Card first (freshest, deliberately composed for today),
@@ -158,6 +165,8 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       alignmentHistory,
       lifeDomains,
       archetypes,
+      insightsGained,
+      patternsShifting,
     }
     return jsonResponse(200, body)
   } catch (err) {
