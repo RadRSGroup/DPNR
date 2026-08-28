@@ -25,12 +25,15 @@ const DEFAULT_STYLE = { icon: BookOpen, from: 'var(--color-violet-500)', to: 'va
  * and personalization that don't exist: there are only 6 real seeded topics
  * total (no "Audio/7 min"-style metadata was ever authored for any of
  * them — infra/cdk/scripts/library-topics.seed.ts), and `GET
- * /v1/library/recommendations` is deployed but deliberately always returns
- * an empty list (see that Lambda's own doc comment — no real
- * signal-domain-to-topic mapping exists yet). This page still calls that
- * endpoint and renders the section only when it's non-empty, so it starts
- * working the moment a future session makes it real, with no further
- * frontend change. The featured "Start Here" card and the four category
+ * /v1/library/recommendations` (Slice 3) now returns a real ranking derived
+ * from the caller's confirmed Twin signals — see that Lambda's own doc
+ * comment for the domain-to-taxonomyCategory mapping it uses. This page
+ * already called that endpoint and rendered the section only when
+ * non-empty, so no frontend change was needed to pick up real results. The
+ * hero card rotates through the real catalog by day-of-year (Slice 3 — was
+ * pinned to whatever `topics[0]` happened to be, i.e. arbitrary Scan
+ * order, not a real "featured" choice) instead of invented carousel copy;
+ * the four category
  * groups below are real topics/categories; card art is a per-category
  * gradient + icon (decorative, not per-topic fabrication) rather than
  * invented photography.
@@ -71,7 +74,20 @@ export default function LibraryPage() {
     return acc
   }, {})
 
-  const featured = topics?.[0]
+  // Rotate through the real catalog by day-of-year rather than pinning to
+  // topics[0] (arbitrary Scan order — see the file doc comment above) or
+  // inventing curated "featured" metadata that doesn't exist. Sort by slug
+  // first for a stable order, so the rotation is deterministic day to day
+  // rather than shuffling on every Scan.
+  function pickFeatured(list: LibraryTopicSummary[] | null): LibraryTopicSummary | undefined {
+    if (!list || list.length === 0) return undefined
+    const sorted = [...list].sort((a, b) => a.slug.localeCompare(b.slug))
+    const now = new Date()
+    const startOfYear = new Date(now.getFullYear(), 0, 0).getTime()
+    const dayOfYear = Math.floor((now.getTime() - startOfYear) / 86_400_000)
+    return sorted[dayOfYear % sorted.length]
+  }
+  const featured = pickFeatured(topics)
 
   return (
     <div className="relative min-h-screen">
@@ -118,7 +134,7 @@ export default function LibraryPage() {
               </div>
               <div className="p-5 flex-1 flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-1">Start Here</p>
+                  <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-1">Featured Today</p>
                   <p className="text-white text-base font-medium">{featured.title}</p>
                   <p className="text-white/40 text-xs mt-1">{featured.taxonomyCategory}</p>
                 </div>

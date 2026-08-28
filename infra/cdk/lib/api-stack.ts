@@ -468,9 +468,15 @@ export class ApiStack extends Stack {
     const libraryRecommendationsFn = new lambda.NodejsFunction(this, 'LibraryRecommendationsFn', {
       runtime: Runtime.NODEJS_24_X,
       bundling: { minify: true, sourceMap: true },
+      environment: {
+        LIBRARY_CATALOG_TABLE_NAME: props.libraryCatalogTable.tableName,
+        APPLICATION_TABLE_NAME: props.applicationTable.tableName,
+      },
       entry: path.join(__dirname, '../lambda/library/recommendations.ts'),
-      description: 'GET /v1/library/recommendations — currently always empty, see handler doc comment.',
+      description: 'GET /v1/library/recommendations — real ranking from confirmed Twin signals (Slice 3).',
     })
+    props.libraryCatalogTable.grantReadData(libraryRecommendationsFn)
+    props.applicationTable.grantReadData(libraryRecommendationsFn)
 
     this.httpApi.addRoutes({
       path: '/v1/library/topics',
