@@ -148,7 +148,7 @@ export type CreditsPurchaseResponse = z.infer<typeof CreditsPurchaseResponseSche
  * missing read.
  */
 export const CreditsTransactionViewSchema = z.object({
-  type: z.enum(['grant_trial', 'grant_purchase', 'consume', 'refund']),
+  type: z.enum(['grant_trial', 'grant_purchase', 'grant_earned', 'consume', 'refund']),
   amount: z.number().int(),
   balanceAfter: z.number().int().min(0),
   reason: z.string(),

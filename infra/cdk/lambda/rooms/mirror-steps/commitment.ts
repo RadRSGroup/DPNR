@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import { parseValue } from '../../lib/http'
 import { stubEncryptField, stubDecryptField } from '../../lib/crypto-stub'
+import { grantCredits, EARN_REFLECTION_COMPLETED_CREDITS } from '../../lib/credits'
 import { ddb, TABLE_NAME } from '../db'
 import { getMirrorSession, type MirrorContent } from './helpers'
 import { extractCandidateSignals, persistSessionSummary } from '../twin-signals'
@@ -22,6 +23,12 @@ const SubmitInput = z.object({ commitment: z.string().optional() })
  * extraction (`../twin-signals.ts`) — the one AI call this step makes, run
  * once at genuine session completion rather than per-step, per the spec's
  * "Not every chat turn updates the Digital Twin" trust rule.
+ *
+ * As of Slice 6 (My Wallet), this is also the real, one-time grant point for
+ * the "Complete a Reflection" Earn-More-Credits tile — this step is the
+ * genuine, single completion point for a whole Mirror Room session (never
+ * re-entered once `sessionComplete` is set), so there's no double-grant risk
+ * to guard against here the way `complete-commitment.ts` has to.
  */
 export const commitmentStep: StepDefinition = {
   allowedActions: ['SUBMIT_STEP'],
@@ -38,6 +45,8 @@ export const commitmentStep: StepDefinition = {
       updatedAt: now,
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: updatedSession }))
+
+    await grantCredits(ddb, TABLE_NAME, ctx.pk, EARN_REFLECTION_COMPLETED_CREDITS, 'grant_earned', 'reflection_completed')
 
     const summary = [
       `Situation: ${content.situation}`,

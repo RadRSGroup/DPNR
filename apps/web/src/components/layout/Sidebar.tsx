@@ -56,7 +56,7 @@ export default function Sidebar() {
       <div className="mt-6 pt-4 border-t border-[var(--color-border-glass)] flex flex-col gap-1">
         <SidebarMiniCard href="/twin" icon={<UserCircleGlow />} title="InnerSelf" subtitle="Your Digital Twin" />
         <SidebarMiniCard
-          href="/account"
+          href="/wallet"
           icon={<Wallet className="w-[18px] h-[18px]" />}
           title="My Wallet"
           subtitle={credits !== null ? `${credits} credits` : 'View credits'}

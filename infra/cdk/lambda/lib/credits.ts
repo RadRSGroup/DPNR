@@ -6,12 +6,17 @@ import { HttpError } from './http'
 /** Used whenever a CREDITS item doesn't exist yet — same default `dashboard/handler.ts` degrades to. */
 export const DEFAULT_LOW_BALANCE_THRESHOLD = 5
 
-// ROOM_REFINE_COST/COMPANION_MESSAGE_COST now live in
+// ROOM_REFINE_COST/COMPANION_MESSAGE_COST/EARN_*_CREDITS now live in
 // packages/shared-types/src/dynamo/account.ts (re-exported below) so the
-// frontend can show the real charge instead of a second, driftable copy.
-export { ROOM_REFINE_COST, COMPANION_MESSAGE_COST } from '@dpnr/shared-types'
+// frontend can show the real charge/reward instead of a second, driftable copy.
+export {
+  ROOM_REFINE_COST,
+  COMPANION_MESSAGE_COST,
+  EARN_COMMITMENT_COMPLETED_CREDITS,
+  EARN_REFLECTION_COMPLETED_CREDITS,
+} from '@dpnr/shared-types'
 
-export type CreditsGrantType = 'grant_trial' | 'grant_purchase' | 'refund'
+export type CreditsGrantType = 'grant_trial' | 'grant_purchase' | 'grant_earned' | 'refund'
 
 /**
  * Grants credits (creating the CREDITS item on a user's first-ever grant)

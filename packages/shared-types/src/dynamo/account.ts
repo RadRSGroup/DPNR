@@ -9,6 +9,17 @@ import { z } from 'zod'
 export const ROOM_REFINE_COST = 1
 export const COMPANION_MESSAGE_COST = 1
 
+/**
+ * One-time credit rewards for the two non-gamified "Earn More Credits" tiles
+ * (Slice 6, My Wallet — `docs/AGENT_LOG.md`). Amounts are this session's own
+ * first-draft choice, not sourced from a product decision — flag for review
+ * the same way Slice 3's domain→taxonomy mapping was. Deliberately excludes
+ * "Daily Check-in"/"Practice Streak" (streak-shaped, dropped per the
+ * project's gamification decision), so only these two exist.
+ */
+export const EARN_COMMITMENT_COMPLETED_CREDITS = 2
+export const EARN_REFLECTION_COMPLETED_CREDITS = 1
+
 export const TierSchema = z.enum(['free', 'core', 'pro'])
 export type Tier = z.infer<typeof TierSchema>
 
@@ -59,7 +70,7 @@ export type CreditsBalanceItem = z.infer<typeof CreditsBalanceItemSchema>
 export const CreditsTransactionItemSchema = z.object({
   pk: z.string(),
   sk: z.string(), // Sk.creditsTxn(isoTimestamp)
-  type: z.enum(['grant_trial', 'grant_purchase', 'consume', 'refund']),
+  type: z.enum(['grant_trial', 'grant_purchase', 'grant_earned', 'consume', 'refund']),
   amount: z.number().int(), // positive for grants/refunds, negative for consumption
   balanceAfter: z.number().int().min(0),
   reason: z.string(), // e.g. "decision_room.step_call", "beta_trial_signup", "plan:core_monthly"

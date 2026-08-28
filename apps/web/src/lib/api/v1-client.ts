@@ -27,7 +27,9 @@ import type {
   CreditsTransactionsResponse,
   CreateCommitmentRequest,
   CreateCommitmentResponse,
+  CompleteCommitmentResponse,
   CommitmentsResponse,
+  PlansResponse,
 } from '@dpnr/shared-types'
 import { getIdToken } from '../cognito/client'
 
@@ -218,4 +220,16 @@ export async function getCommitments(): Promise<CommitmentsResponse> {
 export async function createCommitment(request: CreateCommitmentRequest): Promise<CreateCommitmentResponse> {
   const res = await authedFetch('/v1/commitments', { method: 'POST', body: JSON.stringify(request) })
   return parseOrThrow<CreateCommitmentResponse>(res)
+}
+
+/** POST /v1/commitments/{id}/complete — used by My Evolution Map's Goals & Dreams and My Wallet's "Weekly Goal Achieved" tile. */
+export async function completeCommitment(commitmentId: string): Promise<CompleteCommitmentResponse> {
+  const res = await authedFetch(`/v1/commitments/${encodeURIComponent(commitmentId)}/complete`, { method: 'POST' })
+  return parseOrThrow<CompleteCommitmentResponse>(res)
+}
+
+/** GET /v1/plans — active credit-pack/subscription catalog, used by My Wallet. Honestly empty until real PlanItems are seeded (blocked on a pricing decision). */
+export async function getPlans(): Promise<PlansResponse> {
+  const res = await authedFetch('/v1/plans')
+  return parseOrThrow<PlansResponse>(res)
 }

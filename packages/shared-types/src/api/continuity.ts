@@ -67,3 +67,12 @@ export type CommitmentsResponse = z.infer<typeof CommitmentsResponseSchema>
 /** POST /v1/commitments response — the created commitment, same shape as a list item. */
 export const CreateCommitmentResponseSchema = CommitmentViewSchema
 export type CreateCommitmentResponse = z.infer<typeof CreateCommitmentResponseSchema>
+
+/**
+ * POST /v1/commitments/{commitmentId}/complete response — same shape as a
+ * list item. Idempotent: completing an already-`completed` (or `dropped`)
+ * commitment just returns its current view rather than erroring or granting
+ * the "Weekly Goal Achieved" credit reward a second time.
+ */
+export const CompleteCommitmentResponseSchema = CommitmentViewSchema
+export type CompleteCommitmentResponse = z.infer<typeof CompleteCommitmentResponseSchema>

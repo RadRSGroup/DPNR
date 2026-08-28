@@ -527,6 +527,20 @@ export class ApiStack extends Stack {
       authorizer: this.cognitoAuthorizer,
     })
 
+    const completeCommitmentFn = new lambda.NodejsFunction(this, 'CompleteCommitmentFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/continuity/complete-commitment.ts'),
+      description: 'POST /v1/commitments/{commitmentId}/complete — My Wallet "Weekly Goal Achieved" reward.',
+    })
+    props.applicationTable.grantReadWriteData(completeCommitmentFn)
+
+    this.httpApi.addRoutes({
+      path: '/v1/commitments/{commitmentId}/complete',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('CompleteCommitmentIntegration', completeCommitmentFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
     const getCreditsFn = new lambda.NodejsFunction(this, 'GetCreditsFn', {
       runtime: Runtime.NODEJS_24_X,
       bundling: { minify: true, sourceMap: true },

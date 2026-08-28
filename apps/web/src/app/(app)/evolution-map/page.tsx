@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles, Eye, HeartHandshake, Repeat, Plus, Target } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
-import { getDashboard, getTwin, getCommitments, createCommitment } from '@/lib/api/v1-client'
+import { getDashboard, getTwin, getCommitments, createCommitment, completeCommitment } from '@/lib/api/v1-client'
 import type { DashboardResponse, TwinListResponse, CommitmentsResponse, LifeDomainCategory } from '@dpnr/shared-types'
 import { LIFE_DOMAIN_LABELS } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
@@ -53,6 +53,7 @@ function EvolutionMapContent() {
   const [goalReviewDate, setGoalReviewDate] = useState('')
   const [goalDomain, setGoalDomain] = useState<LifeDomainCategory | ''>('')
   const [savingGoal, setSavingGoal] = useState(false)
+  const [completingId, setCompletingId] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -106,6 +107,22 @@ function EvolutionMapContent() {
       // Leave the form open with what the person typed so they can retry.
     } finally {
       setSavingGoal(false)
+    }
+  }
+
+  async function markGoalComplete(commitmentId: string) {
+    if (completingId) return
+    setCompletingId(commitmentId)
+    try {
+      // Grants the "Weekly Goal Achieved" credit reward server-side (My
+      // Wallet, Slice 6) — no reward shown here, the credits count in the
+      // Sidebar/Wallet reflects it on next load.
+      await completeCommitment(commitmentId)
+      setCommitments((prev) => prev.map((c) => (c.commitmentId === commitmentId ? { ...c, status: 'completed' } : c)))
+    } catch {
+      // Leave it in the open list so the person can retry.
+    } finally {
+      setCompletingId(null)
     }
   }
 
@@ -282,10 +299,19 @@ function EvolutionMapContent() {
                   {openGoals.map((g) => (
                     <div key={g.commitmentId} className="rounded-xl bg-white/5 px-3 py-2.5">
                       <p className="text-sm text-white/80">{g.description}</p>
-                      <p className="text-xs text-white/40 mt-1">
-                        Target: {g.reviewDate ?? 'Ongoing'}
-                        {!selectedDomain && g.lifeDomain && ` · ${LIFE_DOMAIN_LABELS[g.lifeDomain]}`}
-                      </p>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-xs text-white/40">
+                          Target: {g.reviewDate ?? 'Ongoing'}
+                          {!selectedDomain && g.lifeDomain && ` · ${LIFE_DOMAIN_LABELS[g.lifeDomain]}`}
+                        </p>
+                        <button
+                          onClick={() => markGoalComplete(g.commitmentId)}
+                          disabled={completingId === g.commitmentId}
+                          className="text-xs text-[var(--color-violet-300)] hover:text-[var(--color-violet-200)] disabled:opacity-40 shrink-0 ml-2"
+                        >
+                          {completingId === g.commitmentId ? 'Marking…' : 'Mark complete'}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
