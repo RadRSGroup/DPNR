@@ -131,19 +131,28 @@ function GrowthTrackerContent() {
               <Card>
                 <p className="text-sm text-white mb-1">Domains of Life</p>
                 <p className="text-xs text-white/40 mb-4">Your alignment across key life areas</p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {/* A single-column list, not a multi-column grid: a grid's
+                    column count is keyed to viewport width, but this card's
+                    own rendered width is a fraction of the viewport (it
+                    shares the row with a sidebar at lg+, and sits inside
+                    page padding below it) — a `sm:`/`lg:` column count tuned
+                    by eye kept breaking at whatever width fell in between,
+                    since two-word labels ("Health & Body") need more room
+                    than a narrow column has, no matter which breakpoint
+                    triggers it. A full-width row per domain sidesteps the
+                    mismatch entirely: this is the layout that survived the
+                    live iteration below. */}
+                <div className="space-y-3">
                   {dashboard!.lifeDomains.map((d) => {
                     const meta = DOMAIN_META[d.domain]
                     const Icon = meta.icon
                     return (
                       <div key={d.domain} className="flex items-center gap-3">
-                        <ProgressRing percent={d.percent} size={52} strokeWidth={5} colorClassName={meta.ringClass}>
-                          <Icon className="w-3.5 h-3.5" style={{ color: meta.color }} />
+                        <ProgressRing percent={d.percent} size={40} strokeWidth={4} colorClassName={meta.ringClass}>
+                          <Icon className="w-3 h-3" style={{ color: meta.color }} />
                         </ProgressRing>
-                        <div className="min-w-0">
-                          <p className="text-xs text-white/70 leading-tight">{LIFE_DOMAIN_LABELS[d.domain]}</p>
-                          <p className="text-xs text-white/40">{d.percent}%</p>
-                        </div>
+                        <span className="text-sm text-white/80 flex-1">{LIFE_DOMAIN_LABELS[d.domain]}</span>
+                        <span className="text-xs text-white/40 shrink-0">{d.percent}%</span>
                       </div>
                     )
                   })}
