@@ -4,6 +4,17 @@
 
 ## 0. What this document is
 
+**2026-09-01 update:** `docs/DPNR_operating_spec_principles.pdf` ("DPNR — Product Intelligence & AI Operating
+Specification," v1.6) is now in the repo and places itself at **priority 2** in its own conflict-precedence
+table — below only privacy/safety/healthy-use rules, and **above** this document, the Product Logic & Data
+Definitions Addendum, and Figma. It is the canonical source for Digital Twin meaning, signal/evidence
+modeling, scoring/reflection-index rules, Growth Tracker/Evolution Map/Dashboard ownership boundaries,
+Companion routing behavior, safety/crisis behavior, and Wallet reward ethics — this document (`MVP_ARCHITECTURE.md`)
+stays authoritative for journeys, rooms, architecture and MVP scope, but where the two conflict on *meaning*
+or *AI behavior*, the Intelligence Spec wins. See `docs/INTELLIGENCE_SPEC_AUDIT.md` for the full section-by-
+section comparison against the live codebase, including three real conflicts with already-shipped work that
+need an explicit user decision before anything changes.
+
 The MVP spec defines **DPNR — The Human Operating System** as the product: Gate 1 (Companion + Dashboard), Gate 2 (Mirror Room, Decision Room, Content Library), a Digital Twin/My Evolution Map signal layer, Daily Card, Weekly Recap, and a Beta Trial/Credits system. **Decision Room is one component**, not the product.
 
 Two things make this buildable now rather than speculative:
