@@ -54,16 +54,24 @@ open per Appendix D.
 
 - The score's own weighting/formula is unchanged — this is additive gating logic in front of the existing
   computation, not a rewrite of what the score means.
-- Live-verified this session: a fresh throwaway user with two seeded candidate signals (below every
-  threshold) correctly showed "Still learning this part of you" rather than a number or the old generic "Not
-  enough data yet" — same honest-empty-state family, more specific language. The `developing` state (met
-  thresholds, confidence still low) was not separately live-verified this session — reaching it requires
-  enough real evidence volume/time-span that a throwaway single-session test user can't produce; verified by
-  code inspection of the threshold math instead. A future session that wants to verify it live should seed
-  ≥5 resolved commitments/confirmed value signals spanning ≥14 days of `createdAt` timestamps (backdatable via
-  direct `dynamodb put-item`, same technique used here) with a low resulting confidence score.
-- `packages/shared-types`, `infra/cdk`, and `apps/web` all typecheck/lint/build/synth clean with this change
-  (see Session 29's `docs/AGENT_LOG.md` entry for the exact commands run).
+- **Correction (same session, caught before this ADR's first draft was even a day old): the Dashboard test
+  described in an earlier draft of this section did NOT actually verify this change live.** `Dpnr-Api` was
+  last deployed 2026-08-28 (Session 27's Slice 6 deploy) — before this session's Lambda code changes — and
+  was never redeployed this session. The dev-server test against the real API therefore exercised the OLD,
+  still-deployed `dashboard/handler.ts`/`alignment-score.ts`, not the new gating logic. It happened to show
+  "Still learning this part of you" either way: with 0 confirmed value signals and 0 resolved commitments in
+  that specific test, the *old* ungated code also returns `null` (`followThroughRate === null && valuesClarity
+  === 0`) — so the observed result was consistent with the new code without actually being evidence of it.
+  **This gating change is therefore verified by code/type inspection and the local build only
+  (`packages/shared-types`, `infra/cdk`, `apps/web` all typecheck/lint/build/synth clean — see Session 29's
+  `docs/AGENT_LOG.md` entry for exact commands), NOT by a live pass against deployed AWS.** Deploying
+  `Dpnr-Api` and re-verifying with a test scenario that actually distinguishes old from new behavior (e.g.
+  exactly 1 confirmed value signal: old code shows a number immediately — `round(0.4 * 20) = 8` — new code
+  correctly shows "insufficient," since evidence count 1 < 5) is real remaining work, gated on the user's
+  explicit deploy go-ahead per this project's standing AWS-deploy guardrail — not done as part of this ADR.
+- The `developing` state (thresholds met, confidence still low) has not been live-verified at all yet, deployed
+  or not — reaching it needs ≥5 resolved commitments/confirmed value signals spanning ≥14 days of `createdAt`
+  timestamps (backdatable via direct `dynamodb put-item`, same technique used elsewhere this session).
 - If a future session wants to empirically calibrate the confidence formula, weights, or thresholds against
   real usage data (Appendix D's own recommendation), that's a separate, later decision — this ADR only
   establishes that gating exists and roughly matches spec §12's shape, not that the specific numbers in it are
