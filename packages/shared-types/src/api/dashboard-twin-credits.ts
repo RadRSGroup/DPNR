@@ -45,11 +45,18 @@ export const DashboardResponseSchema = z.object({
   // DPNR matters to them. 60% commitment follow-through rate (completed vs
   // dropped, among CommitmentItems that have actually been resolved) + 40%
   // values clarity (how many domain='value' Twin signals are confirmed,
-  // capped at 5 confirmed = 100%). Null until there's enough real data to
-  // say anything (no resolved commitments AND no confirmed values) — an
-  // honest gap, not a fabricated number. Weights/cap are a first pass
-  // (Session 19), not product-reviewed; revisit once real usage data exists.
+  // capped at 5 confirmed = 100%). Weights/cap are a first pass (Session 19),
+  // not product-reviewed; revisit once real usage data exists.
+  //
+  // Confidence-gated as of Session 29 (ADR 0011, per
+  // docs/INTELLIGENCE_SPEC_AUDIT.md Critical Finding #3 — the spec requires
+  // minimum evidence/source/time thresholds and a confidence floor before
+  // any reflection-index number may appear). `alignmentScore` is only
+  // non-null when `alignmentScoreState === 'eligible'`; otherwise it's null
+  // and the state field carries the honest reason why (see
+  // lib/alignment-score.ts for the actual thresholds).
   alignmentScore: z.number().min(0).max(100).nullable(),
+  alignmentScoreState: z.enum(['insufficient', 'developing', 'eligible']),
   // Real daily snapshots (AlignmentScoreSnapshotItem), last 30 days,
   // ascending by date. Empty until snapshot-alignment-score.ts has run at
   // least once for this user — sparse-by-design, not padded with fabricated

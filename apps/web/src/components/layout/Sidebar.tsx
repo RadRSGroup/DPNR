@@ -54,7 +54,6 @@ export default function Sidebar() {
       </nav>
 
       <div className="mt-6 pt-4 border-t border-[var(--color-border-glass)] flex flex-col gap-1">
-        <SidebarMiniCard href="/twin" icon={<UserCircleGlow />} title="InnerSelf" subtitle="Your Digital Twin" />
         <SidebarMiniCard
           href="/wallet"
           icon={<Wallet className="w-[18px] h-[18px]" />}
@@ -73,10 +72,6 @@ export default function Sidebar() {
       </div>
     </aside>
   )
-}
-
-function UserCircleGlow() {
-  return <div className="w-[18px] h-[18px] rounded-full bg-gradient-to-br from-[var(--color-violet-500)] to-[var(--color-magenta-500)]" />
 }
 
 function SidebarMiniCard({ href, icon, title, subtitle }: { href: string; icon: React.ReactNode; title: string; subtitle: string }) {

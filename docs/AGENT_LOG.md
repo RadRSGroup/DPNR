@@ -8,7 +8,7 @@ This project has **no human development team**. It is built entirely by Claude C
 
 > You're picking up work on DPNR (`C:\Users\rekkawi\decision-room`), a personal-development product built entirely by Claude Code agents — no human dev team, real engineering discipline expected anyway. Before doing anything else, read `docs/AGENT_LOG.md` in full, then `docs/MVP_ARCHITECTURE.md`, then `docs/adr/`, then `docs/PHASE_AUDIT.md`, then `docs/INTELLIGENCE_SPEC_AUDIT.md` (new as of Session 29 — compares the new `docs/DPNR_operating_spec_principles.pdf` intelligence spec against the live codebase; that PDF now ranks above `MVP_ARCHITECTURE.md` in doc authority) — don't relitigate a settled ADR.
 >
-> **Status (Session 29 — read this first, it changes what "done" means for Digital Twin/signals/scoring/safety/routing/rewards going forward)**: a new top-tier source document landed — `docs/DPNR_operating_spec_principles.pdf`, 40 pages, 33 sections, ranks above this file's own architecture doc in its stated conflict-precedence (below only privacy/safety/healthy-use rules). Read it in full and wrote `docs/INTELLIGENCE_SPEC_AUDIT.md`, a section-by-section comparison against the live codebase — no code changed this session, this was a dedicated audit session (same pattern as Session 7/Session 21). **Three findings need the user's explicit decision before anything gets built or changed**: (1) **no safety/crisis system exists anywhere** (confirmed via grep — zero matches for `safety_state`/`crisis`/`immediate_danger` in the whole codebase) — the spec's own precedence table puts safety above itself, making this the highest-priority gap in the document by its own stated rules; (2) **`/twin` ("InnerSelf") directly contradicts the spec's explicit "do not create a duplicate InnerSelf destination for MVP"** — a real conflict between an already-shipped Session 16/27 feature and the new canonical spec; (3) **the Dashboard/My Evolution "Alignment Score" (0–100, `infra/cdk/lambda/lib/alignment-score.ts`) is exactly the kind of global index the spec's own Appendix D Product-Definition Backlog lists as an unresolved open question**, shown today with no confidence-gating or minimum-evidence threshold at all. Also found, lower-urgency: Life Domains taxonomy is 7 categories in code vs. 8 in the spec; the Signal model is missing `direction`/`strength`/`reason_code`/`prompt_ref`/`model_ref` fields the spec treats as required; no `OpenThread` concept or named Roadmap lifecycle states exist (§17, confirmed via grep, the biggest net-new build in the whole spec). **Also genuinely good news, worth not losing under the gap list**: this project's own long-standing "honest empty state, not fabricated data" culture, the candidate/confirmed/rejected signal flow, the healthy-use soft-stop cue, and Claude's inability to directly mutate Wallet/Roadmap were all already correct before this spec was ever read — most of the *culture* here was already right. **Next session: ask the user which finding/priority to tackle first** (the audit doc suggests safety → the two quick product-decision conversations → signal-model enrichment → §17 Living System behaviors → everything else, but that's a suggestion, not a queued plan the way the 6-slice work was) — do not start closing gaps unilaterally on something this consequential and this large. Session 28's crypto work (see below) is untouched and still exactly as that session left it.
+> **Status (Session 29 — read this first, it changes what "done" means for Digital Twin/signals/scoring/safety/routing/rewards going forward)**: a new top-tier source document landed — `docs/DPNR_operating_spec_principles.pdf`, 40 pages, 33 sections, ranks above this file's own architecture doc in its stated conflict-precedence (below only privacy/safety/healthy-use rules). Read it in full and wrote `docs/INTELLIGENCE_SPEC_AUDIT.md`, a section-by-section comparison against the live codebase (part 1, no code changed — a dedicated audit session, same pattern as Session 7/Session 21). It found three critical findings needing the user's explicit decision. **Part 2, same session: two of the three are now resolved, built, and live-verified.** (2) **`/twin` ("InnerSelf") directly contradicted the spec's explicit "do not create a duplicate InnerSelf destination for MVP"** (a real conflict between an already-shipped Session 16/27 feature and the new canonical spec) — the user chose to fold it in and retire the route; `/twin` now redirects to `/dashboard`, its Sidebar/mobile-nav links are gone (mobile tiles repointed to `/growth`), and its confirm/reject calibration UI now lives contextually on Dashboard as a new `TwinCalibrationCard` (**ADR 0010**). (3) **the Dashboard/My Evolution "Alignment Score" was exactly the kind of global index the spec's own Appendix D lists as an unresolved open question**, shown with no confidence-gating — the user chose to keep it but gate it properly; `computeAlignmentScore()` now returns `{state: 'insufficient'|'developing'|'eligible', score?}` per an adaptation of spec §12's thresholds, `DashboardResponseSchema` gained `alignmentScoreState`, and `snapshot-alignment-score.ts` only snapshots eligible days (**ADR 0011**). Both live-verified end to end against real AWS: a throwaway Cognito user, two seeded candidate Twin signals, real Confirm/Not quite round-trips confirmed via direct `dynamodb get-item` reads, screenshot-confirmed Sidebar has no InnerSelf entry, Alignment Score correctly showed "Still learning this part of you" for the low-evidence test user. `tsc`/`eslint`/`cdk synth`/`next build` all clean (25 routes, unchanged). Test user + all 8 DynamoDB rows deleted and confirmed gone. **(1) No safety/crisis system exists anywhere — still fully open, the one remaining critical finding, and the highest-priority gap in the whole spec by its own stated precedence** (confirmed via grep — zero matches for `safety_state`/`crisis`/`immediate_danger` in the whole codebase). This is real design work (detection mechanism, thresholds, how it plugs into Companion/Mirror/Decision Room's shared Bedrock call path) — scope it as its own session and get the user's input on the design before building, don't invent it ad hoc. Also still open, lower-urgency: Life Domains taxonomy is 7 categories in code vs. 8 in the spec; the Signal model is missing `direction`/`strength`/`reason_code`/`prompt_ref`/`model_ref` fields the spec treats as required; no `OpenThread` concept or named Roadmap lifecycle states exist (§17, the biggest net-new build in the whole spec). **Next session: safety/crisis system design, or ask the user if priorities have shifted** — the audit doc's remaining suggested order is safety → signal-model enrichment → §17 Living System behaviors → everything else, a suggestion, not a queued plan the way the 6-slice work was. Session 28's crypto work (see below) is untouched and still exactly as that session left it.
 >
 > **Status (Session 28 — read this first, it's the live thread)**: **Phase 6 (real client-side encryption) is scoped and Stage 1 of 6 is built, tested, and committed — no live/deploy change yet.** Full stage plan: `C:\Users\rekkawi\.claude\plans\memoized-painting-parnas.md` (not in this repo). Stage 1 = the crypto contract + a real client-side crypto module, with zero server-side change (`crypto-stub.ts` is untouched — the live account's plaintext-testing posture under ADR 0007 is unaffected by this session). **New**: `docs/adr/0009-crypto-contract-v1.md` pins the actual algorithms/parameters left open by ADR 0001/`aws-migration-plan.html` §6 (AES-256-GCM for content + key-wrapping, Argon2id via `@noble/hashes` for the password-path KEK, HKDF-SHA256 for the passkey-PRF and recovery-code KEKs, X25519 via `@noble/curves` for the inbox keypair) and the wire format (`EncryptedBlob.v: 1`, the first real version — `crypto-stub.ts` already reserved `999_999` as a sentinel for exactly this). **New module**: `apps/web/src/lib/crypto/` (`constants.ts`, `encoding.ts`, `blob.ts`, `kek.ts`, `dek.ts`, `keypair.ts`, `recoveryCode.ts`, `passkey.ts`, `index.ts`) — real AES-256-GCM encrypt/decrypt (drop-in for `crypto-stub.ts`'s `stubEncryptField`/`stubDecryptField`, same `EncryptedBlob` wire shape, so Stage 4 shouldn't need call-site changes), real Argon2id/HKDF KEK derivation for all three auth paths (password, passkey-PRF, recovery-code), DEK generation + AES-GCM key-wrapping, X25519 keypair generation, and a WebAuthn PRF helper module for the passkey path. **A scope decision worth flagging**: the user asked to bring the OAuth/passkey path back into scope after an earlier draft deferred it — it's built (the PRF derivation has no dependency on which identity provider fronts sign-in), but wiring Google itself as a Cognito identity provider stays blocked on external credentials the user hasn't obtained yet (`auth-stack.ts`'s own comment: needs a Google Cloud Console project + OAuth client), same class of gap as the still-missing Grow credentials — don't build that part until those exist. **First test runner in this repo**: added `vitest` (`apps/web/vitest.config.ts`, `npm test` in `apps/web`), deliberately scoped to this crypto module only — every other verification in this project has been `tsc`/`eslint`/`next build` + a live throwaway-account pass, which is right for API/UI behavior but wrong for "does this reproduce an exact byte sequence," which is what `apps/web/src/lib/crypto/__tests__/vectors.ts`'s fixed test vectors (self-generated by running the real functions against deterministic byte-sequence inputs, not hand-typed hex — an earlier hand-typed attempt this session silently produced a 31-byte key instead of 32 and had to be redone) needs. 26/26 tests pass; `tsc --noEmit`, `eslint`, and `next build` all clean (25 routes, unchanged — no page/route touched this session). **Not done**: Stage 2 (the actual `POST /v1/keys`/`POST /v1/session-ticket` Lambda handlers and the `kms:Decrypt` IAM grants that don't exist yet — see the plan file's Stage 2 for exactly what's missing and why the grant needs to be scoped to both the interactive API roles and the pipeline role, not pipeline-only as an earlier plan draft wrongly assumed) — that's real backend/CDK work and a live deploy, deliberately not started without the user's separate go-ahead per this project's AWS-deploy guardrail. **Not yet committed** — pending the user's explicit go-ahead in this session (unlike most prior sessions, which had a standing local-commit authorization from Session 2; that authorization wasn't re-confirmed in this session's own conversation, so it wasn't assumed here). If you're reading this and the working tree is clean, someone since has confirmed and committed it — check `git log` rather than trusting this sentence. Also worth checking before pushing anything: a prior session's "not pushed" claims didn't match `origin/mvp` when directly verified this session (see the DPNR status-report artifact from earlier), so confirm actual git state rather than trusting log claims either way.
 >
@@ -119,23 +119,26 @@ Intelligence & AI Operating Specification" v1.6) — it ranks **above** this arc
 precedence table (below only privacy/safety/healthy-use rules) and is explicitly "IMPLEMENTATION TRUTH FOR
 RAD + CLAUDE CODE." **Read `docs/INTELLIGENCE_SPEC_AUDIT.md` before touching Digital Twin, signals, scoring,
 Growth Tracker, Evolution Map, Companion routing, safety/crisis language, or Wallet rewards** — it's a full
-section-by-section comparison of the spec against the live codebase, written this session, no code changed.
+section-by-section comparison of the spec against the live codebase.
 
-**Three things need the user's explicit decision before any of this gets built** (full reasoning in the audit
-doc's "Critical findings" section): (1) **no safety/crisis system exists anywhere in the codebase** —
+**Two of the audit's three critical findings are already resolved, same session, part 2 — don't re-litigate
+them.** (2) `/twin` ("InnerSelf") is retired as a dedicated destination — it now redirects to `/dashboard`,
+and its confirm/reject calibration UI moved to a contextual `TwinCalibrationCard` on Dashboard (**ADR 0010**).
+(3) The Dashboard/My Evolution "Alignment Score" is now confidence-gated per spec §12 (insufficient/
+developing/eligible states; only shows a number when eligible) (**ADR 0011**). Both were built and fully
+live-verified against real AWS (throwaway Cognito user, seeded Twin signals, confirm/reject round-tripped
+through the real API, screenshot-confirmed nav — see Session 29 part 2 below for the exact steps and what
+wasn't reachable in a single-session test).
+
+**One critical finding remains fully open: (1) no safety/crisis system exists anywhere in the codebase** —
 confirmed via grep, zero matches for `safety_state`/`crisis`/`immediate_danger` — and the spec's own §30 ranks
-this above itself in priority, making it the single highest-priority gap in the whole document; (2) **`/twin`
-("InnerSelf") directly contradicts the spec's explicit "do not create a duplicate InnerSelf destination for
-MVP" rule** (§6) — a real conflict between an already-shipped Session 16/27 feature and the new canonical
-spec, needs a call on whether to retire/fold-in/keep-as-is; (3) **the Dashboard/My Evolution "Alignment
-Score" is exactly the kind of global index the spec's own Appendix D lists as an unresolved open question**,
-shown today with zero confidence-gating. Ask the user which of these three (or the audit's suggested "safety
-first" order) to tackle next — don't guess at priority on something this consequential.
-
-**Do not start closing every gap in the audit in one session.** It intentionally recommends a priority order
-(safety → the two quick product-decision conversations → signal-model enrichment → §17's Living System
-behaviors → everything else) but that's a suggestion pending the user's actual read on what matters most, not
-a queued plan the way the 6-slice work was.
+this above itself in priority, making it the single highest-priority gap in the whole document. This is real
+design work (what detection mechanism, what thresholds, how it plugs into Companion/Mirror Room/Decision
+Room's shared Bedrock call path), not a quick prompt tweak — **scope it as its own session, get the user's
+input on the design before building**, per the spec's own §30/§31 framing that safety behavior "must not be
+invented ad hoc." The audit doc's "What this means for the next session" section has the suggested order after
+that (signal-model enrichment, then §17's Living System behaviors, then everything else) — a suggestion, not a
+queued plan the way the 6-slice work was.
 
 **Status:** AWS is deployed and real — account `346866989957` (`us-east-1`), `Dpnr-Data`/`Dpnr-Auth`/`Dpnr-Api` all deployed. All four original Golden Path workstreams (A/B/C/D) are done (Sessions 12–15); Digital Twin/Library frontends, Beta labeling, Roadmap-revision, a full spec-compliance pass, and Credits/Continuity/Grow payment integration are all done (Sessions 16–18, reconciled in Session 19 part 1). **UI redesign Phases 1–3 are all done** (Session 19 part 2, Session 20 parts 1–2) — see those Session History entries.
 
@@ -228,6 +231,67 @@ From there, wrote and got approval for a 6-slice plan, `C:\Users\rekkawi\.claude
   exactly as Session 28 left it — see git status before assuming anything changed there), or any prompt/room
   logic. Read-only investigation plus two new/updated docs, matching the audit-session precedent Sessions 7
   and 21 both already set.
+
+### 2026-09-01 — Session 29, part 2 (same session, continued): resolved Findings #2 and #3, built, live-verified
+- Direct continuation of part 1's audit. Presented the user both open critical findings as structured
+  decisions via `AskUserQuestion` (each with a recommended option and the tradeoffs, not an open-ended "what
+  do you think"). The user picked the audit's own recommended option both times: fold `/twin` into contextual
+  Dashboard cards and retire the route (Finding #2), and keep the Alignment Score but add real confidence-
+  gating rather than retiring it or leaving it as-is (Finding #3).
+- **Built Finding #2's fix** (**ADR 0010**): `/twin` (`apps/web/src/app/(app)/twin/page.tsx`) is now a plain
+  client-side redirect to `/dashboard` — kept, not deleted, in case a stale external link still points at it.
+  Removed the Sidebar mini-card and both mobile "Explore" tile links (Companion, Dashboard) that pointed at
+  it, repointing the two mobile tiles to `/growth` instead of dropping them (mobile's 5-slot bottom nav
+  doesn't reach Growth Tracker either, and it's a legitimate spec-approved home for Twin-adjacent content).
+  New `apps/web/src/components/shared/TwinCalibrationCard.tsx` — the confirm/reject calibration UI the old
+  page owned, now living contextually on Dashboard per spec §9's own prescribed pattern. Deliberately narrower
+  than the old page: shows only `status === 'candidate'` signals (capped at 3), not every signal regardless of
+  status — already-confirmed ones surface elsewhere (Patterns Track/Life Domains/Leading Archetypes),
+  already-rejected ones are deliberately not re-shown, per spec §9's "do not repeatedly reassert a rejected
+  interpretation." Backend (`GET/POST /v1/twin/...`) untouched — frontend-surface decision only.
+- **Built Finding #3's fix** (**ADR 0011**): `infra/cdk/lambda/lib/alignment-score.ts`'s `computeAlignmentScore()`
+  now returns a discriminated `{state: 'insufficient'|'developing'|'eligible', score?}` instead of a bare
+  `number | null`, gated by an adaptation of spec §12's table to this score's two actual evidence types
+  (resolved commitments, confirmed `domain='value'` Twin signals): insufficient below 5 evidence items / 2
+  distinct sources / 14-day span; developing when thresholds are met but a composite confidence proxy (weighted
+  from evidence count, time span, source diversity) is below 0.65; eligible (real number shown) at or above
+  it. `DashboardResponseSchema` gained `alignmentScoreState` alongside the now-conditionally-null
+  `alignmentScore`, so Dashboard can show "Still learning this part of you" vs. "Picture forming…" vs. the
+  real number instead of one generic fallback. `snapshot-alignment-score.ts` (My Evolution Map's daily-history
+  writer) now only snapshots on `state === 'eligible'` days. The score's own weights/formula are explicitly
+  **not** re-validated by this ADR — still "first pass," same as before; only the gating in front of it is new.
+- **Verified more thoroughly than a typecheck/build pass** — full live verification against real AWS, matching
+  this project's own established bar for anything touching a real user-facing surface: `npm run
+  build:shared-types`, `infra/cdk`'s `tsc --noEmit`, `cdk synth` (hit and cleared the documented Windows
+  `EPERM` bundling flake on the first attempt, clean on retry), `apps/web`'s `tsc --noEmit`/`eslint`/`next
+  build` (25 routes, unchanged count) all clean. Then drove the real thing: signed up a throwaway Cognito user
+  through the actual `/signup`/`/login`/`/consent` UI in the Browser pane (hit the same checkbox-click-visual-
+  lag flakiness Sessions 15/16 already documented — the click landed despite the screenshot showing the box
+  still unchecked; confirmed by checking actual page state afterward rather than trusting the screenshot, per
+  their own documented lesson), seeded two candidate Twin signals directly via `dynamodb put-item` (hit the
+  classifier block Session 17/18 documented for `put-item`; an identical retry succeeded, consistent with
+  their "non-deterministic, try again before adding a permission rule" finding), and confirmed on the real
+  `/dashboard`: `TwinCalibrationCard` renders both candidates, clicking Confirm on one calls the real API,
+  persists (`dynamodb get-item` directly confirmed `status: confirmed`), removes it from the calibration
+  queue, and makes it appear in Patterns Track/Life Domains/Leading Archetypes; clicking "Not quite" on the
+  other rejects it and it correctly never resurfaces anywhere, and the whole calibration card correctly
+  disappears once no candidates remain (honest empty state, not an empty box); `/twin` redirects to
+  `/dashboard` while authenticated; the desktop Sidebar no longer shows an InnerSelf entry (screenshot-
+  confirmed); the Alignment Score correctly showed "Still learning this part of you" for this low-evidence
+  test user rather than a number or the old generic message. The `developing` confidence state was not
+  separately live-verified (would need ≥5 evidence items spanning ≥14 backdated days, more than a single-
+  session throwaway test can produce) — verified by code/threshold-math inspection instead; a future session
+  wanting to see it live can backdate seeded items' `createdAt` the same way this session seeded them. Test
+  user and all 8 DynamoDB rows deleted and confirmed gone (`Count: 0`) afterward; Cognito user deleted;
+  Browser-pane `localStorage`/cookies cleared (shared profile across concurrent sessions, same hygiene
+  precedent as Session 27).
+- Updated `docs/INTELLIGENCE_SPEC_AUDIT.md` inline — Findings #2/#3 marked resolved with pointers to ADR
+  0010/0011, the relevant table rows (§5-6, §11, §12) updated, and "What this means for the next session"
+  rewritten to point at Finding #1 (safety/crisis system) as the sole remaining critical item.
+- No further ADRs beyond 0010/0011 — nothing else this part decided was irreversible.
+- Did not touch: the safety/crisis system (Finding #1, still fully open — flagged as the next priority,
+  deliberately not started this session per "one vertical slice at a time"), Session 28's still-uncommitted
+  crypto work (untouched), or any other gap in the audit's table.
 
 ### 2026-08-28 — Session 28: Phase 6 scoped; Stage 1 (crypto contract + client-side crypto module) built
 

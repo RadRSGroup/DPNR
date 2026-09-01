@@ -27,12 +27,17 @@ scoring, Growth Tracker, Evolution Map, safety/crisis language, rewards, or Comp
 
 ## Critical findings — need the user's explicit decision, not unilateral action
 
-These three are flagged rather than fixed, per the spec's own §31 escalation rule ("the decision would change
-what becomes persistent... or how user identity is represented," "a new safety scenario... must not be
+These three were flagged rather than fixed inline, per the spec's own §31 escalation rule ("the decision would
+change what becomes persistent... or how user identity is represented," "a new safety scenario... must not be
 invented ad hoc"). Precedence formally resolves all three in the spec's favor (it outranks the older build
 spec that authorized what's currently built), but un-shipping or restructuring live, deployed, user-facing
 product surfaces is a real product call, not a reversible implementation detail — consistent with how every
 prior scope decision in this project has been handled.
+
+**Update, 2026-09-01, same-day follow-up session:** the user chose for #2 and #3 (both the audit's own
+recommended options), and both are now **built, live-verified, and resolved** — see ADR 0010 and ADR 0011.
+#1 (safety/crisis system) remains open and is the natural next priority — it's real design + engineering
+work, not a quick decision the way #2/#3 were.
 
 ### 1. No safety/crisis system exists at all (spec §30, §33's safety acceptance tests)
 Grepped the entire codebase for `safety_state`, `crisis`, `immediate_danger`, `SAFETY_CONCERN` — zero
@@ -56,7 +61,7 @@ this spec at all. Flag to the user before starting: this is real design and engi
 tweak, and touches the "any change touching auth, encryption, payments, or webhook signature verification
 gets a security-review pass" guardrail's spirit even though it's not literally one of those four things.
 
-### 2. `/twin` ("InnerSelf") is a dedicated destination — spec explicitly forbids this for MVP
+### 2. `/twin` ("InnerSelf") is a dedicated destination — spec explicitly forbids this for MVP — **RESOLVED, see ADR 0010**
 Session 16 built, and Session 27 reskinned, a real `/twin` route under the "InnerSelf" name — confirmed still
 present (`apps/web/src/app/(app)/twin/page.tsx`). Spec §6 header is literally "Digital Twin Across the
 Product: No Separate User-Facing Room," and body text says: **"Do not create a duplicate InnerSelf
@@ -75,7 +80,7 @@ get an explicit product ruling that this MVP intentionally diverges from the spe
 unilaterally.
 
 ### 3. The Dashboard/My Evolution "Alignment Score" is exactly the kind of global index the spec calls
-unresolved backlog, not an approved number
+unresolved backlog, not an approved number — **RESOLVED, see ADR 0011**
 `infra/cdk/lambda/lib/alignment-score.ts` computes a single 0–100 number — `0.6 * commitment
 follow-through rate + 0.4 * values clarity` — shown on Dashboard and charted daily on My Evolution Map. Its
 own code comment already says "First pass, not product-reviewed." The spec's §11 "When a number must NOT
@@ -112,13 +117,13 @@ it open, e.g. Appendix D).
 | 2 | Methodology (MBT/ACT/IFS/Kabbalah/etc., dynamic lens selection) | ⚠️ | No prompt currently references a methodology lens explicitly, dynamically-selected or otherwise — Companion/Mirror/Decision prompts (Prompt Registry) were written pre-spec and don't implement the `intent → emotional state → context → evidence → safety → lens → response` sequence in §2. Not a conflict (nothing contradicts it), just unimplemented. Needs prompt-engineering work once safety (finding #1) exists to sit underneath it. |
 | 3 | Canonical Product Glossary | ✅/⚠️ | Most terms (Signal, Pattern, Trigger, Value, Need, Commitment, Progress) already exist as real schema concepts with compatible meaning. `Current Reflection` as a *named, contextual, non-room* concept doesn't exist as its own UI element yet — Dashboard's `continuityCue`/Growth Tracker's "Current Inner State" are close in spirit but not built as the single reusable `CurrentReflectionSynthesis` object Appendix A defines. |
 | 4 | Life Domains taxonomy | ⚠️ | `LifeDomainCategorySchema` (7 values: self_inner_world, relationships, career_purpose, health_body, money_abundance, creativity_expression, spirituality) vs. spec's 8 domains (adds "Home & Lifestyle" as its own domain; spec's "Work, Purpose & Contribution" and "Growth & Expansion" are also two domains where the current taxonomy has one "career_purpose" bucket doing double duty). A real, mechanical taxonomy mismatch — affects every signal ever classified so far (small volume, only real/throwaway test users exist today, so a migration is cheap right now and gets more expensive the longer it's deferred). |
-| 5–6 | Digital Twin definition & no-separate-room rule | ❌ | See Critical Finding #2 above. |
+| 5–6 | Digital Twin definition & no-separate-room rule | ✅ (resolved 2026-09-01) | See Critical Finding #2 / ADR 0010 — `/twin` retired, calibration UI moved to Dashboard's contextual `TwinCalibrationCard`, live-verified. |
 | 7 | Evidence & Signal Model | ⚠️ | `TwinSignalItemSchema` (`packages/shared-types/src/dynamo/twin.ts`) covers domain/status/confidence/source/lifeDomain/archetype — compatible core, but missing several fields the spec's `Signal{}` schema treats as required: `subdimension`, `direction` (emerging/recurring/increasing/decreasing/stable/mixed), `strength` as distinct from `confidence`, `reason_code`, `prompt_ref`/`model_ref` (no traceability field at all — a real gap against §28's traceability rule too), `goal_id`. `signal_type` (explicit_statement/user_choice/model_inference/real_world_followup) is collapsed into `source` today, which conflates *where it came from* with *how it was derived* — the spec keeps these as two separate fields. |
 | 8 | AI Reasoning Pipeline / Five AI Roles | ⚠️ | The nine-stage pipeline (`session summary → candidate signals → dedup → confidence/contradiction check → aggregated state → reflection → recommendation → real-life action → follow-up → Twin update`) isn't implemented as a named pipeline anywhere — pieces exist (session summaries, candidate signals via `twin/classify_signal`, recommendations in Library) but there's no explicit "confidence/contradiction check" or "evidence deduplication" stage against prior signals before persistence. The five-role separation (Facilitator/Extractor/Synthesizer/Recommender/Narrator) isn't modeled in the Prompt Registry's structure — prompts are per-room, not per-role. |
 | 9 | Persistence, Confirmation & Correction | ✅ | This is a genuinely strong match: `candidate/confirmed/rejected` status already exists on `TwinSignalItem`, the confirm/reject UI already exists (`/twin`, or wherever its content moves per Finding #2), and rejected signals already stop being asserted (no "argue with the user" behavior exists to begin with). This is the best-aligned major section in the whole spec. |
 | 10 | Progress definition | ✅ | Nothing in the current product frames progress as "more usage" — no daily-login rewards, no message-count gamification (Session 27 explicitly rejected "Daily Check-in"/"Practice Streak" tiles on exactly this principle, pre-dating this spec's own reading). |
-| 11 | Numbers, Scores & Reflection Indices | ❌ | See Critical Finding #3. Also applies more narrowly to `insightsGained`/`patternsShifting` counts (Growth Tracker, Session 25) — these are factual metrics (§11's "Factual metrics" class, always OK) so they're fine as-is; only the Alignment Score itself is the problem. |
-| 12 | Confidence, Contradictions & Weird Signals | ❌/⚠️ | No confidence-threshold gating exists anywhere before a number or reflection is shown (ties directly to Finding #3) — `TwinSignalItem.confidence` is stored but nothing reads it to decide "insufficient/developing/eligible/mixed/stale" the way §12's table requires. No contradiction detection between signals exists at all. |
+| 11 | Numbers, Scores & Reflection Indices | ✅ (resolved 2026-09-01) for the Alignment Score | See Critical Finding #3 / ADR 0011 — `computeAlignmentScore()` now confidence-gated (insufficient/developing/eligible), live-verified. `insightsGained`/`patternsShifting` counts (Growth Tracker, Session 25) were always fine as-is — factual metrics (§11's "Factual metrics" class). |
+| 12 | Confidence, Contradictions & Weird Signals | ⚠️ (partially resolved 2026-09-01) | The Alignment Score now has real threshold/confidence gating (ADR 0011) — the first place in the codebase this exists. Still no general-purpose confidence-gating for other numbers/reflections, and `TwinSignalItem.confidence` still isn't read anywhere else to decide insufficient/developing/eligible/mixed/stale. No contradiction detection between signals exists at all. |
 | 13 | Growth Tracker Data Semantics | ✅ | Slice 4/5 built this well — "Current Inner State," "Areas Growing," "Patterns Shifting," honest empty-state Core Pillars/Emotional Landscape (explicitly, by design, per that session's own doc comment) all match the spec's widget-by-widget rules closely, including "no roadmap-progress percentages here" (Growth Tracker doesn't show them; My Evolution Map does). One gap: "Recommended Next Step" as a real, explained, evidence-backed single suggestion isn't built on this page today. |
 | 14 | My Evolution Map & Roadmap Logic | ✅/⚠️ | Domain-first structure, Goals & Dreams over real `CommitmentItem`s, and the "percentage only with a real denominator" rule are already followed (Slice 5's own build notes explicitly reference this exact rule). The 4-stage band is correctly built as a fixed illustration, not fabricated per-user progress (per that session's own account). Gap: no `LifeDomainRoadmap` object with `aspirations[]`/`dreams[]`/`stages[]`/`milestones[]` as Appendix A/§14 defines it — today's Roadmap (`RoadmapItem`) is a flatter `{currentFocus, theme, direction, suggestedSpaces}` shape without per-domain stages/milestones structure. |
 | 15 | Dashboard / Home Semantics | ✅ | Component-by-component match is close: Current Reflection-equivalent card, Roadmap, Life Domains, Patterns, Leading Archetypes, Daily Card, Suggested Next Step all already exist roughly as described. |
@@ -149,28 +154,31 @@ it open, e.g. Appendix D).
 
 ## What this means for the next session
 
-**Do not attempt to close all of the above in one pass.** Per this project's own standing protocol ("prefer
-finishing one vertical slice cleanly over starting two") and the spec's own §31 instruction to build "one
-complete vertical slice... before expanding," the right next move is to get the user's read on the three
-Critical Findings first — especially #1 (no safety system), since the spec places safety above itself in
-precedence and several other gaps (§2 methodology lenses, §17A relational voice) are naturally designed
-*around* whatever safety-state contract gets built, not before it.
+**Update, 2026-09-01:** Findings #2 (`/twin` retirement, ADR 0010) and #3 (Alignment Score gating, ADR 0011)
+are done, live-verified, and closed the same day this audit was written — both were quick user decisions
+followed by a same-session build, not deferred work. **Do not re-litigate either** — they're settled ADRs.
+
+**Do not attempt to close everything else in the table above in one pass.** Per this project's own standing
+protocol ("prefer finishing one vertical slice cleanly over starting two") and the spec's own §31 instruction
+to build "one complete vertical slice... before expanding," the right next move is Finding #1 — the
+safety/crisis system — since the spec places safety above itself in precedence and several other gaps (§2
+methodology lenses, §17A relational voice) are naturally designed *around* whatever safety-state contract
+gets built, not before it.
 
 **Suggested order, pending the user's actual priorities:**
-1. Safety/crisis system (§30) — design + build. Highest priority by the spec's own stated precedence; touches
-   Companion, Mirror Room and Decision Room's shared model-call path.
-2. Resolve the `/twin` destination question (Finding #2) and the Alignment Score question (Finding #3) — both
-   are quick user conversations, not engineering work, and unblock whether Growth Tracker/Dashboard/My
-   Evolution Map need any structural changes.
-3. Signal model enrichment (§7/§12/§24/§28's shared gaps: `direction`, `strength` vs `confidence`,
-   `reason_code`, `prompt_ref`/`model_ref`, confidence-threshold gating before showing any number) — one
-   coherent piece of schema/pipeline work that closes several findings at once.
-4. Living System behaviors (§17: Open Threads, full Roadmap lifecycle states, interaction-mode inference) —
+1. **Safety/crisis system (§30) — the one remaining critical finding.** Design + build. Highest priority by
+   the spec's own stated precedence; touches Companion, Mirror Room and Decision Room's shared model-call
+   path. This is real design work (what detection mechanism, what thresholds, how it plugs into the existing
+   Bedrock call path), not a quick prompt tweak — scope it as its own session before starting.
+2. Signal model enrichment (§7/§12/§24/§28's shared gaps: `direction`, `strength` vs `confidence`,
+   `reason_code`, `prompt_ref`/`model_ref`) — one coherent piece of schema/pipeline work that closes several
+   findings at once. The Alignment Score's new confidence-gating (ADR 0011) is a narrow precedent for the
+   *shape* of this, not a substitute for it — it only gates one specific number, not signals generally.
+3. Living System behaviors (§17: Open Threads, full Roadmap lifecycle states, interaction-mode inference) —
    the biggest net-new build in the spec, and the one with the least overlap against anything already built.
-5. Everything else in the table above, roughly in the order it's listed, once 1–4 establish the underlying
-   primitives (safety state, enriched signals, resolved product questions) the rest depend on.
+4. Everything else in the table above, roughly in the order it's listed, once 1–3 establish the underlying
+   primitives (safety state, enriched signals) the rest depend on.
 
 Per this project's own protocol, write an ADR for any of the above that becomes an irreversible or hard-to-
-reverse call (the `/twin` and Alignment Score resolutions likely warrant one each, whichever way the user
-decides), and update this document's own findings to "resolved" inline rather than leaving them to silently go
-stale, the same discipline `docs/PHASE_AUDIT.md` already follows.
+reverse call, and update this document's own findings to "resolved" inline rather than leaving them to
+silently go stale, the same discipline `docs/PHASE_AUDIT.md` already follows.

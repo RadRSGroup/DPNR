@@ -40,8 +40,8 @@ export const handler = async (): Promise<void> => {
       }
       try {
         const { commitments, signals } = await fetchAlignmentScoreInputs(ddb, TABLE_NAME, profile.userId)
-        const score = computeAlignmentScore(commitments, signals)
-        if (score === null) {
+        const result = computeAlignmentScore(commitments, signals)
+        if (result.state !== 'eligible') {
           skippedNoScoreYet++
           continue
         }
@@ -49,7 +49,7 @@ export const handler = async (): Promise<void> => {
           pk: userPk(profile.userId),
           sk: Sk.alignmentScoreSnapshot(today),
           date: today,
-          score,
+          score: result.score,
           createdAt: new Date().toISOString(),
         }
         await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: item }))

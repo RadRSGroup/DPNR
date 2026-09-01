@@ -13,6 +13,7 @@ import Card from '@/components/ui/Card'
 import ProgressRing from '@/components/ui/ProgressRing'
 import DailyGuidanceCard from '@/components/companion/DailyGuidanceCard'
 import RoadmapTimelineCard from '@/components/shared/RoadmapTimelineCard'
+import TwinCalibrationCard from '@/components/shared/TwinCalibrationCard'
 
 /**
  * Labels for continuityCue kinds OTHER than 'daily_card' — that one now
@@ -142,27 +143,28 @@ function DashboardContent() {
               <div className="flex flex-col sm:flex-row">
                 {/* Alignment Score — real, computed server-side from commitment
                     follow-through + confirmed value-signal clarity (see
-                    DashboardResponseSchema's doc comment). Null, not a
-                    fabricated number, until there's enough data to say
-                    anything. */}
+                    DashboardResponseSchema's doc comment). Confidence-gated
+                    (ADR 0011): only rendered as a number when
+                    alignmentScoreState === 'eligible'; 'insufficient'/
+                    'developing' get an honest qualitative state instead of
+                    a fabricated or premature number. */}
                 <div className="p-5 lg:p-6 sm:w-56 shrink-0 flex flex-col">
                   <p className="text-sm text-white/70">My InnerSelf</p>
                   <p className="text-xs text-white/40">Your Digital Twin</p>
                   <div className="mt-4">
-                    {dashboard?.alignmentScore != null ? (
+                    {dashboard?.alignmentScoreState === 'eligible' && dashboard.alignmentScore != null ? (
                       <ProgressRing percent={dashboard.alignmentScore} size={84} colorClassName="stroke-[var(--color-violet-500)]">
                         <span className="text-lg font-medium text-white">{dashboard.alignmentScore}%</span>
                       </ProgressRing>
                     ) : (
                       <div className="w-[84px] h-[84px] rounded-full border-2 border-dashed border-white/15 flex items-center justify-center">
-                        <span className="text-[10px] text-white/30 text-center px-2">Not enough data yet</span>
+                        <span className="text-[10px] text-white/30 text-center px-2">
+                          {dashboard?.alignmentScoreState === 'developing' ? 'Picture forming…' : 'Still learning this part of you'}
+                        </span>
                       </div>
                     )}
                   </div>
                   <p className="text-xs text-white/40 mt-2">Alignment Score</p>
-                  <Link href="/twin" className="text-xs text-white/50 hover:text-white/80 mt-4 inline-flex items-center gap-1">
-                    View InnerSelf <ArrowRight className="w-3 h-3" />
-                  </Link>
                 </div>
 
                 <div className="relative h-40 sm:h-auto sm:flex-1">
@@ -243,6 +245,19 @@ function DashboardContent() {
                   </button>
                 </div>
               </Card>
+            )}
+
+            {!loading && twin && (
+              <TwinCalibrationCard
+                signals={twin.signals}
+                onSignalUpdated={(signalId, status) =>
+                  setTwin((prev) =>
+                    prev
+                      ? { ...prev, signals: prev.signals.map((s) => (s.signalId === signalId ? { ...s, status } : s)) }
+                      : prev
+                  )
+                }
+              />
             )}
 
             <Card>
@@ -329,7 +344,7 @@ function DashboardContent() {
                 need a way in. */}
             <div className="grid grid-cols-2 gap-3 lg:hidden">
               <ExploreTile href="/library" title="Library" subtitle="Read something" />
-              <ExploreTile href="/twin" title="InnerSelf" subtitle="What we've learned" />
+              <ExploreTile href="/growth" title="Growth Tracker" subtitle="What's changing" />
             </div>
           </div>
 

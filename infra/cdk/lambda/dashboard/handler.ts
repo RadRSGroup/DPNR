@@ -117,7 +117,9 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       .sort((a, b) => (a.reviewDate ?? '9999-99-99').localeCompare(b.reviewDate ?? '9999-99-99'))
 
     const twinSignals = (twinSignalsResult.Items ?? []) as TwinSignalItem[]
-    const alignmentScore = computeAlignmentScore(allCommitments, twinSignals)
+    const alignmentScoreResult = computeAlignmentScore(allCommitments, twinSignals)
+    const alignmentScore = alignmentScoreResult.state === 'eligible' ? alignmentScoreResult.score : null
+    const alignmentScoreState = alignmentScoreResult.state
 
     const alignmentHistory = ((alignmentHistoryResult.Items ?? []) as AlignmentScoreSnapshotItem[])
       .sort((a, b) => a.date.localeCompare(b.date))
@@ -162,6 +164,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       creditsBalance,
       creditsLow,
       alignmentScore,
+      alignmentScoreState,
       alignmentHistory,
       lifeDomains,
       archetypes,

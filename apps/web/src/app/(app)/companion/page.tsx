@@ -262,8 +262,8 @@ export default function CompanionPage() {
               <Link href="/rooms" className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all">
                 <p className="text-white text-xs font-medium">Work Rooms</p>
               </Link>
-              <Link href="/twin" className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all">
-                <p className="text-white text-xs font-medium">InnerSelf</p>
+              <Link href="/growth" className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all">
+                <p className="text-white text-xs font-medium">Growth</p>
               </Link>
               <Link href="/library" className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all">
                 <p className="text-white text-xs font-medium">Library</p>
