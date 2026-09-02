@@ -15,13 +15,44 @@ const sns = new SNSClient({})
 
 const SAFETY_EVENT_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days, ADR 0012
 
+// Stage 2 (Rooms) heuristic — a Room command's `input` is a flexible
+// Record<string, unknown> (packages/shared-types/src/api/command-contract.ts:
+// RoomCommandRequestSchema.input) whose fields range from real free-text
+// disclosures (a decision's narrative, a Mirror Room situation/coping
+// response) to short structural values (an option label like "A", a lens
+// slug, a tag array). Classifying every field regardless would double the
+// Bedrock calls on every trivial selection — this length floor is a cheap,
+// documented, revisit-with-real-data filter (same "first pass" status as
+// alignment-score.ts's own thresholds): short values are assumed
+// non-narrative and skipped entirely, so a command with nothing above this
+// length makes no classification call at all.
+const MIN_FREE_TEXT_LENGTH = 20
+
+/**
+ * Pulls whatever looks like real free text out of a Room command's `input`
+ * bag for a safety check — a shallow scan (this codebase's step handlers
+ * consistently keep free-text fields flat, never nested; see e.g.
+ * mirror-steps/pattern.ts's `copingResponse`/`recurringPattern`) over every
+ * string value at least `MIN_FREE_TEXT_LENGTH` characters long, joined with
+ * blank lines. Returns `null` when nothing qualifies (a REFINE step like
+ * decision-steps/deep-exploration.ts's `{optionLabel: 'A'}` has no free text
+ * of its own — the narrative it references was already classified when it
+ * was first submitted at an earlier step).
+ */
+export function extractFreeTextForSafetyCheck(input: Record<string, unknown>): string | null {
+  const values = Object.values(input).filter(
+    (v): v is string => typeof v === 'string' && v.length >= MIN_FREE_TEXT_LENGTH
+  )
+  return values.length > 0 ? values.join('\n\n') : null
+}
+
 /**
  * Safety/crisis classification (spec §30, scoped in
- * `docs/SAFETY_SYSTEM_DESIGN.md`, decided in ADR 0012) — Stage 1: wired
- * into Companion only (`companion/message.ts`). Every caller passes its own
- * `ddb`/`tableName` (same convention as `lib/alignment-score.ts`) since this
- * is meant to be called from multiple Lambdas eventually (Rooms' `command.ts`
- * dispatcher is Stage 2, not built yet).
+ * `docs/SAFETY_SYSTEM_DESIGN.md`, decided in ADR 0012) — Stage 1 wired into
+ * Companion (`companion/message.ts`); Stage 2 wired into Rooms'
+ * `command.ts` dispatcher via `extractFreeTextForSafetyCheck()` above.
+ * Every caller passes its own `ddb`/`tableName` (same convention as
+ * `lib/alignment-score.ts`) since this runs from multiple Lambdas.
  *
  * Classifier-failure behavior is spec-mandated, not a local judgment call:
  * §32's Failure States table says "AI extraction failure: Keep session

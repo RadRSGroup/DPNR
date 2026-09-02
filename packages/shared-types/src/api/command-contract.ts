@@ -31,5 +31,19 @@ export const RoomCommandResponseSchema = z.object({
   nextStepId: z.string().nullable(), // null when the flow is complete
   result: z.record(z.string(), z.unknown()),
   promptRef: z.string().optional(), // e.g. "decision_room/emotion_reflection@v7 + overlay@v3"
+  // Safety/crisis system (spec §30, docs/SAFETY_SYSTEM_DESIGN.md, ADR 0012)
+  // Stage 2 — set instead of a normal step result when the command's
+  // free-text input classifies as safety_concern/immediate_danger.
+  // `nextStepId` stays null in that case (no step transition — "suspend
+  // ordinary deep-work logic" per spec) and `result` is empty; the
+  // frontend must check this field FIRST, before falling back to normal
+  // step-result handling. Never present for a normal command.
+  safetyIntervention: z
+    .object({
+      safetyState: z.enum(['safety_concern', 'immediate_danger']),
+      message: z.string(),
+    })
+    .nullable()
+    .optional(),
 })
 export type RoomCommandResponse = z.infer<typeof RoomCommandResponseSchema>

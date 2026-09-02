@@ -18,6 +18,7 @@ import SessionSummaryScreen from '@/components/decision/SessionSummaryScreen'
 import ClarityToActionScreen from '@/components/decision/ClarityToActionScreen'
 import CommitmentScreen from '@/components/decision/CommitmentScreen'
 import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
+import SafetyInterventionScreen from '@/components/shared/SafetyInterventionScreen'
 import { DecisionOption, Lens } from '@/lib/types'
 import type { RefineFn } from '@/lib/useAI'
 import { getCurrentSession } from '@/lib/cognito/client'
@@ -142,6 +143,7 @@ function NewDecisionContent() {
   const [syncNotice, setSyncNotice] = useState<string | null>(null)
   const [fatalError, setFatalError] = useState<string | null>(null)
   const [creditsExhausted, setCreditsExhausted] = useState(false)
+  const [safetyIntervention, setSafetyIntervention] = useState<RoomCommandResponse['safetyIntervention']>(null)
 
   useEffect(() => {
     async function checkAuth() {
@@ -260,6 +262,11 @@ function NewDecisionContent() {
         delete next[keyId]
         return next
       })
+      // Safety/crisis system Stage 2 (docs/SAFETY_SYSTEM_DESIGN.md) — checked
+      // on every command response; once set, renderStep() shows
+      // SafetyInterventionScreen instead of continuing the normal step flow,
+      // and stays that way for the rest of this session (no "keep going").
+      if (res.safetyIntervention) setSafetyIntervention(res.safetyIntervention)
       return res
     } catch (err) {
       await handleCommandError(err)
@@ -400,6 +407,15 @@ function NewDecisionContent() {
             Back to InnerOS
           </button>
         </div>
+      )
+    }
+
+    if (safetyIntervention) {
+      return (
+        <SafetyInterventionScreen
+          message={safetyIntervention.message}
+          safetyState={safetyIntervention.safetyState}
+        />
       )
     }
 

@@ -10,6 +10,7 @@ import Step05Synthesis from '@/components/mirror/Step05Synthesis'
 import CommitmentScreen from '@/components/mirror/CommitmentScreen'
 import CompletionScreen from '@/components/mirror/CompletionScreen'
 import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
+import SafetyInterventionScreen from '@/components/shared/SafetyInterventionScreen'
 import type { RefineFn } from '@/lib/useAI'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { submitRoomCommand, getMirrorFull, ApiError } from '@/lib/api/v1-client'
@@ -66,6 +67,7 @@ function NewMirrorContent() {
   const [syncNotice, setSyncNotice] = useState<string | null>(null)
   const [fatalError, setFatalError] = useState<string | null>(null)
   const [creditsExhausted, setCreditsExhausted] = useState(false)
+  const [safetyIntervention, setSafetyIntervention] = useState<RoomCommandResponse['safetyIntervention']>(null)
 
   useEffect(() => {
     async function checkAuth() {
@@ -163,6 +165,10 @@ function NewMirrorContent() {
         delete next[keyId]
         return next
       })
+      // Safety/crisis system Stage 2 (docs/SAFETY_SYSTEM_DESIGN.md) — checked
+      // on every command response; once set, renderStep() shows
+      // SafetyInterventionScreen instead of continuing the normal step flow.
+      if (res.safetyIntervention) setSafetyIntervention(res.safetyIntervention)
       return res
     } catch (err) {
       await handleCommandError(err)
@@ -246,6 +252,15 @@ function NewMirrorContent() {
             Back to InnerOS
           </button>
         </div>
+      )
+    }
+
+    if (safetyIntervention) {
+      return (
+        <SafetyInterventionScreen
+          message={safetyIntervention.message}
+          safetyState={safetyIntervention.safetyState}
+        />
       )
     }
 

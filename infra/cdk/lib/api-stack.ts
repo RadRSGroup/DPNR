@@ -373,12 +373,14 @@ export class ApiStack extends Stack {
       environment: {
         ...sharedProductLambdaProps.environment,
         PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
+        SAFETY_ALERT_TOPIC_ARN: safetyAlertTopic.topicArn,
       },
       description: 'POST /v1/rooms/{decision,mirror} — flow-engine command endpoint (one Lambda, dispatches on flowId).',
     })
     props.applicationTable.grantReadWriteData(roomsCommandFn)
     props.promptRegistryTable.grantReadData(roomsCommandFn)
     grantBedrockConverse(roomsCommandFn)
+    safetyAlertTopic.grantPublish(roomsCommandFn)
 
     const decisionFullFn = new lambda.NodejsFunction(this, 'DecisionFullFn', {
       ...sharedProductLambdaProps,

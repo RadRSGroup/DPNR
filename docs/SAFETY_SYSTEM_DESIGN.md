@@ -206,9 +206,31 @@ committable stages):
    confirmed its SNS subscription yet at verification time — real alert *delivery* end-to-end (not just
    publish) remains to be confirmed once that confirmation happens. All test data deleted and confirmed gone
    afterward. See `docs/AGENT_LOG.md` Session 29 part 5 for the full account.
-2. **Stage 2 — wire into Rooms.** `command.ts` dispatcher gets the same classification call on free-text input
-   fields, plus the new `safetyIntervention` response branch and the corresponding
-   `StepShell.tsx`/`MirrorStepShell.tsx` UI.
+2. **Stage 2 — DONE, deployed, live-verified (2026-09-02).** `rooms/command.ts`'s dispatcher now runs
+   `extractFreeTextForSafetyCheck()` (`lib/safety.ts`) — a documented length-floor heuristic (≥20 chars) over
+   every string value in the command's `input` bag, since Room input ranges from real free-text disclosures to
+   short structural values (an option label, a lens slug) that don't need a classification call at all — before
+   any credit is consumed or the step's own `handle()` runs. A `safety_concern`/`immediate_danger` result
+   bypasses `step.handle()` entirely (`stepResult = {nextStepId: null, result: {}}`) and populates a new
+   `RoomCommandResponse.safetyIntervention` field (`packages/shared-types/src/api/command-contract.ts`) instead.
+   The session's `currentStepId` deliberately does NOT advance and `status` stays `active` — "suspend ordinary
+   deep-work logic... until safety is addressed" means parking the session where it is, not silently completing
+   or skipping it. New shared `apps/web/src/components/shared/SafetyInterventionScreen.tsx`, wired into both
+   `decision/new/page.tsx` and `mirror/new/page.tsx`'s `renderStep()` — deliberately the opposite shape of the
+   existing soft-stopping-cue modal: only a "Return to Dashboard" way out, no "keep going," since ordinary
+   pacing fatigue and a real safety concern call for opposite affordances. `respond_concern`/`respond_danger`
+   (Stage 1) were generalized from "You are DPNR's Companion" to "You are DPNR" so the same two prompts serve
+   both surfaces without a fork. **Live-verified against real deployed AWS**: Mirror Room's `PATTERN` step
+   (which has **zero AI touchpoint of its own** — exactly the "category B" gap that motivated this whole
+   design) correctly classified a concerning `copingResponse` as `safety_concern` and returned the intervention
+   instead of running its own handler (confirmed via the response's empty `result: {}` and the session staying
+   parked at `currentStepId: PATTERN`); Decision Room's `MAP_OPTIONS` step (which does call the model normally)
+   correctly classified an `immediate_danger` narrative and bypassed `MAP_OPTIONS`'s own handler the same way.
+   Both `SafetyEventItem`s persisted with the correct `sourceSurface` (`mirror_room`/`decision_room`). An
+   ordinary SITUATION/AUTOMATIC_REACTION exchange along the way was correctly left alone (one even correctly
+   logged as `deep_reflection`, not `safety_concern` — real workplace frustration, appropriately distinguished
+   from a safety concern). All test data deleted and confirmed gone afterward. See `docs/AGENT_LOG.md` Session
+   29 for the full account.
 3. **Stage 3 — `high_stakes` response pattern + `overload` content-based trigger.** Lower-risk, mostly
    prompt-writing work once the pipeline from Stages 1–2 exists.
 4. **Stage 4 (optional, later) — native Bedrock Guardrails as defense-in-depth**, cost optimization (evaluate a

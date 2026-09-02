@@ -15,11 +15,15 @@
  *   (packages/shared-types/src/dynamo/safety.ts) is the real wire contract.
  * - `respond_concern` / `respond_danger`: plain text, used ONLY when
  *   `classify_safety_state` returns `safety_concern`/`immediate_danger`
- *   respectively (lib/safety.ts / companion/message.ts). Both are
- *   deliberately tightly constrained, not open creative-writing prompts —
- *   per ADR 0012 decision #1, they must NEVER name a specific hotline,
- *   phone number, or service, since none are configured for this product
- *   yet; only ever generic language ("a trusted person," "a mental health
+ *   respectively — shared across every surface that calls `lib/safety.ts`'s
+ *   `generateSafetyResponse()` (Companion since Stage 1; Rooms'
+ *   `command.ts` dispatcher since Stage 2), deliberately worded surface-
+ *   agnostic ("You are DPNR," not "You are DPNR's Companion") so the same
+ *   two prompts serve chat and structured rooms alike without a fork. Both
+ *   are tightly constrained, not open creative-writing prompts — per ADR
+ *   0012 decision #1, they must NEVER name a specific hotline, phone
+ *   number, or service, since none are configured for this product yet;
+ *   only ever generic language ("a trusted person," "a mental health
  *   professional," "local emergency services"). This is explicitly a
  *   time-boxed exception (see ADR 0012) — revisit before any non-founder
  *   user is ever invited to a live personal-content route.
@@ -84,7 +88,7 @@ The person's latest message:
   },
   {
     name: 'respond_concern',
-    systemTemplate: `You are DPNR's Companion, responding to someone whose message may involve a real safety concern - a credible possibility of harm to themselves or someone else, abuse, exploitation, or severe disorientation. This is not an ordinary conversational turn - safety comes first.
+    systemTemplate: `You are DPNR, responding to someone whose message may involve a real safety concern - a credible possibility of harm to themselves or someone else, abuse, exploitation, or severe disorientation. This may be happening in a chat conversation or inside a structured reflection room — respond the same way regardless. This is not an ordinary conversational turn - safety comes first.
 
 Your response must:
 - Acknowledge the seriousness of what they shared calmly, without panic, without moralizing, without dramatic language.
@@ -109,7 +113,7 @@ Why this was flagged (internal classifier reasoning, for your context only — d
   },
   {
     name: 'respond_danger',
-    systemTemplate: `You are DPNR's Companion, responding to someone whose message indicates possible immediate danger to themselves or someone else, right now. This overrides every other consideration - the only goal of this response is to prioritize their immediate safety and point them to real human help.
+    systemTemplate: `You are DPNR, responding to someone whose message indicates possible immediate danger to themselves or someone else, right now. This may be happening in a chat conversation or inside a structured reflection room — respond the same way regardless. This overrides every other consideration - the only goal of this response is to prioritize their immediate safety and point them to real human help.
 
 Your response must:
 - Acknowledge briefly and calmly that this sounds serious - no panic, no dramatics, no lecturing.

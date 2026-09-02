@@ -11,10 +11,11 @@ import {
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { requireConsent } from '../lib/consent'
 import { consumeCredits, ROOM_REFINE_COST } from '../lib/credits'
-import { ddb, TABLE_NAME } from './db'
+import { classifySafety, generateSafetyResponse, extractFreeTextForSafetyCheck } from '../lib/safety'
+import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
 import { decisionFlow } from './decision-steps'
 import { mirrorFlow } from './mirror-steps'
-import type { FlowDefinition } from './types'
+import type { FlowDefinition, StepResult } from './types'
 
 /**
  * The "single flow-engine Lambda" (migration plan §11, MVP_ARCHITECTURE.md
@@ -97,20 +98,55 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       throw new HttpError(400, 'action_not_allowed', `Action "${body.action}" isn't valid for step "${body.stepId}".`)
     }
 
+    // Safety/crisis classification (spec §30, docs/SAFETY_SYSTEM_DESIGN.md
+    // Stage 2, ADR 0012) — checked before any credit is consumed or the
+    // step's own handler runs, since a safety_concern/immediate_danger
+    // result must suspend the step's normal logic entirely ("do not
+    // continue Mirror, Decision... until immediate safety is addressed"),
+    // not just annotate its output. extractFreeTextForSafetyCheck() returns
+    // null (no classification call at all) for commands with no real free
+    // text — e.g. a REFINE that only carries an option-label selector.
+    const freeText = extractFreeTextForSafetyCheck(body.input)
+    let safetyIntervention: RoomCommandResponse['safetyIntervention'] = null
+    if (freeText) {
+      const sourceSurface = body.flowId === 'DECISION' ? 'decision_room' : 'mirror_room'
+      const classification = await classifySafety(
+        ddb,
+        TABLE_NAME,
+        PROMPT_REGISTRY_TABLE_NAME,
+        pk,
+        sourceSurface,
+        body.sessionId,
+        freeText,
+        `Room: ${body.flowId}, Step: ${body.stepId}`
+      )
+      if (classification.safetyState === 'safety_concern' || classification.safetyState === 'immediate_danger') {
+        const message = await generateSafetyResponse(ddb, PROMPT_REGISTRY_TABLE_NAME, classification, freeText)
+        safetyIntervention = { safetyState: classification.safetyState, message }
+      }
+    }
+
     // REFINE calls the model (generates a fresh draft); SUBMIT_STEP/SKIP/RESUME
     // only persist what's already been refined — billable action is REFINE
     // alone (user's own confirmed decision, Session 18). One insertion point
     // covers every step's REFINE handler since they all dispatch through here.
-    if (body.action === 'REFINE') {
-      await consumeCredits(ddb, TABLE_NAME, pk, ROOM_REFINE_COST, 'room_refine')
+    // A flagged safety intervention is never billed and never runs the
+    // step's own handler — same "no reward/normal flow during a safety
+    // flow" rule Companion's Stage 1 wiring already follows.
+    let stepResult: StepResult
+    if (safetyIntervention) {
+      stepResult = { nextStepId: null, result: {} }
+    } else {
+      if (body.action === 'REFINE') {
+        await consumeCredits(ddb, TABLE_NAME, pk, ROOM_REFINE_COST, 'room_refine')
+      }
+      stepResult = await step.handle({
+        pk,
+        sessionId: body.sessionId,
+        action: body.action,
+        input: body.input,
+      })
     }
-
-    const stepResult = await step.handle({
-      pk,
-      sessionId: body.sessionId,
-      action: body.action,
-      input: body.input,
-    })
 
     const newSessionVersion = (existingSession?.sessionVersion ?? 0) + 1
     const nextCurrentStepId = stepResult.nextStepId ?? existingSession?.currentStepId ?? body.stepId
@@ -122,6 +158,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       nextStepId: stepResult.nextStepId,
       result: stepResult.result,
       promptRef: stepResult.promptRef,
+      safetyIntervention,
     }
 
     const updatedSession: SessionItem = {
