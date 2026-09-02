@@ -116,7 +116,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
 
     // Safety/crisis classification (spec §30, docs/SAFETY_SYSTEM_DESIGN.md,
     // ADR 0012) — runs before any normal reply is generated, since a
-    // safety_concern/immediate_danger result must suspend the ordinary
+    // non-normal, non-deep_reflection result must suspend the ordinary
     // Companion flow entirely, not just annotate it. Every turn goes through
     // this; classifySafety() itself degrades to 'normal' on any failure
     // (spec §32: "AI extraction failure: keep session usable, do not create
@@ -136,9 +136,32 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       safetyContext || '(no prior messages — this is the start of the conversation)'
     )
 
+    // Stage 3 widened this from the original two crisis states
+    // (safety_concern/immediate_danger) to also cover overload/high_stakes
+    // — spec §30 requires a materially different reply for all four
+    // ("slow down"/"limited reflective support, encourage a professional"),
+    // not just the two "suspend and seek human help" states. Companion has
+    // no lasting lock-out risk the way Rooms' step-advance mechanism does
+    // (see rooms/command.ts's own safetyIntervention branch) — a flagged
+    // turn here just swaps that one reply; the very next message goes
+    // through the normal path again, same as any other turn. That's why
+    // overload/high_stakes are wired here but deliberately NOT into Rooms'
+    // command.ts yet: Rooms' only existing mechanism for a non-normal state
+    // is the full-suspend safetyIntervention branch, which is the right
+    // shape for safety_concern/immediate_danger but wrong for these two
+    // lower-urgency states (getting a Room session permanently stuck over
+    // "I'm tired" would be a real regression, not a safety improvement) —
+    // a real Rooms-side UI for these two states is future work, not done
+    // here; they're still classified and logged (persistSafetyEvent runs
+    // for any non-normal state) even in Rooms, just not acted on yet.
     let reply: string
     let directive: CompanionDirective | null
-    if (classification.safetyState === 'safety_concern' || classification.safetyState === 'immediate_danger') {
+    if (
+      classification.safetyState === 'safety_concern' ||
+      classification.safetyState === 'immediate_danger' ||
+      classification.safetyState === 'high_stakes' ||
+      classification.safetyState === 'overload'
+    ) {
       // Suspends ordinary routing entirely — no room/library directive, no
       // credit charge (this isn't a normal billable turn), no onboarding
       // Roadmap logic. Per spec §30: "Do not use reward language... during

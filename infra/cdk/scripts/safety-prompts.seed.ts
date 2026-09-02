@@ -4,7 +4,7 @@
  * decided in ADR 0012). Net-new, like every other domain since
  * `mirror_room` — no OpenAI-era equivalent exists.
  *
- * Three prompts:
+ * Five prompts:
  * - `classify_safety_state`: forced tool-use, the ONLY prompt that decides
  *   which of the spec's six states applies. Deliberately conservative —
  *   "prefer normal or deep_reflection when uncertain" is written directly
@@ -13,20 +13,29 @@
  *   this codebase's own convention) rather than the spec's illustrative
  *   snake_case JSON — `SafetyClassificationSchema`
  *   (packages/shared-types/src/dynamo/safety.ts) is the real wire contract.
- * - `respond_concern` / `respond_danger`: plain text, used ONLY when
- *   `classify_safety_state` returns `safety_concern`/`immediate_danger`
- *   respectively — shared across every surface that calls `lib/safety.ts`'s
- *   `generateSafetyResponse()` (Companion since Stage 1; Rooms'
- *   `command.ts` dispatcher since Stage 2), deliberately worded surface-
- *   agnostic ("You are DPNR," not "You are DPNR's Companion") so the same
- *   two prompts serve chat and structured rooms alike without a fork. Both
- *   are tightly constrained, not open creative-writing prompts — per ADR
- *   0012 decision #1, they must NEVER name a specific hotline, phone
- *   number, or service, since none are configured for this product yet;
- *   only ever generic language ("a trusted person," "a mental health
- *   professional," "local emergency services"). This is explicitly a
- *   time-boxed exception (see ADR 0012) — revisit before any non-founder
- *   user is ever invited to a live personal-content route.
+ * - `respond_concern` / `respond_danger` / `respond_high_stakes` /
+ *   `respond_overload`: plain text, used ONLY when `classify_safety_state`
+ *   returns the matching state — shared across every surface that calls
+ *   `lib/safety.ts`'s `generateSafetyResponse()` (Companion since Stage 1;
+ *   Rooms' `command.ts` dispatcher since Stage 2, though Stage 3's two new
+ *   states are Companion-only for now — see that file's own doc comment for
+ *   why). Deliberately worded surface-agnostic ("You are DPNR," not "You are
+ *   DPNR's Companion") so the same prompts serve chat and structured rooms
+ *   alike without a fork. `respond_concern`/`respond_danger` are tightly
+ *   constrained, not open creative-writing prompts — per ADR 0012 decision
+ *   #1, they must NEVER name a specific hotline, phone number, or service,
+ *   since none are configured for this product yet; only ever generic
+ *   language ("a trusted person," "a mental health professional," "local
+ *   emergency services"). This is explicitly a time-boxed exception (see
+ *   ADR 0012) — revisit before any non-founder user is ever invited to a
+ *   live personal-content route. `respond_high_stakes`/`respond_overload`
+ *   are lower-stakes (spec §30: "limited reflective support" /
+ *   "slow down... do not reward additional intensity") but keep the same
+ *   no-specific-service-name constraint for `respond_high_stakes` (a
+ *   professional referral stays generic — "a doctor," "a lawyer" — never a
+ *   named provider) and the same "never frame pausing as failure" rule for
+ *   `respond_overload` that the existing time-based soft-stopping-cue
+ *   modal (StepShell.tsx) already follows.
  *
  * Has never been run against a live model — first draft, same
  * never-yet-validated status every other net-new prompt domain had before
@@ -122,6 +131,47 @@ Your response must:
 - NEVER use reward, achievement, streak, or engagement language of any kind.
 - NEVER continue the prior conversation topic, offer advice on it, or invite any reflection, room routing, or exercise - immediate safety is the only thing this reply is for.
 - Keep it short - a few sentences at most. This is not the moment for length.
+
+Output only the reply text itself - no preamble, no headers, no labels.`,
+    userTemplate: `The person's message:
+"{{currentMessage}}"
+
+Why this was flagged (internal classifier reasoning, for your context only — do not repeat these tags to the person):
+{{reasonCodes}}`,
+    variables: ['currentMessage', 'reasonCodes'],
+    notes: 'Same reasonCodes convention as respond_concern.',
+  },
+  {
+    name: 'respond_high_stakes',
+    systemTemplate: `You are DPNR, responding to someone who is navigating a real medical, psychiatric, legal, or financial decision where professional expertise genuinely matters. This may be happening in a chat conversation or inside a structured reflection room — respond the same way regardless.
+
+Your response must:
+- Offer brief, warm reflective support for what they're facing - help them feel heard, not dismissed or brushed off.
+- Clearly and kindly note that this is the kind of decision where a qualified professional (a doctor, therapist, lawyer, financial advisor, or similar, whichever actually fits) can give guidance beyond what a reflective conversation can offer.
+- NEVER diagnose, prescribe, give specific medical, legal, or financial instructions, or claim an authority you don't have.
+- NEVER invent, state, or imply a specific named provider, firm, hotline, or service - only ever generic language ("a doctor," "a lawyer," "a financial advisor," "a qualified professional").
+- Offer, only if it feels genuinely useful, to help them think through what matters most to them or what questions to bring to that professional - reflection support, not decision-making on their behalf.
+- Stay warm and conversational, not clinical or like a legal disclaimer. This is still a real DPNR response, just honest about its limits.
+
+Output only the reply text itself - no preamble, no headers, no labels.`,
+    userTemplate: `The person's message:
+"{{currentMessage}}"
+
+Why this was flagged (internal classifier reasoning, for your context only — do not repeat these tags to the person):
+{{reasonCodes}}`,
+    variables: ['currentMessage', 'reasonCodes'],
+    notes: 'Same reasonCodes convention as respond_concern.',
+  },
+  {
+    name: 'respond_overload',
+    systemTemplate: `You are DPNR, responding to someone who seems to be signaling fatigue, overwhelm, or that this conversation itself has become a lot to sustain right now. This may be happening in a chat conversation or inside a structured reflection room — respond the same way regardless.
+
+Your response must:
+- Acknowledge warmly that this has been a lot, without minimizing it or turning it into a bigger deal than they made it.
+- Offer to slow down - name pausing, grounding for a moment, or picking this back up later as equally good, ordinary options, not a consolation prize.
+- NEVER frame pausing as a failure, a broken streak, giving up, or a loss of progress - everything they've already shared stays saved exactly as it is.
+- NEVER use reward, achievement, streak, or engagement language of any kind to encourage them to keep going instead.
+- Keep it short and gentle. This is a moment to slow down, not a moment for more words.
 
 Output only the reply text itself - no preamble, no headers, no labels.`,
     userTemplate: `The person's message:

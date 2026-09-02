@@ -231,8 +231,31 @@ committable stages):
    logged as `deep_reflection`, not `safety_concern` — real workplace frustration, appropriately distinguished
    from a safety concern). All test data deleted and confirmed gone afterward. See `docs/AGENT_LOG.md` Session
    29 for the full account.
-3. **Stage 3 — `high_stakes` response pattern + `overload` content-based trigger.** Lower-risk, mostly
-   prompt-writing work once the pipeline from Stages 1–2 exists.
+3. **Stage 3 — DONE, deployed, live-verified (2026-09-02), Companion only by deliberate scope decision.** Two
+   new plain-text prompts (`safety/respond_high_stakes`, `safety/respond_overload`) and
+   `generateSafetyResponse()`'s prompt-name mapping widened to all four non-`normal`/non-`deep_reflection`
+   states via a lookup table. `companion/message.ts`'s short-circuit condition widened from
+   `safety_concern`/`immediate_danger` to also cover `high_stakes`/`overload`. **Deliberately NOT wired into
+   Rooms' `command.ts`** — reasoned out and documented directly in `companion/message.ts`'s own comment: Rooms'
+   only existing mechanism for a non-normal state is the Stage 2 `safetyIntervention` branch, which fully
+   bypasses the step and parks the session — exactly right for `safety_concern`/`immediate_danger` ("suspend
+   until safety is addressed"), but wrong for these two lower-urgency states (getting a Room session
+   permanently stuck over "I'm tired" would be a real regression). Rooms still **classify and log**
+   `high_stakes`/`overload` (any non-`normal` state gets a `SafetyEventItem` regardless of surface — this was
+   already true, not new to Stage 3), just without acting on them yet; a real Rooms-side UI for these two softer
+   states (e.g. triggering the existing time-based soft-stopping-cue modal early for `overload`, or a
+   dismissible "consider a professional" banner for `high_stakes` that lets the step still proceed) is real,
+   scoped-out future work, not done here. **Live-verified against real deployed AWS**: a medical-decision
+   message correctly classified `high_stakes` (confidence 0.95, `suspendDeepWork: false`) with a warm reply
+   that redirected to the person's own doctor without diagnosing; an explicit-fatigue message correctly
+   classified `overload` (confidence 0.95) with a gentle reply confirming nothing is lost by pausing, no reward
+   language; a follow-up ordinary message confirmed Companion resumes normal conversation immediately after
+   either state (no lasting lock-out, unlike Rooms' Stage 2 mechanism — a real, deliberate asymmetry, not an
+   oversight). Separately confirmed via a real Mirror Room `SITUATION` submission with medical-decision content
+   that Rooms correctly logs `high_stakes` (`SafetyEventItem` persisted, `sourceSurface: mirror_room`) while
+   the step still advances normally (`safetyIntervention: null`, `nextStepId` set) — proving the "detect only,
+   don't act" scope boundary is real, not just documented intent. All test data deleted and confirmed gone
+   afterward. See `docs/AGENT_LOG.md` Session 29 for the full account.
 4. **Stage 4 (optional, later) — native Bedrock Guardrails as defense-in-depth**, cost optimization (evaluate a
    cheaper classifier model), and threshold calibration once real usage data exists — matches spec's own
    Appendix D backlog framing ("exact detection thresholds must be versioned and adjustable after controlled

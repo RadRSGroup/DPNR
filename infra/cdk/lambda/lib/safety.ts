@@ -118,21 +118,33 @@ export async function classifySafety(
 }
 
 // Last-resort fallback if generating the real (model-written) safety
-// response itself fails — a flagged safety_concern/immediate_danger turn
-// must never surface a broken reply or a generic 500. Fixed text, not a
-// model call: deliberately matches ADR 0012 decision #1's generic,
-// locale-agnostic content exactly, so even this failure path stays
-// spec-compliant rather than silently degrading it.
+// response itself fails — a flagged turn must never surface a broken reply
+// or a generic 500. Fixed text, not a model call — deliberately generic and
+// safety-leaning regardless of which of the four states triggered it
+// (matches ADR 0012 decision #1's constraints), so even this failure path
+// stays spec-compliant rather than silently degrading it.
 const FALLBACK_SAFETY_MESSAGE =
-  "That sounds like a lot to carry, and I want to make sure you're safe. If you're in immediate danger or need to talk " +
-  'to someone right now, please reach out to a trusted person, a mental health professional, or your local emergency services.'
+  "I want to make sure I'm giving you the right kind of support right now. If anything feels urgent or unsafe, please " +
+  'reach out to a trusted person, a mental health professional, or your local emergency services.'
+
+const SAFETY_RESPONSE_PROMPT_NAME: Record<SafetyClassification['safetyState'], string> = {
+  normal: 'respond_concern', // never actually called for 'normal' — see classifySafety's own gating
+  deep_reflection: 'respond_concern', // never actually called — no caller short-circuits on this state
+  overload: 'respond_overload',
+  high_stakes: 'respond_high_stakes',
+  safety_concern: 'respond_concern',
+  immediate_danger: 'respond_danger',
+}
 
 /**
- * Generates the actual reply text for a flagged `safety_concern`/
- * `immediate_danger` turn — `companion/message.ts` calls this instead of
- * the normal `callCompanionModel`/`runOnboardingTurn` path once
- * `classifySafety()` returns one of those two states. Picks
- * `safety/respond_danger` vs `safety/respond_concern` by state; falls back
+ * Generates the actual reply text for a flagged turn — `companion/message.ts`
+ * calls this instead of the normal `callCompanionModel`/`runOnboardingTurn`
+ * path once `classifySafety()` returns `overload`/`high_stakes`/
+ * `safety_concern`/`immediate_danger` (Stage 3 widened this from the
+ * original two crisis states to all four "this turn needs a different
+ * reply" states — see `companion/message.ts`'s own doc comment for why
+ * `overload`/`high_stakes` are Companion-only for now, not also wired into
+ * Rooms). Picks the matching `safety/respond_*` prompt by state; falls back
  * to `FALLBACK_SAFETY_MESSAGE` if the model call itself fails, rather than
  * letting the request fail outright on exactly the turn where a reply
  * matters most.
@@ -143,7 +155,7 @@ export async function generateSafetyResponse(
   classification: SafetyClassification,
   currentMessage: string
 ): Promise<string> {
-  const promptName = classification.safetyState === 'immediate_danger' ? 'respond_danger' : 'respond_concern'
+  const promptName = SAFETY_RESPONSE_PROMPT_NAME[classification.safetyState]
   try {
     const version = await resolvePromptVersion(ddb, promptRegistryTableName, 'safety', promptName)
     const result = await callPromptModel(version, {
