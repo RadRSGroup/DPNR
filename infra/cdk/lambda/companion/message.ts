@@ -22,12 +22,20 @@ import { callPromptModel } from '../lib/model-call'
 import { listActiveTopics } from '../lib/library-catalog'
 import { gatherContinuityContext } from '../continuity/gather-context'
 import { roadmapExists } from '../lib/roadmap'
+import { classifySafety, generateSafetyResponse } from '../lib/safety'
 import { getOrCreateActiveCompanionSession } from './session'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
 const PROMPT_REGISTRY_TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME as string
 const LIBRARY_CATALOG_TABLE_NAME = process.env.LIBRARY_CATALOG_TABLE_NAME as string
+
+// How many recent turns the safety classifier sees — deliberately smaller
+// than MODEL_CONTEXT_MESSAGES above. The classifier needs just enough
+// context to tell "ordinary distress" from "credible concern," not a full
+// conversational memory; a shorter window also keeps this extra Bedrock
+// call cheaper and faster than the main reply call.
+const SAFETY_CONTEXT_MESSAGES = 6
 
 type CompanionTurn = { role: 'user' | 'assistant'; text: string }
 
@@ -106,16 +114,51 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       text: stubDecryptField<MessageContent>(m.content).text,
     }))
 
-    const hasRoadmap = await roadmapExists(ddb, TABLE_NAME, pk)
-    // Only a real Companion reply is billable — onboarding turns stay free
-    // (user's own confirmed decision, Session 18), same rule already applied
-    // to Room REFINE-vs-SUBMIT_STEP in rooms/command.ts.
-    if (hasRoadmap) {
-      await consumeCredits(ddb, TABLE_NAME, pk, COMPANION_MESSAGE_COST, 'companion_message')
+    // Safety/crisis classification (spec §30, docs/SAFETY_SYSTEM_DESIGN.md,
+    // ADR 0012) — runs before any normal reply is generated, since a
+    // safety_concern/immediate_danger result must suspend the ordinary
+    // Companion flow entirely, not just annotate it. Every turn goes through
+    // this; classifySafety() itself degrades to 'normal' on any failure
+    // (spec §32: "AI extraction failure: keep session usable, do not create
+    // fake signals"), so a classifier outage never blocks a chat turn.
+    const safetyContext = history
+      .slice(-SAFETY_CONTEXT_MESSAGES)
+      .map((m) => `${m.role === 'user' ? 'User' : 'Companion'}: ${m.text}`)
+      .join('\n')
+    const classification = await classifySafety(
+      ddb,
+      TABLE_NAME,
+      PROMPT_REGISTRY_TABLE_NAME,
+      pk,
+      'companion',
+      sessionId,
+      body.text,
+      safetyContext || '(no prior messages — this is the start of the conversation)'
+    )
+
+    let reply: string
+    let directive: CompanionDirective | null
+    if (classification.safetyState === 'safety_concern' || classification.safetyState === 'immediate_danger') {
+      // Suspends ordinary routing entirely — no room/library directive, no
+      // credit charge (this isn't a normal billable turn), no onboarding
+      // Roadmap logic. Per spec §30: "Do not use reward language... during
+      // a safety flow."
+      reply = await generateSafetyResponse(ddb, PROMPT_REGISTRY_TABLE_NAME, classification, body.text)
+      directive = null
+    } else {
+      const hasRoadmap = await roadmapExists(ddb, TABLE_NAME, pk)
+      // Only a real Companion reply is billable — onboarding turns stay free
+      // (user's own confirmed decision, Session 18), same rule already applied
+      // to Room REFINE-vs-SUBMIT_STEP in rooms/command.ts.
+      if (hasRoadmap) {
+        await consumeCredits(ddb, TABLE_NAME, pk, COMPANION_MESSAGE_COST, 'companion_message')
+      }
+      const result = hasRoadmap
+        ? await callCompanionModel(userId, history, body.text)
+        : await runOnboardingTurn(pk, sessionId, history, body.text)
+      reply = result.reply
+      directive = result.directive
     }
-    const { reply, directive } = hasRoadmap
-      ? await callCompanionModel(userId, history, body.text)
-      : await runOnboardingTurn(pk, sessionId, history, body.text)
 
     const replyAt = new Date().toISOString()
     const assistantMessage: SessionMessageItem = {

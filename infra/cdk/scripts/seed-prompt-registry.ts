@@ -38,6 +38,7 @@ import { DAILY_CARD_PROMPT_SEEDS } from './daily-card-prompts.seed'
 import { WEEKLY_RECAP_PROMPT_SEEDS } from './weekly-recap-prompts.seed'
 import { COMPANION_PROMPT_SEEDS } from './companion-prompts.seed'
 import { ROADMAP_PROMPT_SEEDS } from './roadmap-prompts.seed'
+import { SAFETY_PROMPT_SEEDS } from './safety-prompts.seed'
 
 const TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME ?? 'dpnr-prompt-registry'
 
@@ -89,6 +90,12 @@ const DOMAINS: { domain: string; seeds: PromptSeed[]; author: string; sourceNote
     seeds: ROADMAP_PROMPT_SEEDS,
     author: 'design:roadmap-prompts',
     sourceNote: 'Net-new — designed Claude-native, not ported from anywhere (see roadmap-prompts.seed.ts).',
+  },
+  {
+    domain: 'safety',
+    seeds: SAFETY_PROMPT_SEEDS,
+    author: 'design:safety-prompts',
+    sourceNote: 'Net-new — designed Claude-native, per spec §30/Appendix C and docs/SAFETY_SYSTEM_DESIGN.md (see safety-prompts.seed.ts).',
   },
 ]
 

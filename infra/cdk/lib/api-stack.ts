@@ -10,6 +10,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda-nodejs'
 import { Runtime } from 'aws-cdk-lib/aws-lambda'
 import * as events from 'aws-cdk-lib/aws-events'
 import * as targets from 'aws-cdk-lib/aws-events-targets'
+import * as sns from 'aws-cdk-lib/aws-sns'
 import { CfnOutput } from 'aws-cdk-lib'
 import * as path from 'path'
 import { Construct } from 'constructs'
@@ -161,6 +162,22 @@ export class ApiStack extends Stack {
     // real Lambda timeout, not a swallowed Gateway timeout.
     const bedrockCallTimeout = Duration.seconds(29)
 
+    // Safety alert topic (Session 29, ADR 0012 decision #3) — a live alert
+    // on a real `immediate_danger` detection, since there is no other
+    // crisis-response backstop during the current founder-only internal-
+    // testing phase (ADR 0007). Deliberately NO email subscription declared
+    // here, matching the AWS Budgets alert precedent (Session 4): a real
+    // person's email address isn't committed into version-controlled
+    // infrastructure code. Subscribe an address post-deploy via
+    // `aws sns subscribe --topic-arn <this topic's ARN> --protocol email
+    // --notification-endpoint <address>` (confirmation email required
+    // before it activates) — see docs/AGENT_LOG.md Session 29 for the
+    // exact command once run.
+    const safetyAlertTopic = new sns.Topic(this, 'SafetyAlertTopic', {
+      topicName: 'dpnr-safety-alerts',
+      displayName: 'DPNR safety alerts',
+    })
+
     const dashboardFn = new lambda.NodejsFunction(this, 'DashboardFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/dashboard/handler.ts'),
@@ -176,6 +193,7 @@ export class ApiStack extends Stack {
         ...sharedProductLambdaProps.environment,
         PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
         LIBRARY_CATALOG_TABLE_NAME: props.libraryCatalogTable.tableName,
+        SAFETY_ALERT_TOPIC_ARN: safetyAlertTopic.topicArn,
       },
       description: 'POST /v1/companion/message — chat turn + real Bedrock call with topic-routing directive.',
     })
@@ -183,6 +201,7 @@ export class ApiStack extends Stack {
     props.promptRegistryTable.grantReadData(companionMessageFn)
     props.libraryCatalogTable.grantReadData(companionMessageFn)
     grantBedrockConverse(companionMessageFn)
+    safetyAlertTopic.grantPublish(companionMessageFn)
 
     const companionContextFn = new lambda.NodejsFunction(this, 'CompanionContextFn', {
       ...sharedProductLambdaProps,
@@ -776,5 +795,6 @@ export class ApiStack extends Stack {
     })
 
     new CfnOutput(this, 'ApiUrl', { value: this.httpApi.apiEndpoint })
+    new CfnOutput(this, 'SafetyAlertTopicArn', { value: safetyAlertTopic.topicArn })
   }
 }

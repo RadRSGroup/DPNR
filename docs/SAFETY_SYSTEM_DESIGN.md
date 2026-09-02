@@ -187,14 +187,25 @@ alternative is no safety coverage at all — a cheaper/faster classifier model i
 Mirrors the staging discipline Session 28 used for the crypto contract work (small, verifiable, independently
 committable stages):
 
-1. **Stage 1 — data model + classification pipeline, Companion only.** `SafetyEventItem` schema (with the
-   90-day TTL from §5's decision), new `safety` Prompt Registry domain (`classify_safety_state`, plus
-   `respond_concern`/`respond_danger` for the two crisis states using §5's generic locale-agnostic content),
-   `classifySafety()` helper, wired into `companion/message.ts`. Companion is the highest-traffic, most
-   open-ended surface — the single best place to prove the mechanism works before extending it. Also includes
-   the `immediate_danger` live-alert mechanism from §5 — likely an SNS topic + email subscription, reusing the
-   pattern already set up for `dpnr-monthly-dev-budget` (Session 4), triggered from the same code path that
-   writes the `SafetyEventItem`.
+1. **Stage 1 — DONE, deployed, live-verified (2026-09-02).** `SafetyEventItem` schema (90-day TTL, ADR 0012)
+   in `packages/shared-types/src/dynamo/safety.ts`; new `safety` Prompt Registry domain
+   (`infra/cdk/scripts/safety-prompts.seed.ts`: `classify_safety_state` forced-tool-use, plus
+   `respond_concern`/`respond_danger` plain-text prompts using §5's generic locale-agnostic content);
+   `classifySafety()`/`generateSafetyResponse()` in `infra/cdk/lambda/lib/safety.ts`; wired into
+   `companion/message.ts` ahead of the normal reply path. `dpnr-safety-alerts` SNS topic
+   (`infra/cdk/lib/api-stack.ts`) fires on `immediate_danger` specifically, per ADR 0012 — email subscription
+   added post-deploy via `aws sns subscribe` (not committed into CDK source, matching the `dpnr-monthly-dev-budget`
+   precedent). `dpnr-application`'s table definition gained `timeToLiveAttribute: 'ttl'` (online, non-replacing
+   change) so `SafetyEventItem`'s TTL actually expires rows. **Live-verified against real deployed AWS** with a
+   throwaway Cognito user: a normal message passed through unaffected (no `SafetyEventItem` written); a
+   passive-ideation message correctly classified `safety_concern` (confidence 0.92, reasonCodes
+   `passive_suicidal_ideation`/`hopelessness_statement`/`burden_belief`) and produced a calm, generic,
+   non-alarmist reply with no specific hotline named; an active-plan message correctly classified
+   `immediate_danger` (confidence 1.0) and produced an urgent-but-calm reply directing to immediate human help.
+   The SNS publish itself succeeded (clean Lambda logs, no errors) but the subscribed email address hadn't
+   confirmed its SNS subscription yet at verification time — real alert *delivery* end-to-end (not just
+   publish) remains to be confirmed once that confirmation happens. All test data deleted and confirmed gone
+   afterward. See `docs/AGENT_LOG.md` Session 29 part 5 for the full account.
 2. **Stage 2 — wire into Rooms.** `command.ts` dispatcher gets the same classification call on free-text input
    fields, plus the new `safetyIntervention` response branch and the corresponding
    `StepShell.tsx`/`MirrorStepShell.tsx` UI.

@@ -17,6 +17,7 @@
     "@aws-sdk/client-bedrock-runtime": "^3.658.0",
     "@aws-sdk/client-dynamodb": "^3.658.0",
     "@aws-sdk/client-secrets-manager": "^3.1117.0",
+    "@aws-sdk/client-sns": "^3.1124.0",
     "@aws-sdk/lib-dynamodb": "^3.658.0",
     "@dpnr/shared-types": "*",
     "aws-cdk-lib": "^2.160.0",

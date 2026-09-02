@@ -43,6 +43,7 @@ export const Sk = {
   libraryProgress: (topicSlug: string): string => `LIBRARY#PROGRESS#${topicSlug}`,
   usage: (billingPeriod: string): string => `USAGE#${billingPeriod}`,
   promptOverlay: (domain: string): string => `PROMPT_OVERLAY#${domain}`,
+  safetyEvent: (eventId: string): string => `SAFETY#EVENT#${eventId}`,
 } as const
 
 /** Global (not per-user) tables — see MVP_ARCHITECTURE.md §3.2. */

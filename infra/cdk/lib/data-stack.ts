@@ -40,12 +40,21 @@ export class DataStack extends Stack {
     // one table GDPR export/erasure and disaster recovery actually care
     // about. No GSIs yet — add one only when a concrete query pattern
     // needs it, not speculatively.
+    //
+    // `timeToLiveAttribute: 'ttl'` (Session 29, ADR 0012) — enabling TTL is
+    // an online, non-replacing DynamoDB operation; every existing item
+    // without a `ttl` attribute is completely unaffected and never expires.
+    // Added specifically for `SafetyEventItem`'s 90-day retention
+    // (packages/shared-types/src/dynamo/safety.ts) — the only item family
+    // that sets this attribute today. Any future item type is free to reuse
+    // the same `ttl` attribute name for its own expiry.
     this.applicationTable = new dynamodb.Table(this, 'ApplicationTable', {
       tableName: 'dpnr-application',
       partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
+      timeToLiveAttribute: 'ttl',
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       removalPolicy,
     })
