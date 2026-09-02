@@ -2,6 +2,7 @@ import { Stack, StackProps, Duration } from 'aws-cdk-lib'
 import * as apigwv2 from 'aws-cdk-lib/aws-apigatewayv2'
 import * as authorizers from 'aws-cdk-lib/aws-apigatewayv2-authorizers'
 import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations'
+import * as bedrock from 'aws-cdk-lib/aws-bedrock'
 import * as cognito from 'aws-cdk-lib/aws-cognito'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager'
@@ -27,6 +28,22 @@ const BEDROCK_INFERENCE_PROFILE_ID = 'us.anthropic.claude-sonnet-4-5-20250929-v1
 const BEDROCK_FOUNDATION_MODEL_ID = 'anthropic.claude-sonnet-4-5-20250929-v1:0'
 /** The `us.` prefix is a cross-region inference profile spanning these three regions — Bedrock requires the underlying foundation-model ARNs be authorized too, not just the profile ARN itself. */
 const BEDROCK_INFERENCE_PROFILE_REGIONS = ['us-east-1', 'us-east-2', 'us-west-2']
+
+/**
+ * Second model in use as of Session 29 Stage 4 — `classify_safety_state`
+ * only (safety-prompts.seed.ts), everything else stays on the Sonnet
+ * constants above. Confirmed live-invokable (including forced tool-use) via
+ * direct `bedrock-runtime converse` calls before switching this prompt to
+ * it. This constant existing separately, exactly per the comment above,
+ * is what should have prevented the real gap this stage's own first deploy
+ * attempt hit: `grantBedrockConverse` only ever authorized the Sonnet
+ * resources, so the Lambda's IAM role had no `bedrock:InvokeModel` grant for
+ * this model at all — every classify_safety_state call failed with
+ * AccessDenied and silently degraded to the `normal` fallback (by design,
+ * per lib/safety.ts's own failure-mode comment) until this was added.
+ */
+const BEDROCK_HAIKU_INFERENCE_PROFILE_ID = 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+const BEDROCK_HAIKU_FOUNDATION_MODEL_ID = 'anthropic.claude-haiku-4-5-20251001-v1:0'
 
 export interface ApiStackProps extends StackProps {
   userPool: cognito.UserPool
@@ -155,6 +172,27 @@ export class ApiStack extends Stack {
       )
     }
 
+    /**
+     * Separate, narrowly-scoped grant for `classify_safety_state`'s Haiku
+     * model (Session 29 Stage 4) — only companionMessageFn/roomsCommandFn
+     * call `lib/safety.ts`'s `classifySafety()`, so only they need this,
+     * unlike `grantBedrockConverse` above which several unrelated functions
+     * (libraryTopicDetailFn, companionContextFn, ...) also call for Sonnet.
+     */
+    const grantHaikuConverse = (fn: lambda.NodejsFunction) => {
+      fn.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
+          resources: [
+            `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/${BEDROCK_HAIKU_INFERENCE_PROFILE_ID}`,
+            ...BEDROCK_INFERENCE_PROFILE_REGIONS.map(
+              (region) => `arn:aws:bedrock:${region}::foundation-model/${BEDROCK_HAIKU_FOUNDATION_MODEL_ID}`
+            ),
+          ],
+        })
+      )
+    }
+
     // Every product Lambda defaults to the Lambda-wide 3s timeout unless
     // overridden — fine for pure DynamoDB reads/writes, but a real Bedrock
     // Converse call will not complete in 3s. 29s stays under the HTTP API
@@ -178,6 +216,116 @@ export class ApiStack extends Stack {
       displayName: 'DPNR safety alerts',
     })
 
+    /**
+     * Safety Guardrail (Session 29 Stage 4, docs/SAFETY_SYSTEM_DESIGN.md §7)
+     * — native Bedrock Guardrails as defense-in-depth alongside the
+     * `classify_safety_state` prompt (lib/safety.ts), not a replacement for
+     * it. Every filter/topic below is deliberately `NONE` (detect-only): no
+     * calibration data exists yet for what threshold should actually block
+     * vs. just log (spec Appendix D: "exact detection thresholds must be
+     * versioned and adjustable after controlled testing"), and this project
+     * already has one primary suspend-routing mechanism (the classifier's
+     * own `suspendDeepWork`) — a second, uncoordinated, uncalibrated
+     * blocking layer risks confusing double-intervention, not added safety.
+     * `blockedInputMessaging`/`blockedOutputsMessaging` are required fields
+     * but should never actually surface to a user while every action stays
+     * `NONE`; worded the same generic, no-named-service way as ADR 0012
+     * decision #1's crisis-response prompts in case that ever changes.
+     *
+     * Content filters cover Bedrock's four built-in harmful-content
+     * categories (HATE/INSULTS/SEXUAL/VIOLENCE) plus MISCONDUCT and
+     * PROMPT_ATTACK — general-purpose coverage with no DPNR-specific
+     * meaning. `guardrails-filters.html` has no built-in self-harm/suicide
+     * category, so that (the actually safety-relevant one for this product)
+     * is a custom denied topic instead, matching the pattern Bedrock's own
+     * docs recommend for anything outside the six built-in categories.
+     * `HIGH` strength/no-op action = maximum detection sensitivity purely
+     * for the trace signal, since nothing here blocks yet.
+     */
+    const safetyGuardrail = new bedrock.CfnGuardrail(this, 'SafetyGuardrail', {
+      name: 'dpnr-safety-guardrail',
+      description:
+        'Defense-in-depth alongside classify_safety_state (SAFETY_SYSTEM_DESIGN.md Stage 4). Detect-only — ' +
+        'every action is NONE; feeds model-call.ts structural CloudWatch logging, never blocks a request.',
+      blockedInputMessaging:
+        "I'm not able to continue with that right now. If anything feels urgent or unsafe, please reach out to " +
+        'a trusted person, a qualified professional, or your local emergency services.',
+      blockedOutputsMessaging:
+        "I'm not able to continue with that right now. If anything feels urgent or unsafe, please reach out to " +
+        'a trusted person, a qualified professional, or your local emergency services.',
+      contentPolicyConfig: {
+        // PROMPT_ATTACK is input-only per Bedrock's own validation (a real
+        // CREATE_FAILED caught this live, not a docs-read guess) — prompt
+        // injection is something a user sends, not something a model
+        // "outputs," so its output side is disabled entirely rather than
+        // just set to NONE strength (which Bedrock still rejects for this
+        // one type).
+        filtersConfig: (['HATE', 'INSULTS', 'MISCONDUCT', 'PROMPT_ATTACK', 'SEXUAL', 'VIOLENCE'] as const).map(
+          (type) =>
+            type === 'PROMPT_ATTACK'
+              ? {
+                  type,
+                  inputStrength: 'HIGH',
+                  outputStrength: 'NONE',
+                  inputAction: 'NONE',
+                  outputAction: 'NONE',
+                  inputEnabled: true,
+                  outputEnabled: false,
+                }
+              : {
+                  type,
+                  inputStrength: 'HIGH',
+                  outputStrength: 'HIGH',
+                  inputAction: 'NONE',
+                  outputAction: 'NONE',
+                  inputEnabled: true,
+                  outputEnabled: true,
+                }
+        ),
+      },
+      topicPolicyConfig: {
+        topicsConfig: [
+          {
+            name: 'self_harm_and_suicide',
+            type: 'DENY',
+            definition:
+              'Content describing suicidal ideation, an intent or plan to harm oneself, or an intent or plan ' +
+              'to harm someone else.',
+            examples: [
+              "I don't want to be here anymore and I have a plan to end my life.",
+              "I've been hurting myself and I don't want to stop.",
+              "I'm going to hurt someone and I know how I'd do it.",
+            ],
+            inputAction: 'NONE',
+            outputAction: 'NONE',
+            inputEnabled: true,
+            outputEnabled: true,
+          },
+        ],
+      },
+    })
+
+    /**
+     * Applying a guardrail via `guardrailConfig` on Converse needs its own
+     * IAM action (distinct from `bedrock:InvokeModel`) scoped to the
+     * guardrail's own ARN — using the DRAFT version directly (no separate
+     * `CfnGuardrailVersion` resource) matches this MVP's "small, working
+     * increments" bias; a published numbered version is a reversible
+     * follow-up once the config has been live for a while, not a blocker now.
+     */
+    const grantApplyGuardrail = (fn: lambda.NodejsFunction) => {
+      fn.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ['bedrock:ApplyGuardrail'],
+          resources: [safetyGuardrail.attrGuardrailArn],
+        })
+      )
+    }
+    const safetyGuardrailEnv = {
+      SAFETY_GUARDRAIL_ID: safetyGuardrail.attrGuardrailId,
+      SAFETY_GUARDRAIL_VERSION: 'DRAFT',
+    }
+
     const dashboardFn = new lambda.NodejsFunction(this, 'DashboardFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/dashboard/handler.ts'),
@@ -194,6 +342,7 @@ export class ApiStack extends Stack {
         PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
         LIBRARY_CATALOG_TABLE_NAME: props.libraryCatalogTable.tableName,
         SAFETY_ALERT_TOPIC_ARN: safetyAlertTopic.topicArn,
+        ...safetyGuardrailEnv,
       },
       description: 'POST /v1/companion/message — chat turn + real Bedrock call with topic-routing directive.',
     })
@@ -202,6 +351,8 @@ export class ApiStack extends Stack {
     props.libraryCatalogTable.grantReadData(companionMessageFn)
     grantBedrockConverse(companionMessageFn)
     safetyAlertTopic.grantPublish(companionMessageFn)
+    grantApplyGuardrail(companionMessageFn)
+    grantHaikuConverse(companionMessageFn)
 
     const companionContextFn = new lambda.NodejsFunction(this, 'CompanionContextFn', {
       ...sharedProductLambdaProps,
@@ -374,6 +525,7 @@ export class ApiStack extends Stack {
         ...sharedProductLambdaProps.environment,
         PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
         SAFETY_ALERT_TOPIC_ARN: safetyAlertTopic.topicArn,
+        ...safetyGuardrailEnv,
       },
       description: 'POST /v1/rooms/{decision,mirror} — flow-engine command endpoint (one Lambda, dispatches on flowId).',
     })
@@ -381,6 +533,8 @@ export class ApiStack extends Stack {
     props.promptRegistryTable.grantReadData(roomsCommandFn)
     grantBedrockConverse(roomsCommandFn)
     safetyAlertTopic.grantPublish(roomsCommandFn)
+    grantApplyGuardrail(roomsCommandFn)
+    grantHaikuConverse(roomsCommandFn)
 
     const decisionFullFn = new lambda.NodejsFunction(this, 'DecisionFullFn', {
       ...sharedProductLambdaProps,
@@ -798,5 +952,6 @@ export class ApiStack extends Stack {
 
     new CfnOutput(this, 'ApiUrl', { value: this.httpApi.apiEndpoint })
     new CfnOutput(this, 'SafetyAlertTopicArn', { value: safetyAlertTopic.topicArn })
+    new CfnOutput(this, 'SafetyGuardrailId', { value: safetyGuardrail.attrGuardrailId })
   }
 }

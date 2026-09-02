@@ -126,7 +126,7 @@ function buildVersionItem(
       // yet granted for this account; request it in the Bedrock console's
       // Model access page if/when upgrading past 4.5, then re-verify with
       // the same converse-call method before changing this value.
-      model: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+      model: seed.model ?? 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
       temperature: 0.7,
       maxTokens: seed.outputSchema ? 600 : 500, // matches aiCallJSON vs aiCall's limits — unchanged, no evidence Claude needs more headroom here
     },

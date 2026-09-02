@@ -62,6 +62,14 @@ export interface PromptSeed {
   variables: string[]
   outputSchema?: Record<string, unknown>
   notes?: string
+  /**
+   * Per-prompt model override — every prompt defaulted to the same shared
+   * Sonnet 4.5 inference profile (seed-prompt-registry.ts's own constant)
+   * until Session 29's safety-system Stage 4 cost-optimization work needed
+   * a cheaper/faster model for one specific prompt without moving every
+   * other domain onto it. Omit to keep the shared default.
+   */
+  model?: string
 }
 
 export const DECISION_ROOM_PROMPT_SEEDS: PromptSeed[] = [

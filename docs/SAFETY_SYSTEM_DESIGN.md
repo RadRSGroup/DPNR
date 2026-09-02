@@ -256,10 +256,50 @@ committable stages):
    the step still advances normally (`safetyIntervention: null`, `nextStepId` set) — proving the "detect only,
    don't act" scope boundary is real, not just documented intent. All test data deleted and confirmed gone
    afterward. See `docs/AGENT_LOG.md` Session 29 for the full account.
-4. **Stage 4 (optional, later) — native Bedrock Guardrails as defense-in-depth**, cost optimization (evaluate a
-   cheaper classifier model), and threshold calibration once real usage data exists — matches spec's own
-   Appendix D backlog framing ("exact detection thresholds must be versioned and adjustable after controlled
-   testing").
+4. **Stage 4 — DONE, deployed, live-verified (2026-09-02, same day as Stages 1-3).** Native Bedrock Guardrails
+   as defense-in-depth (`infra/cdk/lib/api-stack.ts`'s `SafetyGuardrail`: HATE/INSULTS/MISCONDUCT/PROMPT_ATTACK/
+   SEXUAL/VIOLENCE content filters at `HIGH` strength plus a custom `self_harm_and_suicide` denied topic —
+   every filter/topic action is `NONE`/detect-only, so this never blocks a request, it only feeds
+   `model-call.ts`'s new `logGuardrailIntervention()`, a structural, content-free CloudWatch line (filter/topic
+   type, confidence, action — never the assessed text itself, matching this project's "no raw payloads in
+   logs" guardrail). Wired only into `lib/safety.ts`'s two calls (`classifySafety`/`generateSafetyResponse`),
+   not the other 8 Prompt Registry domains — this is deliberately scoped to the safety pipeline itself, not a
+   product-wide moderation layer. Cost optimization: `classify_safety_state` alone (not the `respond_*`
+   prompts) now runs on Claude Haiku 4.5 instead of Sonnet 4.5 — validated first via a real 6-case
+   side-by-side comparison against both models (one message per safety state) before switching: identical
+   `safetyState` on all 6 cases, ~45% lower latency, meaningfully cheaper. One honest, documented gap from
+   that comparison: Haiku set `suspendDeepWork:true` on the `overload` case where Sonnet correctly set it
+   `false` — currently harmless since no caller reads that field for `overload`, flagged in
+   `safety-prompts.seed.ts`'s own comment for anyone who starts reading it later. Threshold calibration itself
+   is still explicitly NOT done — no real usage data exists yet (only throwaway founder-test traffic), matching
+   spec Appendix D's own "adjustable after controlled testing" framing; the new Guardrail telemetry from this
+   stage is what a future session would actually calibrate against, once real data exists.
+   **A real production bug was found and fixed during this stage's own live-verification, not by design
+   review** — the first deploy attempt authorized the Haiku model/inference-profile ARNs nowhere in IAM
+   (`grantBedrockConverse` only ever covered the Sonnet resources), so every `classify_safety_state` call
+   failed `AccessDenied` and silently degraded to the spec-mandated `normal` fallback
+   (`lib/safety.ts`'s own documented failure behavior) — meaning **the entire safety classification pipeline
+   was non-functional for the ~9 minutes between that deploy and the fix**, confirmed via real throwaway-user
+   traffic during that exact window (a "safety_concern" test message got a generic, off-topic reply; a real
+   "immediate_danger" message got a reply that improvised crisis language including named hotlines — 988,
+   741741 — because it went through the **normal** Companion path, not the designed `respond_danger` prompt,
+   purely because Sonnet's own general safety training organically surfaced US-specific hotline numbers when
+   given free rein; this is what actually violated ADR 0012 decision #1's "never name a specific hotline"
+   rule, not a defect in `respond_danger`/`respond_concern`'s own prompt text). Fixed with a second, narrowly-
+   scoped `grantHaikuConverse` helper (mirroring `grantBedrockConverse`, applied only to
+   `companionMessageFn`/`roomsCommandFn` — the two functions that actually call `classifySafety`), redeployed,
+   and re-verified: zero `AccessDenied` errors afterward, real `SafetyEventItem` rows persisted with correct
+   states/confidences/reason codes for `safety_concern`/`immediate_danger`, and crisis responses reverted to
+   fully generic language with zero named hotlines once the intended prompt path actually ran. A second, much
+   smaller deploy-time fix: Bedrock rejects `PROMPT_ATTACK`'s output side at anything but `NONE`/disabled
+   (prompt injection is an input-only concept) — caught by a real `CREATE_FAILED` on the first deploy attempt,
+   not by reading docs first.
+   **This is the practical lesson worth carrying forward**: a model swap on a safety-critical classification
+   path needs its own IAM grant verified as part of the SAME deploy, not assumed to ride along on an existing
+   grant scoped to a different model — the existing `BEDROCK_INFERENCE_PROFILE_ID` comment in `api-stack.ts`
+   already said "if a future prompt is seeded against a different model, extend the resources... rather than
+   widening to a blanket wildcard," which is exactly the gap this session's first attempt fell into by adding
+   the model swap without reading that comment's own instruction closely enough.
 
 ## 8. How to know it's actually done
 

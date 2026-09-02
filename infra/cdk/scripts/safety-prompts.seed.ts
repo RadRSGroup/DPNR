@@ -78,6 +78,24 @@ Classify only — do not add commentary, advice, or a reply to the person.`,
 The person's latest message:
 "{{currentMessage}}"`,
     variables: ['recentConversation', 'currentMessage'],
+    // Stage 4 cost optimization (docs/SAFETY_SYSTEM_DESIGN.md §7) — every
+    // other prompt in this file stays on the shared Sonnet 4.5 default;
+    // this is the one call moved to a cheaper/faster model, and only after
+    // direct side-by-side validation, not just "cheaper is available."
+    // Confirmed live (Session 29 Stage 4) via a throwaway 6-case comparison
+    // spanning all six safety states run against both
+    // us.anthropic.claude-sonnet-4-5-20250929-v1:0 and this model: identical
+    // safetyState on all 6 cases (the field every caller actually branches
+    // on), ~45% lower latency (~1.6s vs ~3.1s average), and materially
+    // cheaper per Anthropic's published per-token pricing. One real,
+    // documented gap found: Haiku set suspendDeepWork:true for the overload
+    // case where Sonnet correctly set it false (the prompt's own rule says
+    // true only for safety_concern/immediate_danger) — currently harmless,
+    // since no caller reads suspendDeepWork for overload (Stage 3's
+    // Companion-only wiring branches on safetyState alone; Rooms doesn't
+    // act on overload/high_stakes at all yet), but worth re-checking if a
+    // future stage ever starts reading that field for these two states.
+    model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
     outputSchema: {
       type: 'object',
       required: ['safetyState', 'confidence', 'reasonCodes', 'requiresHumanSupport', 'suspendDeepWork', 'localeSupportNeeded'],

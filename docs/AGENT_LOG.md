@@ -8,6 +8,49 @@ This project has **no human development team**. It is built entirely by Claude C
 
 > You're picking up work on DPNR (`C:\Users\rekkawi\decision-room`), a personal-development product built entirely by Claude Code agents — no human dev team, real engineering discipline expected anyway. Before doing anything else, read `docs/AGENT_LOG.md` in full, then `docs/MVP_ARCHITECTURE.md`, then `docs/adr/`, then `docs/PHASE_AUDIT.md`, then `docs/INTELLIGENCE_SPEC_AUDIT.md` (new as of Session 29 — compares the new `docs/DPNR_operating_spec_principles.pdf` intelligence spec against the live codebase; that PDF now ranks above `MVP_ARCHITECTURE.md` in doc authority) — don't relitigate a settled ADR.
 >
+> **Status (Session 30 — read this first, it's the live thread)**: user chose Stage 4 of the safety system (the
+> one item Session 29 explicitly left as an open question — see that status paragraph below). **Stage 4 is
+> now DONE, deployed, and live-verified — the safety system's full 4-stage plan is code-complete.** Full detail
+> in `docs/SAFETY_SYSTEM_DESIGN.md` §7's Stage 4 entry (read that, not just this summary, before touching the
+> safety system again). Short version: native Bedrock Guardrails added as a detect-only defense-in-depth layer
+> (`api-stack.ts`'s new `SafetyGuardrail` — every filter/topic action is `NONE`, so it never blocks; it only
+> feeds a new structural, content-free CloudWatch log line), and `classify_safety_state` alone moved to Claude
+> Haiku 4.5 for cost/latency (validated first via a real 6-case side-by-side vs. Sonnet 4.5 — identical
+> `safetyState` on all 6, ~45% faster; one harmless, documented field-level discrepancy on `overload`'s
+> `suspendDeepWork`, see the design doc). Threshold calibration itself is still explicitly not done — no real
+> usage data exists yet, only founder-test traffic; that's the honest, undone part of Stage 4, not an oversight.
+>
+> **A real production bug was found and fixed during this stage's own live-verification — read this before
+> assuming any future model swap on a safety-critical path is safe by default.** The first deploy attempt
+> never granted the Lambda's IAM role `bedrock:InvokeModel` on the new Haiku model (only the pre-existing
+> Sonnet grant existed), so `classify_safety_state` failed `AccessDenied` on every single call and silently
+> degraded to the spec-mandated `normal` fallback — **the entire safety classification pipeline was
+> non-functional for about 9 minutes**, confirmed via real throwaway-traffic during that exact window: a
+> "safety_concern" test got a generic off-topic reply, and a real "immediate_danger" test got a reply that
+> named specific hotlines (988, 741741) — a direct ADR 0012 decision #1 violation — because it went through
+> the **normal** Companion path instead of the designed `respond_danger` prompt, purely because Sonnet's own
+> general safety training surfaced US-specific crisis numbers when nothing routed it to the constrained prompt
+> that explicitly forbids that. Fixed with a second, narrowly-scoped `grantHaikuConverse` IAM helper, redeployed,
+> and re-verified for real: zero `AccessDenied` afterward, real `SafetyEventItem` rows persisted with correct
+> states/confidences, and crisis responses reverted to fully generic language with zero named hotlines. A
+> smaller second deploy-time catch: Bedrock rejects `PROMPT_ATTACK`'s output-side filter at anything but
+> `NONE`/disabled (prompt injection has no "output" concept) — a real `CREATE_FAILED`, not a docs-read guess.
+> No new ADR — this is a bugfix against ADR 0012's already-decided intent, not a new product decision.
+>
+> **With the safety system's 4-stage plan now fully done, there's no more pre-scoped work queued specifically
+> for it.** Ask the user what's next — the Intelligence Spec audit's own suggested order (from Session 29,
+> still current) is: signal-model enrichment (`TwinSignalItemSchema` missing `direction`/`strength`-as-distinct-
+> from-`confidence`/`reason_code`/`prompt_ref`/`model_ref`), then §17's Living System behaviors (`OpenThread`,
+> named Roadmap lifecycle states, current-interaction-mode inference — none exist yet, the biggest net-new
+> build left in the whole spec), then everything else in `INTELLIGENCE_SPEC_AUDIT.md`'s table. Also unresolved,
+> lower-priority: the Life Domains taxonomy mismatch (7 in code vs. 8 in spec), and the `lital@be-dpnr.com` SNS
+> subscription's confirmation status (unchanged since Session 29 — still worth checking before assuming a real
+> `immediate_danger` alert would reach anyone; recheck with `aws sns list-subscriptions-by-topic --topic-arn
+> arn:aws:sns:us-east-1:346866989957:dpnr-safety-alerts`).
+>
+> Session 28's Phase 6 crypto work is still completely untouched and still sitting uncommitted (unchanged since
+> Session 29 — check `git status`/`git log` directly rather than trusting any session's prior claim about it).
+>
 > **Status (Session 29 — read this first, it's the live thread and it changes what "done" means for Digital Twin/signals/scoring/safety/routing going forward)**: A new top-tier source document landed this session — `docs/DPNR_operating_spec_principles.pdf` ("DPNR — Product Intelligence & AI Operating Specification," v1.6, 40 pages, 33 sections) — and ranks **above** `MVP_ARCHITECTURE.md` in its own stated conflict-precedence (below only privacy/safety/healthy-use rules). Read it via `docs/INTELLIGENCE_SPEC_AUDIT.md` first (a full section-by-section comparison against the live codebase, written this session) rather than the raw PDF, unless you need the exact source wording. That audit found three critical findings; **all three are now resolved.**
 >
 > **Finding #2 — `/twin` ("InnerSelf") contradicted spec §6's "no separate InnerSelf destination for MVP."** Resolved: `/twin` now redirects to `/dashboard`; its confirm/reject calibration UI moved to a new contextual `TwinCalibrationCard` on Dashboard. **ADR 0010.** Live-verified against real deployed AWS.
@@ -130,56 +173,40 @@ This project has **no human development team**. It is built entirely by Claude C
 
 *(This section is overwritten every session with the current, precise handoff. Do not append to it — replace it. As of Session 11, the long per-session condensed narrative that used to accumulate here was removed — every one of those sessions' full detail already lives in Session History below, verbatim; condensing it a second time up here had drifted from this section's own "replace it" rule for several sessions running. Keep this section to current status + what's next; look in Session History for how we got here.)*
 
-**Session 29 (read this first — it's the live thread and it changes what "done" means going forward):** a new
-top-tier source document landed this session, `docs/DPNR_operating_spec_principles.pdf` ("DPNR — Product
-Intelligence & AI Operating Specification" v1.6) — it ranks **above** this architecture doc in its own
-precedence table (below only privacy/safety/healthy-use rules) and is explicitly "IMPLEMENTATION TRUTH FOR
-RAD + CLAUDE CODE." **Read `docs/INTELLIGENCE_SPEC_AUDIT.md` before touching Digital Twin, signals, scoring,
-Growth Tracker, Evolution Map, Companion routing, safety/crisis language, or Wallet rewards** — it's a full
-section-by-section comparison of the spec against the live codebase.
+**Session 30 (read this first — it's the live thread):** the safety system's 4-stage plan is now **completely
+done** — Stage 4 (native Bedrock Guardrails as detect-only defense-in-depth + `classify_safety_state` moved to
+Claude Haiku 4.5 for cost/latency, validated first via a real side-by-side vs. Sonnet) is built, deployed, and
+live-verified. Full detail in `docs/SAFETY_SYSTEM_DESIGN.md` §7's Stage 4 entry — **read it before touching the
+safety system again**, especially the real production bug it documents: the first deploy attempt never granted
+IAM for the new Haiku model, so the classifier silently failed and fell back to `normal` for ~9 minutes,
+during which a real "immediate_danger" test got a reply naming specific hotlines (a real ADR 0012 violation)
+purely because it fell through to the unconstrained normal Companion path instead of the designed
+`respond_danger` prompt. Fixed (`grantHaikuConverse` IAM grant), redeployed, and re-verified clean — zero
+`AccessDenied`, real `SafetyEventItem`s persisted correctly, crisis responses back to fully generic language.
+**Lesson for any future model swap on a safety-critical path: verify the new model's IAM grant in the SAME
+deploy, not as an assumed given** — `api-stack.ts`'s own pre-existing comment on `BEDROCK_INFERENCE_PROFILE_ID`
+already said this explicitly; this session's first attempt didn't follow its own codebase's warning closely
+enough. Threshold calibration (Stage 4's other named piece) is still genuinely not done — no real usage data
+exists yet, only founder-test traffic; the new Guardrail telemetry is what a future session would calibrate
+against once real data exists. No new ADR — this closes ADR 0012's already-decided intent, not a new decision.
+**With the safety system now fully done, there's no more pre-scoped work queued for it — ask the user what's
+next.** The Intelligence Spec audit's own suggested order (from Session 29, still current): signal-model
+enrichment, then §17's Living System behaviors, then everything else in `INTELLIGENCE_SPEC_AUDIT.md`'s table —
+see the condensed Session 29 pointer below for what those are. Session 28's Phase 6 crypto work is still
+completely untouched and uncommitted (unchanged again this session — verify directly, don't trust any prior
+claim).
 
-**Both of the audit's decidable critical findings are decided, built, deployed, and genuinely live-verified —
-don't re-litigate the decisions.** (2) `/twin` ("InnerSelf") is retired as a dedicated destination — it now
-redirects to `/dashboard`, and its confirm/reject calibration UI moved to a contextual `TwinCalibrationCard`
-on Dashboard (**ADR 0010**). (3) The Dashboard/My Evolution "Alignment Score" is now confidence-gated in code
-per spec §12 (insufficient/developing/eligible states; only shows a number when eligible) (**ADR 0011**). Both
-are deployed to `Dpnr-Api` and verified with real authenticated API calls against a throwaway Cognito user —
-including a same-session self-correction worth reading once (Session 29 part 2 first wrongly claimed ADR
-0011 was live-verified when the stack hadn't actually been redeployed yet; part 3 deployed it and re-verified
-for real, with a direct `fetch()` proving the exact `alignmentScoreState` transition — see ADR 0011's
-"Consequences" section for the full account, including both the correction and the real verification data).
-The one state not directly observed live is `developing` (thresholds met, confidence still low) — a real but
-low-risk gap per ADR 0011's own note, since the same formula was verified for `eligible`.
-
-**(1) No safety/crisis system exists — the one remaining critical finding, and the highest-priority gap in the
-whole spec by its own precedence — is now SCOPED, DECIDED, and Stages 1–3 of 4 are BUILT/DEPLOYED/LIVE-VERIFIED
-(Session 29 parts 4–7).** Read `docs/SAFETY_SYSTEM_DESIGN.md` in full before touching this again — it has the
-full architecture, the six-state contract from spec Appendix C, and the 4-stage build plan (Stages 1–3 done;
-Stage 4 open, explicitly optional/later). **ADR 0012** records the three decisions that had to escalate (all
-resolved): a generic locale-agnostic crisis-support message (explicitly time-boxed — ends the moment a
-non-founder user is invited to a live personal-content route, same trigger ADR 0007 uses), a 90-day TTL on
-`SafetyEventItem`, and a live SNS alert on `immediate_danger` specifically. **Stages 1 (Companion), 2 (Rooms
-crisis states), and 3 (Companion `high_stakes`/`overload`) are all real and live-verified against deployed
-AWS.** Stage 2's own investigation found something worth remembering for any future safety-adjacent work:
-`mirror-steps/pattern.ts` has zero AI touchpoint of its own, so classification had to be centralized in
-`rooms/command.ts`'s dispatcher rather than wrapped around individual model calls. Stage 3 made a real,
-deliberate scope decision worth reading before extending it further: `high_stakes`/`overload` are wired into
-Companion only — Rooms still classifies and logs both (unchanged since Stage 1: any non-`normal` state
-persists a `SafetyEventItem` regardless of surface) but doesn't act on them, since Rooms' only existing
-non-normal-state mechanism (Stage 2's full-suspend `safetyIntervention` branch) would wrongly strand a session
-over something as mild as "I need a break" — a real Rooms-side UI for these two softer states (e.g. triggering
-the existing time-based soft-stopping-cue modal early for `overload`) is genuine, scoped-out future work, not
-an oversight. See Session 29 parts 5–7's Session History entries for the exact classifications, confidences,
-and response text observed across all three stages. **One loose end, unchanged since part 5**: the
-`lital@be-dpnr.com` SNS subscription's confirmation status hasn't been re-checked since — check `aws sns
-list-subscriptions-by-topic --topic-arn arn:aws:sns:us-east-1:346866989957:dpnr-safety-alerts` before assuming
-alerts actually reach anyone; alert *publish* has now been proven working three separate times, *delivery*
-still needs that confirmation clicked. **Next session: Stage 4 (native Bedrock Guardrails, cost optimization,
-threshold calibration) is the last stage but is explicitly optional/later per the design doc — this is also a
-reasonable point to treat the safety system as "good enough for now" and move to something else, don't assume
-it must be finished. Ask the user which.** The audit doc's own suggested order after safety is fully done
-(signal-model enrichment, then §17's Living System behaviors, then everything else) — a suggestion, not a
-queued plan the way the 6-slice work was.
+**Session 29 (condensed pointer — full detail in Session History and in the "Prompt for next agent" section
+above): read a new top-tier source doc, `docs/DPNR_operating_spec_principles.pdf`, wrote
+`docs/INTELLIGENCE_SPEC_AUDIT.md` comparing it against the live codebase, and resolved all three critical
+findings it surfaced.** (2) `/twin` retired as a destination, redirects to `/dashboard`, calibration UI moved
+to a `TwinCalibrationCard` (**ADR 0010**). (3) The Alignment Score is now confidence-gated
+(insufficient/developing/eligible) per spec §12 (**ADR 0011** — including a real self-correction worth reading
+once, see that ADR's "Consequences" section). (1) The safety/crisis system gap — the highest-priority finding —
+was scoped (`docs/SAFETY_SYSTEM_DESIGN.md`), decided (**ADR 0012**), and Stages 1–3 of 4 were built that
+session; Stage 4 (this session's own work, above) is what completed it. See Session 29 parts 1–7's Session
+History entries for the full account of all of the above, including exact classifications/confidences/response
+text from Stages 1–3's own live verification.
 
 **Status:** AWS is deployed and real — account `346866989957` (`us-east-1`), `Dpnr-Data`/`Dpnr-Auth`/`Dpnr-Api` all deployed. All four original Golden Path workstreams (A/B/C/D) are done (Sessions 12–15); Digital Twin/Library frontends, Beta labeling, Roadmap-revision, a full spec-compliance pass, and Credits/Continuity/Grow payment integration are all done (Sessions 16–18, reconciled in Session 19 part 1). **UI redesign Phases 1–3 are all done** (Session 19 part 2, Session 20 parts 1–2) — see those Session History entries.
 
@@ -206,6 +233,91 @@ From there, wrote and got approval for a 6-slice plan, `C:\Users\rekkawi\.claude
 ---
 
 ## Session History
+
+### 2026-09-02 — Session 30: built, deployed, and live-verified Stage 4 of the safety system (Bedrock Guardrails + Haiku classifier) — found and fixed a real IAM regression along the way
+- Direct continuation of Session 29's own thread: the prior session's handoff explicitly left "Stage 4 or a
+  different priority" as an open question for the user. Asked directly via a structured question; the user
+  chose Stage 4 (native Bedrock Guardrails as defense-in-depth, cost optimization on the classification call,
+  threshold calibration once real usage data exists — `docs/SAFETY_SYSTEM_DESIGN.md` §7's own framing).
+- Read `docs/SAFETY_SYSTEM_DESIGN.md` and ADR 0012 in full before writing any code, per this project's own
+  protocol. Confirmed via `aws bedrock list-foundation-models` + a live `converse` call that Claude Haiku 4.5
+  (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) is real and invokable in this account, including forced
+  tool-use (the classifier's own calling convention) — not assumed from a model list alone.
+- **Validated the model swap before making it, not after**: wrote a throwaway 6-case comparison (one message
+  per safety state: normal/deep_reflection/overload/high_stakes/safety_concern/immediate_danger) run against
+  both Sonnet 4.5 (existing) and Haiku 4.5 through the real `classify_safety_state` system prompt verbatim.
+  Identical `safetyState` on all 6 cases for both models, Haiku ~45% faster (~1.6s vs. ~3.1s average). One
+  honest, small discrepancy found: Haiku set `suspendDeepWork:true` on the `overload` case where Sonnet
+  correctly followed the prompt's own rule and set it `false` — judged acceptable to proceed since no caller
+  currently reads `suspendDeepWork` for `overload` (Stage 3's Companion-only wiring branches on `safetyState`
+  alone), documented directly in `safety-prompts.seed.ts`'s own comment rather than silently accepted.
+- **Built**: a per-prompt `model` override on `PromptSeed`/`seed-prompt-registry.ts` (every other prompt still
+  defaults to the shared Sonnet 4.5 constant; only `classify_safety_state` now overrides to Haiku 4.5). A new
+  `bedrock.CfnGuardrail` (`infra/cdk/lib/api-stack.ts`'s `SafetyGuardrail`) — content filters for Bedrock's six
+  built-in categories at `HIGH` strength plus a custom `self_harm_and_suicide` denied topic (no built-in
+  self-harm category exists), every filter/topic action deliberately `NONE` (detect-only) since no calibration
+  data exists yet and this project already has one primary suspend-routing mechanism (the classifier's own
+  `suspendDeepWork`) — a second, uncoordinated, uncalibrated blocking layer was judged a real risk of confusing
+  double-intervention, not added safety, and documented as such directly in the CDK code's own comment. An
+  optional `guardrail` param threaded through `model-call.ts`'s `callPromptModel()` (only passed by
+  `lib/safety.ts`'s two calls, not the other 8 Prompt Registry domains) plus a new `logGuardrailIntervention()`
+  helper — structural, content-free CloudWatch logging (filter/topic type, confidence, action only; never
+  `GuardrailTraceAssessment.modelOutput` or any assessed text), matching this project's standing "no raw
+  payloads in logs" guardrail. `getSafetyGuardrailRef()` in `safety.ts` reads the guardrail id/version from the
+  environment internally (same pattern `SAFETY_ALERT_TOPIC_ARN` already used) — zero signature changes needed
+  in `companion/message.ts`/`rooms/command.ts`'s own call sites.
+- **First deploy attempt hit two real, AWS-side validation errors, not hypothetical ones**: (1) the Guardrail's
+  `Description` exceeded CloudFormation's 200-char max (shortened it); (2) Bedrock rejected `PROMPT_ATTACK`'s
+  output-side filter at anything but `NONE`/disabled — a real `CREATE_FAILED`, since prompt-injection detection
+  is an input-only concept with no "model output" equivalent — fixed by special-casing that one filter type to
+  `outputEnabled: false`/`outputStrength: 'NONE'` rather than the uniform `HIGH`/`NONE` every other filter uses.
+- **Found and fixed a real production regression during this stage's own live-verification, not by code
+  review**: the first successful deploy created the Guardrail and updated both Lambdas' env vars/grants for
+  `bedrock:ApplyGuardrail`, but never granted `bedrock:InvokeModel` on the new Haiku model/inference-profile
+  ARNs at all (`grantBedrockConverse` only ever authorized the pre-existing Sonnet resources — its own doc
+  comment already warned "if a future prompt is seeded against a different model, extend the resources below,"
+  a warning this session's first pass didn't follow closely enough). Every `classify_safety_state` call failed
+  `bedrock:InvokeModel` `AccessDenied` and silently degraded to the spec-mandated `normal` fallback (confirmed
+  directly in CloudWatch logs, not inferred) — meaning **real safety classification was non-functional for
+  about 9 minutes**, caught by this session's own live-traffic tests during that exact window: a
+  "safety_concern" test message got a generic, off-topic reply (the normal Companion path ran instead of the
+  intended safety-response path), and a real "immediate_danger" test message got a reply that named specific
+  hotlines (988, Crisis Text Line 741741) — a direct violation of ADR 0012 decision #1's "never name a specific
+  hotline" rule. Root cause once traced: the message went through the **unconstrained normal Companion prompt**
+  (which has no "don't name a hotline" instruction at all — only the dedicated `respond_concern`/`respond_danger`
+  prompts carry that constraint) because classification silently failed closed to `normal`; Sonnet's own general
+  safety training organically surfaced US-specific crisis numbers once nothing routed it to the constrained path.
+  **Fixed** with a second, narrowly-scoped `grantHaikuConverse` IAM helper (mirroring `grantBedrockConverse`,
+  applied only to `companionMessageFn`/`roomsCommandFn` — the two functions that actually call `classifySafety`/
+  `generateSafetyResponse`), redeployed, and re-verified for real: zero `AccessDenied` in CloudWatch afterward,
+  four real `SafetyEventItem` rows persisted with correct states/confidences/reason codes (`safety_concern`
+  ×2, `immediate_danger` ×2 — the classifier correctly read escalating conversation context across the test
+  session, including recognizing an ostensibly mild "I need a break" follow-up as still `immediate_danger`
+  given the live danger context already established, a genuinely good sign of context-awareness rather than a
+  bug), and every crisis response reverted to fully generic language with zero named hotlines, matching ADR
+  0012. Also confirmed the Guardrail itself fired correctly and cleanly: real `[safety-guardrail] intervened`
+  CloudWatch lines showing only structural fields (`self_harm_and_suicide` topic detected on the concerning
+  messages, `VIOLENCE`/`LOW` content-filter confidence on the most severe one) with every `action: 'NONE'` — 
+  detect-only confirmed live, not just configured that way.
+- Confirmed via direct IAM inspection (not just a green deploy) that both `CompanionMessageFn`'s and
+  `RoomsCommandFn`'s service-role policies carry all three grants (Sonnet, Haiku, `ApplyGuardrail`) post-fix.
+  Did not separately re-drive a full Rooms/Mirror session for this stage specifically — the underlying
+  `classifySafety`/`generateSafetyResponse` code path is identical and already proven end-to-end via Companion,
+  and Stage 2's own prior live-verification (Session 29) already proved Rooms' wiring mechanically; flagged
+  here as a disclosed scoping choice, not silently skipped.
+- `tsc --noEmit`, `cdk synth Dpnr-Api`, `apps/web` `eslint`/`next build` all clean throughout (25 routes,
+  unchanged — no frontend code touched this session). Test Cognito user, all DynamoDB rows (including the 4
+  real `SafetyEventItem`s), and the throwaway verification script all deleted/removed and confirmed gone.
+- Updated `docs/SAFETY_SYSTEM_DESIGN.md` §7's Stage 4 entry with the full account above (read that before
+  touching the safety system again) and this file's "Prompt for next agent"/"Next Agent — Start Here" sections.
+- No new ADR — the model choice and detect-only Guardrail default are reversible implementation details per
+  ADR 0012/spec §31's own carve-out (same precedent the design doc already set for "dedicated prompt over
+  native Guardrails" in Session 29); the IAM fix closes a bug against already-decided intent, not a new
+  decision.
+- Did not touch: threshold calibration (genuinely blocked on real usage data, not deferred by choice), any
+  other Intelligence Spec audit item, Session 28's still-uncommitted crypto work (confirmed untouched via
+  `git status`), or `docs/PHASE_AUDIT.md` (this isn't one of its tracked 7-phase items, matching precedent
+  since Session 22).
 
 ### 2026-09-01 — Session 29: read the new DPNR Intelligence Spec, wrote a full alignment audit (no code changes)
 - User attached `docs/DPNR_operating_spec_principles.pdf` (new to the repo, untracked) and asked to read it and

@@ -9,11 +9,26 @@ import {
   type SafetyClassification,
 } from '@dpnr/shared-types'
 import { resolvePromptVersion } from './prompt-registry'
-import { callPromptModel } from './model-call'
+import { callPromptModel, type GuardrailRef } from './model-call'
 
 const sns = new SNSClient({})
 
 const SAFETY_EVENT_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days, ADR 0012
+
+/**
+ * Stage 4 (docs/SAFETY_SYSTEM_DESIGN.md §7) — read directly from the
+ * environment, same "optional at the code level, wired by api-stack.ts on
+ * every Lambda that needs it" pattern `publishImmediateDangerAlert` below
+ * already uses for `SAFETY_ALERT_TOPIC_ARN`. Every filter/topic on the
+ * deployed guardrail is `NONE`/detect-only (see `api-stack.ts`'s
+ * `SafetyGuardrail`), so passing this is purely additive telemetry — see
+ * `model-call.ts`'s `callPromptModel` doc comment.
+ */
+function getSafetyGuardrailRef(): GuardrailRef | undefined {
+  const identifier = process.env.SAFETY_GUARDRAIL_ID
+  const version = process.env.SAFETY_GUARDRAIL_VERSION
+  return identifier && version ? { identifier, version } : undefined
+}
 
 // Stage 2 (Rooms) heuristic — a Room command's `input` is a flexible
 // Record<string, unknown> (packages/shared-types/src/api/command-contract.ts:
@@ -61,6 +76,12 @@ export function extractFreeTextForSafetyCheck(input: Record<string, unknown>): s
  * rather than either blocking the turn or guessing into a crisis state —
  * guessing wrong in the alarming direction on a parsing glitch would itself
  * be a bad, confusing experience for someone who said nothing concerning.
+ *
+ * Stage 4 also attaches a native Bedrock Guardrail (via
+ * `getSafetyGuardrailRef()` below, env-driven, no signature change needed
+ * here) as a second, independent signal alongside this prompt's own
+ * judgment — see `model-call.ts`'s `callPromptModel` doc comment for what
+ * it does and doesn't do (detect-only, never blocks).
  */
 export async function classifySafety(
   ddb: DynamoDBDocumentClient,
@@ -84,7 +105,7 @@ export async function classifySafety(
   let classification: SafetyClassification
   try {
     const version = await resolvePromptVersion(ddb, promptRegistryTableName, 'safety', 'classify_safety_state')
-    const result = await callPromptModel(version, { recentConversation, currentMessage })
+    const result = await callPromptModel(version, { recentConversation, currentMessage }, getSafetyGuardrailRef())
     if (typeof result === 'string') {
       console.error('Safety classification: prompt did not return forced tool-use output.')
       classification = fallback
@@ -158,10 +179,14 @@ export async function generateSafetyResponse(
   const promptName = SAFETY_RESPONSE_PROMPT_NAME[classification.safetyState]
   try {
     const version = await resolvePromptVersion(ddb, promptRegistryTableName, 'safety', promptName)
-    const result = await callPromptModel(version, {
-      currentMessage,
-      reasonCodes: classification.reasonCodes.join(', '),
-    })
+    const result = await callPromptModel(
+      version,
+      {
+        currentMessage,
+        reasonCodes: classification.reasonCodes.join(', '),
+      },
+      getSafetyGuardrailRef()
+    )
     return typeof result === 'string' && result.length > 0 ? result : FALLBACK_SAFETY_MESSAGE
   } catch (err) {
     console.error('Safety response generation failed (using fixed fallback):', err instanceof Error ? err.message : 'unknown error')
