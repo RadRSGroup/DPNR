@@ -54,24 +54,39 @@ open per Appendix D.
 
 - The score's own weighting/formula is unchanged — this is additive gating logic in front of the existing
   computation, not a rewrite of what the score means.
-- **Correction (same session, caught before this ADR's first draft was even a day old): the Dashboard test
-  described in an earlier draft of this section did NOT actually verify this change live.** `Dpnr-Api` was
-  last deployed 2026-08-28 (Session 27's Slice 6 deploy) — before this session's Lambda code changes — and
-  was never redeployed this session. The dev-server test against the real API therefore exercised the OLD,
-  still-deployed `dashboard/handler.ts`/`alignment-score.ts`, not the new gating logic. It happened to show
-  "Still learning this part of you" either way: with 0 confirmed value signals and 0 resolved commitments in
-  that specific test, the *old* ungated code also returns `null` (`followThroughRate === null && valuesClarity
-  === 0`) — so the observed result was consistent with the new code without actually being evidence of it.
-  **This gating change is therefore verified by code/type inspection and the local build only
-  (`packages/shared-types`, `infra/cdk`, `apps/web` all typecheck/lint/build/synth clean — see Session 29's
-  `docs/AGENT_LOG.md` entry for exact commands), NOT by a live pass against deployed AWS.** Deploying
-  `Dpnr-Api` and re-verifying with a test scenario that actually distinguishes old from new behavior (e.g.
-  exactly 1 confirmed value signal: old code shows a number immediately — `round(0.4 * 20) = 8` — new code
-  correctly shows "insufficient," since evidence count 1 < 5) is real remaining work, gated on the user's
-  explicit deploy go-ahead per this project's standing AWS-deploy guardrail — not done as part of this ADR.
-- The `developing` state (thresholds met, confidence still low) has not been live-verified at all yet, deployed
-  or not — reaching it needs ≥5 resolved commitments/confirmed value signals spanning ≥14 days of `createdAt`
-  timestamps (backdatable via direct `dynamodb put-item`, same technique used elsewhere this session).
+- **Correction (same session, caught before this ADR's first draft was even a day old): an earlier draft of
+  this section wrongly claimed the Dashboard test proved this change live.** `Dpnr-Api` hadn't been redeployed
+  since 2026-08-28 (Session 27's Slice 6 deploy) at the time that test ran, so it actually exercised the OLD,
+  still-deployed `dashboard/handler.ts`/`alignment-score.ts`. It happened to show "Still learning this part of
+  you" either way given that test's specific data (0 confirmed value signals, 0 resolved commitments — the old
+  ungated formula also returns `null` there), so the mistake wasn't obvious at the time. That earlier draft
+  also got its own hypothetical old-code example wrong (claimed `round(0.4 * 20) = 8`; the actual old formula
+  for 1 confirmed value signal and 0 commitments is `Math.round(valuesClarity)` since `followThroughRate` is
+  `null`, i.e. `round(20) = 20`, not 8) — worth noting since it shows why a real live test beats a hand-worked
+  example, below.
+- **Real live verification, same day, after the user approved deploying `Dpnr-Api`.** Deployed cleanly (34/34
+  resources `UPDATE_COMPLETE`, `DashboardFn`/`SnapshotAlignmentScoreFn` both rebundled with the new code).
+  Verified with a fresh throwaway Cognito user and a direct authenticated `fetch()` against the real API (not
+  just the rendered page) for an unambiguous read of the actual response body:
+  - **Insufficient**: seeded exactly 1 confirmed value signal. `GET /v1/dashboard` returned
+    `{alignmentScore: null, alignmentScoreState: "insufficient"}` — proof the new gating is live (the field
+    didn't exist in the old response shape at all, and the old code would have returned a bare `20`, not
+    `null`, for this exact data). Dashboard UI correctly rendered "Still learning this part of you," no ring.
+  - **Eligible**: seeded 5 more confirmed value signals (6 total), 2 distinct `source` values, backdated
+    `createdAt` spanning 32 days. `GET /v1/dashboard` returned `{alignmentScore: 100, alignmentScoreState:
+    "eligible"}` — an exact match for the hand-computed prediction (`valuesClarity = min(100, 6/5*100) = 100`,
+    `confidence = 0.5·(6/10) + 0.3·min(1, 32/30) + 0.2·(2/3) ≈ 0.733 ≥ 0.65`). Dashboard UI correctly rendered
+    a "100%" ring.
+  - **Snapshot job**: manually invoked `SnapshotAlignmentScoreFn` directly (`aws lambda invoke`) against the
+    eligible test user and confirmed via `dynamodb get-item` that it wrote a real `ALIGNMENT#SNAPSHOT#<date>`
+    item with `score: 100` — the daily-history writer respects the new gating too, not just the read path.
+  - Test user and all 13 resulting DynamoDB rows deleted and confirmed gone (`Count: 0`); Cognito user deleted;
+    Browser-pane `localStorage`/cookies cleared.
+  - **The `developing` state remains the one state not directly observed** — reaching it needs evidence that
+    meets the count/source/time thresholds but keeps the confidence proxy below 0.65 (e.g. fewer sources or a
+    shorter time span than the eligible test above); the formula was exercised and matched by hand for the
+    eligible case, which is the same formula `developing` falls out of, so this is a real but low-risk gap, not
+    an unverified code path.
 - If a future session wants to empirically calibrate the confidence formula, weights, or thresholds against
   real usage data (Appendix D's own recommendation), that's a separate, later decision — this ADR only
   establishes that gating exists and roughly matches spec §12's shape, not that the specific numbers in it are
