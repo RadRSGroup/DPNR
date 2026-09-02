@@ -11,16 +11,13 @@ import { SessionTicketPurposeSchema } from '../dynamo/global-tables'
  * POST /v1/session-ticket — establishes the bounded server-side decrypt
  * window (MVP_ARCHITECTURE.md §2.2/§6, §6.5's "one mechanism serves every
  * room and Companion chat alike"). `wrappedDek` mirrors
- * SessionTicketItem.kmsWrappedDek verbatim — the client re-wraps its DEK
- * against the session-ticket KMS CMK's public key locally before this ever
- * leaves the client, so the server only ever receives ciphertext here.
- * NOTE: the exact wrap algorithm/CMK key spec isn't locked down yet — this
- * shape mirrors the already-committed SessionTicketItem fields, but the
- * handshake itself needs a security-review pass before the Lambda is built
- * (AGENT_LOG.md guardrail: anything touching encryption gets one).
+ * SessionTicketItem.kmsWrappedDek verbatim — per ADR 0013, it's an
+ * RSA-OAEP/SHA-256 ciphertext of the raw DEK, produced entirely client-side
+ * against the public key from `GET /v1/session-ticket/public-key`. The
+ * create-ticket Lambda stores this verbatim and never sees the raw DEK.
  */
 export const SessionTicketRequestSchema = z.object({
-  wrappedDek: z.string(), // base64, pre-wrapped client-side — see note above
+  wrappedDek: z.string(), // base64 RSA-OAEP/SHA-256 ciphertext, see ADR 0013
   purpose: SessionTicketPurposeSchema,
 })
 export type SessionTicketRequest = z.infer<typeof SessionTicketRequestSchema>
@@ -37,6 +34,20 @@ export const RevokeSessionResponseSchema = z.object({
   revoked: z.literal(true),
 })
 export type RevokeSessionResponse = z.infer<typeof RevokeSessionResponseSchema>
+
+/**
+ * GET /v1/session-ticket/public-key — unauthenticated (public keys aren't
+ * secret, same posture as GET /v1/health). The DER (SubjectPublicKeyInfo)
+ * encoding of the session-ticket KMS CMK's RSA-2048 public key, per ADR
+ * 0013 — the client imports this directly via
+ * `crypto.subtle.importKey('spki', ...)` to wrap a DEK for
+ * POST /v1/session-ticket without ever calling KMS itself.
+ */
+export const SessionTicketPublicKeyResponseSchema = z.object({
+  publicKeyDer: z.string(), // base64
+  keyId: z.string(),
+})
+export type SessionTicketPublicKeyResponse = z.infer<typeof SessionTicketPublicKeyResponseSchema>
 
 /** PUT /v1/auth/password — Cognito performs the actual credential change; this just confirms it app-side. */
 export const ChangePasswordRequestSchema = z.object({
@@ -94,6 +105,17 @@ export const UserKeysResponseSchema = z.object({
   wrappedPrivateKey: z.string(),
 })
 export type UserKeysResponse = z.infer<typeof UserKeysResponseSchema>
+
+/**
+ * POST /v1/keys — identical shape to UserKeysResponseSchema (the client
+ * generates every field locally and uploads only ciphertext/public
+ * material; the server echoes the same shape back on both read and write),
+ * so this is a direct alias rather than a duplicate schema. One-time: the
+ * Lambda rejects a second call for the same user (a DEK is generated once
+ * at signup and never regenerated — see apps/web/src/lib/crypto/dek.ts).
+ */
+export const UserKeysRequestSchema = UserKeysResponseSchema
+export type UserKeysRequest = z.infer<typeof UserKeysRequestSchema>
 
 /**
  * POST /v1/user/consent — the write path ADR 0004 anticipated ("One write

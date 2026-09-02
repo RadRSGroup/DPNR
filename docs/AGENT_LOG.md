@@ -8,6 +8,16 @@ This project has **no human development team**. It is built entirely by Claude C
 
 > You're picking up work on DPNR (`C:\Users\rekkawi\decision-room`), a personal-development product built entirely by Claude Code agents — no human dev team, real engineering discipline expected anyway. Before doing anything else, read `docs/AGENT_LOG.md` in full, then `docs/MVP_ARCHITECTURE.md`, then `docs/adr/`, then `docs/PHASE_AUDIT.md`, then `docs/INTELLIGENCE_SPEC_AUDIT.md` (new as of Session 29 — compares the new `docs/DPNR_operating_spec_principles.pdf` intelligence spec against the live codebase; that PDF now ranks above `MVP_ARCHITECTURE.md` in doc authority) — don't relitigate a settled ADR.
 >
+> **Status (Session 32 — read this first): Phase 6 Stage 2 is now DONE, deployed, and fully live-verified — Session 31's mid-flight, untested state is resolved.** Direct continuation of Session 31: ran everything Session 31 left undone (`npm install`, `tsc --noEmit`/`eslint`/`cdk synth`/`next build` across `infra/cdk` and `apps/web`, all clean), built the frontend half of the plan Session 31 never started (`apps/web/src/lib/crypto/sessionTicketKey.ts`'s `wrapDekForSessionTicket`, barrel export, and 5 new `v1-client.ts` wrapper functions — `getSessionTicketPublicKey`/`getUserKeys`/`createUserKeys`/`createSessionTicket`/`revokeSession`), then deployed both stacks and live-verified all 4 endpoints end to end with the user's explicit go-ahead.
+>
+> **Two real CloudFormation/KMS deploy-time bugs found and fixed along the way — read ADR 0013's updated Consequences section before ever changing this key's `KeySpec` again.** (1) `cdk deploy Dpnr-Data` failed outright: CloudFormation attempted an in-place `UpdateKey` call on the `KeySpec` change and rejected it, instead of replacing the resource the way "Update requires: Replacement" implies it should. Fixed by giving the Key construct a new logical ID (`SessionTicketsKeyRsa`), forcing a genuine create-new/delete-old replacement. (2) That surfaced a second, harder constraint: KMS refuses to repoint an existing `Alias` from a symmetric to an asymmetric key ("The current CMK and new CMK must both be symmetric or asymmetric") — the alias itself had to be replaced too, and two aliases can't share one name at once. Resolved as a genuine **two-phase deploy**: Phase A dropped the old alias only (old key left untouched, freeing the name), Phase B then created the new RSA-2048 key under a fresh construct ID with a brand-new alias. Both phases are now merged into `data-stack.ts`'s final, single definition — a future session reading that file only sees the end state plus a doc comment explaining why the migration needed two steps; it does not need to redo the phased deploy itself.
+>
+> **Live-verified against real AWS, not a mock, using the plan's own throwaway-script-simulating-a-client approach**: signed up + confirmed a real throwaway Cognito user via the documented direct-HTTP-then-`admin-confirm-sign-up` technique, SRP-signed-in via the repo's own `amazon-cognito-identity-js` (same Node-script pattern Session 25 established), then drove all 4 authenticated endpoints for real — `GET /v1/session-ticket/public-key` (200, real DER public key), generated a real DEK and wrapped it via the actual `wrapDekForSessionTicket` logic (RSA-OAEP/SHA-256, 344-byte base64 ciphertext), `POST /v1/keys` (201, exact echo; retried → real `409 keys_already_exist`), `GET /v1/keys` (exact round-trip match on all 5 fields, confirmed field-by-field), `POST /v1/session-ticket` (201, real `SessionTicketItem` confirmed via direct `aws dynamodb` query), `DELETE /v1/auth/sessions/{id}` (200 `revoked:true`, confirmed the item is actually gone via a second direct query; called again → still a clean 200, not an error). **IAM inspection was exhaustive, not spot-checked**: walked all 41 deployed Lambdas' real IAM roles and confirmed `kms:Decrypt` exists on exactly the 12 specified functions (Rooms×5, Companion×2, Twin×3, Continuity×2) and no others — confirmed absent on e.g. `CreateCommitmentFn`/`SnapshotAlignmentScoreFn` — and `kms:GetPublicKey` exists on exactly `SessionTicketPublicKeyFn` alone. Confirmed the deployed key is genuinely `RSA_2048`/`ENCRYPT_DECRYPT` via `aws kms describe-key`. Cleaned up fully afterward: the `KEYS` item, the onboarding `PROFILE`/`CREDITS`/`CREDITS#TXN` rows, and the Cognito user itself — confirmed 0 rows remaining under that user's partition.
+>
+> **What Stage 2 deliberately does NOT do, per the plan**: no wiring into the real `signIn()`/`signOut()` flow yet — there's no real `KEYS` item for any actual user until Stage 3 builds signup-time key generation + recovery-code UX, so a ticket has nothing meaningful to wrap today. `kms:Decrypt` grants landed on all 12 functions but nothing calls them yet (Stage 4's job).
+>
+> **Next: Phase 6 Stage 3** (recovery-code UX + real signup/login wiring — generate keys at signup, wire `createUserKeys`/session-ticket creation into `lib/cognito/client.ts`'s real `signIn()`/`signOut()`). No plan file exists yet for Stage 3 — scope it fresh, following the same pattern Stage 2's `smooth-purring-harp.md` used. After Phase 6 finishes, the still-current backlog (per Session 30/29's own ordering): signal-model enrichment, then §17's Living System behaviors, then everything else in `INTELLIGENCE_SPEC_AUDIT.md`'s table. Also still unresolved, lower-priority: Life Domains taxonomy mismatch (7 vs. 8), the `lital@be-dpnr.com` SNS subscription's confirmation status (last checked Session 29/30, recheck before assuming a real `immediate_danger` alert reaches anyone), and Session 28's crypto module plus this session's own new code — all still sitting **uncommitted**, check `git status` directly rather than trusting this sentence.
+>
 > **Status (Session 30 — read this first, it's the live thread)**: user chose Stage 4 of the safety system (the
 > one item Session 29 explicitly left as an open question — see that status paragraph below). **Stage 4 is
 > now DONE, deployed, and live-verified — the safety system's full 4-stage plan is code-complete.** Full detail
@@ -173,7 +183,31 @@ This project has **no human development team**. It is built entirely by Claude C
 
 *(This section is overwritten every session with the current, precise handoff. Do not append to it — replace it. As of Session 11, the long per-session condensed narrative that used to accumulate here was removed — every one of those sessions' full detail already lives in Session History below, verbatim; condensing it a second time up here had drifted from this section's own "replace it" rule for several sessions running. Keep this section to current status + what's next; look in Session History for how we got here.)*
 
-**Session 30 (read this first — it's the live thread):** the safety system's 4-stage plan is now **completely
+**Session 31 (read this first — the working tree is UNVERIFIED, treat it as red):** Phase 6 Stage 2 (key
+bootstrap + session-ticket endpoints) was planned in full — plan file `C:\Users\rekkawi\.claude\plans\smooth-purring-harp.md`
+— and its **backend half was written but never compiled, linted, synthesized, or deployed** before the user
+said to stop. A real design gap flagged in `SessionTicketRequestSchema`'s own doc comment (the DEK-wrap
+handshake "needs a security-review pass before the Lambda is built") got resolved as **ADR 0013**: the
+already-provisioned `sessionTicketsKmsKey` was a symmetric key with no public key to hand a browser, so it's
+now asymmetric (RSA-2048) — the client wraps the DEK client-side via WebCrypto RSA-OAEP, the create-ticket
+Lambda never touches the raw DEK. This deliberately replaces the (zero real consumers, zero data ever
+encrypted under it) existing `SessionTicketsKey` resource. **Files touched**: new ADR 0013; `packages/shared-types/src/api/account.ts`
+(`UserKeysRequestSchema`, `SessionTicketPublicKeyResponseSchema`); `infra/cdk/lib/data-stack.ts` (KMS key spec);
+`infra/cdk/bin/dpnr.ts` (new stack props); `infra/cdk/lib/api-stack.ts` (5 new routes/Lambdas, 12
+`grantDecrypt` calls on already-existing Rooms/Companion/Twin/pipeline functions — see the plan file for
+exactly which and why only those); 5 new files under `infra/cdk/lambda/account/`; `@aws-sdk/client-kms` added
+to `infra/cdk/package.json` **but `npm install` was never run**. **Nothing else was done**: no `tsc --noEmit`,
+no `eslint`, no `cdk synth`, no `next build`, no live verification, no deploy — the live AWS account is
+untouched. The frontend half of Stage 2 (a `wrapDekForSessionTicket` function in `apps/web/src/lib/crypto/`
+plus 5 new `v1-client.ts` functions) was never started. **Next agent: do not trust that any of this compiles.**
+Run `npm install`, then `tsc --noEmit` in `infra/cdk` and `apps/web`, then `cdk synth Dpnr-Api`, fix whatever
+surfaces, build the frontend half per the plan file, then live-verify (throwaway Cognito user, all 4 endpoints,
+IAM inspection) before deploying — and get the user's explicit go-ahead before that deploy, since it destroys/
+recreates the KMS key (expected and safe per ADR 0013, but still a real infra action). After Stage 2 ships,
+the user's stated next priority is Living System behaviors (Intelligence Spec §17 — `OpenThread`, Roadmap
+lifecycle states, interaction-mode inference), not yet scoped.
+
+**Session 30 (condensed pointer, no longer the live thread):** the safety system's 4-stage plan is now **completely
 done** — Stage 4 (native Bedrock Guardrails as detect-only defense-in-depth + `classify_safety_state` moved to
 Claude Haiku 4.5 for cost/latency, validated first via a real side-by-side vs. Sonnet) is built, deployed, and
 live-verified. Full detail in `docs/SAFETY_SYSTEM_DESIGN.md` §7's Stage 4 entry — **read it before touching the
@@ -233,6 +267,67 @@ From there, wrote and got approval for a 6-slice plan, `C:\Users\rekkawi\.claude
 ---
 
 ## Session History
+
+### 2026-09-02 — Session 31: planned + started Phase 6 Stage 2 (key bootstrap + session tickets) — backend code written, session ended before any verification or deploy
+- Continued from a prior session's memory-driven catch-up: the user chose Phase 6 Stage 2 (key bootstrap +
+  session-ticket endpoints, from `C:\Users\rekkawi\.claude\plans\memoized-painting-parnas.md`), then Living
+  System behaviors (Intelligence Spec §17) as the priority after that.
+- Used plan mode. Gathered full code context via a research agent (schemas, CDK patterns, existing Lambda
+  precedent) before designing anything, then read the actual current-state files directly (`data-stack.ts`,
+  `api-stack.ts`, `global-tables.ts`, `account.ts`, `keys.ts`) rather than trusting the research agent's report
+  alone for anything security-sensitive.
+- **Found a real, previously-flagged, unresolved design gap while planning, not after**:
+  `SessionTicketRequestSchema`'s own doc comment (`packages/shared-types/src/api/account.ts`) said the DEK-wrap
+  handshake "isn't locked down yet... needs a security-review pass before the Lambda is built," and described
+  the intended design as the client wrapping its DEK "against the session-ticket KMS CMK's public key locally."
+  The already-provisioned `sessionTicketsKmsKey` (`data-stack.ts`) turned out to be a default **symmetric** KMS
+  key — which has no public key at all, directly contradicting that description. Presented this to the user as
+  a real choice (asymmetric client-side wrap vs. symmetric server-side wrap, with the security trade-off of
+  each spelled out) via a structured question rather than deciding unilaterally, given this project's own
+  "anything touching encryption gets a security review" guardrail. **The user chose the asymmetric approach.**
+  Wrote it up as **ADR 0013** (`docs/adr/0013-session-ticket-kms-handshake.md`): `sessionTicketsKmsKey` becomes
+  `KeySpec.RSA_2048`/`KeyUsage.ENCRYPT_DECRYPT`; the client fetches the DER public key once (new unauthenticated
+  `GET /v1/session-ticket/public-key`), wraps the raw DEK client-side via WebCrypto `RSA-OAEP`/SHA-256, and the
+  create-ticket Lambda stores the resulting ciphertext verbatim — it never receives, holds, or forwards the raw
+  DEK, and needs zero KMS permission to do its job. This is a deliberate, one-time replacement of the
+  already-provisioned `SessionTicketsKey` (CloudFormation can't mutate `KeySpec` in place); confirmed safe
+  because — per this file's own "current-state gap" table — the key has zero real consumers and zero data has
+  ever been encrypted under it.
+- **Also asked and resolved with the user**: whether to wire session-ticket create/revoke into the real
+  `signIn()`/`signOut()` flow this stage, given no real `KEYS` item exists for any user yet (signup doesn't
+  call `POST /v1/keys` until Stage 3 builds the recovery-code UX around it, so a ticket has nothing meaningful
+  to wrap today). **Decided: backend + thin API-client functions only this stage**, verified via a throwaway
+  script simulating a client (same convention every prior stage in this project used) — real `signIn()`/
+  `signOut()` wiring is Stage 3's job, alongside real signup-time key generation.
+- Wrote the full plan to `C:\Users\rekkawi\.claude\plans\smooth-purring-harp.md` and got the user's approval via
+  `ExitPlanMode` before writing any code, per this project's own "get sign-off on non-trivial implementation
+  before writing it" convention.
+- **Backend implementation started and is code-complete on paper, but completely unverified**: ADR 0013;
+  `packages/shared-types/src/api/account.ts` (`UserKeysRequestSchema` — an alias of the already-identical
+  `UserKeysResponseSchema`, `SessionTicketPublicKeyResponseSchema`, updated doc comment);
+  `infra/cdk/lib/data-stack.ts` (KMS key spec change, per ADR 0013); `infra/cdk/bin/dpnr.ts` (new `ApiStack`
+  props); `infra/cdk/lib/api-stack.ts` (`ApiStackProps` extended with `sessionTicketsTable`/`sessionTicketsKmsKey`;
+  five new Lambdas/routes — `session-ticket-public-key.ts` (unauthenticated), `keys-get.ts`, `keys-create.ts`
+  (409s on a second call — a DEK is generated once and never regenerated), `session-ticket-create.ts` (no KMS
+  grant needed — see ADR 0013), `session-ticket-revoke.ts`; `sessionTicketsKmsKey.grantDecrypt(...)` added to
+  exactly `companionMessageFn`/`companionContextFn`/`twinListFn`/`twinConfirmFn`/`twinRejectFn`/`roomsCommandFn`/
+  `decisionFullFn`/`mirrorFullFn`/`listDecisionsFn`/`listMirrorsFn`/`composeDailyCardFn`/`composeWeeklyRecapFn`
+  — not `createCommitmentFn`, `snapshotAlignmentScoreFn`, or anything else — per the plan's explicit
+  least-privilege scoping, not consumed for real until Stage 4); five new handler files under
+  `infra/cdk/lambda/account/`; `@aws-sdk/client-kms` added to `infra/cdk/package.json`'s dependencies.
+- **The user said "stop" partway through implementation, right after the backend half landed and before the
+  frontend half (a new `wrapDekForSessionTicket` crypto helper, its barrel export, and 5 new `v1-client.ts`
+  functions) was started.** Per the explicit instruction, stopped immediately rather than continuing to a
+  natural checkpoint. **This means: `npm install` was never run for the new `@aws-sdk/client-kms` dependency;
+  `tsc --noEmit`, `eslint`, `cdk synth`, and `next build` were never run this session at all; nothing was
+  deployed; the live AWS account is completely untouched.** This is a genuine departure from this project's
+  "never hand off a red build" rule, made necessary by an explicit stop instruction rather than a shortcut —
+  flagged as loudly as possible in both handoff sections above so the next session doesn't assume any of this
+  code actually compiles.
+- No live verification of any kind happened this session — everything above is unverified against the
+  TypeScript compiler, let alone real AWS.
+- Did not touch: the frontend crypto/API-client work described above, Stage 3+ of Phase 6, Living System
+  behaviors (queued as the next priority after Stage 2 ships), or anything outside Phase 6 Stage 2's scope.
 
 ### 2026-09-02 — Session 30: built, deployed, and live-verified Stage 4 of the safety system (Bedrock Guardrails + Haiku classifier) — found and fixed a real IAM regression along the way
 - Direct continuation of Session 29's own thread: the prior session's handoff explicitly left "Stage 4 or a

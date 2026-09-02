@@ -30,6 +30,12 @@ import type {
   CompleteCommitmentResponse,
   CommitmentsResponse,
   PlansResponse,
+  UserKeysRequest,
+  UserKeysResponse,
+  SessionTicketRequest,
+  SessionTicketResponse,
+  SessionTicketPublicKeyResponse,
+  RevokeSessionResponse,
 } from '@dpnr/shared-types'
 import { getIdToken } from '../cognito/client'
 
@@ -232,4 +238,38 @@ export async function completeCommitment(commitmentId: string): Promise<Complete
 export async function getPlans(): Promise<PlansResponse> {
   const res = await authedFetch('/v1/plans')
   return parseOrThrow<PlansResponse>(res)
+}
+
+/**
+ * GET /v1/session-ticket/public-key — unauthenticated (public keys aren't
+ * secret; ADR 0013). Plain `fetch`, not `authedFetch`: this must be callable
+ * before a ticket/session exists at all.
+ */
+export async function getSessionTicketPublicKey(): Promise<SessionTicketPublicKeyResponse> {
+  const res = await fetch(`${API_URL}/v1/session-ticket/public-key`)
+  return parseOrThrow<SessionTicketPublicKeyResponse>(res)
+}
+
+/** GET /v1/keys — the crypto envelope a returning client needs to re-derive its DEK locally. */
+export async function getUserKeys(): Promise<UserKeysResponse> {
+  const res = await authedFetch('/v1/keys')
+  return parseOrThrow<UserKeysResponse>(res)
+}
+
+/** POST /v1/keys — one-time; the server rejects a second call for the same user (409 keys_already_exist). */
+export async function createUserKeys(request: UserKeysRequest): Promise<UserKeysResponse> {
+  const res = await authedFetch('/v1/keys', { method: 'POST', body: JSON.stringify(request) })
+  return parseOrThrow<UserKeysResponse>(res)
+}
+
+/** POST /v1/session-ticket — `request.wrappedDek` must already be RSA-OAEP-wrapped via `wrapDekForSessionTicket` (lib/crypto). */
+export async function createSessionTicket(request: SessionTicketRequest): Promise<SessionTicketResponse> {
+  const res = await authedFetch('/v1/session-ticket', { method: 'POST', body: JSON.stringify(request) })
+  return parseOrThrow<SessionTicketResponse>(res)
+}
+
+/** DELETE /v1/auth/sessions/{id} — idempotent; calling it again on an already-revoked ticket still succeeds. */
+export async function revokeSession(sessionId: string): Promise<RevokeSessionResponse> {
+  const res = await authedFetch(`/v1/auth/sessions/${encodeURIComponent(sessionId)}`, { method: 'DELETE' })
+  return parseOrThrow<RevokeSessionResponse>(res)
 }

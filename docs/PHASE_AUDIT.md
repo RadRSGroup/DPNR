@@ -103,6 +103,15 @@ to it instead, per that file's own protocol.
 > `curl` always worked. Fixed (`corsPreflight` on `api-stack.ts`'s `HttpApi`, currently scoped to
 > `http://localhost:3000` only) and deployed. `POST /v1/user/consent` is no longer part of this unbuilt
 > row (§2.2); `session-ticket`, `keys`, password change, and account deletion remain unbuilt.
+>
+> **Update (Session 32 — Phase 6 Stage 2, `smooth-purring-harp.md`):** `session-ticket` and `keys` are now
+> built, deployed, and live-verified — `GET /v1/session-ticket/public-key` (unauthenticated), `GET`/`POST
+> /v1/keys`, `POST /v1/session-ticket`, `DELETE /v1/auth/sessions/{id}`. See ADR 0013 for the asymmetric
+> RSA-2048 KMS handshake design and its own two real CloudFormation/KMS deploy-time gotchas (KeySpec change
+> rejected as an in-place update; an Alias can't be repointed across a symmetric→asymmetric key change — both
+> required a genuine key/alias replacement, done as a two-phase deploy). `PUT /v1/auth/password` and account
+> deletion — account deletion is actually already built (`DELETE /v1/account`, confirmed live in `api-stack.ts`
+> and this file's own §2.2) — remain the only items in this row still unbuilt: password change only.
 
 `MVP_ARCHITECTURE.md` §4's first API row — `POST /v1/session-ticket`, `DELETE /v1/auth/sessions/{id}`,
 `PUT /v1/auth/password`, `DELETE /v1/account`, `GET /v1/keys` — has **zero Lambda handlers and zero CDK

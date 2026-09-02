@@ -114,13 +114,37 @@ export class DataStack extends Stack {
     })
 
     // Dedicated KMS key for session-ticket envelope encryption (migration
-    // plan §6.5, §9: "one dedicated key ≈ $1/mo"). Only the pipeline and
-    // API Lambda roles get kms:Decrypt on this — granted where those
-    // roles are defined (AuthStack/ApiStack), not here, to keep this
-    // stack's job to "create the key," not "decide who can use it."
-    this.sessionTicketsKmsKey = new kms.Key(this, 'SessionTicketsKey', {
+    // plan §6.5, §9: "one dedicated key ≈ $1/mo"). Asymmetric (RSA-2048) per
+    // ADR 0013 — the client wraps a DEK against this key's public half
+    // entirely client-side (GET /v1/session-ticket/public-key), so a
+    // Lambda's own kms:Decrypt grant (given where those roles are defined,
+    // AuthStack/ApiStack, not here — this stack's job is only "create the
+    // key," not "decide who can use it") is the only IAM action ever needed
+    // against it. Asymmetric CMKs don't support AWS-managed key rotation —
+    // an accepted trade-off, see ADR 0013's Consequences.
+    // This construct's logical ID is 'SessionTicketsKeyRsa', not
+    // 'SessionTicketsKey' — deliberate, not a typo. Two real CloudFormation/
+    // KMS gotchas surfaced migrating the original symmetric key to this
+    // asymmetric one (ADR 0013), both worth knowing before touching this
+    // block again — full account in docs/AGENT_LOG.md's Session 32 entry:
+    // (1) KeySpec is documented as "Update requires: Replacement," but the
+    //     AWS::KMS::Key resource provider actually issues an in-place
+    //     UpdateKey call and rejects it ("You cannot change the values of
+    //     the KeySpec...") instead of replacing the resource — a real
+    //     replacement needs a new logical ID for the Key construct, which
+    //     is why this one no longer matches the original 'SessionTicketsKey'.
+    // (2) KMS also refuses to repoint an existing Alias from a symmetric to
+    //     an asymmetric key ("The current CMK and new CMK must both be
+    //     symmetric or asymmetric"), and two Alias resources can't share one
+    //     name at once — so the actual migration had to be a two-phase
+    //     deploy (drop the old alias first, freeing the name; only then
+    //     create the new key + a fresh alias). That history is why the
+    //     logical ID changed; this block is the resulting steady state, not
+    //     something to redo.
+    this.sessionTicketsKmsKey = new kms.Key(this, 'SessionTicketsKeyRsa', {
       alias: 'dpnr-session-tickets',
-      enableKeyRotation: true,
+      keySpec: kms.KeySpec.RSA_2048,
+      keyUsage: kms.KeyUsage.ENCRYPT_DECRYPT,
       pendingWindow: Duration.days(7),
       removalPolicy,
     })

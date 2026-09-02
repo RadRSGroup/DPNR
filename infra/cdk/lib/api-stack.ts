@@ -5,6 +5,7 @@ import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations'
 import * as bedrock from 'aws-cdk-lib/aws-bedrock'
 import * as cognito from 'aws-cdk-lib/aws-cognito'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
+import * as kms from 'aws-cdk-lib/aws-kms'
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager'
 import * as iam from 'aws-cdk-lib/aws-iam'
 import * as lambda from 'aws-cdk-lib/aws-lambda-nodejs'
@@ -52,6 +53,8 @@ export interface ApiStackProps extends StackProps {
   promptRegistryTable: dynamodb.Table
   libraryCatalogTable: dynamodb.Table
   plansCatalogTable: dynamodb.Table
+  sessionTicketsTable: dynamodb.Table
+  sessionTicketsKmsKey: kms.Key
   isProduction?: boolean
 }
 
@@ -353,6 +356,8 @@ export class ApiStack extends Stack {
     safetyAlertTopic.grantPublish(companionMessageFn)
     grantApplyGuardrail(companionMessageFn)
     grantHaikuConverse(companionMessageFn)
+    // Phase 6 Stage 2 (ADR 0013): decrypt grant lands now, not consumed until Stage 4.
+    props.sessionTicketsKmsKey.grantDecrypt(companionMessageFn)
 
     const companionContextFn = new lambda.NodejsFunction(this, 'CompanionContextFn', {
       ...sharedProductLambdaProps,
@@ -371,6 +376,7 @@ export class ApiStack extends Stack {
     props.applicationTable.grantReadWriteData(companionContextFn)
     props.promptRegistryTable.grantReadData(companionContextFn)
     grantBedrockConverse(companionContextFn)
+    props.sessionTicketsKmsKey.grantDecrypt(companionContextFn)
 
     const userConsentFn = new lambda.NodejsFunction(this, 'UserConsentFn', {
       ...sharedProductLambdaProps,
@@ -393,12 +399,62 @@ export class ApiStack extends Stack {
     })
     props.applicationTable.grantReadWriteData(accountDeleteFn)
 
+    // Phase 6 Stage 2 (ADR 0013): key bootstrap + session-ticket endpoints.
+    // sessionTicketPublicKeyFn deliberately does NOT use sharedProductLambdaProps
+    // — it touches neither the application table nor the crypto stub.
+    const sessionTicketPublicKeyFn = new lambda.NodejsFunction(this, 'SessionTicketPublicKeyFn', {
+      runtime: Runtime.NODEJS_24_X,
+      bundling: { minify: true, sourceMap: true },
+      environment: { SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId },
+      entry: path.join(__dirname, '../lambda/account/session-ticket-public-key.ts'),
+      description: 'GET /v1/session-ticket/public-key — unauthenticated; the CMK public key a client wraps a DEK against (ADR 0013).',
+    })
+    sessionTicketPublicKeyFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['kms:GetPublicKey'],
+        resources: [props.sessionTicketsKmsKey.keyArn],
+      })
+    )
+
+    const keysGetFn = new lambda.NodejsFunction(this, 'KeysGetFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/account/keys-get.ts'),
+      description: 'GET /v1/keys — the crypto envelope a returning client re-derives its DEK from.',
+    })
+    props.applicationTable.grantReadData(keysGetFn)
+
+    const keysCreateFn = new lambda.NodejsFunction(this, 'KeysCreateFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/account/keys-create.ts'),
+      description: 'POST /v1/keys — one-time key bootstrap; 409s on a second call for the same user.',
+    })
+    props.applicationTable.grantReadWriteData(keysCreateFn)
+
+    const sessionTicketCreateFn = new lambda.NodejsFunction(this, 'SessionTicketCreateFn', {
+      runtime: Runtime.NODEJS_24_X,
+      bundling: { minify: true, sourceMap: true },
+      environment: { SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName },
+      entry: path.join(__dirname, '../lambda/account/session-ticket-create.ts'),
+      description: 'POST /v1/session-ticket — stores a client-wrapped DEK ciphertext verbatim; no KMS grant needed (ADR 0013).',
+    })
+    props.sessionTicketsTable.grantWriteData(sessionTicketCreateFn)
+
+    const sessionTicketRevokeFn = new lambda.NodejsFunction(this, 'SessionTicketRevokeFn', {
+      runtime: Runtime.NODEJS_24_X,
+      bundling: { minify: true, sourceMap: true },
+      environment: { SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName },
+      entry: path.join(__dirname, '../lambda/account/session-ticket-revoke.ts'),
+      description: 'DELETE /v1/auth/sessions/{id} — revokes a session ticket early.',
+    })
+    props.sessionTicketsTable.grantWriteData(sessionTicketRevokeFn)
+
     const twinListFn = new lambda.NodejsFunction(this, 'TwinListFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/twin/list.ts'),
       description: 'GET /v1/twin — every Digital Twin signal the caller has, any status.',
     })
     props.applicationTable.grantReadData(twinListFn)
+    props.sessionTicketsKmsKey.grantDecrypt(twinListFn)
 
     const twinConfirmFn = new lambda.NodejsFunction(this, 'TwinConfirmFn', {
       ...sharedProductLambdaProps,
@@ -418,6 +474,7 @@ export class ApiStack extends Stack {
     props.applicationTable.grantReadWriteData(twinConfirmFn)
     props.promptRegistryTable.grantReadData(twinConfirmFn)
     grantBedrockConverse(twinConfirmFn)
+    props.sessionTicketsKmsKey.grantDecrypt(twinConfirmFn)
 
     const twinRejectFn = new lambda.NodejsFunction(this, 'TwinRejectFn', {
       ...sharedProductLambdaProps,
@@ -425,6 +482,7 @@ export class ApiStack extends Stack {
       description: 'POST /v1/twin/signals/{id}/reject.',
     })
     props.applicationTable.grantReadWriteData(twinRejectFn)
+    props.sessionTicketsKmsKey.grantDecrypt(twinRejectFn)
 
     const roadmapProposalAcceptFn = new lambda.NodejsFunction(this, 'RoadmapProposalAcceptFn', {
       ...sharedProductLambdaProps,
@@ -465,6 +523,44 @@ export class ApiStack extends Stack {
       path: '/v1/account',
       methods: [apigwv2.HttpMethod.DELETE],
       integration: new integrations.HttpLambdaIntegration('AccountDeleteIntegration', accountDeleteFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/session-ticket/public-key',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration(
+        'SessionTicketPublicKeyIntegration',
+        sessionTicketPublicKeyFn
+      ),
+      // deliberately no authorizer — public keys aren't secret (ADR 0013).
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/keys',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('KeysGetIntegration', keysGetFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/keys',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('KeysCreateIntegration', keysCreateFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/session-ticket',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('SessionTicketCreateIntegration', sessionTicketCreateFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/auth/sessions/{id}',
+      methods: [apigwv2.HttpMethod.DELETE],
+      integration: new integrations.HttpLambdaIntegration('SessionTicketRevokeIntegration', sessionTicketRevokeFn),
       authorizer: this.cognitoAuthorizer,
     })
 
@@ -535,6 +631,7 @@ export class ApiStack extends Stack {
     safetyAlertTopic.grantPublish(roomsCommandFn)
     grantApplyGuardrail(roomsCommandFn)
     grantHaikuConverse(roomsCommandFn)
+    props.sessionTicketsKmsKey.grantDecrypt(roomsCommandFn)
 
     const decisionFullFn = new lambda.NodejsFunction(this, 'DecisionFullFn', {
       ...sharedProductLambdaProps,
@@ -542,6 +639,7 @@ export class ApiStack extends Stack {
       description: 'GET /v1/rooms/decision/{id}/full — aggregate decrypted read of one decision.',
     })
     props.applicationTable.grantReadData(decisionFullFn)
+    props.sessionTicketsKmsKey.grantDecrypt(decisionFullFn)
 
     const mirrorFullFn = new lambda.NodejsFunction(this, 'MirrorFullFn', {
       ...sharedProductLambdaProps,
@@ -549,6 +647,7 @@ export class ApiStack extends Stack {
       description: 'GET /v1/rooms/mirror/{id}/full — decrypted read of one Mirror Room session.',
     })
     props.applicationTable.grantReadData(mirrorFullFn)
+    props.sessionTicketsKmsKey.grantDecrypt(mirrorFullFn)
 
     const listDecisionsFn = new lambda.NodejsFunction(this, 'ListDecisionsFn', {
       ...sharedProductLambdaProps,
@@ -556,6 +655,7 @@ export class ApiStack extends Stack {
       description: 'GET /v1/rooms/decisions — summary list, most-recently-created first.',
     })
     props.applicationTable.grantReadData(listDecisionsFn)
+    props.sessionTicketsKmsKey.grantDecrypt(listDecisionsFn)
 
     const listMirrorsFn = new lambda.NodejsFunction(this, 'ListMirrorsFn', {
       ...sharedProductLambdaProps,
@@ -563,6 +663,7 @@ export class ApiStack extends Stack {
       description: 'GET /v1/rooms/mirrors — summary list, most-recently-created first.',
     })
     props.applicationTable.grantReadData(listMirrorsFn)
+    props.sessionTicketsKmsKey.grantDecrypt(listMirrorsFn)
 
     this.httpApi.addRoutes({
       path: '/v1/rooms/decision',
@@ -855,6 +956,8 @@ export class ApiStack extends Stack {
     props.applicationTable.grantReadWriteData(composeDailyCardFn)
     props.promptRegistryTable.grantReadData(composeDailyCardFn)
     grantBedrockConverse(composeDailyCardFn)
+    // Phase 6 Stage 2 (ADR 0013): post_session-window decrypt grant for this pipeline.
+    props.sessionTicketsKmsKey.grantDecrypt(composeDailyCardFn)
 
     const composeWeeklyRecapFn = new lambda.NodejsFunction(this, 'ComposeWeeklyRecapFn', {
       ...sharedProductLambdaProps,
@@ -869,6 +972,7 @@ export class ApiStack extends Stack {
     props.applicationTable.grantReadWriteData(composeWeeklyRecapFn)
     props.promptRegistryTable.grantReadData(composeWeeklyRecapFn)
     grantBedrockConverse(composeWeeklyRecapFn)
+    props.sessionTicketsKmsKey.grantDecrypt(composeWeeklyRecapFn)
 
     // No Bedrock call — computeAlignmentScore is plain arithmetic over
     // already-real data, no PROMPT_REGISTRY_TABLE_NAME/grantBedrockConverse

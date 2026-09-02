@@ -32,4 +32,6 @@ new ApiStack(app, 'Dpnr-Api', {
   promptRegistryTable: dataStack.promptRegistryTable,
   libraryCatalogTable: dataStack.libraryCatalogTable,
   plansCatalogTable: dataStack.plansCatalogTable,
+  sessionTicketsTable: dataStack.sessionTicketsTable,
+  sessionTicketsKmsKey: dataStack.sessionTicketsKmsKey,
 })
