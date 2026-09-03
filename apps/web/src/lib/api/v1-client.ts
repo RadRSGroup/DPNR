@@ -17,6 +17,7 @@ import type {
   LibraryRecommendationsResponse,
   RoadmapProposalAcceptResponse,
   RoadmapProposalRejectResponse,
+  RoadmapLifecycleActionResponse,
   CreditsResponse,
   CreditsPurchaseRequest,
   CreditsPurchaseResponse,
@@ -199,6 +200,12 @@ export async function acceptRoadmapProposal(): Promise<RoadmapProposalAcceptResp
 export async function rejectRoadmapProposal(): Promise<RoadmapProposalRejectResponse> {
   const res = await authedFetch('/v1/roadmap/proposal/reject', { method: 'POST' })
   return parseOrThrow<RoadmapProposalRejectResponse>(res)
+}
+
+/** POST /v1/roadmap/lifecycle — pause/resume/archive the live Roadmap (Intelligence Spec §17). */
+export async function updateRoadmapLifecycle(action: 'pause' | 'resume' | 'archive'): Promise<RoadmapLifecycleActionResponse> {
+  const res = await authedFetch('/v1/roadmap/lifecycle', { method: 'POST', body: JSON.stringify({ action }) })
+  return parseOrThrow<RoadmapLifecycleActionResponse>(res)
 }
 
 /** GET /v1/twin — every Digital Twin ("InnerSelf") signal the caller has, any status. */

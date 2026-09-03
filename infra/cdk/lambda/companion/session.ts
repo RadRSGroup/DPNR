@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb'
-import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
-import { Sk, type SessionItem, type CompanionActiveSessionPointerItem } from '@dpnr/shared-types'
+import { GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
+import { Sk, type SessionItem, type CompanionActiveSessionPointerItem, type InteractionMode } from '@dpnr/shared-types'
 
 /**
  * Shared by `message.ts` (every real chat turn) and, since Session 15's
@@ -51,4 +51,31 @@ export async function getOrCreateActiveCompanionSession(
     ddb.send(new PutCommand({ TableName: tableName, Item: pointerItem })),
   ])
   return sessionId
+}
+
+/**
+ * Intelligence Spec §17 — records the just-classified Current Interaction
+ * Mode onto the active session's pointer item. Best-effort: a failed write
+ * here must never break the chat turn it's attached to, same tolerance
+ * every other non-essential side-write in this codebase gets (e.g.
+ * lib/safety.ts's persistSafetyEvent).
+ */
+export async function updateSessionInteractionMode(
+  ddb: DynamoDBDocumentClient,
+  tableName: string,
+  pk: string,
+  mode: InteractionMode
+): Promise<void> {
+  try {
+    await ddb.send(
+      new UpdateCommand({
+        TableName: tableName,
+        Key: { pk, sk: Sk.companionActiveSession() },
+        UpdateExpression: 'SET currentInteractionMode = :mode, updatedAt = :now',
+        ExpressionAttributeValues: { ':mode': mode, ':now': new Date().toISOString() },
+      })
+    )
+  } catch (err) {
+    console.error('Failed to update currentInteractionMode (non-fatal):', err instanceof Error ? err.message : 'unknown error')
+  }
 }

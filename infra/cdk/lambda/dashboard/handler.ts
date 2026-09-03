@@ -99,7 +99,14 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     ])
 
     const roadmapItem = roadmapResult.Item as RoadmapItem | undefined
-    const roadmap = roadmapItem ? await crypto.decryptField<RoadmapContent>(roadmapItem.content) : null
+    const roadmap = roadmapItem
+      ? {
+          ...(await crypto.decryptField<RoadmapContent>(roadmapItem.content)),
+          // Intelligence Spec §17 — plaintext on the item itself, not part of
+          // the encrypted content blob.
+          lifecycleState: roadmapItem.lifecycleState,
+        }
+      : null
 
     const roadmapProposalItem = roadmapProposalResult.Item as RoadmapProposalItem | undefined
     const roadmapProposal = roadmapProposalItem

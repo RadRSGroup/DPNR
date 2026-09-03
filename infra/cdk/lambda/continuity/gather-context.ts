@@ -1,5 +1,5 @@
 import { QueryCommand } from '@aws-sdk/lib-dynamodb'
-import { userPk, type TwinSignalItem, type SessionSummaryItem, type CommitmentItem } from '@dpnr/shared-types'
+import { userPk, type TwinSignalItem, type SessionSummaryItem, type CommitmentItem, type OpenThreadItem } from '@dpnr/shared-types'
 import { getSessionCrypto, type SessionCrypto } from '../lib/session-crypto'
 import { ddb, TABLE_NAME } from './helpers'
 
@@ -13,6 +13,15 @@ export interface DecryptedSessionSummary {
   summary: string
   createdAt: string
 }
+
+export interface DecryptedOpenThread {
+  subject: string
+  lifeDomain?: string
+  lastTouchedAt: string
+}
+
+/** Intelligence Spec §17 — the statuses Companion should still see as "worth returning to"; paused/closed are deliberately excluded. */
+const VISIBLE_OPEN_THREAD_STATUSES = new Set(['active', 'waiting_for_life', 'ready_to_review'])
 
 /**
  * Shared read for both `compose-daily-card.ts` and `compose-weekly-recap.ts`
@@ -32,11 +41,15 @@ export interface DecryptedSessionSummary {
 export async function gatherContinuityContext(
   userId: string,
   crypto?: SessionCrypto
-): Promise<{ confirmedSignals: ConfirmedSignal[]; sessionSummaries: DecryptedSessionSummary[] }> {
+): Promise<{
+  confirmedSignals: ConfirmedSignal[]
+  sessionSummaries: DecryptedSessionSummary[]
+  openThreads: DecryptedOpenThread[]
+}> {
   const pk = userPk(userId)
   const resolvedCrypto = crypto ?? (await getSessionCrypto(userId))
 
-  const [signalsResult, summariesResult] = await Promise.all([
+  const [signalsResult, summariesResult, openThreadsResult] = await Promise.all([
     ddb.send(
       new QueryCommand({
         TableName: TABLE_NAME,
@@ -49,6 +62,13 @@ export async function gatherContinuityContext(
         TableName: TABLE_NAME,
         KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
         ExpressionAttributeValues: { ':pk': pk, ':prefix': 'SESSION#' },
+      })
+    ),
+    ddb.send(
+      new QueryCommand({
+        TableName: TABLE_NAME,
+        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+        ExpressionAttributeValues: { ':pk': pk, ':prefix': 'OPENTHREAD#' },
       })
     ),
   ])
@@ -77,7 +97,17 @@ export async function gatherContinuityContext(
       }))
   )
 
-  return { confirmedSignals, sessionSummaries }
+  const openThreads = await Promise.all(
+    ((openThreadsResult.Items ?? []) as OpenThreadItem[])
+      .filter((t) => VISIBLE_OPEN_THREAD_STATUSES.has(t.status))
+      .sort((a, b) => b.lastTouchedAt.localeCompare(a.lastTouchedAt))
+      .map(async (t) => {
+        const decrypted = await resolvedCrypto.decryptField<{ subject: string; whyItMatters: string }>(t.content)
+        return { subject: decrypted.subject, lifeDomain: t.lifeDomain, lastTouchedAt: t.lastTouchedAt }
+      })
+  )
+
+  return { confirmedSignals, sessionSummaries, openThreads }
 }
 
 export interface DueCommitment {

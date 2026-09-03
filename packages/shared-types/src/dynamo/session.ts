@@ -8,6 +8,29 @@ export type RoomType = z.infer<typeof RoomTypeSchema>
 export const SessionStatusSchema = z.enum(['active', 'completed', 'abandoned'])
 export type SessionStatus = z.infer<typeof SessionStatusSchema>
 
+/**
+ * Intelligence Spec §17 "Current Interaction Mode" — a temporary,
+ * session-level estimate of what the user needs right now, inferred fresh
+ * from each Companion turn (never sticky/cached across turns beyond what's
+ * persisted on `CompanionActiveSessionPointerItem` below), NOT an identity
+ * trait. Explicit user language ("I just want to talk") always outranks
+ * the inference — since the classifier reads the current turn's text every
+ * time, this falls out naturally rather than needing a separate override
+ * mechanism.
+ */
+export const InteractionModeSchema = z.enum([
+  'share',
+  'be_heard',
+  'understand',
+  'explore_pattern',
+  'decide',
+  'learn',
+  'act',
+  'regulate',
+  'unknown',
+])
+export type InteractionMode = z.infer<typeof InteractionModeSchema>
+
 export const SessionItemSchema = z.object({
   pk: z.string(),
   sk: z.string(), // Sk.session(sessionId)
@@ -65,6 +88,11 @@ export const CompanionActiveSessionPointerItemSchema = z.object({
   sk: z.literal('COMPANION#ACTIVE_SESSION'),
   sessionId: z.string(),
   updatedAt: z.string().datetime(),
+  // Intelligence Spec §17 — the most recently classified Current Interaction
+  // Mode for this active session (see InteractionModeSchema above). Absent
+  // until the first turn classifies one; re-set every turn, never averaged
+  // or locked.
+  currentInteractionMode: InteractionModeSchema.optional(),
 })
 export type CompanionActiveSessionPointerItem = z.infer<typeof CompanionActiveSessionPointerItemSchema>
 

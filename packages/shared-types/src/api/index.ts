@@ -7,6 +7,7 @@ export * from './rooms'
 export * from './library'
 export * from './continuity'
 export * from './webhooks'
+export * from './open-threads'
 
 /**
  * Every /v1 endpoint in MVP_ARCHITECTURE.md §4 now has a contract here.

@@ -60,6 +60,11 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
             sk: Sk.roadmap(),
             content: newContent,
             version: newVersion,
+            // Intelligence Spec §17 — accepting a revision resolves the
+            // 'evolving' state roadmap-revision.ts set when it proposed this;
+            // 'active' either way, whether this is the very first accept or
+            // a later one.
+            lifecycleState: 'active',
             updatedAt: now,
           } satisfies RoadmapItem,
         })
@@ -72,6 +77,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       theme: proposal.theme,
       direction: proposal.direction,
       suggestedSpaces: proposal.suggestedSpaces,
+      lifecycleState: 'active',
     }
     return jsonResponse(200, response)
   } catch (err) {

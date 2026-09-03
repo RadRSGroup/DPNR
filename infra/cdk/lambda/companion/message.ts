@@ -12,6 +12,9 @@ import {
   type SessionMessageItem,
   type RoadmapItem,
   type TwinSignalItem,
+  type OpenThreadItem,
+  type InteractionMode,
+  LifeDomainCategorySchema,
 } from '@dpnr/shared-types'
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { requireConsent } from '../lib/consent'
@@ -23,7 +26,8 @@ import { listActiveTopics } from '../lib/library-catalog'
 import { gatherContinuityContext } from '../continuity/gather-context'
 import { roadmapExists } from '../lib/roadmap'
 import { classifySafety, generateSafetyResponse } from '../lib/safety'
-import { getOrCreateActiveCompanionSession } from './session'
+import { classifyInteractionMode } from '../lib/interaction-mode'
+import { getOrCreateActiveCompanionSession, updateSessionInteractionMode } from './session'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
@@ -172,6 +176,19 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       reply = await generateSafetyResponse(ddb, PROMPT_REGISTRY_TABLE_NAME, classification, body.text)
       directive = null
     } else {
+      // Intelligence Spec §17 "Current Interaction Mode" — classified fresh
+      // every turn (never sticky), only in the non-safety-flagged branch
+      // (a flagged turn's reply is fixed/generic regardless, so classifying
+      // a mode for it would be wasted work). Reuses the same recent-window
+      // string the safety classifier just built above.
+      const currentInteractionMode = await classifyInteractionMode(
+        ddb,
+        PROMPT_REGISTRY_TABLE_NAME,
+        body.text,
+        safetyContext || '(no prior messages — this is the start of the conversation)'
+      )
+      await updateSessionInteractionMode(ddb, TABLE_NAME, pk, currentInteractionMode)
+
       const hasRoadmap = await roadmapExists(ddb, TABLE_NAME, pk)
       // Only a real Companion reply is billable — onboarding turns stay free
       // (user's own confirmed decision, Session 18), same rule already applied
@@ -180,8 +197,8 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         await consumeCredits(ddb, TABLE_NAME, pk, COMPANION_MESSAGE_COST, 'companion_message')
       }
       const result = hasRoadmap
-        ? await callCompanionModel(userId, history, body.text)
-        : await runOnboardingTurn(crypto, pk, sessionId, history, body.text)
+        ? await callCompanionModel(userId, pk, sessionId, crypto, history, body.text, currentInteractionMode)
+        : await runOnboardingTurn(crypto, pk, sessionId, history, body.text, currentInteractionMode)
       reply = result.reply
       directive = result.directive
     }
@@ -238,15 +255,26 @@ async function queryRecentMessages(
  * `respond` is a per-turn reactive reply, not a cross-session synthesis, so
  * pulling in session summaries here would duplicate what `continuation`
  * already does at open-time for no stated benefit.
+ *
+ * Intelligence Spec §17: also pulls `openThreads` from the same read (Open
+ * Threads worth Companion returning to "only when relevant"), and passes
+ * through `currentInteractionMode` (classified once by the caller, shared
+ * with the safety classifier's context window). Persists any new Open
+ * Thread the model's forced tool-use output surfaces via
+ * `maybePersistOpenThread` below.
  */
 async function callCompanionModel(
   userId: string,
+  pk: string,
+  sessionId: string,
+  crypto: SessionCrypto,
   history: CompanionTurn[],
-  userText: string
+  userText: string,
+  currentInteractionMode: InteractionMode
 ): Promise<{ reply: string; directive: CompanionDirective | null }> {
   const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'companion', 'respond')
   const topics = await listActiveTopics(ddb, LIBRARY_CATALOG_TABLE_NAME)
-  const { confirmedSignals } = await gatherContinuityContext(userId)
+  const { confirmedSignals, openThreads } = await gatherContinuityContext(userId, crypto)
 
   const conversationHistory =
     history.length > 0
@@ -261,19 +289,73 @@ async function callCompanionModel(
           .map((s) => `- (${s.domain}) ${s.description}`)
           .join('\n')
       : '(nothing confirmed yet)'
+  const openThreadsText =
+    openThreads.length > 0
+      ? openThreads
+          .slice(0, 5)
+          .map((t) => `- ${t.lifeDomain ? `(${t.lifeDomain}) ` : ''}${t.subject}`)
+          .join('\n')
+      : '(none yet)'
 
   const result = await callPromptModel(version, {
     conversationHistory,
     confirmedSignals: confirmedSignalsText,
+    openThreads: openThreadsText,
     libraryTopics,
+    currentInteractionMode,
     currentMessage: userText,
   })
   if (typeof result === 'string') {
     throw new HttpError(502, 'model_call_failed', 'Companion prompt did not return forced tool-use output.')
   }
 
+  await maybePersistOpenThread(crypto, pk, sessionId, result)
+
   const reply = typeof result.reply === 'string' ? result.reply : ''
   return { reply, directive: buildDirective(result, topics.map((t) => t.slug)) }
+}
+
+/**
+ * Intelligence Spec §17 "Open Threads" — persists a new OpenThreadItem when
+ * the model's forced tool-use output (`respond` or `onboard`, same flat
+ * field group on both) named one. The overwhelming majority of turns leave
+ * `newOpenThreadSubject` empty; this is the rare exception, not the norm —
+ * see companion-prompts.seed.ts's own doc comment for why this rides along
+ * on the existing reply call instead of a separate extraction pass. Never
+ * throws — same best-effort tolerance every other non-essential model-output
+ * side-write in this codebase gets (persistInitialRoadmap, rooms/twin-signals.ts).
+ */
+async function maybePersistOpenThread(
+  crypto: SessionCrypto,
+  pk: string,
+  sessionId: string,
+  result: Record<string, unknown>
+): Promise<void> {
+  const subject = typeof result.newOpenThreadSubject === 'string' ? result.newOpenThreadSubject.trim() : ''
+  if (!subject) return
+  try {
+    const whyItMatters = typeof result.newOpenThreadWhyItMatters === 'string' ? result.newOpenThreadWhyItMatters : ''
+    const lifeDomainParsed = LifeDomainCategorySchema.safeParse(result.newOpenThreadLifeDomain)
+    const userOwned = result.newOpenThreadUserOwned === true
+
+    const threadId = randomUUID()
+    const now = new Date().toISOString()
+    const item: OpenThreadItem = {
+      pk,
+      sk: Sk.openThread(threadId),
+      threadId,
+      status: 'active',
+      content: await crypto.encryptField<{ subject: string; whyItMatters: string }>({ subject, whyItMatters }),
+      lifeDomain: lifeDomainParsed.success ? lifeDomainParsed.data : undefined,
+      sourceSessionId: sessionId,
+      lastTouchedAt: now,
+      userOwned,
+      createdAt: now,
+    }
+    await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: item }))
+  } catch (err) {
+    console.error('Failed to persist new OpenThreadItem (non-fatal):', err instanceof Error ? err.message : 'unknown error')
+  }
 }
 
 /**
@@ -326,7 +408,8 @@ async function runOnboardingTurn(
   pk: string,
   sessionId: string,
   history: CompanionTurn[],
-  userText: string
+  userText: string,
+  currentInteractionMode: InteractionMode
 ): Promise<{ reply: string; directive: CompanionDirective | null }> {
   const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'companion', 'onboard')
 
@@ -342,12 +425,15 @@ async function runOnboardingTurn(
 
   const result = await callPromptModel(version, {
     conversationHistory,
+    currentInteractionMode,
     currentMessage: userText,
     conclusionInstruction,
   })
   if (typeof result === 'string') {
     throw new HttpError(502, 'model_call_failed', 'Onboarding prompt did not return forced tool-use output.')
   }
+
+  await maybePersistOpenThread(crypto, pk, sessionId, result)
 
   const reply = typeof result.reply === 'string' ? result.reply : ''
   if (result.readyForRoadmap === true) {
@@ -383,6 +469,12 @@ async function persistInitialRoadmap(
     sk: Sk.roadmap(),
     content: await crypto.encryptField<RoadmapContent>({ currentFocus, theme, direction, suggestedSpaces }),
     version: 1,
+    // Intelligence Spec §17 — onboarding writes directly to 'active', no new
+    // confirm step (a deliberate, user-confirmed simplification: the spec's
+    // own acceptance test only requires the first Roadmap form without a
+    // manual building form, not an extra confirmation screen — see
+    // docs/AGENT_LOG.md's Living System Behaviors entry).
+    lifecycleState: 'active',
     updatedAt: now,
   }
 

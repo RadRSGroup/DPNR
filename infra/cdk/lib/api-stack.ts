@@ -547,6 +547,45 @@ export class ApiStack extends Stack {
     })
     props.applicationTable.grantReadWriteData(roadmapProposalRejectFn)
 
+    // Intelligence Spec §17 — the one new Roadmap Lifecycle action; touches
+    // only the plaintext lifecycleState field, never `content`, so no
+    // session-tickets/KMS grant is needed here.
+    const roadmapLifecycleFn = new lambda.NodejsFunction(this, 'RoadmapLifecycleFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/roadmap/lifecycle.ts'),
+      description: 'POST /v1/roadmap/lifecycle — pause/resume/archive the live Roadmap.',
+    })
+    props.applicationTable.grantReadWriteData(roadmapLifecycleFn)
+
+    // Intelligence Spec §17 — Open Threads.
+    const openThreadsListFn = new lambda.NodejsFunction(this, 'OpenThreadsListFn', {
+      ...sharedProductLambdaProps,
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
+      entry: path.join(__dirname, '../lambda/open-threads/list.ts'),
+      description: 'GET /v1/open-threads — non-closed threads, most recently touched first.',
+    })
+    props.applicationTable.grantReadData(openThreadsListFn)
+    props.sessionTicketsKmsKey.grantDecrypt(openThreadsListFn)
+    props.sessionTicketsTable.grantReadData(openThreadsListFn)
+
+    const openThreadsCloseFn = new lambda.NodejsFunction(this, 'OpenThreadsCloseFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/open-threads/close.ts'),
+      description: 'POST /v1/open-threads/{id}/close — plaintext status flip, no crypto grant needed.',
+    })
+    props.applicationTable.grantReadWriteData(openThreadsCloseFn)
+
+    const openThreadsPauseFn = new lambda.NodejsFunction(this, 'OpenThreadsPauseFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/open-threads/pause.ts'),
+      description: 'POST /v1/open-threads/{id}/pause — plaintext status flip, no crypto grant needed.',
+    })
+    props.applicationTable.grantReadWriteData(openThreadsPauseFn)
+
     this.httpApi.addRoutes({
       path: '/v1/dashboard',
       methods: [apigwv2.HttpMethod.GET],
@@ -652,6 +691,34 @@ export class ApiStack extends Stack {
       path: '/v1/roadmap/proposal/reject',
       methods: [apigwv2.HttpMethod.POST],
       integration: new integrations.HttpLambdaIntegration('RoadmapProposalRejectIntegration', roadmapProposalRejectFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/roadmap/lifecycle',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('RoadmapLifecycleIntegration', roadmapLifecycleFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/open-threads',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('OpenThreadsListIntegration', openThreadsListFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/open-threads/{id}/close',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('OpenThreadsCloseIntegration', openThreadsCloseFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/open-threads/{id}/pause',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('OpenThreadsPauseIntegration', openThreadsPauseFn),
       authorizer: this.cognitoAuthorizer,
     })
 

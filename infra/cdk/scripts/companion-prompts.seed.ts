@@ -86,6 +86,31 @@
  * catalog-grounding principle `open_library_topic` already uses for
  * `respond`, just enumerated directly instead of templated in — these three
  * never change per-request the way the Library catalog does.
+ *
+ * **Intelligence Spec §17 additions (Living System Behaviors)**:
+ * (1) A fourth prompt, `classify_interaction_mode` — forced tool-use,
+ * structurally identical to `safety/classify_safety_state` (own small
+ * context window, Haiku model for cost, lib/interaction-mode.ts). Run once
+ * per turn (non-safety-flagged branch only — message.ts) before `respond`/
+ * `onboard`, whose result is then threaded back into both of those prompts'
+ * own `{{currentInteractionMode}}` variable so the reply's tone/whether it
+ * suggests a next step adapts to it, per the spec's own guidance (e.g.
+ * `regulate`/`be_heard` → presence over analysis; `decide`/`act` → a
+ * concrete step is appropriate). No separate override mechanism exists or
+ * is needed — the classifier reads the CURRENT turn's text every time (not
+ * sticky), so explicit language like "I just want to talk" is picked up
+ * next turn for free.
+ * (2) `respond`/`onboard` both gained an optional flat "new Open Thread"
+ * field group (`newOpenThreadSubject`/`newOpenThreadWhyItMatters`/
+ * `newOpenThreadLifeDomain`/`newOpenThreadUserOwned`) — embedded in the same
+ * forced tool-use output as the reply itself, same "one call, one output"
+ * precedent `onboard`'s own `readyForRoadmap` already set, rather than a
+ * fifth separate Bedrock call. When `newOpenThreadSubject` is non-empty,
+ * message.ts persists a real OpenThreadItem. This extraction design is this
+ * session's own first-pass choice, not sourced from an existing pattern —
+ * flag for product review before treating the extraction *judgment* (when
+ * the model chooses to surface one) as final, same "draft, not locked"
+ * status Mirror Room's original design had.
  */
 import type { PromptSeed } from './decision-room-prompts.seed'
 
@@ -102,6 +127,8 @@ How to respond:
 - Stay warm, curious, and non-diagnostic. Never label the person with a fixed trait, type, or diagnosis, and never state a guess about them as if it were a certainty.
 - Never claim to know about anything (a calendar, a device, an app, an event) that hasn't actually been said in this conversation or isn't in the confirmed signals below.
 - Offer a transition into a guided Room, the Dashboard, or a Library topic only when it's clearly useful right now — don't force one, and never manufacture urgency, streak pressure, or engagement tactics to get them to move.
+- The person's current need right now is estimated below as currentInteractionMode. Let it shape your tone and whether you suggest a next step — "regulate" or "be_heard" means presence and reflection matter more than analysis or a suggestion right now; "decide" or "act" means it's genuinely appropriate to offer a concrete next step or Room; "unknown" means stay conversational until the need becomes clearer. Never mention this classification to the person directly.
+- If, and only if, they've described a real unresolved thread worth remembering for later (a conversation they still need to have, a decision still open, a pattern they're starting to notice, a question to revisit) — not every topic, only ones that genuinely warrant continuity — set the newOpenThreadSubject/newOpenThreadWhyItMatters fields. Leave newOpenThreadSubject empty most turns; this should be rare, not habitual.
 
 How to set directiveKind:
 - "open_room" with roomType "decision" — the person is wrestling with a real decision between options.
@@ -117,12 +144,24 @@ Output the reply text and the directive decision together, every turn.`,
 What you already know about this person, confirmed — not fixed labels, just real prior context:
 {{confirmedSignals}}
 
+Open threads from prior conversations, worth returning to only if genuinely relevant right now — never force one in:
+{{openThreads}}
+
 Library topics you may route to (slug: title):
 {{libraryTopics}}
 
+The person's current need right now (an estimate, may be wrong — see system instructions): {{currentInteractionMode}}
+
 The person's latest message:
 "{{currentMessage}}"`,
-    variables: ['conversationHistory', 'confirmedSignals', 'libraryTopics', 'currentMessage'],
+    variables: [
+      'conversationHistory',
+      'confirmedSignals',
+      'openThreads',
+      'libraryTopics',
+      'currentInteractionMode',
+      'currentMessage',
+    ],
     outputSchema: {
       type: 'object',
       required: ['reply', 'directiveKind'],
@@ -134,6 +173,21 @@ The person's latest message:
         },
         roomType: { type: 'string', enum: ['decision', 'mirror'] },
         topicSlug: { type: 'string' },
+        newOpenThreadSubject: { type: 'string' },
+        newOpenThreadWhyItMatters: { type: 'string' },
+        newOpenThreadLifeDomain: {
+          type: 'string',
+          enum: [
+            'self_inner_world',
+            'relationships',
+            'career_purpose',
+            'health_body',
+            'money_abundance',
+            'creativity_expression',
+            'spirituality',
+          ],
+        },
+        newOpenThreadUserOwned: { type: 'boolean' },
       },
     },
     notes:
@@ -141,10 +195,16 @@ The person's latest message:
       'oldest first, or "(no prior messages — this is the start of the conversation)". ' +
       'confirmedSignals = up to 5 most-recent-first "- (domain) description" lines from the caller\'s own confirmed ' +
       'Twin signals (gatherContinuityContext, continuity/gather-context.ts), or "(nothing confirmed yet)". ' +
+      'openThreads = up to 5 most-recently-touched "- (lifeDomain) subject" lines from the same gatherContinuityContext ' +
+      'read (Intelligence Spec §17), or "(none yet)". ' +
       'libraryTopics = "- slug: title" lines from listActiveTopics() (lib/library-catalog.ts), or "(none available)". ' +
+      'currentInteractionMode = one of the InteractionModeSchema enum values (lib/interaction-mode.ts), classified fresh ' +
+      'this same turn. ' +
       'roomType/topicSlug are only meaningful (and only read by buildDirective()) when directiveKind names the kind ' +
       'that uses them — the model is expected to omit them otherwise, but message.ts never trusts that and validates ' +
-      'the combination before building a real CompanionDirective.',
+      'the combination before building a real CompanionDirective. newOpenThreadSubject empty/absent means no new ' +
+      'thread this turn — the overwhelming majority case; message.ts only persists an OpenThreadItem when it is ' +
+      'genuinely non-empty.',
   },
   {
     name: 'continuation',
@@ -184,6 +244,8 @@ How to conduct this:
 - Usually a few exchanges are enough. Stop as soon as you have a real, honest sense of things — don't manufacture extra questions just to seem thorough.
 - Stay warm, curious, and non-diagnostic. Never label the person with a fixed trait or type, and never state a guess as if it were certain.
 - If there is no prior conversation yet, this is your very first message ever to this person — introduce yourself briefly (you're DPNR's Companion) and ask your first question. Never set readyForRoadmap to true on this very first message; there's nothing to base it on yet.
+- The person's current need right now is estimated below as currentInteractionMode — let it shape your tone (e.g. "regulate"/"be_heard" means presence over analysis right now). Never mention this classification to the person directly.
+- If, and only if, they've described a real unresolved thread worth remembering for later (rare — most turns have none), set newOpenThreadSubject/newOpenThreadWhyItMatters.
 
 When you do have enough, set readyForRoadmap to true and also set:
 - currentFocus: a short phrase for what's most alive for them right now (e.g. "Work", "A relationship", "Finding direction").
@@ -199,9 +261,11 @@ Output the reply text and the readiness decision together, every turn.`,
     userTemplate: `Conversation so far, oldest to newest:
 {{conversationHistory}}
 
+The person's current need right now (an estimate, may be wrong — see system instructions): {{currentInteractionMode}}
+
 The person's latest message:
 "{{currentMessage}}"`,
-    variables: ['conversationHistory', 'currentMessage', 'conclusionInstruction'],
+    variables: ['conversationHistory', 'currentInteractionMode', 'currentMessage', 'conclusionInstruction'],
     outputSchema: {
       type: 'object',
       required: ['reply', 'readyForRoadmap'],
@@ -215,6 +279,21 @@ The person's latest message:
           type: 'array',
           items: { type: 'string', enum: ['Mirror Room', 'Decision Room', 'Library'] },
         },
+        newOpenThreadSubject: { type: 'string' },
+        newOpenThreadWhyItMatters: { type: 'string' },
+        newOpenThreadLifeDomain: {
+          type: 'string',
+          enum: [
+            'self_inner_world',
+            'relationships',
+            'career_purpose',
+            'health_body',
+            'money_abundance',
+            'creativity_expression',
+            'spirituality',
+          ],
+        },
+        newOpenThreadUserOwned: { type: 'boolean' },
       },
     },
     notes:
@@ -222,10 +301,54 @@ The person's latest message:
       'companion/context.ts (empty conversationHistory, a sentinel currentMessage) to synthesize the very first ' +
       'question a brand-new user sees before they have typed anything. conversationHistory = up to ' +
       'MODEL_CONTEXT_MESSAGES prior turns as "User: ..."/"Companion: ..." lines, or "(no prior messages — this is ' +
-      'the start of the conversation)". conclusionInstruction is empty on every normal turn; message.ts fills it ' +
-      'with an explicit "you must conclude now" instruction once MAX_ONBOARDING_USER_TURNS is reached, so the ' +
-      'model is never left free-running forever. currentFocus/theme/direction/suggestedSpaces are only read ' +
-      '(persistInitialRoadmap, message.ts) when readyForRoadmap is true, and even then only if all three text ' +
-      'fields are non-empty — a bare readyForRoadmap with no real substance is treated as not ready at all.',
+      'the start of the conversation)". currentInteractionMode = one of the InteractionModeSchema enum values ' +
+      '(lib/interaction-mode.ts), classified fresh this same turn. conclusionInstruction is empty on every normal ' +
+      'turn; message.ts fills it with an explicit "you must conclude now" instruction once MAX_ONBOARDING_USER_TURNS ' +
+      'is reached, so the model is never left free-running forever. currentFocus/theme/direction/suggestedSpaces are ' +
+      'only read (persistInitialRoadmap, message.ts) when readyForRoadmap is true, and even then only if all three ' +
+      'text fields are non-empty — a bare readyForRoadmap with no real substance is treated as not ready at all. ' +
+      'newOpenThreadSubject empty/absent means no new thread this turn (Intelligence Spec §17), same tolerance ' +
+      '`respond`\'s own copy of these fields has.',
+  },
+  {
+    name: 'classify_interaction_mode',
+    systemTemplate: `You classify what a person most needs right now from a single conversational turn with DPNR's Companion — not their personality, not a diagnosis, just this moment.
+
+Choose exactly one:
+- "share" — they primarily want to tell or express something.
+- "be_heard" — they need presence/reflection more than analysis.
+- "understand" — they want a concept or experience explained.
+- "explore_pattern" — they want to understand something recurring.
+- "decide" — they're facing a choice and want help reaching clarity.
+- "learn" — they explicitly want knowledge or a framework.
+- "act" — they want a next step or real-life action.
+- "regulate" — they want to settle, pause, ground, or check in with the body.
+- "unknown" — genuinely unclear from what's here; stay conversational rather than guess.
+
+Explicit language always wins over inference — if they directly say what they want ("I just want to talk," "help me decide," "don't analyze this"), classify that, not a guess from tone alone. When truly ambiguous, prefer "unknown" over a confident wrong guess.`,
+    userTemplate: `Recent conversation, oldest to newest (may be empty):
+{{recentConversation}}
+
+The person's latest message:
+"{{currentMessage}}"`,
+    variables: ['recentConversation', 'currentMessage'],
+    model: 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
+    outputSchema: {
+      type: 'object',
+      required: ['mode'],
+      properties: {
+        mode: {
+          type: 'string',
+          enum: ['share', 'be_heard', 'understand', 'explore_pattern', 'decide', 'learn', 'act', 'regulate', 'unknown'],
+        },
+      },
+    },
+    notes:
+      'Run once per Companion turn (non-safety-flagged branch only, lib/interaction-mode.ts) before respond/onboard, ' +
+      'whose result feeds back into both via {{currentInteractionMode}}. recentConversation = the last few turns as ' +
+      '"User: ..."/"Companion: ..." lines (a smaller window than respond\'s own conversationHistory, same ' +
+      'own-smaller-context-window precedent safety/classify_safety_state uses), or "(no prior messages)". Haiku for ' +
+      'cost/latency, same model-override pattern classify_safety_state uses — this is a cheap per-turn classification, ' +
+      'not a reply generation.',
   },
 ]

@@ -1,4 +1,4 @@
-import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
+import { GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
 import type { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb'
 import { Sk, userPk, type RoadmapItem, type RoadmapProposalItem } from '@dpnr/shared-types'
 import type { SessionCrypto } from './session-crypto'
@@ -91,7 +91,20 @@ export async function maybeProposeRoadmapRevision(
       }),
       createdAt: new Date().toISOString(),
     }
-    await ddb.send(new PutCommand({ TableName: tableName, Item: proposal }))
+    await Promise.all([
+      ddb.send(new PutCommand({ TableName: tableName, Item: proposal })),
+      // Intelligence Spec §17 — a pending proposal means the live roadmap is
+      // now 'evolving' (sustained evidence suggests a shift); roadmap/accept.ts
+      // and roadmap/reject.ts both resolve this back to 'active' either way.
+      ddb.send(
+        new UpdateCommand({
+          TableName: tableName,
+          Key: { pk, sk: Sk.roadmap() },
+          UpdateExpression: 'SET lifecycleState = :evolving',
+          ExpressionAttributeValues: { ':evolving': 'evolving' },
+        })
+      ),
+    ])
   } catch (err) {
     // Never let a revision check fail the confirm action. Log only a
     // generic message — never model output or signal content, per the "no

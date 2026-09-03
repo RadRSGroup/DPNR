@@ -48,7 +48,21 @@ const DOMAIN_TO_TAXONOMY_CATEGORY: Record<string, string> = {
  * Degrades to an honest empty list if the caller has zero confirmed
  * signals — same "no half-finished implementations" standard the prior
  * stub's own doc comment already established for this endpoint.
+ *
+ * Intelligence Spec §17 "Do Nothing Is a Valid Recommendation" — when the
+ * ranking above comes back empty for a person who nonetheless HAS some real
+ * confirmed-signal history, that's a materially different empty state from
+ * "brand new, nothing yet": every current confirmed signal is either
+ * already covered by what they've read or doesn't map to a live topic —
+ * there's genuinely nothing new the catalog can usefully add right now.
+ * `noActionReason: 'integration_space'` distinguishes that case explicitly
+ * rather than returning the same silent empty list either way. First-pass
+ * heuristic — this codebase has no read/view-history tracking (see the
+ * "already read" note above) to build a more precise trigger from, so
+ * "has confirmed signals but nothing ranked" is what's actually available
+ * today; flagged for product review, not treated as final.
  */
+const INTEGRATION_SPACE_MESSAGE = 'You may already have enough to take with you for now.'
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
     const userId = requireUserId(event)
@@ -88,7 +102,10 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
             : `Related to ${r.score} confirmed ${r.topic.taxonomyCategory.toLowerCase()} signals`,
       }))
 
-    const body: LibraryRecommendationsResponse = { recommendations: ranked }
+    const body: LibraryRecommendationsResponse =
+      ranked.length === 0 && confirmedSignals.length > 0
+        ? { recommendations: ranked, noActionReason: 'integration_space', message: INTEGRATION_SPACE_MESSAGE }
+        : { recommendations: ranked }
     return jsonResponse(200, body)
   } catch (err) {
     return errorResponse(err)

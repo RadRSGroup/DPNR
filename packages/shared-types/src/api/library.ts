@@ -44,5 +44,15 @@ export const LibraryRecommendationsResponseSchema = z.object({
       reason: z.string(), // short human-readable "why this", e.g. "Related to a confirmed pattern"
     })
   ),
+  // Intelligence Spec §17 "Do Nothing Is a Valid Recommendation" — set only
+  // when the person has some real confirmed-signal history but nothing in
+  // the catalog currently outranks it (recommendations is empty in that
+  // case). A brand-new user with zero confirmed signals gets a plain empty
+  // list with no reason — that's "nothing yet," a different state from
+  // "you have enough for now." First-pass heuristic (see
+  // infra/cdk/lambda/library/recommendations.ts), flagged for product
+  // review, not treated as final.
+  noActionReason: z.enum(['integration_space']).optional(),
+  message: z.string().optional(), // present only alongside noActionReason
 })
 export type LibraryRecommendationsResponse = z.infer<typeof LibraryRecommendationsResponseSchema>

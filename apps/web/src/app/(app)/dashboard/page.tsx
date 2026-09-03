@@ -6,7 +6,14 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import { ArrowRight, Heart, Sparkles } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
-import { getDashboard, getTwin, getCompanionContext, acceptRoadmapProposal, rejectRoadmapProposal } from '@/lib/api/v1-client'
+import {
+  getDashboard,
+  getTwin,
+  getCompanionContext,
+  acceptRoadmapProposal,
+  rejectRoadmapProposal,
+  updateRoadmapLifecycle,
+} from '@/lib/api/v1-client'
 import type { DashboardResponse, TwinListResponse, CompanionContextResponse } from '@dpnr/shared-types'
 import { LIFE_DOMAIN_LABELS, ARCHETYPE_LABELS } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
@@ -57,6 +64,7 @@ function DashboardContent() {
   const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
   const [loading, setLoading] = useState(true)
   const [proposalPending, setProposalPending] = useState(false)
+  const [lifecyclePending, setLifecyclePending] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -98,6 +106,20 @@ function DashboardContent() {
       // Leave the proposal card as-is — the buttons remain available to retry.
     } finally {
       setProposalPending(false)
+    }
+  }
+
+  // Intelligence Spec §17 — Roadmap Lifecycle pause/resume/archive.
+  async function handleLifecycleAction(action: 'pause' | 'resume' | 'archive') {
+    if (lifecyclePending) return
+    setLifecyclePending(true)
+    try {
+      const { lifecycleState } = await updateRoadmapLifecycle(action)
+      setDashboard((prev) => (prev?.roadmap ? { ...prev, roadmap: { ...prev.roadmap, lifecycleState } } : prev))
+    } catch {
+      // Leave the roadmap card as-is — the buttons remain available to retry.
+    } finally {
+      setLifecyclePending(false)
     }
   }
 
@@ -191,6 +213,47 @@ function DashboardContent() {
             {/* My Roadmap — real currentFocus/theme/direction, shared with
                 Growth Tracker (Slice 4) via RoadmapTimelineCard. */}
             {dashboard?.roadmap && <RoadmapTimelineCard roadmap={dashboard.roadmap} />}
+
+            {/* Intelligence Spec §17 — Roadmap Lifecycle state + the one
+                genuinely new action (pause/resume/archive); everything else
+                about the lifecycle just labels transitions that already
+                happen elsewhere. Minimal by design — a label plus whichever
+                one or two actions are actually valid from the current state,
+                not a full lifecycle-management UI. */}
+            {dashboard?.roadmap && (
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs text-white/40 capitalize">Roadmap: {dashboard.roadmap.lifecycleState}</span>
+                <div className="flex gap-2">
+                  {(dashboard.roadmap.lifecycleState === 'active' || dashboard.roadmap.lifecycleState === 'evolving') && (
+                    <button
+                      onClick={() => handleLifecycleAction('pause')}
+                      disabled={lifecyclePending}
+                      className="text-xs text-white/40 hover:text-white/70 transition-colors disabled:opacity-50"
+                    >
+                      Pause
+                    </button>
+                  )}
+                  {(dashboard.roadmap.lifecycleState === 'paused' || dashboard.roadmap.lifecycleState === 'archived') && (
+                    <button
+                      onClick={() => handleLifecycleAction('resume')}
+                      disabled={lifecyclePending}
+                      className="text-xs text-white/40 hover:text-white/70 transition-colors disabled:opacity-50"
+                    >
+                      Resume
+                    </button>
+                  )}
+                  {dashboard.roadmap.lifecycleState !== 'archived' && (
+                    <button
+                      onClick={() => handleLifecycleAction('archive')}
+                      disabled={lifecyclePending}
+                      className="text-xs text-white/40 hover:text-white/70 transition-colors disabled:opacity-50"
+                    >
+                      Archive
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Life Domains — real aggregate over confirmed, classified Twin
                 signals (twin/classify_signal, Session 19). Only domains the

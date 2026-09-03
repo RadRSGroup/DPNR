@@ -1,5 +1,11 @@
 import { z } from 'zod'
-import { TwinSignalDomainSchema, TwinSignalStatusSchema, LifeDomainCategorySchema, ArchetypeSchema } from '../dynamo/twin'
+import {
+  TwinSignalDomainSchema,
+  TwinSignalStatusSchema,
+  LifeDomainCategorySchema,
+  ArchetypeSchema,
+  RoadmapLifecycleStateSchema,
+} from '../dynamo/twin'
 
 /**
  * Aggregate read for GET /v1/dashboard (MVP_ARCHITECTURE.md §4) — one call,
@@ -15,6 +21,9 @@ export const DashboardResponseSchema = z.object({
       theme: z.string(),
       direction: z.string(),
       suggestedSpaces: z.array(z.string()),
+      // Intelligence Spec §17 — additive; see RoadmapLifecycleStateSchema's
+      // own doc comment for why 'emerging'/'proposed' never appear here.
+      lifecycleState: RoadmapLifecycleStateSchema,
     })
     .nullable(), // null until onboarding has produced one
   // A pending revision (Session 16) — present only when roadmap/revise has
@@ -114,12 +123,30 @@ export const RoadmapProposalAcceptResponseSchema = z.object({
   theme: z.string(),
   direction: z.string(),
   suggestedSpaces: z.array(z.string()),
+  lifecycleState: RoadmapLifecycleStateSchema,
 })
 export type RoadmapProposalAcceptResponse = z.infer<typeof RoadmapProposalAcceptResponseSchema>
 
 /** POST /v1/roadmap/proposal/reject — the proposal is discarded; the live Roadmap is untouched. */
 export const RoadmapProposalRejectResponseSchema = z.object({ ok: z.literal(true) })
 export type RoadmapProposalRejectResponse = z.infer<typeof RoadmapProposalRejectResponseSchema>
+
+/**
+ * POST /v1/roadmap/lifecycle — Intelligence Spec §17's Pause/Archive/Resume
+ * actions, the one genuinely new piece of Roadmap Lifecycle functionality
+ * (everything else just labels transitions that already happen). Validated
+ * server-side against a small allowed-transitions table, not just accepted
+ * blindly — see infra/cdk/lambda/roadmap/lifecycle.ts.
+ */
+export const RoadmapLifecycleActionRequestSchema = z.object({
+  action: z.enum(['pause', 'resume', 'archive']),
+})
+export type RoadmapLifecycleActionRequest = z.infer<typeof RoadmapLifecycleActionRequestSchema>
+
+export const RoadmapLifecycleActionResponseSchema = z.object({
+  lifecycleState: RoadmapLifecycleStateSchema,
+})
+export type RoadmapLifecycleActionResponse = z.infer<typeof RoadmapLifecycleActionResponseSchema>
 
 /** GET /v1/credits */
 export const CreditsResponseSchema = z.object({

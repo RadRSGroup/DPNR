@@ -8,11 +8,36 @@ import { EncryptedBlobSchema } from './crypto'
  * `RoadmapProposalItem` below is accepted, with the prior content archived
  * under `Sk.roadmapVersion(oldVersion)` at the same moment.
  */
+/**
+ * Intelligence Spec §17 "Roadmap Formation and Lifecycle" — named states
+ * replacing the previously-implicit "the Roadmap just exists" model.
+ * `emerging` has no corresponding RoadmapItem at all (it's the pre-onboarding
+ * state — Companion is still gathering evidence, nothing persisted yet) and
+ * `proposed` has no corresponding RoadmapItem either (that's what a pending
+ * `RoadmapProposalItem` already represents structurally) — both are included
+ * here for completeness with the spec's own enum, even though no live
+ * RoadmapItem is ever written with those two values today: onboarding writes
+ * directly to `active` (a deliberate, user-confirmed simplification — see
+ * docs/AGENT_LOG.md's Living System Behaviors entry), and a proposal's own
+ * existence is what "proposed" means, not a RoadmapItem field.
+ */
+export const RoadmapLifecycleStateSchema = z.enum([
+  'emerging',
+  'proposed',
+  'confirmed',
+  'active',
+  'evolving',
+  'paused',
+  'archived',
+])
+export type RoadmapLifecycleState = z.infer<typeof RoadmapLifecycleStateSchema>
+
 export const RoadmapItemSchema = z.object({
   pk: z.string(),
   sk: z.string(), // Sk.roadmap() or Sk.roadmapVersion(n) for history
   content: EncryptedBlobSchema, // wraps { currentFocus, theme, direction, suggestedSpaces }
   version: z.number().int().positive(),
+  lifecycleState: RoadmapLifecycleStateSchema,
   updatedAt: z.string().datetime(),
 })
 export type RoadmapItem = z.infer<typeof RoadmapItemSchema>

@@ -254,6 +254,10 @@ async function synthesizeOnboardingOpener(
     const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'companion', 'onboard')
     const result = await callPromptModel(version, {
       conversationHistory: '(no prior messages — this is the start of the conversation)',
+      // Intelligence Spec §17 — there's no real user turn to classify yet
+      // (this is a synthesized opener, not a reply), so 'unknown' is the
+      // spec's own honest default rather than guessing.
+      currentInteractionMode: 'unknown',
       currentMessage:
         "(the person has just opened Companion for the very first time and hasn't said anything yet — introduce yourself briefly and ask your first orienting question)",
       conclusionInstruction: '',
