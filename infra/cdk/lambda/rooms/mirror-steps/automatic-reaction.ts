@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import { parseValue } from '../../lib/http'
-import { stubEncryptField, stubDecryptField } from '../../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModel } from '../../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from '../db'
@@ -33,7 +32,7 @@ export const automaticReactionStep: StepDefinition = {
   allowedActions: ['SUBMIT_STEP', 'REFINE'],
   handle: async (ctx) => {
     const session = await getMirrorSession(ctx.pk, ctx.sessionId)
-    const content = stubDecryptField<MirrorContent>(session.content)
+    const content = await ctx.crypto.decryptField<MirrorContent>(session.content)
 
     if (ctx.action === 'REFINE') {
       const { thought, emotion, bodyResponse } = parseValue(ctx.input, RefineInput)
@@ -57,7 +56,7 @@ export const automaticReactionStep: StepDefinition = {
     const updatedSession = {
       ...session,
       currentStepId: 'AUTOMATIC_REACTION',
-      content: stubEncryptField<MirrorContent>({ ...content, thought, emotion, bodyResponse, automaticReaction }),
+      content: await ctx.crypto.encryptField<MirrorContent>({ ...content, thought, emotion, bodyResponse, automaticReaction }),
       updatedAt: now,
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: updatedSession }))

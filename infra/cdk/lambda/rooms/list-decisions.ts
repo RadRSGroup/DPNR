@@ -2,7 +2,7 @@ import type { APIGatewayProxyHandlerV2WithJWTAuthorizer } from 'aws-lambda'
 import { QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { userPk, type DecisionItem, type DecisionsListResponse } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
-import { stubDecryptField } from '../lib/crypto-stub'
+import { getSessionCrypto } from '../lib/session-crypto'
 import { ddb, TABLE_NAME } from './db'
 
 type DecisionContent = { title: string; subtitle: string | null; narrative: string }
@@ -18,6 +18,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   try {
     const userId = requireUserId(event)
     const pk = userPk(userId)
+    const crypto = await getSessionCrypto(userId)
 
     const result = await ddb.send(
       new QueryCommand({
@@ -35,14 +36,16 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       (item) => item.sk.split('#').length === 3
     )
 
-    const decisions = items
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-      .map((item) => ({
-        decisionId: item.decisionId,
-        title: stubDecryptField<DecisionContent>(item.content).title,
-        status: item.status,
-        createdAt: item.createdAt,
-      }))
+    const decisions = await Promise.all(
+      items
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .map(async (item) => ({
+          decisionId: item.decisionId,
+          title: (await crypto.decryptField<DecisionContent>(item.content)).title,
+          status: item.status,
+          createdAt: item.createdAt,
+        }))
+    )
 
     const body: DecisionsListResponse = { decisions }
     return jsonResponse(200, body)

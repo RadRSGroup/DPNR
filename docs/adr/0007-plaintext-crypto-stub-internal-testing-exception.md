@@ -1,6 +1,6 @@
 # ADR 0007 — Plaintext crypto-stub use accepted for internal testing only, not for any real user
 
-**Status:** Accepted (2026-08-19, Session 7 — post-audit alignment work)
+**Status:** Resolved/closed (2026-09-03, Session 34 — Phase 6 Stage 4b). See "Resolution" below.
 
 ## Context
 
@@ -56,3 +56,20 @@ exists yet" framing but was never explicitly written down once AWS actually went
 - A future session building Phase 6 should treat "the stub can finally be retired" as the natural trigger to
   mark this ADR's exception closed, alongside `isProduction: true` actually being set at deploy time for
   the first time.
+
+## Resolution (2026-09-03, Session 34)
+
+Phase 6 Stage 4b converted the last ~34 `crypto-stub.ts` call sites to real per-user AES-256-GCM encryption
+(`getSessionCrypto()`, `lib/session-crypto.ts` — built in Stage 4a, this session applied it everywhere else).
+`crypto-stub.ts` itself and `PLAINTEXT_CRYPTO_STUB_ACK` have been deleted from the codebase entirely — there
+is no longer a plaintext fallback to gate, under any env var or flag. Every `[ENCRYPTED]` field in the live
+`dpnr-application` table is real ciphertext as of this deploy, live-verified across all 8 remaining domains
+(Rooms, Continuity, Twin, Roadmap, Dashboard, Library, Export — see `docs/AGENT_LOG.md` Session 34).
+
+This closes the exception this ADR granted: the trigger condition ("Phase 6 ships") is met, and more strongly
+than the original text anticipated — the risk wasn't just deprioritized behind a flag, the escape hatch was
+removed from the code. **`isProduction: true` was deliberately NOT flipped as part of this session** — that
+flag now controls two unrelated production-readiness concerns that this session did not evaluate (the real,
+non-sandbox Grow payment API base URL in `api-stack.ts`, and DynamoDB/Cognito removal policies in
+`data-stack.ts`/`auth-stack.ts`), and flipping it is a separate decision for whoever actually launches to a
+paying user, not something this ADR's closure requires or this session was scoped to assess.

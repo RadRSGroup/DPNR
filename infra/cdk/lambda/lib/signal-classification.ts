@@ -7,7 +7,7 @@ import {
   type LifeDomainCategory,
   type Archetype,
 } from '@dpnr/shared-types'
-import { stubDecryptField } from './crypto-stub'
+import type { SessionCrypto } from './session-crypto'
 import { resolvePromptVersion } from './prompt-registry'
 import { callPromptModel } from './model-call'
 
@@ -28,10 +28,11 @@ export async function maybeClassifySignal(
   ddb: DynamoDBDocumentClient,
   tableName: string,
   promptRegistryTableName: string,
-  signal: TwinSignalItem
+  signal: TwinSignalItem,
+  crypto: SessionCrypto
 ): Promise<void> {
   try {
-    const { description } = stubDecryptField<{ description: string }>(signal.content)
+    const { description } = await crypto.decryptField<{ description: string }>(signal.content)
 
     const version = await resolvePromptVersion(ddb, promptRegistryTableName, 'twin', 'classify_signal')
     const result = await callPromptModel(version, {

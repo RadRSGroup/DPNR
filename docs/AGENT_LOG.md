@@ -8,6 +8,14 @@ This project has **no human development team**. It is built entirely by Claude C
 
 > You're picking up work on DPNR (`C:\Users\rekkawi\decision-room`), a personal-development product built entirely by Claude Code agents — no human dev team, real engineering discipline expected anyway. Before doing anything else, read `docs/AGENT_LOG.md` in full, then `docs/MVP_ARCHITECTURE.md`, then `docs/adr/`, then `docs/PHASE_AUDIT.md`, then `docs/INTELLIGENCE_SPEC_AUDIT.md` (new as of Session 29 — compares the new `docs/DPNR_operating_spec_principles.pdf` intelligence spec against the live codebase; that PDF now ranks above `MVP_ARCHITECTURE.md` in doc authority) — don't relitigate a settled ADR.
 >
+> **Status (Session 34 — read this first): Phase 6 Stage 4b is DONE, deployed, and fully live-verified — Phase 6 (real end-to-end encryption) is now code-complete.** This was the mechanical-but-critical last stage: applied Stage 4a's proven `getSessionCrypto(userId)` pattern to every one of the ~34 remaining `crypto-stub.ts` call sites, across Rooms (`command.ts`'s flow-engine dispatcher + all 13 decision-steps/6 mirror-steps files + 4 standalone read Lambdas + `twin-signals.ts`), Continuity (`gather-context.ts` + both scheduled composers + all 4 commitment/daily-card/weekly-recap handlers), Twin, Roadmap, Dashboard, Library, and `account/export.ts` (which — a real, previously-flagged gap — had zero `kms:Decrypt`/session-tickets-table grant at all before this; now fixed). Three parallel subagents did the mechanical file-by-file conversion (each domain's files are disjoint, so no merge conflicts), sharing one worked reference (`companion/message.ts`/`context.ts` from Stage 4a) and one new shared plumbing point (`rooms/types.ts`'s `StepContext` gained a `crypto: SessionCrypto` field, threaded once in `command.ts` and consumed via `ctx.crypto` in every step file). `infra/cdk/lib/api-stack.ts` got the matching IAM wiring for all 20 Lambdas that now call `getSessionCrypto` (9 already had the Stage-2-era `kms:Decrypt` grant and only needed the two env vars + a `sessionTicketsTable.grantReadData` added; 9 more — Dashboard, Library topic-detail, Roadmap accept, all 5 remaining Continuity handlers, and `userExportFn` — needed the grant added fresh) — verified exact by parsing the synthesized CloudFormation template directly (20 functions with `kms:Decrypt`, matching precisely the 20 that call `getSessionCrypto`, no more no less; also found and removed one unused pre-emptive grant on `TwinRejectFn`, which never actually touches encrypted content). **`crypto-stub.ts` and `PLAINTEXT_CRYPTO_STUB_ACK` are deleted from the codebase entirely** — zero remaining callers, zero plaintext fallback under any flag. **ADR 0007 (the plaintext-stub internal-testing exception) is formally closed** — see its own new "Resolution" section; `isProduction: true` was deliberately NOT flipped as part of this, since it now gates two unrelated concerns (real Grow payment API base URL, DynamoDB/Cognito removal policies) this session didn't evaluate.
+>
+> **Live-verified thoroughly against real AWS, not a mock — one real signed-up test user driven through all 8 domains.** `Dpnr-Api` deployed clean (50/50 resources, 53s). A dedicated verification pass then drove the real deployed API + real DynamoDB for each domain: Rooms/Decision and Rooms/Mirror (real `{v:1, iv:<12 random bytes>, ...}` ciphertext confirmed on write, correct decrypt on both the `/full` and list reads), Continuity commitments (create/list/complete all decrypt correctly), the two **scheduled composer Lambdas** (`aws lambda invoke`'d directly since they're not behind API Gateway — CloudWatch confirmed "1 composed, 0 failed" for both `ComposeDailyCardFn`/`ComposeWeeklyRecapFn`, and `GET /v1/daily-card`/`GET /v1/weekly-recap` returned real decrypted content; this was the highest-risk conversion, since crypto is resolved fresh *inside* the per-user batch loop rather than once per invocation, and it held up), Twin (a directly-seeded real-crypto-encrypted `TwinSignalItem` correctly decrypted by `GET /v1/twin`, then `POST .../confirm` correctly re-encrypted it and triggered real Bedrock classification), Roadmap (`POST /v1/roadmap/proposal/accept` correctly promoted a seeded proposal's real ciphertext into the live Roadmap, archiving the original byte-for-byte), Dashboard and Library (both resolve `getSessionCrypto` cleanly and correctly decrypt real content — Library's Twin-signal-personalized explanation path included), and Export (`GET /v1/user/export` returned all 16 items with every `[ENCRYPTED]` field genuinely decrypted, none still stub-shaped). Full cleanup confirmed independently after the fact (not just trusted from the verification pass's own report): 0 remaining `dpnr-application`/`dpnr-session-tickets` rows for the test user, Cognito user confirmed deleted (`UserNotFoundException`), `git status` shows only the 44 intended Stage 4b files (43 code + this log).
+>
+> **Not built, still genuinely open**: the `SessionItem.lastResponse` plaintext leak in `rooms/command.ts` (flagged since Session 10 — the whole `RoomCommandResponse` object, including any decrypted content it echoes, is persisted as a plain JS object with no encryption pass of its own). This was in Stage 4b's original scope list but wasn't touched this session — a real remaining gap, not an oversight being hidden.
+>
+> **Next**: with Phase 6 fully code-complete, there's no more pre-scoped crypto work queued. Per the still-current backlog ordering (Session 30/31/33): Living System behaviors (Intelligence Spec §17 — `OpenThread`, named Roadmap lifecycle states, current-interaction-mode inference; none exist yet, the biggest net-new build left in the whole spec), then signal-model enrichment, then everything else in `INTELLIGENCE_SPEC_AUDIT.md`'s table. Also still unresolved, lower-priority: `PUT /v1/auth/password`, the `SessionItem.lastResponse` leak above, the Life Domains taxonomy mismatch (7 vs. 8), and the `lital@be-dpnr.com` SNS subscription's confirmation status (recheck before assuming a real `immediate_danger` alert reaches anyone). Ask the user which to pick up.
+>
 > **Status (Session 33 — read this first): Phase 6 Stage 3 is now DONE, deployed, and fully live-verified — real signup/login/recovery wiring for the crypto system.** Plan file `C:\Users\rekkawi\.claude\plans\lovely-napping-milner.md`. Built: `apps/web/src/lib/auth/keyBootstrap.ts` (new — `bootstrapKeysAtSignup`/`establishSessionTicket`/`recoverAndRewrapDek`, composing the crypto module with the `/v1` API client), wired into `signup`'s confirm step (real key generation + the mandatory ADR 0001 recovery-code reveal, `components/auth/RecoveryCodeReveal.tsx`) and into `login`/sign-out (real session-ticket create/revoke). New `PUT /v1/keys` endpoint (`infra/cdk/lambda/account/keys-update.ts`) and a net-new `/forgot-password` page complete the account-recovery loop.
 >
 > **Two real design decisions made this session, written up as ADR 0014 (read it before touching key recovery again)**: (1) `wrappedPrivateKey` was previously only vaguely documented as wrapped "under the account KEK" — if that meant the password KEK literally, a recovery-code-based recovery could never re-derive the private key (a different KEK entirely). Fixed by wrapping it under the raw DEK instead, so either recovery path (password or code) uniformly recovers it; a recovery now only ever re-wraps `wrappedDek`/`wrappedDekRecovery`. (2) Recovering via the code **rotates it** — a fresh recovery code is generated and shown again (same explicit-ack screen as signup), the old one stops working. This was a direct user decision (asked via AskUserQuestion, not assumed), and it's why `PUT /v1/keys`'s request body always carries both `wrappedDek` and `wrappedDekRecovery` together, never just one.
@@ -205,60 +213,57 @@ This project has **no human development team**. It is built entirely by Claude C
 
 *(This section is overwritten every session with the current, precise handoff. Do not append to it — replace it. As of Session 11, the long per-session condensed narrative that used to accumulate here was removed — every one of those sessions' full detail already lives in Session History below, verbatim; condensing it a second time up here had drifted from this section's own "replace it" rule for several sessions running. Keep this section to current status + what's next; look in Session History for how we got here.)*
 
-**Session 33 (read this first): Phase 6 Stage 3 (recovery-code UX + real signup/login/recovery wiring) is DONE,
-deployed, and fully live-verified.** Plan file `C:\Users\rekkawi\.claude\plans\lovely-napping-milner.md`; design
-decisions in **ADR 0014**. Summary: `apps/web/src/lib/auth/keyBootstrap.ts` (new) is the orchestration layer —
-`bootstrapKeysAtSignup` (wired into `signup/page.tsx`'s confirm step, followed by the mandatory ADR 0001
-recovery-code reveal via new `components/auth/RecoveryCodeReveal.tsx`), `establishSessionTicket` (wired into
-both `login/page.tsx` and signup's post-reveal continue, best-effort — a failure here must never block a real
-sign-in), and `recoverAndRewrapDek` (the forgot-password recovery core). New backend: `PUT /v1/keys`
-(`infra/cdk/lambda/account/keys-update.ts`) updates `wrappedDek`/`wrappedDekRecovery` together after a
-recovery — always both, never one, since recovery rotates the code (a direct user decision, asked via
-AskUserQuestion). New page: `apps/web/src/app/forgot-password/page.tsx` (4 stages: request code → confirm code
-+ new password → enter recovery code → done/rotated-code reveal). **The one real design gap found while
-scoping this**: `wrappedPrivateKey` was ambiguously documented as wrapped "under the account KEK" — fixed to
-wrap it under the raw DEK instead (ADR 0014), so it's recoverable via either the password or recovery-code
-path, and a recovery never needs to touch it.
+**Session 34 (read this first): Phase 6 Stage 4b is DONE, deployed, and fully live-verified — Phase 6 (real
+end-to-end encryption) is now code-complete.** Applied Stage 4a's proven `getSessionCrypto(userId)` pattern to
+every one of the ~34 remaining `crypto-stub.ts` call sites — Rooms (the `command.ts` flow-engine dispatcher +
+all decision-steps/mirror-steps files + 4 standalone read Lambdas + `twin-signals.ts`), Continuity
+(`gather-context.ts` + both scheduled composers + commitments/daily-card/weekly-recap), Twin, Roadmap,
+Dashboard, Library, and `account/export.ts` (which had **zero** `kms:Decrypt`/session-tickets grant at all
+before this — a real, previously-flagged gap, now fixed). `rooms/types.ts`'s `StepContext` gained a
+`crypto: SessionCrypto` field, resolved once in `command.ts` and consumed via `ctx.crypto` everywhere else.
+`infra/cdk/lib/api-stack.ts` got matching IAM wiring for all 20 Lambdas that now call `getSessionCrypto` —
+verified **exact** by parsing the synthesized CloudFormation template directly (20 functions with
+`kms:Decrypt`, no more no less; also found and removed one unused pre-emptive grant on `TwinRejectFn`, which
+never touches encrypted content). **`crypto-stub.ts` and `PLAINTEXT_CRYPTO_STUB_ACK` are deleted from the
+codebase — zero remaining callers, zero plaintext fallback under any flag.** **ADR 0007 (the plaintext-stub
+internal-testing exception) is formally closed** — see its new "Resolution" section; `isProduction: true` was
+deliberately NOT flipped (it now gates two unrelated concerns — real Grow payment API, DynamoDB/Cognito
+removal policies — this session didn't evaluate).
 
-**Live-verified against real AWS.** The browser can't complete a real Cognito confirm-code step (no inbox
-access — the same wall every prior session hit), so the crypto/backend logic (`bootstrapKeysAtSignup`/
-`establishSessionTicket`/`recoverAndRewrapDek`'s exact real functions) was proven via a throwaway vitest file
-(written, run, deleted before session end — same convention as every prior session's integration scripts):
-real `POST`/`GET`/`PUT /v1/keys`, real `POST /v1/session-ticket` + `DELETE /v1/auth/sessions/{id}` (both
-confirmed via direct `aws dynamodb` queries), and — after a real `admin-set-user-password` to simulate an
-out-of-band password change — the full recovery sequence, including confirming the **old** recovery code
-correctly fails post-rotation and the **new** one correctly works, and that `wrappedPrivateKey` is genuinely
-untouched by a recovery. Separately, in the real browser: a real `login/page.tsx` sign-in created a real
-session ticket (confirmed via `aws dynamodb`, proving the wiring itself, not just the underlying function),
-and `/forgot-password`'s `request` stage correctly called real Cognito (a first attempt surfaced a real,
-informative Cognito error — `admin-confirm-sign-up` doesn't set `email_verified` the way a real code
-confirmation does; fixed via `admin-update-user-attributes`, then the real call correctly advanced to the
-code-entry stage). Fully cleaned up afterward (Cognito user + all DynamoDB rows, confirmed 0 remaining).
+**Live-verified thoroughly against real AWS, not a mock — one real test user driven through all 8 domains.**
+`Dpnr-Api` deployed clean (50/50, 53s). Rooms/Decision and Rooms/Mirror: real `{v:1, iv:<12 random bytes>}`
+ciphertext confirmed on write, correct decrypt on both the `/full` and list reads. Continuity commitments:
+create/list/complete all decrypt correctly. **The two scheduled composer Lambdas (the highest-risk conversion
+— crypto resolved fresh *inside* a per-user batch loop, not once per invocation) were force-run directly via
+`aws lambda invoke`**: CloudWatch confirmed "1 composed, 0 failed" for both, and `GET /v1/daily-card`/
+`GET /v1/weekly-recap` returned real decrypted content. Twin: a directly-seeded real-crypto-encrypted
+`TwinSignalItem` correctly decrypted by `GET /v1/twin`, then `POST .../confirm` re-encrypted it and triggered
+real Bedrock classification. Roadmap: `POST /v1/roadmap/proposal/accept` correctly promoted a seeded
+proposal's real ciphertext into the live Roadmap. Dashboard and Library both resolve `getSessionCrypto`
+cleanly and decrypt correctly. Export: `GET /v1/user/export` returned all 16 items fully decrypted, none
+stub-shaped. Cleanup independently re-confirmed after the fact: 0 remaining DynamoDB rows, Cognito user
+deleted, `git status` shows only the 44 intended Stage 4b files.
 
-**Not built, deliberately out of scope**: `PUT /v1/auth/password` (a direct signed-in password change, distinct
-from the forgot-password flow built this session).
+**Not built, still genuinely open**: the `SessionItem.lastResponse` plaintext leak in `rooms/command.ts`
+(flagged since Session 10 — the whole `RoomCommandResponse`, including any decrypted content it echoes, is
+persisted as a plain object with no encryption pass of its own). Was in Stage 4b's original scope list but
+not touched this session.
 
-**Part 2, same session: Phase 6 Stage 4a (real-encryption pilot) is DONE, deployed, and live-verified.** New
-`infra/cdk/lambda/lib/session-crypto.ts` — `getSessionCrypto(userId)` is the first real caller of Stage 2's
-`kms:Decrypt` grant: looks up the caller's live `active_session` `SessionTicketItem` (a lookup that didn't
-exist anywhere before this; 409s `session_ticket_required` if none), unwraps its DEK via `kms:Decrypt`, returns
-real AES-256-GCM `encryptField`/`decryptField`, never cached across Lambda invocations. Converted Companion
-(`companion/message.ts`/`context.ts`, 2 of ~37 stub call-site files) as the pilot — every helper touching
-content needed a threaded `SessionCrypto` param, since the swap isn't the zero-caller-change `crypto-stub.ts`'s
-own doc comment described once multi-tenancy is accounted for. Two real design gaps resolved with the user
-directly (AskUserQuestion): session-ticket duration bumped 60min → 8h (no refresh-mechanism architecture built
-now — a deliberate, reversible stopgap); sign-in now also mints a `post_session` ticket (for Stage 4b's
-Continuity conversion). Live-verified thoroughly against real AWS — real ciphertext confirmed via direct
-`dynamodb` reads (`v: 1`, a real IV, unreadable ciphertext), a missing-ticket request correctly 409s instead of
-500ing, and decrypt-on-read works across a genuinely separate Lambda invocation. Full detail in the "Prompt for
-next agent" section above. Fully cleaned up afterward, same discipline as every prior session.
+**Next**: with Phase 6 fully code-complete, there's no pre-scoped crypto work left. Per the still-current
+backlog ordering (Session 30/31/33): Living System behaviors (Intelligence Spec §17 — `OpenThread`, named
+Roadmap lifecycle states, current-interaction-mode inference — the biggest net-new build left in the whole
+spec), then signal-model enrichment, then everything else in `INTELLIGENCE_SPEC_AUDIT.md`'s table. Also
+unresolved, lower-priority: `PUT /v1/auth/password`, the `SessionItem.lastResponse` leak above, the Life
+Domains taxonomy mismatch (7 vs. 8), and the `lital@be-dpnr.com` SNS subscription's confirmation status. Ask
+the user which to pick up.
 
-**Next: Phase 6 Stage 4b** — mechanically apply the proven `getSessionCrypto` pattern to the remaining ~35
-stub call-site files, fix the known `SessionItem.lastResponse` plaintext leak, add `userExportFn`'s missing
-KMS/session-tickets grants, and flip `PLAINTEXT_CRYPTO_STUB_ACK`'s `isProduction` meaning — the last stage of
-the 6-stage plan. No plan file exists yet — scope it fresh. After Phase 6 finishes, the user's stated next
-priority (set in Session 31, still current) is Living System behaviors (Intelligence Spec §17 — `OpenThread`, Roadmap lifecycle states,
-interaction-mode inference), not yet scoped.
+**Session 33 (condensed pointer, superseded by Session 34 above):** Phase 6 Stage 3 (recovery-code UX + real
+signup/login/recovery wiring) shipped — `keyBootstrap.ts`'s `bootstrapKeysAtSignup`/`establishSessionTicket`/
+`recoverAndRewrapDek`, wired into signup/login/forgot-password; **ADR 0014** fixed `wrappedPrivateKey`'s
+wrapping key (raw DEK, not a KEK) and made recovery rotate the recovery code. Part 2, same session: Phase 6
+Stage 4a (the real-encryption pilot) built `lib/session-crypto.ts`'s `getSessionCrypto()` and converted
+Companion as the proof of the pattern Session 34 then rolled out everywhere else. Both parts built, deployed,
+and live-verified — full detail in Session History below if needed.
 
 **Session 32 (condensed pointer, superseded by Session 33 above):** Phase 6 Stage 2 (key bootstrap +
 session-ticket endpoints) shipped — built, deployed, and live-verified, resolving Session 31's mid-flight
@@ -327,6 +332,22 @@ From there, wrote and got approval for a 6-slice plan, `C:\Users\rekkawi\.claude
 ---
 
 ## Session History
+
+### 2026-09-03 — Session 34: Phase 6 Stage 4b — crypto-stub rollout complete (all remaining domains), deployed and live-verified
+- Picked up the log's own "Next: Phase 6 Stage 4b" pointer directly. Confirmed `origin/mvp` in sync (`77ec974`), working tree clean, before starting.
+- Asked the user how to scope this session given the size (34 files across 8 domains) — chose "all 8 domains, one pass" over splitting Rooms off into its own checkpoint.
+- Made the one piece of shared plumbing myself first: `rooms/types.ts`'s `StepContext` gained a `crypto: SessionCrypto` field; `rooms/command.ts` now calls `getSessionCrypto(userId)` once per request and passes it into every `step.handle({..., crypto})` call. Every decision-step/mirror-step file consumes `ctx.crypto` from there.
+- Delegated the mechanical per-file conversion to three parallel subagents with disjoint file sets (no merge risk): Rooms (22 files — `command.ts`'s dispatcher aside, every `decision-steps/*.ts`/`mirror-steps/*.ts` file, `decision-context.ts`, `twin-signals.ts`, and the 4 standalone read Lambdas `decision-full.ts`/`mirror-full.ts`/`list-decisions.ts`/`list-mirrors.ts`), Continuity (8 files — `gather-context.ts` plus the 2 scheduled composers and 5 commitment/daily-card/weekly-recap handlers), and Twin/Roadmap/Dashboard/Library/Export (9 files). All three worked from one shared reference (`companion/message.ts`/`context.ts`, Stage 4a's proven pattern) and cross-checked at the `gather-context.ts`/`roadmap-revision.ts` boundary where their scopes touched. `twin/reject.ts` and `roadmap/reject.ts` needed no changes (confirmed by grep — neither ever touched the stub); `gather-context.ts`'s `crypto` param was made optional (defaulting to an internal `getSessionCrypto()` resolution) specifically so it could satisfy both Companion's existing 1-arg calls and the new 2-arg calls from `roadmap-revision.ts`/the composers without touching Companion's already-shipped code.
+- Verified the merge myself: grepped the whole `infra/cdk/lambda` tree for any remaining `stubEncryptField`/`stubDecryptField` reference (zero), then ran a full `tsc --noEmit` across `infra/cdk` (clean, 0 errors) — the real cross-check the three agents' own individually-clean typechecks couldn't fully guarantee on their own, since they ran concurrently against a moving tree.
+- Wired `infra/cdk/lib/api-stack.ts` myself (not delegated, to avoid 3-way conflicts on one shared file): added `SESSION_TICKET_KMS_KEY_ID`/`SESSION_TICKETS_TABLE_NAME` env vars + `sessionTicketsTable.grantReadData()` to the 9 Lambdas that already had Stage 2's pre-emptive `kms:Decrypt` grant (`RoomsCommandFn`, `DecisionFullFn`, `MirrorFullFn`, `ListDecisionsFn`, `ListMirrorsFn`, `TwinListFn`, `TwinConfirmFn`, `ComposeDailyCardFn`, `ComposeWeeklyRecapFn`), and added the grant fresh (it never existed) to 9 more (`DashboardFn`, `LibraryTopicDetailFn`, `RoadmapProposalAcceptFn`, `CreateCommitmentFn`, `CompleteCommitmentFn`, `ListCommitmentsFn`, `GetDailyCardFn`, `GetWeeklyRecapFn`, `UserExportFn` — the last of these previously had *no* grant of any kind despite calling the stub, a real gap flagged since Stage 4a). Found and removed one unnecessary grant while doing this: `TwinRejectFn` had Stage 2's `kms:Decrypt` grant but `twin/reject.ts` never calls `getSessionCrypto` (only flips a status field) — removed for exact least-privilege, matching Session 32's own IAM-inspection precedent.
+- Verified the grant set was exactly right, not just present, by parsing the synthesized `Dpnr-Api` CloudFormation template directly (`cdk synth` + a small Node script reading `cdk.out/Dpnr-Api.template.json`): exactly 20 Lambda functions carry `kms:Decrypt`, and they're precisely the 20 that call `getSessionCrypto` — no more, no less.
+- Deleted `infra/cdk/lambda/lib/crypto-stub.ts` and removed `PLAINTEXT_CRYPTO_STUB_ACK` from `api-stack.ts`'s `sharedProductLambdaProps` and `LibraryTopicDetailFn`'s own env block, plus updated the file's top-of-class doc comment — confirmed via grep that literally zero backend code still references either (the ADR/AGENT_LOG-history mentions are historical record, left untouched). **Closed ADR 0007** (the plaintext-stub internal-testing exception) with a new "Resolution" section — its trigger condition ("Phase 6 ships") is met, and more strongly than the original text anticipated (the escape hatch was removed from the code, not just deprioritized behind a flag). Explicitly did NOT flip `isProduction: true` — that flag now also gates the real (non-sandbox) Grow payment API base URL and DynamoDB/Cognito removal policies, neither of which this session evaluated; flagged as a separate future decision for whoever actually launches.
+- Asked the user for explicit go-ahead before deploying (per this project's standing AWS-deploy guardrail) — offered "deploy + live-verify," "deploy only," or "don't deploy yet"; user chose the first.
+- `cdk deploy Dpnr-Api --require-approval never` — clean, 50/50 resources, 53s, zero rollback.
+- Delegated live verification to a dedicated agent (one focused pass, not parallelized, since correctness sequencing mattered more than speed here) with a detailed brief covering every Node/DOM gotcha a prior session had already discovered the hard way (never put a password in an `aws cognito-idp` CLI arg — the harness classifier blocks it, use `amazon-cognito-identity-js` directly instead; `apps/web`'s own `lib/cognito/client.ts` wrapper touches `document.cookie`/`sessionStorage` and throws under `vitest`'s node environment, so use the pure crypto module + raw `fetch()` instead). It signed up a real Cognito test user, did a real SRP handshake, bootstrapped real keys via the actual crypto module, and drove all 8 domains against the real deployed API and real DynamoDB — see the "Next Agent — Start Here" section above for the per-domain results (real ciphertext confirmed everywhere, including inside the two scheduled composers' per-user batch-loop crypto resolution, the highest-risk piece of this whole stage). Independently re-verified its cleanup claim myself afterward (`aws dynamodb query` × 2, `aws cognito-idp admin-get-user`, `git status`) rather than trusting the agent's report at face value — all confirmed clean.
+- Updated `docs/PHASE_AUDIT.md`'s Phase 6 tracking block with a Session 34 update paragraph, matching the existing per-stage update convention there.
+- No new ADR beyond ADR 0007's closure (a resolution, not a new decision) — every choice this session made (scope-per-domain delegation, per-Lambda grant wiring, the `isProduction` non-flip) was either mechanical or explicitly deferred, not an unlogged irreversible call.
+- Did not touch: `SessionItem.lastResponse`'s plaintext leak (still open, flagged again), `PUT /v1/auth/password`, Living System behaviors, or anything outside Phase 6's crypto scope. Did not commit or push — that's this session's next open question for the user.
 
 ### 2026-09-03 — Session 33, part 2: Phase 6 Stage 4a — real-encryption pilot (session-crypto helper + Companion), deployed and live-verified
 - Direct continuation, same conversation — user asked to push Stage 3 to `origin/mvp` then continue. Pushed

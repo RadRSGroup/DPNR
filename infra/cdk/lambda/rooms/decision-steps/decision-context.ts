@@ -1,6 +1,6 @@
 import { GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, type DecisionTagItem, type DecisionProjectionItem, type DecisionOutcomeItem, type DecisionEmotionItem, type TagType } from '@dpnr/shared-types'
-import { stubDecryptField } from '../../lib/crypto-stub'
+import type { SessionCrypto } from '../../lib/session-crypto'
 import { ddb, TABLE_NAME } from './db'
 import { getDecision, getOption, type DecisionContent, type OptionContent } from './helpers'
 
@@ -31,7 +31,11 @@ function emptyTags(): Record<TagType, string[]> {
  * DynamoDB reads aren't cached across separate command calls since each is
  * a stateless Lambda invocation.
  */
-export async function gatherDecisionContext(pk: string, decisionId: string): Promise<GatheredDecisionContext> {
+export async function gatherDecisionContext(
+  crypto: SessionCrypto,
+  pk: string,
+  decisionId: string
+): Promise<GatheredDecisionContext> {
   const [decision, optionA, optionB, tagsResult, projectionsResult, emotionResult, outcomesResult] = await Promise.all([
     getDecision(pk, decisionId),
     getOption(pk, decisionId, 'A'),
@@ -62,28 +66,32 @@ export async function gatherDecisionContext(pk: string, decisionId: string): Pro
     ),
   ])
 
-  const content = stubDecryptField<DecisionContent>(decision.content)
-  const optionAContent = stubDecryptField<OptionContent>(optionA.content).content
-  const optionBContent = stubDecryptField<OptionContent>(optionB.content).content
+  const content = await crypto.decryptField<DecisionContent>(decision.content)
+  const optionAContent = (await crypto.decryptField<OptionContent>(optionA.content)).content
+  const optionBContent = (await crypto.decryptField<OptionContent>(optionB.content)).content
 
   const tagsA = emptyTags()
   const tagsB = emptyTags()
   for (const t of (tagsResult.Items ?? []) as DecisionTagItem[]) {
     const bucket = t.optionLabel === 'A' ? tagsA : t.optionLabel === 'B' ? tagsB : null
-    if (bucket) bucket[t.tagType].push(stubDecryptField<{ label: string }>(t.content).label)
+    if (bucket) bucket[t.tagType].push((await crypto.decryptField<{ label: string }>(t.content)).label)
   }
 
   const projectionItems = (projectionsResult.Items ?? []) as DecisionProjectionItem[]
-  const projectionsA = projectionItems
-    .filter((p) => p.optionLabel === 'A')
-    .map((p) => stubDecryptField<{ statement: string }>(p.content).statement)
-  const projectionsB = projectionItems
-    .filter((p) => p.optionLabel === 'B')
-    .map((p) => stubDecryptField<{ statement: string }>(p.content).statement)
+  const projectionsA = await Promise.all(
+    projectionItems
+      .filter((p) => p.optionLabel === 'A')
+      .map(async (p) => (await crypto.decryptField<{ statement: string }>(p.content)).statement)
+  )
+  const projectionsB = await Promise.all(
+    projectionItems
+      .filter((p) => p.optionLabel === 'B')
+      .map(async (p) => (await crypto.decryptField<{ statement: string }>(p.content)).statement)
+  )
 
   const emotionItem = emotionResult.Item as DecisionEmotionItem | undefined
   const emotionContent = emotionItem
-    ? stubDecryptField<{ bodyLocation: string | null; emotionColor: string | null; aiReflection: string | null }>(
+    ? await crypto.decryptField<{ bodyLocation: string | null; emotionColor: string | null; aiReflection: string | null }>(
         emotionItem.content
       )
     : null

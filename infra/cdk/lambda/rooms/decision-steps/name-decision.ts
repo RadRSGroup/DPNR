@@ -2,7 +2,6 @@ import { z } from 'zod'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, DECISION_ROOM_STEP_NUMBER, type DecisionItem } from '@dpnr/shared-types'
 import { parseValue } from '../../lib/http'
-import { stubEncryptField } from '../../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModel } from '../../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
@@ -40,7 +39,7 @@ export const nameDecisionStep: StepDefinition = {
       currentStep: DECISION_ROOM_STEP_NUMBER.MAP_OPTIONS, // matches original: completing step 1 sets current_step to 2
       lens: null,
       reviewDate: null,
-      content: stubEncryptField<DecisionContent>({ title, subtitle: subtitle ?? null, narrative: '' }),
+      content: await ctx.crypto.encryptField<DecisionContent>({ title, subtitle: subtitle ?? null, narrative: '' }),
       createdAt: now,
       updatedAt: now,
     }

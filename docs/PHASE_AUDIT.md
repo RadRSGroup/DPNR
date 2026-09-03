@@ -135,6 +135,18 @@ to it instead, per that file's own protocol.
 > ticket for the still-unconverted Continuity composer. The remaining ~35 files, the `SessionItem.lastResponse`
 > plaintext leak, `userExportFn`'s missing KMS/session-ticket grants, and flipping `PLAINTEXT_CRYPTO_STUB_ACK`'s
 > `isProduction` meaning are Stage 4b — deliberately not done in this pilot.
+>
+> **Update (Session 34 — Phase 6 Stage 4b, the final stage): every remaining `crypto-stub.ts` call site (34
+> files across Rooms, Continuity, Twin, Roadmap, Dashboard, Library, and `account/export.ts`) is now real
+> per-user AES-256-GCM encryption, deployed and live-verified against real AWS across all 8 domains.**
+> `userExportFn`'s previously-missing `kms:Decrypt`/session-tickets-table grants are now in place (it was
+> calling the stub with zero grant before this). `crypto-stub.ts` and `PLAINTEXT_CRYPTO_STUB_ACK` are deleted
+> from the codebase entirely — there is no remaining plaintext fallback, gated or otherwise. **ADR 0007 (the
+> plaintext-stub internal-testing exception) is formally closed** — see its own "Resolution" section for why
+> `isProduction: true` was deliberately NOT flipped as part of this (it now gates two unrelated concerns, real
+> Grow payment API + DynamoDB/Cognito removal policies, not evaluated this session). The `SessionItem.lastResponse`
+> plaintext leak in `rooms/command.ts` (flagged since Session 10) is the one item from Stage 4b's own scope that
+> remains genuinely unfixed — still real, still open backlog, not touched this session.
 
 `MVP_ARCHITECTURE.md` §4's first API row — `POST /v1/session-ticket`, `DELETE /v1/auth/sessions/{id}`,
 `PUT /v1/auth/password`, `DELETE /v1/account`, `GET /v1/keys` — has **zero Lambda handlers and zero CDK

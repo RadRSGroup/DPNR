@@ -3,7 +3,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, GetCommand, PutCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, userPk, type RoadmapItem, type RoadmapProposalItem, type RoadmapProposalAcceptResponse } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
-import { stubEncryptField, stubDecryptField } from '../lib/crypto-stub'
+import { getSessionCrypto } from '../lib/session-crypto'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
@@ -21,6 +21,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   try {
     const userId = requireUserId(event)
     const pk = userPk(userId)
+    const crypto = await getSessionCrypto(userId)
 
     const [roadmapResult, proposalResult] = await Promise.all([
       ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.roadmap() } })),
@@ -32,9 +33,15 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       throw new HttpError(404, 'no_pending_proposal', 'There is no pending Roadmap revision to accept.')
     }
 
-    const proposal = stubDecryptField<RoadmapProposalContent>(proposalItem.content)
+    const proposal = await crypto.decryptField<RoadmapProposalContent>(proposalItem.content)
     const now = new Date().toISOString()
     const newVersion = roadmapItem.version + 1
+    const newContent = await crypto.encryptField<RoadmapContent>({
+      currentFocus: proposal.currentFocus,
+      theme: proposal.theme,
+      direction: proposal.direction,
+      suggestedSpaces: proposal.suggestedSpaces,
+    })
 
     await Promise.all([
       // Archive the outgoing content under its own version number — real
@@ -51,12 +58,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
           Item: {
             pk,
             sk: Sk.roadmap(),
-            content: stubEncryptField<RoadmapContent>({
-              currentFocus: proposal.currentFocus,
-              theme: proposal.theme,
-              direction: proposal.direction,
-              suggestedSpaces: proposal.suggestedSpaces,
-            }),
+            content: newContent,
             version: newVersion,
             updatedAt: now,
           } satisfies RoadmapItem,

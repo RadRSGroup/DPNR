@@ -2,7 +2,7 @@ import type { APIGatewayProxyHandlerV2WithJWTAuthorizer } from 'aws-lambda'
 import { GetCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, userPk, type DailyCardItem, type DailyCardResponse } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
-import { stubDecryptField } from '../lib/crypto-stub'
+import { getSessionCrypto } from '../lib/session-crypto'
 import { ddb, TABLE_NAME } from './helpers'
 
 /**
@@ -17,6 +17,7 @@ import { ddb, TABLE_NAME } from './helpers'
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
     const userId = requireUserId(event)
+    const crypto = await getSessionCrypto(userId)
     const today = new Date().toISOString().slice(0, 10)
 
     const result = await ddb.send(
@@ -27,7 +28,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       throw new HttpError(404, 'daily_card_not_ready', 'No Daily Card composed yet for today.')
     }
 
-    const { text, kind } = stubDecryptField<{ text: string; kind: DailyCardResponse['kind'] }>(item.content)
+    const { text, kind } = await crypto.decryptField<{ text: string; kind: DailyCardResponse['kind'] }>(item.content)
     const body: DailyCardResponse = {
       date: today,
       kind,

@@ -16,7 +16,7 @@ export const summaryInsightStep: StepDefinition = {
   allowedActions: ['SUBMIT_STEP', 'REFINE'],
   handle: async (ctx) => {
     if (ctx.action === 'REFINE') {
-      const context = await gatherDecisionContext(ctx.pk, ctx.sessionId)
+      const context = await gatherDecisionContext(ctx.crypto, ctx.pk, ctx.sessionId)
       const exploredTags = [...context.projectionsA, ...context.projectionsB].slice(0, 30).join(', ')
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'summary_insight')
       const modelResult = await callPromptModel(version, {

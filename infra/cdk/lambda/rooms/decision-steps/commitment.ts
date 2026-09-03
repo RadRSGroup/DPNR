@@ -2,7 +2,6 @@ import { z } from 'zod'
 import { PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import type { DecisionOutcomeItem } from '@dpnr/shared-types'
 import { parseValue, HttpError } from '../../lib/http'
-import { stubEncryptField, stubDecryptField } from '../../lib/crypto-stub'
 import { ddb, TABLE_NAME } from './db'
 import { gatherDecisionContext } from './decision-context'
 import { extractCandidateSignals, persistSessionSummary } from '../twin-signals'
@@ -44,15 +43,15 @@ export const commitmentStep: StepDefinition = {
       if (!latestOutcome) {
         throw new HttpError(404, 'outcome_not_found', 'No outcome exists yet — submit FUTURE_PROJECTION first.')
       }
-      const existingReflection = stubDecryptField<{ reflection: string }>(latestOutcome.content).reflection
+      const existingReflection = (await ctx.crypto.decryptField<{ reflection: string }>(latestOutcome.content)).reflection
       const updatedOutcome: DecisionOutcomeItem = {
         ...latestOutcome,
-        content: stubEncryptField({ reflection: `${existingReflection} Commitment: ${commitment}` }),
+        content: await ctx.crypto.encryptField({ reflection: `${existingReflection} Commitment: ${commitment}` }),
       }
       await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: updatedOutcome }))
     }
 
-    const gathered = await gatherDecisionContext(ctx.pk, ctx.sessionId)
+    const gathered = await gatherDecisionContext(ctx.crypto, ctx.pk, ctx.sessionId)
     const summary = [
       `Decision: ${gathered.title}`,
       `Narrative: ${gathered.narrative}`,
@@ -69,8 +68,8 @@ export const commitmentStep: StepDefinition = {
     // to this response: extractCandidateSignals() never throws (errors are
     // swallowed internally, see its own doc comment), so it can't turn this
     // into a failed COMMITMENT.
-    const signalIds = await extractCandidateSignals(ctx.pk, ctx.sessionId, 'decision_room', 'Decision Room', summary)
-    await persistSessionSummary(ctx.pk, ctx.sessionId, summary, signalIds, 'decision_room.commitment_summary')
+    const signalIds = await extractCandidateSignals(ctx.crypto, ctx.pk, ctx.sessionId, 'decision_room', 'Decision Room', summary)
+    await persistSessionSummary(ctx.crypto, ctx.pk, ctx.sessionId, summary, signalIds, 'decision_room.commitment_summary')
 
     return { nextStepId: null, result: { commitment: commitment ?? null }, sessionComplete: true }
   },

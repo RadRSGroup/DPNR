@@ -1,6 +1,6 @@
 import { ScanCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, userPk, type UserProfileItem, type DailyCardItem } from '@dpnr/shared-types'
-import { stubEncryptField } from '../lib/crypto-stub'
+import { getSessionCrypto } from '../lib/session-crypto'
 import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
 import { ddb, TABLE_NAME } from './helpers'
@@ -73,9 +73,10 @@ export const handler = async (): Promise<void> => {
 }
 
 async function composeForUser(userId: string): Promise<boolean> {
+  const crypto = await getSessionCrypto(userId)
   const [{ confirmedSignals, sessionSummaries }, dueCommitments] = await Promise.all([
-    gatherContinuityContext(userId),
-    getDueCommitments(userId),
+    gatherContinuityContext(userId, crypto),
+    getDueCommitments(userId, crypto),
   ])
 
   const recentSignalsList = confirmedSignals
@@ -107,7 +108,7 @@ async function composeForUser(userId: string): Promise<boolean> {
   const item: DailyCardItem = {
     pk: userPk(userId),
     sk: Sk.dailyCard(today),
-    content: stubEncryptField({ text, kind }),
+    content: await crypto.encryptField({ text, kind }),
     promptRef: promptRef('daily_card', 'compose', version),
     createdAt: new Date().toISOString(),
   }

@@ -1,6 +1,6 @@
 import { ScanCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, userPk, type UserProfileItem, type WeeklyRecapItem } from '@dpnr/shared-types'
-import { stubEncryptField } from '../lib/crypto-stub'
+import { getSessionCrypto } from '../lib/session-crypto'
 import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
 import { isoWeekString } from '../lib/iso-week'
@@ -64,7 +64,8 @@ export const handler = async (): Promise<void> => {
 }
 
 async function composeForUser(userId: string, weekAgoIso: string): Promise<boolean> {
-  const { confirmedSignals, sessionSummaries } = await gatherContinuityContext(userId)
+  const crypto = await getSessionCrypto(userId)
+  const { confirmedSignals, sessionSummaries } = await gatherContinuityContext(userId, crypto)
 
   const weekSignalsList = confirmedSignals
     .filter((s) => s.updatedAt >= weekAgoIso)
@@ -97,7 +98,7 @@ async function composeForUser(userId: string, weekAgoIso: string): Promise<boole
   const item: WeeklyRecapItem = {
     pk: userPk(userId),
     sk: Sk.weeklyRecap(isoWeekString(new Date())),
-    content: stubEncryptField({ stoodOut, shifted, remainsActive, suggestion }),
+    content: await crypto.encryptField({ stoodOut, shifted, remainsActive, suggestion }),
     promptRef: promptRef('weekly_recap', 'compose', version),
     createdAt: new Date().toISOString(),
   }

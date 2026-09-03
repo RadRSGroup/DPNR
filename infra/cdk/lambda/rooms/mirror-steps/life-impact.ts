@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import { parseValue } from '../../lib/http'
-import { stubEncryptField, stubDecryptField } from '../../lib/crypto-stub'
 import { ddb, TABLE_NAME } from '../db'
 import { getMirrorSession, type MirrorContent } from './helpers'
 import type { StepDefinition } from '../types'
@@ -21,12 +20,12 @@ export const lifeImpactStep: StepDefinition = {
   handle: async (ctx) => {
     const { energyMoodEffect, lifeDomain } = parseValue(ctx.input, SubmitInput)
     const session = await getMirrorSession(ctx.pk, ctx.sessionId)
-    const content = stubDecryptField<MirrorContent>(session.content)
+    const content = await ctx.crypto.decryptField<MirrorContent>(session.content)
     const now = new Date().toISOString()
     const updatedSession = {
       ...session,
       currentStepId: 'LIFE_IMPACT',
-      content: stubEncryptField<MirrorContent>({ ...content, energyMoodEffect, lifeDomain }),
+      content: await ctx.crypto.encryptField<MirrorContent>({ ...content, energyMoodEffect, lifeDomain }),
       updatedAt: now,
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: updatedSession }))

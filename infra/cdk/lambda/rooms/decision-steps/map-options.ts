@@ -2,7 +2,6 @@ import { z } from 'zod'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, DECISION_ROOM_STEP_NUMBER, type DecisionOptionItem } from '@dpnr/shared-types'
 import { parseValue, HttpError } from '../../lib/http'
-import { stubEncryptField, stubDecryptField } from '../../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModel } from '../../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
@@ -40,13 +39,13 @@ export const mapOptionsStep: StepDefinition = {
     }
 
     const decisionItem = await getDecision(ctx.pk, ctx.sessionId)
-    const existingContent = stubDecryptField<DecisionContent>(decisionItem.content)
+    const existingContent = await ctx.crypto.decryptField<DecisionContent>(decisionItem.content)
 
     const now = new Date().toISOString()
     const updatedDecision = {
       ...decisionItem,
       currentStep: DECISION_ROOM_STEP_NUMBER.BODY_EMOTION,
-      content: stubEncryptField<DecisionContent>({ ...existingContent, narrative }),
+      content: await ctx.crypto.encryptField<DecisionContent>({ ...existingContent, narrative }),
       updatedAt: now,
     }
     const optionAItem: DecisionOptionItem = {
@@ -54,7 +53,7 @@ export const mapOptionsStep: StepDefinition = {
       sk: Sk.decisionOption(ctx.sessionId, 'A'),
       label: 'A',
       approved: true,
-      content: stubEncryptField({ content: optionA.content }),
+      content: await ctx.crypto.encryptField({ content: optionA.content }),
       createdAt: now,
     }
     const optionBItem: DecisionOptionItem = {
@@ -62,7 +61,7 @@ export const mapOptionsStep: StepDefinition = {
       sk: Sk.decisionOption(ctx.sessionId, 'B'),
       label: 'B',
       approved: true,
-      content: stubEncryptField({ content: optionB.content }),
+      content: await ctx.crypto.encryptField({ content: optionB.content }),
       createdAt: now,
     }
 

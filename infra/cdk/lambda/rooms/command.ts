@@ -12,6 +12,7 @@ import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from
 import { requireConsent } from '../lib/consent'
 import { consumeCredits, ROOM_REFINE_COST } from '../lib/credits'
 import { classifySafety, generateSafetyResponse, extractFreeTextForSafetyCheck } from '../lib/safety'
+import { getSessionCrypto } from '../lib/session-crypto'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
 import { decisionFlow } from './decision-steps'
 import { mirrorFlow } from './mirror-steps'
@@ -52,6 +53,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const userId = requireUserId(event)
     const pk = userPk(userId)
     const body = parseBody(event, RoomCommandRequestSchema)
+    const crypto = await getSessionCrypto(userId)
 
     await requireConsent(ddb, TABLE_NAME, userId)
 
@@ -145,6 +147,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         sessionId: body.sessionId,
         action: body.action,
         input: body.input,
+        crypto,
       })
     }
 

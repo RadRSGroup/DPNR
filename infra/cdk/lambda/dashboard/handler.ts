@@ -15,7 +15,7 @@ import {
   type DashboardResponse,
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
-import { stubDecryptField } from '../lib/crypto-stub'
+import { getSessionCrypto } from '../lib/session-crypto'
 import { computeAlignmentScore } from '../lib/alignment-score'
 import { aggregateLifeDomains, aggregateArchetypes } from '../lib/signal-aggregates'
 
@@ -52,6 +52,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   try {
     const userId = requireUserId(event)
     const pk = userPk(userId)
+    const crypto = await getSessionCrypto(userId)
     const today = new Date().toISOString().slice(0, 10)
     const historyStart = new Date(Date.now() - ALIGNMENT_HISTORY_WINDOW_DAYS * 24 * 60 * 60 * 1000)
       .toISOString()
@@ -98,11 +99,11 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     ])
 
     const roadmapItem = roadmapResult.Item as RoadmapItem | undefined
-    const roadmap = roadmapItem ? stubDecryptField<RoadmapContent>(roadmapItem.content) : null
+    const roadmap = roadmapItem ? await crypto.decryptField<RoadmapContent>(roadmapItem.content) : null
 
     const roadmapProposalItem = roadmapProposalResult.Item as RoadmapProposalItem | undefined
     const roadmapProposal = roadmapProposalItem
-      ? stubDecryptField<RoadmapProposalContent>(roadmapProposalItem.content)
+      ? await crypto.decryptField<RoadmapProposalContent>(roadmapProposalItem.content)
       : null
 
     const creditsItem = creditsResult.Item as CreditsBalanceItem | undefined
@@ -146,12 +147,13 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const continuityCue = dailyCardItem
       ? {
           kind: 'daily_card' as const,
-          text: stubDecryptField<{ text: string; kind: DailyCardResponse['kind'] }>(dailyCardItem.content).text,
+          text: (await crypto.decryptField<{ text: string; kind: DailyCardResponse['kind'] }>(dailyCardItem.content))
+            .text,
         }
       : openCommitments[0]
         ? {
             kind: 'commitment' as const,
-            text: stubDecryptField<{ description: string }>(openCommitments[0].content).description,
+            text: (await crypto.decryptField<{ description: string }>(openCommitments[0].content)).description,
           }
         : roadmap && roadmap.suggestedSpaces.length > 0
           ? { kind: 'recommended_space' as const, text: `Consider exploring: ${roadmap.suggestedSpaces[0]}` }

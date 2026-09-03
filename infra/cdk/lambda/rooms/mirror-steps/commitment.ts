@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import { parseValue } from '../../lib/http'
-import { stubEncryptField, stubDecryptField } from '../../lib/crypto-stub'
 import { grantCredits, EARN_REFLECTION_COMPLETED_CREDITS } from '../../lib/credits'
 import { ddb, TABLE_NAME } from '../db'
 import { getMirrorSession, type MirrorContent } from './helpers'
@@ -35,13 +34,13 @@ export const commitmentStep: StepDefinition = {
   handle: async (ctx) => {
     const { commitment } = parseValue(ctx.input, SubmitInput)
     const session = await getMirrorSession(ctx.pk, ctx.sessionId)
-    const content = stubDecryptField<MirrorContent>(session.content)
+    const content = await ctx.crypto.decryptField<MirrorContent>(session.content)
     const now = new Date().toISOString()
     const updatedSession = {
       ...session,
       status: 'completed' as const,
       currentStepId: 'COMMITMENT',
-      content: stubEncryptField<MirrorContent>({ ...content, commitment: commitment?.trim() ?? '' }),
+      content: await ctx.crypto.encryptField<MirrorContent>({ ...content, commitment: commitment?.trim() ?? '' }),
       updatedAt: now,
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: updatedSession }))
@@ -64,8 +63,8 @@ export const commitmentStep: StepDefinition = {
       .filter(Boolean)
       .join('\n')
     // Awaited — see decision-steps/commitment.ts's identical note on why.
-    const signalIds = await extractCandidateSignals(ctx.pk, ctx.sessionId, 'mirror_room', 'Mirror Room', summary)
-    await persistSessionSummary(ctx.pk, ctx.sessionId, summary, signalIds, 'mirror_room.commitment_summary')
+    const signalIds = await extractCandidateSignals(ctx.crypto, ctx.pk, ctx.sessionId, 'mirror_room', 'Mirror Room', summary)
+    await persistSessionSummary(ctx.crypto, ctx.pk, ctx.sessionId, summary, signalIds, 'mirror_room.commitment_summary')
 
     return { nextStepId: null, result: { commitment: commitment ?? null }, sessionComplete: true }
   },

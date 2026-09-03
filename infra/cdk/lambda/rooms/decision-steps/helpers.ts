@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { GetCommand, PutCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, type DecisionItem, type DecisionOptionItem, type DecisionTagItem, type TagType } from '@dpnr/shared-types'
 import { HttpError } from '../../lib/http'
-import { stubEncryptField } from '../../lib/crypto-stub'
+import type { SessionCrypto } from '../../lib/session-crypto'
 import { ddb, TABLE_NAME } from './db'
 
 export type DecisionContent = { title: string; subtitle: string | null; narrative: string }
@@ -40,6 +40,7 @@ export async function getOption(pk: string, decisionId: string, label: 'A' | 'B'
  * `ROOM#DECISION#<id>#TAG#*` sort-key prefix.
  */
 export async function replaceTagsOfTypes(
+  crypto: SessionCrypto,
   pk: string,
   decisionId: string,
   types: TagType[],
@@ -59,14 +60,14 @@ export async function replaceTagsOfTypes(
 
   const now = new Date().toISOString()
   await Promise.all(
-    newTags.map((t) => {
+    newTags.map(async (t) => {
       const item: DecisionTagItem = {
         pk,
         sk: Sk.decisionTag(decisionId, randomUUID()),
         optionLabel: t.optionLabel,
         tagType: t.tagType,
         aiSuggested: t.aiSuggested,
-        content: stubEncryptField({ label: t.label }),
+        content: await crypto.encryptField({ label: t.label }),
         createdAt: now,
       }
       return ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: item }))

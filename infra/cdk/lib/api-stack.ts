@@ -86,10 +86,10 @@ export interface ApiStackProps extends StackProps {
  * backend, so every consent-gated handler 403'd unconditionally for any
  * real signup (docs/PHASE_AUDIT.md §2.2/§4.1/§4.2).
  *
- * All handlers below use lambda/lib/crypto-stub.ts for any `[ENCRYPTED]`
- * field — NOT real encryption yet, see that file's doc comment. `isProduction`
- * gates `PLAINTEXT_CRYPTO_STUB_ACK` off, so a real-data deploy fails loudly
- * instead of silently shipping plaintext.
+ * Every `[ENCRYPTED]` field is real per-user AES-256-GCM as of Phase 6 Stage
+ * 4b (`lambda/lib/session-crypto.ts`'s `getSessionCrypto()`) — the former
+ * plaintext `crypto-stub.ts` placeholder has no remaining callers and has
+ * been deleted.
  */
 export class ApiStack extends Stack {
   public readonly httpApi: apigwv2.HttpApi
@@ -146,9 +146,6 @@ export class ApiStack extends Stack {
       bundling: { minify: true, sourceMap: true },
       environment: {
         APPLICATION_TABLE_NAME: props.applicationTable.tableName,
-        // See lambda/lib/crypto-stub.ts — deliberately 'false' in production
-        // so a real deploy fails loudly instead of silently storing plaintext.
-        PLAINTEXT_CRYPTO_STUB_ACK: props.isProduction ? 'false' : 'true',
       },
     }
 
@@ -332,9 +329,18 @@ export class ApiStack extends Stack {
     const dashboardFn = new lambda.NodejsFunction(this, 'DashboardFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/dashboard/handler.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        // Phase 6 Stage 4b — first real getSessionCrypto() call here; no
+        // kms:Decrypt grant existed for this function before this stage.
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
       description: 'GET /v1/dashboard — aggregate read (roadmap + credits + continuity cue).',
     })
     props.applicationTable.grantReadData(dashboardFn)
+    props.sessionTicketsKmsKey.grantDecrypt(dashboardFn)
+    props.sessionTicketsTable.grantReadData(dashboardFn)
 
     const companionMessageFn = new lambda.NodejsFunction(this, 'CompanionMessageFn', {
       ...sharedProductLambdaProps,
@@ -395,9 +401,19 @@ export class ApiStack extends Stack {
     const userExportFn = new lambda.NodejsFunction(this, 'UserExportFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/account/export.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        // Phase 6 Stage 4b — this Lambda called stubDecryptField with no
+        // kms:Decrypt/session-tickets-table grant at all before this (a real
+        // gap found while scoping this stage, flagged in AGENT_LOG.md).
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
       description: 'GET /v1/user/export — GDPR data export, the whole USER#<id> partition decrypted.',
     })
     props.applicationTable.grantReadData(userExportFn)
+    props.sessionTicketsKmsKey.grantDecrypt(userExportFn)
+    props.sessionTicketsTable.grantReadData(userExportFn)
 
     const accountDeleteFn = new lambda.NodejsFunction(this, 'AccountDeleteFn', {
       ...sharedProductLambdaProps,
@@ -465,10 +481,16 @@ export class ApiStack extends Stack {
     const twinListFn = new lambda.NodejsFunction(this, 'TwinListFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/twin/list.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
       description: 'GET /v1/twin — every Digital Twin signal the caller has, any status.',
     })
     props.applicationTable.grantReadData(twinListFn)
     props.sessionTicketsKmsKey.grantDecrypt(twinListFn)
+    props.sessionTicketsTable.grantReadData(twinListFn)
 
     const twinConfirmFn = new lambda.NodejsFunction(this, 'TwinConfirmFn', {
       ...sharedProductLambdaProps,
@@ -481,6 +503,8 @@ export class ApiStack extends Stack {
       environment: {
         ...sharedProductLambdaProps.environment,
         PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
       },
       entry: path.join(__dirname, '../lambda/twin/confirm.ts'),
       description: 'POST /v1/twin/signals/{id}/confirm — also runs the Roadmap-revision check.',
@@ -489,6 +513,7 @@ export class ApiStack extends Stack {
     props.promptRegistryTable.grantReadData(twinConfirmFn)
     grantBedrockConverse(twinConfirmFn)
     props.sessionTicketsKmsKey.grantDecrypt(twinConfirmFn)
+    props.sessionTicketsTable.grantReadData(twinConfirmFn)
 
     const twinRejectFn = new lambda.NodejsFunction(this, 'TwinRejectFn', {
       ...sharedProductLambdaProps,
@@ -496,14 +521,24 @@ export class ApiStack extends Stack {
       description: 'POST /v1/twin/signals/{id}/reject.',
     })
     props.applicationTable.grantReadWriteData(twinRejectFn)
-    props.sessionTicketsKmsKey.grantDecrypt(twinRejectFn)
+    // No sessionTicketsKmsKey.grantDecrypt here (Stage 4b) — reject.ts only
+    // flips a status field, never touches [ENCRYPTED] content, so the
+    // pre-emptive grant Stage 2 gave it was unused; removed for exact
+    // least-privilege (see Session 32's own IAM-inspection precedent).
 
     const roadmapProposalAcceptFn = new lambda.NodejsFunction(this, 'RoadmapProposalAcceptFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/roadmap/accept.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
       description: 'POST /v1/roadmap/proposal/accept — a pending Roadmap revision becomes the live Roadmap.',
     })
     props.applicationTable.grantReadWriteData(roadmapProposalAcceptFn)
+    props.sessionTicketsKmsKey.grantDecrypt(roadmapProposalAcceptFn)
+    props.sessionTicketsTable.grantReadData(roadmapProposalAcceptFn)
 
     const roadmapProposalRejectFn = new lambda.NodejsFunction(this, 'RoadmapProposalRejectFn', {
       ...sharedProductLambdaProps,
@@ -643,6 +678,10 @@ export class ApiStack extends Stack {
         PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
         SAFETY_ALERT_TOPIC_ARN: safetyAlertTopic.topicArn,
         ...safetyGuardrailEnv,
+        // Phase 6 Stage 4b — real getSessionCrypto() call, kms:Decrypt grant
+        // already existed from Stage 2 but these two env vars didn't.
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
       },
       description: 'POST /v1/rooms/{decision,mirror} — flow-engine command endpoint (one Lambda, dispatches on flowId).',
     })
@@ -653,38 +692,63 @@ export class ApiStack extends Stack {
     grantApplyGuardrail(roomsCommandFn)
     grantHaikuConverse(roomsCommandFn)
     props.sessionTicketsKmsKey.grantDecrypt(roomsCommandFn)
+    props.sessionTicketsTable.grantReadData(roomsCommandFn)
 
     const decisionFullFn = new lambda.NodejsFunction(this, 'DecisionFullFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/rooms/decision-full.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
       description: 'GET /v1/rooms/decision/{id}/full — aggregate decrypted read of one decision.',
     })
     props.applicationTable.grantReadData(decisionFullFn)
     props.sessionTicketsKmsKey.grantDecrypt(decisionFullFn)
+    props.sessionTicketsTable.grantReadData(decisionFullFn)
 
     const mirrorFullFn = new lambda.NodejsFunction(this, 'MirrorFullFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/rooms/mirror-full.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
       description: 'GET /v1/rooms/mirror/{id}/full — decrypted read of one Mirror Room session.',
     })
     props.applicationTable.grantReadData(mirrorFullFn)
     props.sessionTicketsKmsKey.grantDecrypt(mirrorFullFn)
+    props.sessionTicketsTable.grantReadData(mirrorFullFn)
 
     const listDecisionsFn = new lambda.NodejsFunction(this, 'ListDecisionsFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/rooms/list-decisions.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
       description: 'GET /v1/rooms/decisions — summary list, most-recently-created first.',
     })
     props.applicationTable.grantReadData(listDecisionsFn)
     props.sessionTicketsKmsKey.grantDecrypt(listDecisionsFn)
+    props.sessionTicketsTable.grantReadData(listDecisionsFn)
 
     const listMirrorsFn = new lambda.NodejsFunction(this, 'ListMirrorsFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/rooms/list-mirrors.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
       description: 'GET /v1/rooms/mirrors — summary list, most-recently-created first.',
     })
     props.applicationTable.grantReadData(listMirrorsFn)
     props.sessionTicketsKmsKey.grantDecrypt(listMirrorsFn)
+    props.sessionTicketsTable.grantReadData(listMirrorsFn)
 
     this.httpApi.addRoutes({
       path: '/v1/rooms/decision',
@@ -747,12 +811,10 @@ export class ApiStack extends Stack {
         LIBRARY_CATALOG_TABLE_NAME: props.libraryCatalogTable.tableName,
         APPLICATION_TABLE_NAME: props.applicationTable.tableName,
         PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
-        // Missing until this session — this handler decrypts confirmed Twin
-        // signal content to build the personalized explanation
-        // (lib/crypto-stub.ts throws loudly without this), but nothing had
-        // exercised that path against a user with confirmed signals before
-        // the Digital Twin/Library frontends existed to make it reachable.
-        PLAINTEXT_CRYPTO_STUB_ACK: props.isProduction ? 'false' : 'true',
+        // Phase 6 Stage 4b — real getSessionCrypto() call decrypts confirmed
+        // Twin signal content to build the personalized explanation.
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
       },
       entry: path.join(__dirname, '../lambda/library/topic-detail.ts'),
       description: 'GET /v1/library/topics/{slug} — topic + personalized explanation from confirmed Twin signals.',
@@ -761,6 +823,8 @@ export class ApiStack extends Stack {
     props.applicationTable.grantReadData(libraryTopicDetailFn)
     props.promptRegistryTable.grantReadData(libraryTopicDetailFn)
     grantBedrockConverse(libraryTopicDetailFn)
+    props.sessionTicketsKmsKey.grantDecrypt(libraryTopicDetailFn)
+    props.sessionTicketsTable.grantReadData(libraryTopicDetailFn)
 
     const libraryRecommendationsFn = new lambda.NodejsFunction(this, 'LibraryRecommendationsFn', {
       runtime: Runtime.NODEJS_24_X,
@@ -799,16 +863,30 @@ export class ApiStack extends Stack {
     const createCommitmentFn = new lambda.NodejsFunction(this, 'CreateCommitmentFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/continuity/create-commitment.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
       description: 'POST /v1/commitments.',
     })
     props.applicationTable.grantReadWriteData(createCommitmentFn)
+    props.sessionTicketsKmsKey.grantDecrypt(createCommitmentFn)
+    props.sessionTicketsTable.grantReadData(createCommitmentFn)
 
     const listCommitmentsFn = new lambda.NodejsFunction(this, 'ListCommitmentsFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/continuity/list-commitments.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
       description: 'GET /v1/commitments.',
     })
     props.applicationTable.grantReadData(listCommitmentsFn)
+    props.sessionTicketsKmsKey.grantDecrypt(listCommitmentsFn)
+    props.sessionTicketsTable.grantReadData(listCommitmentsFn)
 
     this.httpApi.addRoutes({
       path: '/v1/commitments',
@@ -827,9 +905,16 @@ export class ApiStack extends Stack {
     const completeCommitmentFn = new lambda.NodejsFunction(this, 'CompleteCommitmentFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/continuity/complete-commitment.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
       description: 'POST /v1/commitments/{commitmentId}/complete — My Wallet "Weekly Goal Achieved" reward.',
     })
     props.applicationTable.grantReadWriteData(completeCommitmentFn)
+    props.sessionTicketsKmsKey.grantDecrypt(completeCommitmentFn)
+    props.sessionTicketsTable.grantReadData(completeCommitmentFn)
 
     this.httpApi.addRoutes({
       path: '/v1/commitments/{commitmentId}/complete',
@@ -971,6 +1056,8 @@ export class ApiStack extends Stack {
       environment: {
         ...sharedProductLambdaProps.environment,
         PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
       },
       description: 'Scheduled daily — composes DAILYCARD#<date> for every consented user with real material.',
     })
@@ -979,6 +1066,7 @@ export class ApiStack extends Stack {
     grantBedrockConverse(composeDailyCardFn)
     // Phase 6 Stage 2 (ADR 0013): post_session-window decrypt grant for this pipeline.
     props.sessionTicketsKmsKey.grantDecrypt(composeDailyCardFn)
+    props.sessionTicketsTable.grantReadData(composeDailyCardFn)
 
     const composeWeeklyRecapFn = new lambda.NodejsFunction(this, 'ComposeWeeklyRecapFn', {
       ...sharedProductLambdaProps,
@@ -987,6 +1075,8 @@ export class ApiStack extends Stack {
       environment: {
         ...sharedProductLambdaProps.environment,
         PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
       },
       description: 'Scheduled weekly — composes WEEKLYRECAP#<isoWeek> for every consented user with real material from the last 7 days.',
     })
@@ -994,6 +1084,7 @@ export class ApiStack extends Stack {
     props.promptRegistryTable.grantReadData(composeWeeklyRecapFn)
     grantBedrockConverse(composeWeeklyRecapFn)
     props.sessionTicketsKmsKey.grantDecrypt(composeWeeklyRecapFn)
+    props.sessionTicketsTable.grantReadData(composeWeeklyRecapFn)
 
     // No Bedrock call — computeAlignmentScore is plain arithmetic over
     // already-real data, no PROMPT_REGISTRY_TABLE_NAME/grantBedrockConverse
@@ -1036,16 +1127,30 @@ export class ApiStack extends Stack {
     const getDailyCardFn = new lambda.NodejsFunction(this, 'GetDailyCardFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/continuity/get-daily-card.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
       description: 'GET /v1/daily-card — pure cache hit over what compose-daily-card.ts already wrote.',
     })
     props.applicationTable.grantReadData(getDailyCardFn)
+    props.sessionTicketsKmsKey.grantDecrypt(getDailyCardFn)
+    props.sessionTicketsTable.grantReadData(getDailyCardFn)
 
     const getWeeklyRecapFn = new lambda.NodejsFunction(this, 'GetWeeklyRecapFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/continuity/get-weekly-recap.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
       description: 'GET /v1/weekly-recap — pure cache hit over what compose-weekly-recap.ts already wrote.',
     })
     props.applicationTable.grantReadData(getWeeklyRecapFn)
+    props.sessionTicketsKmsKey.grantDecrypt(getWeeklyRecapFn)
+    props.sessionTicketsTable.grantReadData(getWeeklyRecapFn)
 
     const dailyCardFeedbackFn = new lambda.NodejsFunction(this, 'DailyCardFeedbackFn', {
       ...sharedProductLambdaProps,

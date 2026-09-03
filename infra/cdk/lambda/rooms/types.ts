@@ -1,10 +1,12 @@
 import type { RoomCommandAction } from '@dpnr/shared-types'
+import type { SessionCrypto } from '../lib/session-crypto'
 
 export interface StepContext {
   pk: string
   sessionId: string
   action: RoomCommandAction
   input: Record<string, unknown>
+  crypto: SessionCrypto
 }
 
 export interface StepResult {

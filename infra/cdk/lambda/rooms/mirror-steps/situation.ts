@@ -2,7 +2,6 @@ import { z } from 'zod'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, type MirrorSessionItem } from '@dpnr/shared-types'
 import { parseValue } from '../../lib/http'
-import { stubEncryptField } from '../../lib/crypto-stub'
 import { ddb, TABLE_NAME } from '../db'
 import type { MirrorContent } from './helpers'
 import type { StepDefinition } from '../types'
@@ -45,7 +44,7 @@ export const situationStep: StepDefinition = {
       mirrorId: ctx.sessionId,
       status: 'active',
       currentStepId: 'SITUATION',
-      content: stubEncryptField<MirrorContent>(content),
+      content: await ctx.crypto.encryptField<MirrorContent>(content),
       createdAt: now,
       updatedAt: now,
     }

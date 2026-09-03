@@ -1,5 +1,4 @@
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
-import { stubDecryptField } from '../../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModel } from '../../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from '../db'
@@ -20,7 +19,7 @@ export const synthesisStep: StepDefinition = {
   allowedActions: ['SUBMIT_STEP', 'REFINE'],
   handle: async (ctx) => {
     const session = await getMirrorSession(ctx.pk, ctx.sessionId)
-    const content = stubDecryptField<MirrorContent>(session.content)
+    const content = await ctx.crypto.decryptField<MirrorContent>(session.content)
 
     if (ctx.action === 'REFINE') {
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'mirror_room', 'synthesis')

@@ -1,7 +1,7 @@
 import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
 import type { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb'
 import { Sk, userPk, type RoadmapItem, type RoadmapProposalItem } from '@dpnr/shared-types'
-import { stubEncryptField, stubDecryptField } from './crypto-stub'
+import type { SessionCrypto } from './session-crypto'
 import { resolvePromptVersion } from './prompt-registry'
 import { callPromptModel } from './model-call'
 import { gatherContinuityContext } from '../continuity/gather-context'
@@ -37,7 +37,8 @@ export async function maybeProposeRoadmapRevision(
   ddb: DynamoDBDocumentClient,
   tableName: string,
   promptRegistryTableName: string,
-  userId: string
+  userId: string,
+  crypto: SessionCrypto
 ): Promise<void> {
   try {
     const pk = userPk(userId)
@@ -50,10 +51,10 @@ export async function maybeProposeRoadmapRevision(
     if (!roadmapItem) return // nothing to revise yet — onboarding hasn't produced a Roadmap
     if (existingProposalResult.Item) return // don't stack a second proposal on one the person hasn't answered yet
 
-    const { confirmedSignals } = await gatherContinuityContext(userId)
+    const { confirmedSignals } = await gatherContinuityContext(userId, crypto)
     if (confirmedSignals.length < MIN_CONFIRMED_SIGNALS_TO_CONSIDER) return
 
-    const roadmap = stubDecryptField<RoadmapContent>(roadmapItem.content)
+    const roadmap = await crypto.decryptField<RoadmapContent>(roadmapItem.content)
     const confirmedSignalsText = confirmedSignals.map((s) => `- (${s.domain}) ${s.description}`).join('\n')
 
     const version = await resolvePromptVersion(ddb, promptRegistryTableName, 'roadmap', 'revise')
@@ -81,7 +82,7 @@ export async function maybeProposeRoadmapRevision(
     const proposal: RoadmapProposalItem = {
       pk,
       sk: Sk.roadmapProposal(),
-      content: stubEncryptField<RoadmapContent & { rationale: string }>({
+      content: await crypto.encryptField<RoadmapContent & { rationale: string }>({
         currentFocus,
         theme,
         direction,

@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import { parseValue } from '../../lib/http'
-import { stubDecryptField } from '../../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModel } from '../../lib/model-call'
 import { ddb, PROMPT_REGISTRY_TABLE_NAME } from './db'
@@ -26,7 +25,7 @@ export const valuesNeedsStep: StepDefinition = {
     if (ctx.action === 'REFINE') {
       const { optionLabel } = parseValue(ctx.input, RefineInput)
       const option = await getOption(ctx.pk, ctx.sessionId, optionLabel)
-      const optionContent = stubDecryptField<OptionContent>(option.content)
+      const optionContent = await ctx.crypto.decryptField<OptionContent>(option.content)
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'values_needs_tags')
       const modelResult = await callPromptModel(version, { optionLabel, optionText: optionContent.content })
       return {
@@ -43,7 +42,7 @@ export const valuesNeedsStep: StepDefinition = {
       ...valuesB.map((t) => ({ optionLabel: 'B' as const, tagType: 'value' as const, label: t.label, aiSuggested: t.aiSuggested })),
       ...needsB.map((t) => ({ optionLabel: 'B' as const, tagType: 'need' as const, label: t.label, aiSuggested: t.aiSuggested })),
     ]
-    await replaceTagsOfTypes(ctx.pk, ctx.sessionId, ['value', 'need'], newTags)
+    await replaceTagsOfTypes(ctx.crypto, ctx.pk, ctx.sessionId, ['value', 'need'], newTags)
 
     // DecisionItem.currentStep does NOT advance here — matches the original:
     // `completeStep06` persists tags but current_step only becomes 7 once

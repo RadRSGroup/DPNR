@@ -3,6 +3,7 @@ import { UpdateCommand } from '@aws-sdk/lib-dynamodb'
 import { HttpError } from '../lib/http'
 import type { TwinSignalActionResponse } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
+import { getSessionCrypto } from '../lib/session-crypto'
 import { maybeProposeRoadmapRevision } from '../lib/roadmap-revision'
 import { maybeClassifySignal } from '../lib/signal-classification'
 import { ddb, TABLE_NAME, findSignalById } from './helpers'
@@ -28,6 +29,7 @@ const PROMPT_REGISTRY_TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME as str
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
     const userId = requireUserId(event)
+    const crypto = await getSessionCrypto(userId)
     const signalId = event.pathParameters?.id
     if (!signalId) {
       throw new HttpError(400, 'missing_signal_id', 'Path must include a signal id.')
@@ -45,8 +47,8 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       })
     )
 
-    await maybeProposeRoadmapRevision(ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME, userId)
-    await maybeClassifySignal(ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME, signal)
+    await maybeProposeRoadmapRevision(ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME, userId, crypto)
+    await maybeClassifySignal(ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME, signal, crypto)
 
     const response: TwinSignalActionResponse = { signalId, status: 'confirmed' }
     return jsonResponse(200, response)

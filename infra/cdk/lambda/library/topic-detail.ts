@@ -10,7 +10,7 @@ import {
   type LibraryTopicDetailResponse,
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
-import { stubDecryptField } from '../lib/crypto-stub'
+import { getSessionCrypto } from '../lib/session-crypto'
 import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
 
@@ -43,6 +43,7 @@ const PROMPT_REGISTRY_TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME as str
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
     const userId = requireUserId(event)
+    const crypto = await getSessionCrypto(userId)
     const slug = event.pathParameters?.slug
     if (!slug) {
       throw new HttpError(400, 'missing_slug', 'Path must include a topic slug.')
@@ -86,9 +87,13 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     if (confirmedSignals.length > 0) {
       try {
         const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'library', 'topic_explanation')
-        const confirmedSignalsList = confirmedSignals
-          .map((s) => `- (${s.domain}) ${stubDecryptField<{ description: string }>(s.content).description}`)
-          .join('\n')
+        const confirmedSignalsList = (
+          await Promise.all(
+            confirmedSignals.map(
+              async (s) => `- (${s.domain}) ${(await crypto.decryptField<{ description: string }>(s.content)).description}`
+            )
+          )
+        ).join('\n')
         const modelResult = await callPromptModel(version, {
           topicTitle: versionItem.title,
           topicBodyExcerpt: versionItem.body.slice(0, 500),

@@ -2,7 +2,7 @@ import type { APIGatewayProxyHandlerV2WithJWTAuthorizer } from 'aws-lambda'
 import { GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, userPk, type CommitmentItem, type CompleteCommitmentResponse } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
-import { stubDecryptField } from '../lib/crypto-stub'
+import { getSessionCrypto } from '../lib/session-crypto'
 import { grantCredits, EARN_COMMITMENT_COMPLETED_CREDITS } from '../lib/credits'
 import { ddb, TABLE_NAME } from './helpers'
 
@@ -24,6 +24,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   try {
     const userId = requireUserId(event)
     const pk = userPk(userId)
+    const crypto = await getSessionCrypto(userId)
     const commitmentId = event.pathParameters?.commitmentId
     if (!commitmentId) {
       throw new HttpError(400, 'missing_commitment_id', 'Path must include a commitment id.')
@@ -36,7 +37,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       throw new HttpError(404, 'commitment_not_found', `No commitment "${commitmentId}".`)
     }
 
-    const description = stubDecryptField<{ description: string }>(item.content).description
+    const description = (await crypto.decryptField<{ description: string }>(item.content)).description
     let status = item.status
 
     if (status === 'open') {

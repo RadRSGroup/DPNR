@@ -2,7 +2,7 @@ import type { APIGatewayProxyHandlerV2WithJWTAuthorizer } from 'aws-lambda'
 import { QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { userPk, type MirrorSessionItem, type MirrorsListResponse } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
-import { stubDecryptField } from '../lib/crypto-stub'
+import { getSessionCrypto } from '../lib/session-crypto'
 import { ddb, TABLE_NAME } from './db'
 import type { MirrorContent } from './mirror-steps/helpers'
 
@@ -17,6 +17,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   try {
     const userId = requireUserId(event)
     const pk = userPk(userId)
+    const crypto = await getSessionCrypto(userId)
 
     const result = await ddb.send(
       new QueryCommand({
@@ -28,17 +29,19 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
 
     const items = (result.Items ?? []) as MirrorSessionItem[]
 
-    const mirrors = items
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-      .map((item) => {
-        const content = stubDecryptField<MirrorContent>(item.content)
-        return {
-          mirrorId: item.mirrorId,
-          label: content.lifeDomain ? `Reflection — ${content.lifeDomain}` : 'Reflection',
-          status: item.status,
-          createdAt: item.createdAt,
-        }
-      })
+    const mirrors = await Promise.all(
+      items
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .map(async (item) => {
+          const content = await crypto.decryptField<MirrorContent>(item.content)
+          return {
+            mirrorId: item.mirrorId,
+            label: content.lifeDomain ? `Reflection — ${content.lifeDomain}` : 'Reflection',
+            status: item.status,
+            createdAt: item.createdAt,
+          }
+        })
+    )
 
     const body: MirrorsListResponse = { mirrors }
     return jsonResponse(200, body)

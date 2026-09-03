@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import type { Lens, TagType } from '@dpnr/shared-types'
 import { parseValue, HttpError } from '../../lib/http'
-import { stubDecryptField } from '../../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModel } from '../../lib/model-call'
 import { ddb, PROMPT_REGISTRY_TABLE_NAME } from './db'
@@ -64,8 +63,8 @@ export const deepExplorationStep: StepDefinition = {
     if (ctx.action === 'REFINE') {
       const { optionLabel } = parseValue(ctx.input, RefineInput)
       const option = await getOption(ctx.pk, ctx.sessionId, optionLabel)
-      const decisionContent = stubDecryptField<DecisionContent>(decision.content)
-      const optionContent = stubDecryptField<OptionContent>(option.content)
+      const decisionContent = await ctx.crypto.decryptField<DecisionContent>(decision.content)
+      const optionContent = await ctx.crypto.decryptField<OptionContent>(option.content)
 
       if (kind === 'pros_cons') {
         const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'pros_cons_tags')
@@ -104,7 +103,7 @@ export const deepExplorationStep: StepDefinition = {
     }
 
     const newTags = [...flattenTags('A', tagsA), ...flattenTags('B', tagsB)]
-    await replaceTagsOfTypes(ctx.pk, ctx.sessionId, ['pro', 'con', 'desire', 'fear'], newTags)
+    await replaceTagsOfTypes(ctx.crypto, ctx.pk, ctx.sessionId, ['pro', 'con', 'desire', 'fear'], newTags)
 
     // DecisionItem.currentStep does NOT advance here — matches the original
     // exactly: `completeStep05` persists tags but current_step only becomes

@@ -2,7 +2,7 @@ import type { APIGatewayProxyHandlerV2WithJWTAuthorizer } from 'aws-lambda'
 import { GetCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, userPk, type MirrorRoomFullResponse, type SessionItem } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
-import { stubDecryptField } from '../lib/crypto-stub'
+import { getSessionCrypto } from '../lib/session-crypto'
 import { ddb, TABLE_NAME } from './db'
 import { getMirrorSession, type MirrorContent } from './mirror-steps/helpers'
 
@@ -17,6 +17,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   try {
     const userId = requireUserId(event)
     const pk = userPk(userId)
+    const crypto = await getSessionCrypto(userId)
     const mirrorId = event.pathParameters?.id
     if (!mirrorId) {
       throw new HttpError(400, 'missing_id', 'Path must include a mirror session id.')
@@ -30,7 +31,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       // pattern as decision-full.ts's own sessionVersion lookup.
       ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.session(mirrorId) } })),
     ])
-    const content = stubDecryptField<MirrorContent>(session.content)
+    const content = await crypto.decryptField<MirrorContent>(session.content)
     const sessionItem = sessionItemResult.Item as SessionItem | undefined
 
     const body: MirrorRoomFullResponse = {

@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, DECISION_ROOM_STEP_NUMBER, type DecisionProjectionItem, type DecisionOutcomeItem } from '@dpnr/shared-types'
 import { parseValue } from '../../lib/http'
-import { stubEncryptField, stubDecryptField } from '../../lib/crypto-stub'
+import type { SessionCrypto } from '../../lib/session-crypto'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModel } from '../../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
@@ -19,20 +19,21 @@ const SubmitInput = z.object({
   reflectionNote: z.string().max(200).optional(),
 })
 
-function buildProjectionItem(
+async function buildProjectionItem(
+  crypto: SessionCrypto,
   pk: string,
   decisionId: string,
   optionLabel: 'A' | 'B',
   p: { statement: string; isCustom: boolean },
   now: string
-): DecisionProjectionItem {
+): Promise<DecisionProjectionItem> {
   return {
     pk,
     sk: Sk.decisionProjection(decisionId, randomUUID()),
     optionLabel,
     selected: true, // these are exactly the ones the user kept — matches the original's "save only selected statements" semantics
     isCustom: p.isCustom,
-    content: stubEncryptField({ statement: p.statement }),
+    content: await crypto.encryptField({ statement: p.statement }),
     createdAt: now,
   }
 }
@@ -57,8 +58,8 @@ export const futureProjectionStep: StepDefinition = {
         getDecision(ctx.pk, ctx.sessionId),
         getOption(ctx.pk, ctx.sessionId, optionLabel),
       ])
-      const decisionContent = stubDecryptField<DecisionContent>(decision.content)
-      const optionContent = stubDecryptField<OptionContent>(option.content)
+      const decisionContent = await ctx.crypto.decryptField<DecisionContent>(decision.content)
+      const optionContent = await ctx.crypto.decryptField<OptionContent>(option.content)
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'future_projection')
       const modelResult = await callPromptModel(version, {
         decisionTitle: decisionContent.title,
@@ -79,16 +80,16 @@ export const futureProjectionStep: StepDefinition = {
     const { projectionsA, projectionsB, chosenLean, reflectionNote } = parseValue(ctx.input, SubmitInput)
     const now = new Date().toISOString()
 
-    const projectionItems = [
-      ...projectionsA.map((p) => buildProjectionItem(ctx.pk, ctx.sessionId, 'A', p, now)),
-      ...projectionsB.map((p) => buildProjectionItem(ctx.pk, ctx.sessionId, 'B', p, now)),
-    ]
+    const projectionItems = await Promise.all([
+      ...projectionsA.map((p) => buildProjectionItem(ctx.crypto, ctx.pk, ctx.sessionId, 'A', p, now)),
+      ...projectionsB.map((p) => buildProjectionItem(ctx.crypto, ctx.pk, ctx.sessionId, 'B', p, now)),
+    ])
 
     const outcomeItem: DecisionOutcomeItem = {
       pk: ctx.pk,
       sk: Sk.decisionOutcome(ctx.sessionId, now),
       chosenOptionLabel: chosenLean === 'undecided' ? null : chosenLean,
-      content: stubEncryptField({
+      content: await ctx.crypto.encryptField({
         reflection: `Leaning: ${chosenLean}.${reflectionNote ? ` ${reflectionNote}` : ''}`,
       }),
       createdAt: now,

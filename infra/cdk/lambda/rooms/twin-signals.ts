@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, type TwinSignalItem, type TwinSignalSource, type SessionSummaryItem } from '@dpnr/shared-types'
-import { stubEncryptField } from '../lib/crypto-stub'
+import type { SessionCrypto } from '../lib/session-crypto'
 import { resolvePromptVersion } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
@@ -26,6 +26,7 @@ const MIN_CONFIDENCE_TO_WRITE = 0.5
  * personalization).
  */
 export async function extractCandidateSignals(
+  crypto: SessionCrypto,
   pk: string,
   sessionId: string,
   source: TwinSignalSource,
@@ -62,7 +63,7 @@ export async function extractCandidateSignals(
         confidence: signal.confidence,
         source,
         sourceSessionId: sessionId,
-        content: stubEncryptField({ description: signal.description }),
+        content: await crypto.encryptField({ description: signal.description }),
         createdAt: now,
         updatedAt: now,
       }
@@ -96,6 +97,7 @@ export async function extractCandidateSignals(
  * write failing must not block the room finishing either.
  */
 export async function persistSessionSummary(
+  crypto: SessionCrypto,
   pk: string,
   sessionId: string,
   summary: string,
@@ -106,7 +108,7 @@ export async function persistSessionSummary(
     const item: SessionSummaryItem = {
       pk,
       sk: Sk.sessionSummary(sessionId),
-      content: stubEncryptField({ summary, candidateSignalIds }),
+      content: await crypto.encryptField({ summary, candidateSignalIds }),
       promptRef: `inline:${inlineRef}`,
       createdAt: new Date().toISOString(),
     }

@@ -2,7 +2,7 @@ import type { APIGatewayProxyHandlerV2WithJWTAuthorizer } from 'aws-lambda'
 import { QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { userPk, type CommitmentItem, type CommitmentsResponse } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
-import { stubDecryptField } from '../lib/crypto-stub'
+import { getSessionCrypto } from '../lib/session-crypto'
 import { ddb, TABLE_NAME } from './helpers'
 
 /**
@@ -13,6 +13,7 @@ import { ddb, TABLE_NAME } from './helpers'
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
     const userId = requireUserId(event)
+    const crypto = await getSessionCrypto(userId)
 
     const result = await ddb.send(
       new QueryCommand({
@@ -22,17 +23,19 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       })
     )
 
-    const commitments = ((result.Items ?? []) as CommitmentItem[])
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-      .map((item) => ({
-        commitmentId: item.commitmentId,
-        status: item.status,
-        description: stubDecryptField<{ description: string }>(item.content).description,
-        reviewDate: item.reviewDate,
-        lifeDomain: item.lifeDomain,
-        sourceRoomType: item.sourceRoomType,
-        createdAt: item.createdAt,
-      }))
+    const commitments = await Promise.all(
+      ((result.Items ?? []) as CommitmentItem[])
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .map(async (item) => ({
+          commitmentId: item.commitmentId,
+          status: item.status,
+          description: (await crypto.decryptField<{ description: string }>(item.content)).description,
+          reviewDate: item.reviewDate,
+          lifeDomain: item.lifeDomain,
+          sourceRoomType: item.sourceRoomType,
+          createdAt: item.createdAt,
+        }))
+    )
 
     const body: CommitmentsResponse = { commitments }
     return jsonResponse(200, body)

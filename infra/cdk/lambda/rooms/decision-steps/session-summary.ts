@@ -23,7 +23,7 @@ export const sessionSummaryStep: StepDefinition = {
   allowedActions: ['SUBMIT_STEP', 'REFINE'],
   handle: async (ctx) => {
     if (ctx.action === 'REFINE') {
-      const context = await gatherDecisionContext(ctx.pk, ctx.sessionId)
+      const context = await gatherDecisionContext(ctx.crypto, ctx.pk, ctx.sessionId)
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'session_summary')
       const modelResult = await callPromptModel(version, {
         decisionTitle: context.title,

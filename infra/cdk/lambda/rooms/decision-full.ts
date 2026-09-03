@@ -18,7 +18,7 @@ import {
   type SessionItem,
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
-import { stubDecryptField } from '../lib/crypto-stub'
+import { getSessionCrypto } from '../lib/session-crypto'
 import { ddb, TABLE_NAME } from './decision-steps/db'
 
 type DecisionContent = { title: string; subtitle: string | null; narrative: string }
@@ -52,6 +52,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   try {
     const userId = requireUserId(event)
     const pk = userPk(userId)
+    const crypto = await getSessionCrypto(userId)
     const decisionId = event.pathParameters?.id
     if (!decisionId) {
       throw new HttpError(400, 'missing_id', 'Path must include a decision id.')
@@ -95,53 +96,61 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     if (!decisionItem) {
       throw new HttpError(404, 'decision_not_found', 'No decision found for this id.')
     }
-    const content = stubDecryptField<DecisionContent>(decisionItem.content)
+    const content = await crypto.decryptField<DecisionContent>(decisionItem.content)
 
     const tagItems = (tagsResult.Items ?? []) as DecisionTagItem[]
     const projectionItems = (projectionsResult.Items ?? []) as DecisionProjectionItem[]
 
-    const buildOption = (
+    const buildOption = async (
       item: DecisionOptionItem | undefined,
       label: 'A' | 'B'
-    ): DecisionRoomOptionView | null => {
+    ): Promise<DecisionRoomOptionView | null> => {
       if (!item) return null
-      const optionContent = stubDecryptField<OptionContent>(item.content)
+      const optionContent = await crypto.decryptField<OptionContent>(item.content)
       // Current Step05 UI always attaches an explicit optionLabel per tag
       // (even for the fear/desire lens) — see docs/AGENT_LOG.md. The schema
       // leaves optionLabel optional for a genuinely option-agnostic tag,
       // but none exist to filter in today, so this only matches on label.
-      const tags: DecisionRoomTagView[] = tagItems
-        .filter((t) => t.optionLabel === label)
-        .map((t) => ({
-          tagType: t.tagType,
-          aiSuggested: t.aiSuggested,
-          label: stubDecryptField<TagContent>(t.content).label,
-        }))
-      const projections: DecisionRoomProjectionView[] = projectionItems
-        .filter((p) => p.optionLabel === label)
-        .map((p) => ({
-          selected: p.selected,
-          isCustom: p.isCustom,
-          statement: stubDecryptField<ProjectionContent>(p.content).statement,
-        }))
+      const tags: DecisionRoomTagView[] = await Promise.all(
+        tagItems
+          .filter((t) => t.optionLabel === label)
+          .map(async (t) => ({
+            tagType: t.tagType,
+            aiSuggested: t.aiSuggested,
+            label: (await crypto.decryptField<TagContent>(t.content)).label,
+          }))
+      )
+      const projections: DecisionRoomProjectionView[] = await Promise.all(
+        projectionItems
+          .filter((p) => p.optionLabel === label)
+          .map(async (p) => ({
+            selected: p.selected,
+            isCustom: p.isCustom,
+            statement: (await crypto.decryptField<ProjectionContent>(p.content)).statement,
+          }))
+      )
       return { label, approved: item.approved, content: optionContent.content, tags, projections }
     }
 
-    const optionA = buildOption(optionAResult.Item as DecisionOptionItem | undefined, 'A')
-    const optionB = buildOption(optionBResult.Item as DecisionOptionItem | undefined, 'B')
+    const [optionA, optionB] = await Promise.all([
+      buildOption(optionAResult.Item as DecisionOptionItem | undefined, 'A'),
+      buildOption(optionBResult.Item as DecisionOptionItem | undefined, 'B'),
+    ])
 
     const emotionItem = emotionResult.Item as DecisionEmotionItem | undefined
-    const emotion = emotionItem ? stubDecryptField<EmotionContent>(emotionItem.content) : null
+    const emotion = emotionItem ? await crypto.decryptField<EmotionContent>(emotionItem.content) : null
 
     const outcomeItems = (outcomesResult.Items ?? []) as DecisionOutcomeItem[]
-    const outcomes = outcomeItems.map((o) => ({
-      chosenOptionLabel: o.chosenOptionLabel,
-      reflection: stubDecryptField<OutcomeContent>(o.content).reflection,
-      createdAt: o.createdAt,
-    }))
+    const outcomes = await Promise.all(
+      outcomeItems.map(async (o) => ({
+        chosenOptionLabel: o.chosenOptionLabel,
+        reflection: (await crypto.decryptField<OutcomeContent>(o.content)).reflection,
+        createdAt: o.createdAt,
+      }))
+    )
 
     const summaryItem = summaryResult.Item as DecisionSummaryItem | undefined
-    const summary = summaryItem ? stubDecryptField<SummaryContent>(summaryItem.content).summary : null
+    const summary = summaryItem ? (await crypto.decryptField<SummaryContent>(summaryItem.content)).summary : null
 
     const sessionItem = sessionResult.Item as SessionItem | undefined
 

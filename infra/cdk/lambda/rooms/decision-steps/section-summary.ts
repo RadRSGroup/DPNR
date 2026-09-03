@@ -35,7 +35,7 @@ function createSectionSummaryStep(config: SectionSummaryConfig): StepDefinition 
     allowedActions: ['SUBMIT_STEP', 'REFINE'],
     handle: async (ctx) => {
       if (ctx.action === 'REFINE') {
-        const context = await gatherDecisionContext(ctx.pk, ctx.sessionId)
+        const context = await gatherDecisionContext(ctx.crypto, ctx.pk, ctx.sessionId)
         const { stepType, selectionsA, selectionsB } = await config.computeStepTypeAndSelections(
           ctx.pk,
           ctx.sessionId,

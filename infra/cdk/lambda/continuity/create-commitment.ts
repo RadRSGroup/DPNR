@@ -10,7 +10,7 @@ import {
 } from '@dpnr/shared-types'
 import { requireUserId, parseBody, jsonResponse, errorResponse } from '../lib/http'
 import { requireConsent } from '../lib/consent'
-import { stubEncryptField } from '../lib/crypto-stub'
+import { getSessionCrypto } from '../lib/session-crypto'
 import { ddb, TABLE_NAME } from './helpers'
 
 /**
@@ -27,6 +27,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const userId = requireUserId(event)
     const pk = userPk(userId)
     const body = parseBody(event, CreateCommitmentRequestSchema)
+    const crypto = await getSessionCrypto(userId)
 
     await requireConsent(ddb, TABLE_NAME, userId)
 
@@ -42,7 +43,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       ...(body.lifeDomain ? { lifeDomain: body.lifeDomain } : {}),
       ...(body.sourceRoomType ? { sourceRoomType: body.sourceRoomType } : {}),
       ...(body.sourceSessionId ? { sourceSessionId: body.sourceSessionId } : {}),
-      content: stubEncryptField<{ description: string }>({ description: body.description }),
+      content: await crypto.encryptField<{ description: string }>({ description: body.description }),
       createdAt: now,
       updatedAt: now,
     }

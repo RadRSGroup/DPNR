@@ -2,7 +2,6 @@ import { z } from 'zod'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, DECISION_ROOM_STEP_NUMBER, DecisionEmotionAgreementSchema, type DecisionEmotionItem } from '@dpnr/shared-types'
 import { parseValue, HttpError } from '../../lib/http'
-import { stubEncryptField, stubDecryptField } from '../../lib/crypto-stub'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModel } from '../../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
@@ -29,7 +28,7 @@ export const bodyEmotionStep: StepDefinition = {
     if (ctx.action === 'REFINE') {
       const { bodyLocation, emotion } = parseValue(ctx.input, RefineInput)
       const decision = await getDecision(ctx.pk, ctx.sessionId)
-      const content = stubDecryptField<DecisionContent>(decision.content)
+      const content = await ctx.crypto.decryptField<DecisionContent>(decision.content)
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'emotion_reflection')
       const modelResult = await callPromptModel(version, {
         title: content.title,
@@ -56,7 +55,7 @@ export const bodyEmotionStep: StepDefinition = {
     const emotionItem: DecisionEmotionItem = {
       pk: ctx.pk,
       sk: Sk.decisionEmotion(ctx.sessionId),
-      content: stubEncryptField({ bodyLocation, emotionColor, aiReflection: finalReflection, userResponse: response }),
+      content: await ctx.crypto.encryptField({ bodyLocation, emotionColor, aiReflection: finalReflection, userResponse: response }),
       createdAt: now,
     }
 
