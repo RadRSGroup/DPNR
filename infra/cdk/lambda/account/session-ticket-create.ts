@@ -13,12 +13,14 @@ import { requireUserId, parseBody, jsonResponse, errorResponse } from '../lib/ht
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.SESSION_TICKETS_TABLE_NAME as string
 
-// First-draft durations, not yet a product decision — nothing renews a
-// ticket today (no "touch"/sliding-refresh endpoint exists), so these are
-// fixed windows from creation, not the migration plan's full 60min-sliding/
-// 8h-hard-cap active_session behavior. Revisit once Stage 4 actually
-// consumes a ticket for real decrypt calls.
-const ACTIVE_SESSION_MINUTES = 60
+// Phase 6 Stage 4a (docs/AGENT_LOG.md Session 33, part 2): bumped from a
+// first-draft 60 minutes to 8 hours — a deliberate, reversible stopgap. Nothing renews a
+// ticket on activity (no "touch"/sliding-refresh endpoint exists, and won't
+// until real usage data says a fixed window isn't enough); a tab left open
+// longer than this needs a fresh sign-in. This is the first duration that
+// actually matters — Stage 4 is what makes an expired ticket a real decrypt
+// failure, not just a harmless unused row.
+const ACTIVE_SESSION_MINUTES = 8 * 60
 const POST_SESSION_HOURS = 48
 
 /**

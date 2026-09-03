@@ -79,15 +79,21 @@ export async function bootstrapKeysAtSignup(password: string): Promise<RecoveryC
 
 /**
  * Fetches the caller's key bundle, re-derives the DEK from `password`, and
- * establishes a real `active_session` session ticket. Best-effort by
- * design: nothing server-side consumes a ticket yet (Stage 4's job), so a
- * missing key bundle is not an error here — `null` covers both "no key
- * bundle exists yet" (an account created before Stage 3, or signup's own
- * bootstrap step never completed) and is the signal for callers to treat
- * this as a no-op. A real crypto failure (e.g. `unwrapKey` rejecting a
- * stale `wrappedDek` after some other bug) still throws — callers should
- * swallow that too rather than block a sign-in on it (this is a
- * convenience mechanism, not the authentication boundary).
+ * establishes real `active_session` + `post_session` session tickets — the
+ * interactive Lambdas (Rooms/Companion/Twin) consume the former via Stage
+ * 4a's `getSessionCrypto`; the Continuity composer pipeline is meant to
+ * consume the latter once it's converted (Stage 4b, not built yet, but
+ * cheap to wire the ticket for now since it's the same already-wrapped DEK).
+ * Best-effort by design: a missing key bundle is not an error here — `null`
+ * covers both "no key bundle exists yet" (an account created before Stage
+ * 3, or signup's own bootstrap step never completed) and is the signal for
+ * callers to treat this as a no-op. A real crypto failure (e.g.
+ * `unwrapKey` rejecting a stale `wrappedDek` after some other bug) still
+ * throws — callers should swallow that too rather than block a sign-in on
+ * it (this is a convenience mechanism, not the authentication boundary).
+ * Returns the `active_session` ticket's id (what sign-out revokes) — the
+ * `post_session` ticket deliberately outlives the tab and isn't tracked
+ * for revocation the same way.
  */
 export async function establishSessionTicket(password: string): Promise<string | null> {
   let keys
@@ -107,9 +113,12 @@ export async function establishSessionTicket(password: string): Promise<string |
   const dek = await unwrapKey(keys.wrappedDek, kek)
 
   const { publicKeyDer } = await getSessionTicketPublicKey()
+  // Wrapping the same DEK once is reusable for both tickets — RSA-OAEP
+  // wrapping isn't purpose-specific, only the resulting DynamoDB item is.
   const wrappedDekForTicket = await wrapDekForSessionTicket(dek, base64ToBytes(publicKeyDer))
   const ticket = await createSessionTicket({ wrappedDek: wrappedDekForTicket, purpose: 'active_session' })
   storeSessionTicketId(ticket.sessionId)
+  await createSessionTicket({ wrappedDek: wrappedDekForTicket, purpose: 'post_session' })
   return ticket.sessionId
 }
 

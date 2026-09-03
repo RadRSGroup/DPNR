@@ -346,6 +346,10 @@ export class ApiStack extends Stack {
         LIBRARY_CATALOG_TABLE_NAME: props.libraryCatalogTable.tableName,
         SAFETY_ALERT_TOPIC_ARN: safetyAlertTopic.topicArn,
         ...safetyGuardrailEnv,
+        // Phase 6 Stage 4a (ADR 0013/lib/session-crypto.ts) — first real
+        // consumer of the kms:Decrypt grant below.
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
       },
       description: 'POST /v1/companion/message — chat turn + real Bedrock call with topic-routing directive.',
     })
@@ -356,8 +360,8 @@ export class ApiStack extends Stack {
     safetyAlertTopic.grantPublish(companionMessageFn)
     grantApplyGuardrail(companionMessageFn)
     grantHaikuConverse(companionMessageFn)
-    // Phase 6 Stage 2 (ADR 0013): decrypt grant lands now, not consumed until Stage 4.
     props.sessionTicketsKmsKey.grantDecrypt(companionMessageFn)
+    props.sessionTicketsTable.grantReadData(companionMessageFn)
 
     const companionContextFn = new lambda.NodejsFunction(this, 'CompanionContextFn', {
       ...sharedProductLambdaProps,
@@ -370,6 +374,8 @@ export class ApiStack extends Stack {
       environment: {
         ...sharedProductLambdaProps.environment,
         PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
       },
       description: 'GET /v1/companion/context — recent turns for resuming a chat; may synthesize a real continuation.',
     })
@@ -377,6 +383,7 @@ export class ApiStack extends Stack {
     props.promptRegistryTable.grantReadData(companionContextFn)
     grantBedrockConverse(companionContextFn)
     props.sessionTicketsKmsKey.grantDecrypt(companionContextFn)
+    props.sessionTicketsTable.grantReadData(companionContextFn)
 
     const userConsentFn = new lambda.NodejsFunction(this, 'UserConsentFn', {
       ...sharedProductLambdaProps,

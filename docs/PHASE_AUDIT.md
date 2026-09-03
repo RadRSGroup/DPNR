@@ -123,6 +123,18 @@ to it instead, per that file's own protocol.
 > corrects `wrappedPrivateKey`'s wrapping key from "the account KEK" to the raw DEK itself, so it's
 > recoverable via either path). `PUT /v1/auth/password` (a direct, already-signed-in password change, distinct
 > from this forgot-password flow) remains the only item in this row still unbuilt.
+>
+> **Update (Session 33, part 2 — Phase 6 Stage 4a pilot):** the key material above is now actually consumed
+> for real — `infra/cdk/lambda/lib/session-crypto.ts` (new) is the first real caller of the `kms:Decrypt`
+> grant Stage 2 wrote: it looks up the caller's live `active_session` ticket, unwraps its DEK via KMS, and
+> hands back real AES-256-GCM `encryptField`/`decryptField`. Companion (`companion/message.ts`/`context.ts`,
+> 2 of ~37 `crypto-stub.ts` call-site files) is converted and live-verified — a real `dynamodb get-item` shows
+> genuine ciphertext (`v: 1`, a real 12-byte IV) where the stub used to write `iv: ''` and readable
+> `JSON.stringify` text. The `active_session` ticket duration was also bumped 60min → 8h (a deliberate,
+> reversible stopgap — no touch/refresh mechanism built), and every sign-in now also mints a `post_session`
+> ticket for the still-unconverted Continuity composer. The remaining ~35 files, the `SessionItem.lastResponse`
+> plaintext leak, `userExportFn`'s missing KMS/session-ticket grants, and flipping `PLAINTEXT_CRYPTO_STUB_ACK`'s
+> `isProduction` meaning are Stage 4b — deliberately not done in this pilot.
 
 `MVP_ARCHITECTURE.md` §4's first API row — `POST /v1/session-ticket`, `DELETE /v1/auth/sessions/{id}`,
 `PUT /v1/auth/password`, `DELETE /v1/account`, `GET /v1/keys` — has **zero Lambda handlers and zero CDK

@@ -10,7 +10,7 @@ import {
   type DailyCardItem,
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
-import { stubEncryptField, stubDecryptField } from '../lib/crypto-stub'
+import { getSessionCrypto, type SessionCrypto } from '../lib/session-crypto'
 import { resolvePromptVersion } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
 import { gatherContinuityContext } from '../continuity/gather-context'
@@ -63,6 +63,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   try {
     const userId = requireUserId(event)
     const pk = userPk(userId)
+    const crypto = await getSessionCrypto(userId)
 
     const pointerResult = await ddb.send(
       new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.companionActiveSession() } })
@@ -74,16 +75,20 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         // case (e.g. a manual data reset), not a brand-new user. Nothing
         // to continue from and onboarding is already done; plain empty
         // state, same as before this session.
-        const body: CompanionContextResponse = { sessionId: null, messages: [], dailyCard: await getUndismissedDailyCard(pk) }
+        const body: CompanionContextResponse = {
+          sessionId: null,
+          messages: [],
+          dailyCard: await getUndismissedDailyCard(crypto, pk),
+        }
         return jsonResponse(200, body)
       }
 
       const sessionId = await getOrCreateActiveCompanionSession(ddb, TABLE_NAME, pk)
-      const opener = await synthesizeOnboardingOpener(pk, sessionId)
+      const opener = await synthesizeOnboardingOpener(crypto, pk, sessionId)
       const body: CompanionContextResponse = {
         sessionId,
         messages: opener ? [opener] : [],
-        dailyCard: await getUndismissedDailyCard(pk),
+        dailyCard: await getUndismissedDailyCard(crypto, pk),
       }
       return jsonResponse(200, body)
     }
@@ -101,19 +106,21 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     )
     const items = ((result.Items ?? []) as SessionMessageItem[]).reverse() // back to chronological order
 
-    const messages = items.map((m) => ({
-      role: m.role,
-      text: stubDecryptField<MessageContent>(m.content).text,
-      createdAt: m.createdAt,
-    }))
+    const messages = await Promise.all(
+      items.map(async (m) => ({
+        role: m.role,
+        text: (await crypto.decryptField<MessageContent>(m.content)).text,
+        createdAt: m.createdAt,
+      }))
+    )
 
-    const continuation = await maybeSynthesizeContinuation(userId, pk, pointer.sessionId, messages)
+    const continuation = await maybeSynthesizeContinuation(crypto, userId, pk, pointer.sessionId, messages)
     if (continuation) messages.push(continuation)
 
     const body: CompanionContextResponse = {
       sessionId: pointer.sessionId,
       messages,
-      dailyCard: await getUndismissedDailyCard(pk),
+      dailyCard: await getUndismissedDailyCard(crypto, pk),
     }
     return jsonResponse(200, body)
   } catch (err) {
@@ -127,16 +134,20 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
  * schema's own doc comment). A plain read, no model call, so failures here
  * degrade to `null` rather than breaking context resume.
  */
-async function getUndismissedDailyCard(pk: string): Promise<CompanionContextResponse['dailyCard']> {
+async function getUndismissedDailyCard(
+  crypto: SessionCrypto,
+  pk: string
+): Promise<CompanionContextResponse['dailyCard']> {
   try {
     const today = new Date().toISOString().slice(0, 10)
     const result = await ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.dailyCard(today) } }))
     const item = result.Item as DailyCardItem | undefined
     if (!item || item.dismissedAt) return null
 
-    const { text, kind } = stubDecryptField<{ text: string; kind: 'thought' | 'question' | 'reminder' | 'micro_practice' }>(
-      item.content
-    )
+    const { text, kind } = await crypto.decryptField<{
+      text: string
+      kind: 'thought' | 'question' | 'reminder' | 'micro_practice'
+    }>(item.content)
     return { kind, text, feedback: item.feedback ?? null }
   } catch {
     return null
@@ -155,6 +166,7 @@ async function getUndismissedDailyCard(pk: string): Promise<CompanionContextResp
  * and self-limits immediately after (the fresh `createdAt` resets the gap).
  */
 async function maybeSynthesizeContinuation(
+  crypto: SessionCrypto,
   userId: string,
   pk: string,
   sessionId: string,
@@ -202,7 +214,7 @@ async function maybeSynthesizeContinuation(
       pk,
       sk: Sk.sessionMessage(sessionId, now),
       role: 'assistant',
-      content: stubEncryptField<MessageContent>({ text }),
+      content: await crypto.encryptField<MessageContent>({ text }),
       createdAt: now,
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: item }))
@@ -234,6 +246,7 @@ async function maybeSynthesizeContinuation(
  * never from this opener alone.
  */
 async function synthesizeOnboardingOpener(
+  crypto: SessionCrypto,
   pk: string,
   sessionId: string
 ): Promise<{ role: 'assistant'; text: string; createdAt: string } | null> {
@@ -253,7 +266,7 @@ async function synthesizeOnboardingOpener(
       pk,
       sk: Sk.sessionMessage(sessionId, now),
       role: 'assistant',
-      content: stubEncryptField<MessageContent>({ text }),
+      content: await crypto.encryptField<MessageContent>({ text }),
       createdAt: now,
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: item }))

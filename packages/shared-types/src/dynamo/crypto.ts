@@ -18,3 +18,12 @@ export const EncryptedBlobSchema = z.object({
   tag: z.string().optional(), // base64 auth tag, if the chosen crypto lib doesn't embed it
 })
 export type EncryptedBlob = z.infer<typeof EncryptedBlobSchema>
+
+/**
+ * The first real `EncryptedBlob.v` value (ADR 0009/ADR 0014, Phase 6 Stage
+ * 4) — real AES-256-GCM, auth tag appended to `ciphertext` (not the
+ * optional `tag` field), matching WebCrypto's own AES-GCM output
+ * convention. `crypto-stub.ts`'s `STUB_BLOB_VERSION = 999_999` is a
+ * sentinel that can never collide with this.
+ */
+export const ENCRYPTED_BLOB_VERSION = 1

@@ -16,7 +16,7 @@ import {
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { requireConsent } from '../lib/consent'
 import { consumeCredits, COMPANION_MESSAGE_COST } from '../lib/credits'
-import { stubEncryptField, stubDecryptField } from '../lib/crypto-stub'
+import { getSessionCrypto, type SessionCrypto } from '../lib/session-crypto'
 import { resolvePromptVersion } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
 import { listActiveTopics } from '../lib/library-catalog'
@@ -77,6 +77,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const userId = requireUserId(event)
     const pk = userPk(userId)
     const body = parseBody(event, CompanionMessageRequestSchema)
+    const crypto = await getSessionCrypto(userId)
 
     await requireConsent(ddb, TABLE_NAME, userId)
 
@@ -92,7 +93,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       )
       const response: CompanionMessageResponse = {
         sessionId,
-        reply: reply ? stubDecryptField<MessageContent>(reply.content).text : '',
+        reply: reply ? (await crypto.decryptField<MessageContent>(reply.content)).text : '',
         directive: null,
       }
       return jsonResponse(200, response)
@@ -103,16 +104,18 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       pk,
       sk: Sk.sessionMessage(sessionId, now),
       role: 'user',
-      content: stubEncryptField<MessageContent>({ text: body.text }),
+      content: await crypto.encryptField<MessageContent>({ text: body.text }),
       createdAt: now,
       clientMessageId: body.clientMessageId,
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: userMessage }))
 
-    const history: CompanionTurn[] = recentMessages.map((m) => ({
-      role: m.role,
-      text: stubDecryptField<MessageContent>(m.content).text,
-    }))
+    const history: CompanionTurn[] = await Promise.all(
+      recentMessages.map(async (m) => ({
+        role: m.role,
+        text: (await crypto.decryptField<MessageContent>(m.content)).text,
+      }))
+    )
 
     // Safety/crisis classification (spec §30, docs/SAFETY_SYSTEM_DESIGN.md,
     // ADR 0012) — runs before any normal reply is generated, since a
@@ -178,7 +181,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       }
       const result = hasRoadmap
         ? await callCompanionModel(userId, history, body.text)
-        : await runOnboardingTurn(pk, sessionId, history, body.text)
+        : await runOnboardingTurn(crypto, pk, sessionId, history, body.text)
       reply = result.reply
       directive = result.directive
     }
@@ -188,7 +191,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       pk,
       sk: Sk.sessionMessage(sessionId, replyAt),
       role: 'assistant',
-      content: stubEncryptField<MessageContent>({ text: reply }),
+      content: await crypto.encryptField<MessageContent>({ text: reply }),
       createdAt: replyAt,
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: assistantMessage }))
@@ -319,6 +322,7 @@ function buildDirective(result: Record<string, unknown>, validTopicSlugs: string
  * once a real Twin UI exists.
  */
 async function runOnboardingTurn(
+  crypto: SessionCrypto,
   pk: string,
   sessionId: string,
   history: CompanionTurn[],
@@ -347,12 +351,17 @@ async function runOnboardingTurn(
 
   const reply = typeof result.reply === 'string' ? result.reply : ''
   if (result.readyForRoadmap === true) {
-    await persistInitialRoadmap(pk, sessionId, result)
+    await persistInitialRoadmap(crypto, pk, sessionId, result)
   }
   return { reply, directive: null }
 }
 
-async function persistInitialRoadmap(pk: string, sessionId: string, result: Record<string, unknown>): Promise<void> {
+async function persistInitialRoadmap(
+  crypto: SessionCrypto,
+  pk: string,
+  sessionId: string,
+  result: Record<string, unknown>
+): Promise<void> {
   const currentFocus = typeof result.currentFocus === 'string' ? result.currentFocus : ''
   const theme = typeof result.theme === 'string' ? result.theme : ''
   const direction = typeof result.direction === 'string' ? result.direction : ''
@@ -372,7 +381,7 @@ async function persistInitialRoadmap(pk: string, sessionId: string, result: Reco
   const roadmapItem: RoadmapItem = {
     pk,
     sk: Sk.roadmap(),
-    content: stubEncryptField<RoadmapContent>({ currentFocus, theme, direction, suggestedSpaces }),
+    content: await crypto.encryptField<RoadmapContent>({ currentFocus, theme, direction, suggestedSpaces }),
     version: 1,
     updatedAt: now,
   }
@@ -389,7 +398,7 @@ async function persistInitialRoadmap(pk: string, sessionId: string, result: Reco
       confidence: 1,
       source: 'onboarding',
       sourceSessionId: sessionId,
-      content: stubEncryptField<{ description: string }>({ description: currentFocus }),
+      content: await crypto.encryptField<{ description: string }>({ description: currentFocus }),
       createdAt: now,
       updatedAt: now,
     },
@@ -402,7 +411,7 @@ async function persistInitialRoadmap(pk: string, sessionId: string, result: Reco
       confidence: 1,
       source: 'onboarding',
       sourceSessionId: sessionId,
-      content: stubEncryptField<{ description: string }>({ description: direction }),
+      content: await crypto.encryptField<{ description: string }>({ description: direction }),
       createdAt: now,
       updatedAt: now,
     },
