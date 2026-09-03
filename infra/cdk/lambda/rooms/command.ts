@@ -69,8 +69,9 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     // Idempotent replay short-circuits BEFORE the version check below — a
     // retried request naturally carries an expectedSessionVersion that's
     // now stale after the first, successful attempt already advanced it.
-    if (existingSession?.lastIdempotencyKey === body.idempotencyKey) {
-      return jsonResponse(200, existingSession.lastResponse as RoomCommandResponse)
+    if (existingSession?.lastIdempotencyKey === body.idempotencyKey && existingSession.lastResponse) {
+      const cachedResponse = await crypto.decryptField<RoomCommandResponse>(existingSession.lastResponse)
+      return jsonResponse(200, cachedResponse)
     }
 
     if (existingSession) {
@@ -175,7 +176,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       startedAt: existingSession?.startedAt ?? now,
       ...(stepResult.sessionComplete ? { endedAt: now } : {}),
       lastIdempotencyKey: body.idempotencyKey,
-      lastResponse: response,
+      lastResponse: await crypto.encryptField<RoomCommandResponse>(response),
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: updatedSession }))
 

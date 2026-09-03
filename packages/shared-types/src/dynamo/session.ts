@@ -26,7 +26,13 @@ export const SessionItemSchema = z.object({
   // attempt) — the two mechanisms interact, this is what makes them work
   // together rather than fight each other. See lambda/rooms/command.ts.
   lastIdempotencyKey: z.string().optional(),
-  lastResponse: z.record(z.string(), z.unknown()).optional(),
+  // The whole RoomCommandResponse, encrypted — it can echo decrypted step
+  // content (a title, a narrative, a model suggestion), so it's bound by
+  // the same "no plaintext personal content in DynamoDB" guardrail as any
+  // other content field, not exempt just because it's a replay cache
+  // (AGENT_LOG.md flagged this as a real gap from Session 10 through Phase
+  // 6 Stage 4b, fixed after Stage 4b's own deploy).
+  lastResponse: EncryptedBlobSchema.optional(),
 })
 export type SessionItem = z.infer<typeof SessionItemSchema>
 

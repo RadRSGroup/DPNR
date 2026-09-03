@@ -147,6 +147,13 @@ to it instead, per that file's own protocol.
 > Grow payment API + DynamoDB/Cognito removal policies, not evaluated this session). The `SessionItem.lastResponse`
 > plaintext leak in `rooms/command.ts` (flagged since Session 10) is the one item from Stage 4b's own scope that
 > remains genuinely unfixed — still real, still open backlog, not touched this session.
+>
+> **Update (Session 34, part 2 — the `SessionItem.lastResponse` leak above is now fixed):** `lastResponse` is
+> now `EncryptedBlobSchema`, encrypted on write and decrypted on the one read path (idempotent replay) via
+> `rooms/command.ts`'s already-resolved `crypto`. Deployed and live-verified — real ciphertext confirmed via
+> `aws dynamodb get-item`, a manual decrypt matched the original response exactly, and a real replay against
+> the same `idempotencyKey` returned the identical response through the new decrypt path. **Phase 6 now has no
+> known remaining plaintext gap.**
 
 `MVP_ARCHITECTURE.md` §4's first API row — `POST /v1/session-ticket`, `DELETE /v1/auth/sessions/{id}`,
 `PUT /v1/auth/password`, `DELETE /v1/account`, `GET /v1/keys` — has **zero Lambda handlers and zero CDK
