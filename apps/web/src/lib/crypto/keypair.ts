@@ -7,7 +7,11 @@ import { bytesToBase64, base64ToBytes } from './encoding'
  * §6.3) — lets a job that runs outside any live session ticket (a future
  * scheduled composer, or sharing) deposit data only this user can later
  * decrypt. `publicKey` is stored plaintext (it's not a secret); the
- * private key is wrapped under the account's KEK, same as the DEK.
+ * private key is wrapped under the raw DEK itself (ADR 0014), not a KEK —
+ * so it's uniformly recoverable via either the password path
+ * (wrappedDek) or the recovery-code path (wrappedDekRecovery), since both
+ * unwrap to the same DEK. A password reset only ever needs to re-wrap the
+ * DEK, never this key.
  */
 export interface InboxKeypair {
   publicKey: Uint8Array
@@ -29,11 +33,18 @@ export function decodePublicKey(encoded: string): Uint8Array {
   return base64ToBytes(encoded)
 }
 
-/** For `UserKeysItem.wrappedPrivateKey` — wrapped under the account KEK, same mechanism as `wrapKey`/`unwrapKey` in dek.ts. */
-export async function wrapPrivateKey(privateKey: Uint8Array, kek: Uint8Array): Promise<WrappedKey> {
-  return wrapKey(privateKey, kek)
+/**
+ * For `UserKeysItem.wrappedPrivateKey` — same mechanism as `wrapKey`/`unwrapKey`
+ * in dek.ts, but the caller passes the raw DEK as the wrapping key, not a
+ * KEK (ADR 0014). The parameter is still named generically (`wrapKey`'s own
+ * signature doesn't distinguish a DEK from a KEK — both are just 32 random
+ * bytes to AES-GCM), but every real call site in this codebase must pass
+ * the DEK here.
+ */
+export async function wrapPrivateKey(privateKey: Uint8Array, dek: Uint8Array): Promise<WrappedKey> {
+  return wrapKey(privateKey, dek)
 }
 
-export async function unwrapPrivateKey(wrapped: WrappedKey, kek: Uint8Array): Promise<Uint8Array> {
-  return unwrapKey(wrapped, kek)
+export async function unwrapPrivateKey(wrapped: WrappedKey, dek: Uint8Array): Promise<Uint8Array> {
+  return unwrapKey(wrapped, dek)
 }

@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { signIn } from '@/lib/cognito/client'
+import { establishSessionTicket } from '@/lib/auth/keyBootstrap'
 
 function LoginForm() {
   const router = useRouter()
@@ -22,6 +23,9 @@ function LoginForm() {
     setError(null)
     try {
       await signIn(email, password)
+      // Best-effort — a failure here must never block a successful sign-in;
+      // nothing consumes session tickets server-side until Stage 4.
+      await establishSessionTicket(password).catch(() => {})
       router.push(next)
       router.refresh()
     } catch (err) {
@@ -66,6 +70,11 @@ function LoginForm() {
             required
             className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-white/30 text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
           />
+          <div className="text-right mt-2">
+            <Link href="/forgot-password" className="text-white/30 text-xs hover:text-white/50 transition-colors">
+              Forgot password?
+            </Link>
+          </div>
         </div>
         <button
           type="submit"

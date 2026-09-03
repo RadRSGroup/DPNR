@@ -34,6 +34,38 @@ const SESSION_COOKIE = 'dpnr_session'
 // the built-in JWT authorizer doesn't enforce this claim either).
 const CONSENT_COOKIE = 'dpnr_consented'
 
+// Tracks the current sign-in's session-ticket id (lib/auth/keyBootstrap.ts's
+// `establishSessionTicket`) purely so a later sign-out can revoke it —
+// sessionStorage, not a cookie, since it's tab-scoped bookkeeping, not
+// something any server-side check reads. Kept here rather than in
+// keyBootstrap.ts to avoid that module needing its own storage concern, and
+// deliberately has no dependency on lib/api/v1-client.ts (which itself
+// imports `getIdToken` from this file) to avoid a circular import — the
+// actual revoke call is orchestrated in keyBootstrap.ts, which already
+// depends on both.
+const SESSION_TICKET_ID_KEY = 'dpnr_session_ticket_id'
+
+export function storeSessionTicketId(sessionId: string): void {
+  try {
+    sessionStorage.setItem(SESSION_TICKET_ID_KEY, sessionId)
+  } catch {
+    // sessionStorage unavailable (e.g. a locked-down embed) — the ticket
+    // still expires on its own TTL, so this is a convenience loss, not a
+    // correctness issue.
+  }
+}
+
+/** Reads and clears the stored ticket id in one step — a sign-out should only ever try to revoke it once. */
+export function takeStoredSessionTicketId(): string | null {
+  try {
+    const id = sessionStorage.getItem(SESSION_TICKET_ID_KEY)
+    sessionStorage.removeItem(SESSION_TICKET_ID_KEY)
+    return id
+  } catch {
+    return null
+  }
+}
+
 function setSessionCookie(session: CognitoUserSession): void {
   const idToken = session.getIdToken()
   const expiresAt = idToken.getExpiration() * 1000
@@ -108,6 +140,22 @@ export function signIn(email: string, password: string): Promise<CognitoUserSess
       },
       onFailure: (err) => reject(err),
     })
+  })
+}
+
+/** Triggers Cognito's own forgot-password email/code flow. Sends `email` a verification code (or, if not confirmed, resends the signup one — CognitoUser's own behavior, not something this wrapper controls). */
+export function forgotPassword(email: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const user = new CognitoUser({ Username: email, Pool: userPool })
+    user.forgotPassword({ onSuccess: () => resolve(), onFailure: (err) => reject(err) })
+  })
+}
+
+/** Completes `forgotPassword()` with the emailed code and a new password. Does not sign the user in — call `signIn()` with the new password afterward. */
+export function confirmForgotPassword(email: string, code: string, newPassword: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const user = new CognitoUser({ Username: email, Pool: userPool })
+    user.confirmPassword(code, newPassword, { onSuccess: () => resolve(), onFailure: (err) => reject(err) })
   })
 }
 

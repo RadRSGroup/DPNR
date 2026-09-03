@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentSession, deleteCognitoUser, signOut } from '@/lib/cognito/client'
+import { revokeCurrentSessionTicket } from '@/lib/auth/keyBootstrap'
 import { exportUserData, deleteAccountData, getCredits } from '@/lib/api/v1-client'
 import type { CreditsResponse } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
@@ -67,6 +68,7 @@ export default function AccountPage() {
       // session can no longer authenticate the /v1/account call.
       await deleteAccountData()
       await deleteCognitoUser()
+      await revokeCurrentSessionTicket().catch(() => {})
       signOut()
       router.push('/?deleted=true')
     } catch {
@@ -214,7 +216,8 @@ export default function AccountPage() {
 
           {/* Sign out */}
           <button
-            onClick={() => {
+            onClick={async () => {
+              await revokeCurrentSessionTicket().catch(() => {})
               signOut()
               router.push('/login')
             }}

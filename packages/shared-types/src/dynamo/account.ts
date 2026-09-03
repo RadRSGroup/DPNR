@@ -51,7 +51,7 @@ export const UserKeysItemSchema = z.object({
   wrappedDek: z.string(), // base64, DEK wrapped by the password/passkey-derived KEK
   wrappedDekRecovery: z.string(), // base64, DEK wrapped a second time by the recovery code
   publicKey: z.string(), // base64 X25519 public key (plaintext — used by ticketless writers)
-  wrappedPrivateKey: z.string(), // base64, private key wrapped by the KEK
+  wrappedPrivateKey: z.string(), // base64, private key wrapped by the raw DEK itself (not a KEK) — see ADR 0014: this makes it recoverable via either wrappedDek or wrappedDekRecovery, since both unwrap to the same DEK
   createdAt: z.string().datetime(),
 })
 export type UserKeysItem = z.infer<typeof UserKeysItemSchema>

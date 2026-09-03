@@ -3,6 +3,9 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signUp, confirmSignUp, resendConfirmationCode, signIn } from '@/lib/cognito/client'
+import { bootstrapKeysAtSignup, establishSessionTicket } from '@/lib/auth/keyBootstrap'
+import RecoveryCodeReveal from '@/components/auth/RecoveryCodeReveal'
+import type { RecoveryCode } from '@/lib/crypto'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -15,8 +18,11 @@ export default function SignupPage() {
   // Cognito's autoVerify: { email: true } (auth-stack.ts) means signup needs
   // a confirmation code, not the old magic-link email — a real UX
   // difference from the Supabase-era flow, not a bug.
-  const [stage, setStage] = useState<'form' | 'confirm'>('form')
+  // 'recovery-code' is Phase 6 Stage 3's mandatory one-time reveal (ADR 0001).
+  const [stage, setStage] = useState<'form' | 'confirm' | 'recovery-code'>('form')
   const [consented, setConsented] = useState(false)
+  const [recoveryCode, setRecoveryCode] = useState<RecoveryCode | null>(null)
+  const [continuing, setContinuing] = useState(false)
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
@@ -50,12 +56,33 @@ export default function SignupPage() {
       // second manual step — same net effect as the old flow's magic-link
       // click landing the user back in the app already authenticated.
       await signIn(email, password)
+      // Phase 6 Stage 3: generate this account's real key bundle now, while
+      // the password is still in scope. `null` means a bundle already
+      // existed (a retried confirm after an earlier attempt already
+      // succeeded and already showed the real code) — there's nothing new
+      // to reveal, so skip straight past the recovery-code stage rather
+      // than fabricate one.
+      const newRecoveryCode = await bootstrapKeysAtSignup(password)
+      if (newRecoveryCode) {
+        setRecoveryCode(newRecoveryCode)
+        setStage('recovery-code')
+        setLoading(false)
+        return
+      }
+      await establishSessionTicket(password).catch(() => {})
       router.push('/consent')
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invalid or expired code.')
       setLoading(false)
     }
+  }
+
+  async function handleRecoveryCodeContinue() {
+    setContinuing(true)
+    await establishSessionTicket(password).catch(() => {})
+    router.push('/consent')
+    router.refresh()
   }
 
   async function handleResend() {
@@ -66,6 +93,12 @@ export default function SignupPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not resend the code.')
     }
+  }
+
+  if (stage === 'recovery-code' && recoveryCode) {
+    return (
+      <RecoveryCodeReveal recoveryCode={recoveryCode} onContinue={handleRecoveryCodeContinue} continuing={continuing} />
+    )
   }
 
   if (stage === 'confirm') {

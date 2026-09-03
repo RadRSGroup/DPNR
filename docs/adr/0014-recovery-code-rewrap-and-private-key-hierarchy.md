@@ -1,0 +1,28 @@
+# ADR 0014 — Recovery-code account recovery: `wrappedPrivateKey` hierarchy, `PUT /v1/keys`, and rotation-on-use
+
+**Status:** Accepted (2026-09-03, Phase 6 Stage 3 — see `C:\Users\rekkawi\.claude\plans\lovely-napping-milner.md`)
+
+## Context
+
+Stage 3 wires real signup/login into the crypto system built in Stages 1–2 (ADR 0009, ADR 0013), including the recovery-code UX ADR 0001 calls a launch blocker. Scoping the actual "forgot password, recover via code" flow surfaced two gaps neither prior ADR had resolved.
+
+**Gap 1 — `wrappedPrivateKey`'s wrapping key was never pinned.** `UserKeysItemSchema`'s field comment and `keypair.ts`'s doc comment both just said "wrapped under the account KEK." Taken literally (the password-derived KEK), a user who recovers access via their recovery code — a different KEK entirely, per `deriveKekFromRecoveryCode` — could recover the DEK but never the X25519 private key. ADR 0009 (the crypto contract) is silent on which KEK plays this role; it only pins the wrapping *mechanism* (AES-GCM, IV-prepended). This is an underspecified detail to fill in, not a re-litigation of a settled decision.
+
+**Gap 2 — no write path exists to update a key bundle after its one-time creation.** `POST /v1/keys` is intentionally one-time (`ConditionExpression: attribute_not_exists(pk)`, per Stage 2). A password reset via Cognito changes the credential the password-path KEK is derived from, but nothing updates `wrappedDek` to match — the account's own recovery code is the only way back in, and using it needs somewhere to write the result.
+
+## Decision
+
+**1. `wrappedPrivateKey` is wrapped under the raw DEK, not a KEK.** `bootstrapKeysAtSignup` (`apps/web/src/lib/auth/keyBootstrap.ts`) calls `wrapPrivateKey(privateKey, dek)` — the DEK, not `passwordKek`. Any path that recovers the DEK (password or recovery code) now uniformly recovers the private key too, and a recovery only ever needs to re-wrap `wrappedDek`/`wrappedDekRecovery` — the private key envelope never changes for the life of the account. `keypair.ts` and `packages/shared-types/src/dynamo/account.ts`'s field comment are updated to state this explicitly.
+
+**2. New endpoint `PUT /v1/keys`** (`infra/cdk/lambda/account/keys-update.ts`), authenticated, `UpdateItem` gated by `ConditionExpression: attribute_exists(pk)` (404 `keys_not_found` otherwise — mirrors `keys-get.ts`/`consent.ts`'s existing conventions). Body: `{ wrappedDek, wrappedDekRecovery }` (`UpdateWrappedDekRequestSchema`) — both fields are required and always written together, since recovery always rotates the recovery code alongside re-wrapping the DEK (decision 3, below). `salt`/`publicKey`/`wrappedPrivateKey` are immutable for the account's lifetime and this endpoint cannot touch them.
+
+**Trust model, stated explicitly rather than left implicit**: this endpoint cannot validate either ciphertext's correctness — the server never sees a raw DEK, by design. It is a plain authenticated overwrite. This is not a new privilege an attacker gains from a stolen JWT (they already have full account access at that point — every other `/v1` write is equally reachable), but it is a self-DoS/corruption vector worth naming: a buggy or malicious authenticated client could write garbage here and lock the legitimate user out of their own DEK, permanently, with no server-side recovery (per ADR 0001, "no backend 'reset and recover' support flow can ever be built"). Accepted for the same reason every other zero-knowledge write in this system accepts it: the alternative is the server validating plaintext, which is the property being deliberately given up.
+
+**3. Recovery rotates the recovery code.** A successful recovery-code-based recovery (`recoverAndRewrapDek`) generates a brand-new recovery code, re-wraps the same DEK under its KEK, and writes both `wrappedDek` (under the new password's KEK) and the new `wrappedDekRecovery` in one `PUT /v1/keys` call — the old code stops working. Decided over "keep the same code indefinitely": a code that was just typed into a recovery form is treated as exposed, and the UX cost (one more reveal screen, reusing the exact same `RecoveryCodeReveal` component and ack copy as signup) is small relative to the hygiene gained.
+
+## Consequences
+
+- `apps/web/src/lib/auth/keyBootstrap.ts` (new) is the only place these three decisions are actually exercised — `bootstrapKeysAtSignup`, `establishSessionTicket`, `recoverAndRewrapDek`. It deliberately sits outside `lib/crypto/` (which stays network-free, per that module's own `index.ts` doc comment) and outside `lib/cognito/client.ts` (which stays Cognito-only).
+- A pre-Stage-3 account (or one whose signup key-bootstrap step never completed) has no `KEYS` item at all. `establishSessionTicket` and the forgot-password flow's `recover` stage both treat a `keys_not_found` 404 as a legitimate no-op/skip rather than an error — sign-in and password reset must both keep working regardless of whether this stage's crypto bootstrap ever ran for a given account.
+- Nothing server-side actually consumes a session ticket's `kmsWrappedDek` yet (Stage 4's job) — `establishSessionTicket` being wired into sign-in now, ahead of any consumer, is deliberate (matches Session 32's own handoff framing: "a ticket has nothing meaningful to wrap today" until Stage 3 gives it real key material).
+- Does not relax ADR 0001's "no backend reset-and-recover flow" language: this endpoint never reconstructs access for someone who has lost *both* the password and the recovery code. It only lets someone who still holds one of the two (a valid recovery code) re-derive access after losing the other (the password) — exactly the recovery code's documented purpose.

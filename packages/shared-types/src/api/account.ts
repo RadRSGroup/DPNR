@@ -118,6 +118,30 @@ export const UserKeysRequestSchema = UserKeysResponseSchema
 export type UserKeysRequest = z.infer<typeof UserKeysRequestSchema>
 
 /**
+ * PUT /v1/keys — updates an existing key bundle's DEK envelope after a
+ * recovery-code-based account recovery (ADR 0014). Only `wrappedDek`/
+ * `wrappedDekRecovery` ever change here: a password reset re-wraps the DEK
+ * under the new password's KEK, and per the project's recovery-rotation
+ * decision the recovery code is rotated at the same time, so both fields are
+ * always written together. `salt`/`publicKey`/`wrappedPrivateKey` are
+ * immutable for the life of the account (the DEK itself never changes, so
+ * wrappedPrivateKey — wrapped under the DEK, not a KEK — never needs
+ * rewriting). The server never validates either ciphertext's correctness;
+ * it's a plain authenticated overwrite, same trust model as every other
+ * `[ENCRYPTED]`-adjacent write in this API.
+ */
+export const UpdateWrappedDekRequestSchema = z.object({
+  wrappedDek: z.string(),
+  wrappedDekRecovery: z.string(),
+})
+export type UpdateWrappedDekRequest = z.infer<typeof UpdateWrappedDekRequestSchema>
+
+export const UpdateWrappedDekResponseSchema = z.object({
+  ok: z.literal(true),
+})
+export type UpdateWrappedDekResponse = z.infer<typeof UpdateWrappedDekResponseSchema>
+
+/**
  * POST /v1/user/consent — the write path ADR 0004 anticipated ("One write
  * path for consent... updates the PROFILE item") but that never got built
  * against the new backend (see docs/PHASE_AUDIT.md §2.2/§4.2: until this

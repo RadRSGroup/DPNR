@@ -8,7 +8,19 @@ This project has **no human development team**. It is built entirely by Claude C
 
 > You're picking up work on DPNR (`C:\Users\rekkawi\decision-room`), a personal-development product built entirely by Claude Code agents — no human dev team, real engineering discipline expected anyway. Before doing anything else, read `docs/AGENT_LOG.md` in full, then `docs/MVP_ARCHITECTURE.md`, then `docs/adr/`, then `docs/PHASE_AUDIT.md`, then `docs/INTELLIGENCE_SPEC_AUDIT.md` (new as of Session 29 — compares the new `docs/DPNR_operating_spec_principles.pdf` intelligence spec against the live codebase; that PDF now ranks above `MVP_ARCHITECTURE.md` in doc authority) — don't relitigate a settled ADR.
 >
-> **Status (Session 32 — read this first): Phase 6 Stage 2 is now DONE, deployed, and fully live-verified — Session 31's mid-flight, untested state is resolved.** Direct continuation of Session 31: ran everything Session 31 left undone (`npm install`, `tsc --noEmit`/`eslint`/`cdk synth`/`next build` across `infra/cdk` and `apps/web`, all clean), built the frontend half of the plan Session 31 never started (`apps/web/src/lib/crypto/sessionTicketKey.ts`'s `wrapDekForSessionTicket`, barrel export, and 5 new `v1-client.ts` wrapper functions — `getSessionTicketPublicKey`/`getUserKeys`/`createUserKeys`/`createSessionTicket`/`revokeSession`), then deployed both stacks and live-verified all 4 endpoints end to end with the user's explicit go-ahead.
+> **Status (Session 33 — read this first): Phase 6 Stage 3 is now DONE, deployed, and fully live-verified — real signup/login/recovery wiring for the crypto system.** Plan file `C:\Users\rekkawi\.claude\plans\lovely-napping-milner.md`. Built: `apps/web/src/lib/auth/keyBootstrap.ts` (new — `bootstrapKeysAtSignup`/`establishSessionTicket`/`recoverAndRewrapDek`, composing the crypto module with the `/v1` API client), wired into `signup`'s confirm step (real key generation + the mandatory ADR 0001 recovery-code reveal, `components/auth/RecoveryCodeReveal.tsx`) and into `login`/sign-out (real session-ticket create/revoke). New `PUT /v1/keys` endpoint (`infra/cdk/lambda/account/keys-update.ts`) and a net-new `/forgot-password` page complete the account-recovery loop.
+>
+> **Two real design decisions made this session, written up as ADR 0014 (read it before touching key recovery again)**: (1) `wrappedPrivateKey` was previously only vaguely documented as wrapped "under the account KEK" — if that meant the password KEK literally, a recovery-code-based recovery could never re-derive the private key (a different KEK entirely). Fixed by wrapping it under the raw DEK instead, so either recovery path (password or code) uniformly recovers it; a recovery now only ever re-wraps `wrappedDek`/`wrappedDekRecovery`. (2) Recovering via the code **rotates it** — a fresh recovery code is generated and shown again (same explicit-ack screen as signup), the old one stops working. This was a direct user decision (asked via AskUserQuestion, not assumed), and it's why `PUT /v1/keys`'s request body always carries both `wrappedDek` and `wrappedDekRecovery` together, never just one.
+>
+> **Live-verified against real AWS, not a mock.** The browser can't complete a real Cognito confirm-code step (no access to the test inbox — same wall every prior session hit), so `bootstrapKeysAtSignup`/`establishSessionTicket`/`recoverAndRewrapDek`'s exact logic (the real crypto-module functions, not reimplementations) was proven end to end via a throwaway vitest file (`apps/web/src/lib/auth/__verify__/stage3-live.test.ts` — written, run, then deleted before ending the session, same "throwaway, not committed" convention as every prior session's integration scripts) against the real deployed API and a real SRP-authenticated Cognito session: `POST /v1/keys` (201), `GET /v1/keys` round-trip + real `unwrapKey` success, `POST /v1/session-ticket` (201, real ticket confirmed via `aws dynamodb`), `DELETE /v1/auth/sessions/{id}` (200, confirmed gone), then — after a real `admin-set-user-password` to simulate an out-of-band password change (the actual reset-code step still can't be driven without inbox access) — the full recovery sequence: the original recovery code correctly recovers the DEK, `PUT /v1/keys` correctly rewrites both fields, `wrappedPrivateKey` is confirmed **unchanged** post-recovery (proves the ADR 0014 fix), the new password correctly unwraps the new `wrappedDek`, the **old** recovery code correctly **fails** to unwrap the new `wrappedDekRecovery` (rotation works), and the **new** rotated code correctly does. Separately, in the real browser (things the script can't cover): signed in for real with the post-recovery password — `establishSessionTicket` ran inside the actual `login/page.tsx` and created a real session ticket, confirmed via `aws dynamodb` (proves the login-flow wiring, not just the underlying function) — and drove `/forgot-password`'s `request` stage for real (a first attempt hit a genuine, informative Cognito error, `"Cannot reset password... no registered/verified email"`, because `admin-confirm-sign-up` doesn't set `email_verified` the way a real code-confirmation does; fixed test methodology with `admin-update-user-attributes`, then a real `forgotPassword()` call correctly advanced to the code-entry stage). Cleaned up fully afterward: Cognito user, all `dpnr-application` rows, and the session-ticket row from the browser-driven login — confirmed 0 remaining everywhere.
+>
+> **Not built, deliberately out of scope**: `PUT /v1/auth/password` (a direct signed-in password change — distinct from the forgot-password flow this session built). Nothing server-side consumes a session ticket's `kmsWrappedDek` yet — still Stage 4's job, unchanged since Stage 2's own handoff said so.
+>
+> **Committed?** Check `git status`/`git log` directly before trusting this — not yet committed as of this paragraph being written; get the user's go-ahead per this project's standing local-commit convention before committing if it hasn't happened yet.
+>
+> **Next: Phase 6 Stage 4** (swap `crypto-stub.ts` for real field encryption — the last stage of the 6-stage plan; depends on Stage 3's real key material, which now exists). No plan file exists yet — scope it fresh. After Phase 6 finishes, the still-current backlog (per Session 30/29's own ordering): signal-model enrichment, then §17's Living System behaviors, then everything else in `INTELLIGENCE_SPEC_AUDIT.md`'s table. Also still unresolved, lower-priority: `PUT /v1/auth/password`, Life Domains taxonomy mismatch (7 vs. 8), and the `lital@be-dpnr.com` SNS subscription's confirmation status (last checked Session 29/30, recheck before assuming a real `immediate_danger` alert reaches anyone).
+>
+> **Status (Session 32): Phase 6 Stage 2 is now DONE, deployed, and fully live-verified — Session 31's mid-flight, untested state is resolved.** Direct continuation of Session 31: ran everything Session 31 left undone (`npm install`, `tsc --noEmit`/`eslint`/`cdk synth`/`next build` across `infra/cdk` and `apps/web`, all clean), built the frontend half of the plan Session 31 never started (`apps/web/src/lib/crypto/sessionTicketKey.ts`'s `wrapDekForSessionTicket`, barrel export, and 5 new `v1-client.ts` wrapper functions — `getSessionTicketPublicKey`/`getUserKeys`/`createUserKeys`/`createSessionTicket`/`revokeSession`), then deployed both stacks and live-verified all 4 endpoints end to end with the user's explicit go-ahead.
 >
 > **Two real CloudFormation/KMS deploy-time bugs found and fixed along the way — read ADR 0013's updated Consequences section before ever changing this key's `KeySpec` again.** (1) `cdk deploy Dpnr-Data` failed outright: CloudFormation attempted an in-place `UpdateKey` call on the `KeySpec` change and rejected it, instead of replacing the resource the way "Update requires: Replacement" implies it should. Fixed by giving the Key construct a new logical ID (`SessionTicketsKeyRsa`), forcing a genuine create-new/delete-old replacement. (2) That surfaced a second, harder constraint: KMS refuses to repoint an existing `Alias` from a symmetric to an asymmetric key ("The current CMK and new CMK must both be symmetric or asymmetric") — the alias itself had to be replaced too, and two aliases can't share one name at once. Resolved as a genuine **two-phase deploy**: Phase A dropped the old alias only (old key left untouched, freeing the name), Phase B then created the new RSA-2048 key under a fresh construct ID with a brand-new alias. Both phases are now merged into `data-stack.ts`'s final, single definition — a future session reading that file only sees the end state plus a doc comment explaining why the migration needed two steps; it does not need to redo the phased deploy itself.
 >
@@ -185,29 +197,49 @@ This project has **no human development team**. It is built entirely by Claude C
 
 *(This section is overwritten every session with the current, precise handoff. Do not append to it — replace it. As of Session 11, the long per-session condensed narrative that used to accumulate here was removed — every one of those sessions' full detail already lives in Session History below, verbatim; condensing it a second time up here had drifted from this section's own "replace it" rule for several sessions running. Keep this section to current status + what's next; look in Session History for how we got here.)*
 
-**Session 31 (read this first — the working tree is UNVERIFIED, treat it as red):** Phase 6 Stage 2 (key
-bootstrap + session-ticket endpoints) was planned in full — plan file `C:\Users\rekkawi\.claude\plans\smooth-purring-harp.md`
-— and its **backend half was written but never compiled, linted, synthesized, or deployed** before the user
-said to stop. A real design gap flagged in `SessionTicketRequestSchema`'s own doc comment (the DEK-wrap
-handshake "needs a security-review pass before the Lambda is built") got resolved as **ADR 0013**: the
-already-provisioned `sessionTicketsKmsKey` was a symmetric key with no public key to hand a browser, so it's
-now asymmetric (RSA-2048) — the client wraps the DEK client-side via WebCrypto RSA-OAEP, the create-ticket
-Lambda never touches the raw DEK. This deliberately replaces the (zero real consumers, zero data ever
-encrypted under it) existing `SessionTicketsKey` resource. **Files touched**: new ADR 0013; `packages/shared-types/src/api/account.ts`
-(`UserKeysRequestSchema`, `SessionTicketPublicKeyResponseSchema`); `infra/cdk/lib/data-stack.ts` (KMS key spec);
-`infra/cdk/bin/dpnr.ts` (new stack props); `infra/cdk/lib/api-stack.ts` (5 new routes/Lambdas, 12
-`grantDecrypt` calls on already-existing Rooms/Companion/Twin/pipeline functions — see the plan file for
-exactly which and why only those); 5 new files under `infra/cdk/lambda/account/`; `@aws-sdk/client-kms` added
-to `infra/cdk/package.json` **but `npm install` was never run**. **Nothing else was done**: no `tsc --noEmit`,
-no `eslint`, no `cdk synth`, no `next build`, no live verification, no deploy — the live AWS account is
-untouched. The frontend half of Stage 2 (a `wrapDekForSessionTicket` function in `apps/web/src/lib/crypto/`
-plus 5 new `v1-client.ts` functions) was never started. **Next agent: do not trust that any of this compiles.**
-Run `npm install`, then `tsc --noEmit` in `infra/cdk` and `apps/web`, then `cdk synth Dpnr-Api`, fix whatever
-surfaces, build the frontend half per the plan file, then live-verify (throwaway Cognito user, all 4 endpoints,
-IAM inspection) before deploying — and get the user's explicit go-ahead before that deploy, since it destroys/
-recreates the KMS key (expected and safe per ADR 0013, but still a real infra action). After Stage 2 ships,
-the user's stated next priority is Living System behaviors (Intelligence Spec §17 — `OpenThread`, Roadmap
-lifecycle states, interaction-mode inference), not yet scoped.
+**Session 33 (read this first): Phase 6 Stage 3 (recovery-code UX + real signup/login/recovery wiring) is DONE,
+deployed, and fully live-verified.** Plan file `C:\Users\rekkawi\.claude\plans\lovely-napping-milner.md`; design
+decisions in **ADR 0014**. Summary: `apps/web/src/lib/auth/keyBootstrap.ts` (new) is the orchestration layer —
+`bootstrapKeysAtSignup` (wired into `signup/page.tsx`'s confirm step, followed by the mandatory ADR 0001
+recovery-code reveal via new `components/auth/RecoveryCodeReveal.tsx`), `establishSessionTicket` (wired into
+both `login/page.tsx` and signup's post-reveal continue, best-effort — a failure here must never block a real
+sign-in), and `recoverAndRewrapDek` (the forgot-password recovery core). New backend: `PUT /v1/keys`
+(`infra/cdk/lambda/account/keys-update.ts`) updates `wrappedDek`/`wrappedDekRecovery` together after a
+recovery — always both, never one, since recovery rotates the code (a direct user decision, asked via
+AskUserQuestion). New page: `apps/web/src/app/forgot-password/page.tsx` (4 stages: request code → confirm code
++ new password → enter recovery code → done/rotated-code reveal). **The one real design gap found while
+scoping this**: `wrappedPrivateKey` was ambiguously documented as wrapped "under the account KEK" — fixed to
+wrap it under the raw DEK instead (ADR 0014), so it's recoverable via either the password or recovery-code
+path, and a recovery never needs to touch it.
+
+**Live-verified against real AWS.** The browser can't complete a real Cognito confirm-code step (no inbox
+access — the same wall every prior session hit), so the crypto/backend logic (`bootstrapKeysAtSignup`/
+`establishSessionTicket`/`recoverAndRewrapDek`'s exact real functions) was proven via a throwaway vitest file
+(written, run, deleted before session end — same convention as every prior session's integration scripts):
+real `POST`/`GET`/`PUT /v1/keys`, real `POST /v1/session-ticket` + `DELETE /v1/auth/sessions/{id}` (both
+confirmed via direct `aws dynamodb` queries), and — after a real `admin-set-user-password` to simulate an
+out-of-band password change — the full recovery sequence, including confirming the **old** recovery code
+correctly fails post-rotation and the **new** one correctly works, and that `wrappedPrivateKey` is genuinely
+untouched by a recovery. Separately, in the real browser: a real `login/page.tsx` sign-in created a real
+session ticket (confirmed via `aws dynamodb`, proving the wiring itself, not just the underlying function),
+and `/forgot-password`'s `request` stage correctly called real Cognito (a first attempt surfaced a real,
+informative Cognito error — `admin-confirm-sign-up` doesn't set `email_verified` the way a real code
+confirmation does; fixed via `admin-update-user-attributes`, then the real call correctly advanced to the
+code-entry stage). Fully cleaned up afterward (Cognito user + all DynamoDB rows, confirmed 0 remaining).
+
+**Not built, deliberately out of scope**: `PUT /v1/auth/password` (a direct signed-in password change, distinct
+from the forgot-password flow built this session). **Next: Phase 6 Stage 4** — swap `crypto-stub.ts` for real
+field encryption, the last stage of the 6-stage plan, now unblocked since real key material exists. No plan
+file exists yet — scope it fresh. After Phase 6 finishes, the user's stated next priority (set in Session 31,
+still current) is Living System behaviors (Intelligence Spec §17 — `OpenThread`, Roadmap lifecycle states,
+interaction-mode inference), not yet scoped.
+
+**Session 32 (condensed pointer, superseded by Session 33 above):** Phase 6 Stage 2 (key bootstrap +
+session-ticket endpoints) shipped — built, deployed, and live-verified, resolving Session 31's mid-flight
+untested state. See ADR 0013 for the asymmetric RSA-2048 KMS handshake design and its two real
+CloudFormation/KMS deploy-time gotchas (a `KeySpec` change needs a genuine resource replacement, not an
+in-place update; an `Alias` can't be repointed across a symmetric→asymmetric key change, requiring a two-phase
+deploy). Full detail in Session History below if needed — Session 33 above is the current, complete picture.
 
 **Session 30 (condensed pointer, no longer the live thread):** the safety system's 4-stage plan is now **completely
 done** — Stage 4 (native Bedrock Guardrails as detect-only defense-in-depth + `classify_safety_state` moved to
@@ -269,6 +301,61 @@ From there, wrote and got approval for a 6-slice plan, `C:\Users\rekkawi\.claude
 ---
 
 ## Session History
+
+### 2026-09-03 — Session 33: Phase 6 Stage 3 — recovery-code UX + real signup/login/recovery wiring, deployed and live-verified
+- Continued from the "read AGENT_LOG.md and continue" handoff — Session 32 had left "Phase 6 Stage 3" as the
+  named next step, with no plan file yet. Used plan mode: read the current signup/login/consent pages, the
+  Stage 2 backend Lambdas, the full crypto module, both prior Phase 6 plan files, and ADR 0001/0009 in full
+  before designing anything (via a research agent plus direct file reads).
+- **Found a real, previously unflagged gap while scoping**: `UserKeysItem.wrappedPrivateKey`'s wrapping key
+  was only ever described as "the account KEK" — ambiguous, and if read literally (the password KEK), a
+  recovery-code-based recovery could recover the DEK but never the X25519 private key. ADR 0009 is silent on
+  this specific detail (confirmed by re-reading it in full), so this was an underspecified detail to fill in,
+  not a re-litigation. **Fix, written up as ADR 0014**: wrap the private key under the raw DEK instead of a
+  KEK — either recovery path now uniformly recovers it, and a recovery only ever needs to re-wrap
+  `wrappedDek`/`wrappedDekRecovery`.
+- **Asked the user directly (AskUserQuestion, not assumed) whether a recovery-code-based recovery should
+  rotate the code.** Chose "rotate on use" — a fresh code is generated and shown again (same explicit-ack
+  screen as signup), the old one stops working. This is why `PUT /v1/keys`'s request always carries both
+  `wrappedDek` and `wrappedDekRecovery` together.
+- **Built**: `apps/web/src/lib/auth/keyBootstrap.ts` (new — the network-calling orchestration layer,
+  deliberately kept out of `lib/crypto/` so that module's own "never talks to the network" invariant stays
+  true, and out of `lib/cognito/client.ts` so that stays purely Cognito) — `bootstrapKeysAtSignup` (treats a
+  `409 keys_already_exist` retry as idempotent, returns `null` rather than fabricating a recovery code that
+  wouldn't match what's actually stored), `establishSessionTicket` (treats `404 keys_not_found` as a legitimate
+  no-op — an account with no key bundle yet must still be able to sign in normally), `recoverAndRewrapDek`,
+  and `revokeCurrentSessionTicket` (paired with a small `sessionStorage`-backed ticket-id tracker added to
+  `lib/cognito/client.ts`, kept dependency-free of `lib/api/v1-client.ts` to avoid a circular import, since
+  that file itself imports `getIdToken` from `cognito/client.ts`).
+- **Backend**: new `PUT /v1/keys` (`infra/cdk/lambda/account/keys-update.ts`, `UpdateItem` gated by
+  `attribute_exists(pk)` → 404 `keys_not_found`, same pattern as `keys-get.ts`/`consent.ts`), new route +
+  `KeysUpdateFn` Lambda in `api-stack.ts`, new `UpdateWrappedDekRequestSchema`/`ResponseSchema` in
+  `packages/shared-types`. Two Cognito wrappers added (`forgotPassword`/`confirmForgotPassword`).
+- **Frontend**: `signup/page.tsx` gained a `'recovery-code'` stage (key bootstrap + the mandatory ADR 0001
+  reveal screen, `components/auth/RecoveryCodeReveal.tsx` — shared with the rotated-code reveal so the ack
+  copy/behavior can't drift between the two places it's shown); `login/page.tsx` gained best-effort
+  session-ticket establishment + a "Forgot password?" link; net-new `app/forgot-password/page.tsx` (4 stages:
+  request → reset+confirm → recovery-code entry → done); `account/page.tsx`'s two sign-out call sites now
+  revoke the current session ticket first.
+- Also corrected `keypair.ts`'s and `packages/shared-types/src/dynamo/account.ts`'s doc comments to state the
+  DEK-not-KEK wrapping explicitly, per ADR 0014.
+- Verified: `tsc --noEmit` (`infra/cdk`, `apps/web`), `eslint` (`apps/web`), `cdk synth Dpnr-Api` (confirmed
+  the new route/Lambda/IAM policy in the synthesized template), `next build` (26 routes, up from 25), and the
+  existing `vitest` suite (26/26, unaffected) — all clean before deploying. Deployed `Dpnr-Api` with the
+  user's explicit go-ahead (one new Lambda + route, 63s, no destructive changes). Live-verified thoroughly —
+  see the "Next Agent — Start Here" entry above for the full account, including the throwaway-vitest-file
+  technique used in place of a real Cognito confirm-code UI step (still impossible without inbox access, the
+  same wall every prior session hit) and the real browser checks for the two pieces that don't have that
+  problem (`login/page.tsx`'s session-ticket wiring, `/forgot-password`'s `request` stage against real
+  Cognito). Fully cleaned up afterward — Cognito user + all DynamoDB rows (including a session ticket created
+  by the real browser login, which isn't auto-revoked without an explicit sign-out click), confirmed 0
+  remaining.
+- Updated `docs/PHASE_AUDIT.md` §2.1's Auth/account API surface row — only `PUT /v1/auth/password` (a direct
+  signed-in password change) remains unbuilt in that row now.
+- No push to `origin/mvp` — not sought or given this session, same default as every prior session.
+- Did not touch: Stage 4 (`crypto-stub.ts` swap — deliberately next, not started), Living System behaviors
+  (Intelligence Spec §17, the user's stated post-Phase-6 priority since Session 31), signal-model enrichment,
+  the Life Domains taxonomy mismatch, or the `lital@be-dpnr.com` SNS subscription check.
 
 ### 2026-09-02 — Session 31: planned + started Phase 6 Stage 2 (key bootstrap + session tickets) — backend code written, session ended before any verification or deploy
 - Continued from a prior session's memory-driven catch-up: the user chose Phase 6 Stage 2 (key bootstrap +

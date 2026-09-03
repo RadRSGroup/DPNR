@@ -430,6 +430,13 @@ export class ApiStack extends Stack {
     })
     props.applicationTable.grantReadWriteData(keysCreateFn)
 
+    const keysUpdateFn = new lambda.NodejsFunction(this, 'KeysUpdateFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/account/keys-update.ts'),
+      description: 'PUT /v1/keys — rewraps the DEK envelope after a recovery-code-based account recovery (ADR 0014); 404s if no key bundle exists yet.',
+    })
+    props.applicationTable.grantReadWriteData(keysUpdateFn)
+
     const sessionTicketCreateFn = new lambda.NodejsFunction(this, 'SessionTicketCreateFn', {
       runtime: Runtime.NODEJS_24_X,
       bundling: { minify: true, sourceMap: true },
@@ -547,6 +554,13 @@ export class ApiStack extends Stack {
       path: '/v1/keys',
       methods: [apigwv2.HttpMethod.POST],
       integration: new integrations.HttpLambdaIntegration('KeysCreateIntegration', keysCreateFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/keys',
+      methods: [apigwv2.HttpMethod.PUT],
+      integration: new integrations.HttpLambdaIntegration('KeysUpdateIntegration', keysUpdateFn),
       authorizer: this.cognitoAuthorizer,
     })
 

@@ -112,6 +112,17 @@ to it instead, per that file's own protocol.
 > required a genuine key/alias replacement, done as a two-phase deploy). `PUT /v1/auth/password` and account
 > deletion — account deletion is actually already built (`DELETE /v1/account`, confirmed live in `api-stack.ts`
 > and this file's own §2.2) — remain the only items in this row still unbuilt: password change only.
+>
+> **Update (Session 33 — Phase 6 Stage 3, `lovely-napping-milner.md`):** the key bundle these endpoints serve
+> is now actually populated for real signups, not just theoretically reachable. `apps/web/src/lib/auth/keyBootstrap.ts`
+> (new) wires real key generation into `signup`'s confirm step (with the mandatory ADR 0001 recovery-code
+> reveal, `components/auth/RecoveryCodeReveal.tsx`) and real session-ticket creation/revocation into
+> `login`/sign-out. A new `PUT /v1/keys` endpoint (`infra/cdk/lambda/account/keys-update.ts`) and a net-new
+> `/forgot-password` page complete the account-recovery loop: reset the Cognito password, then use the
+> recovery code to recover and re-wrap the DEK (rotating the code in the process — ADR 0014, which also
+> corrects `wrappedPrivateKey`'s wrapping key from "the account KEK" to the raw DEK itself, so it's
+> recoverable via either path). `PUT /v1/auth/password` (a direct, already-signed-in password change, distinct
+> from this forgot-password flow) remains the only item in this row still unbuilt.
 
 `MVP_ARCHITECTURE.md` §4's first API row — `POST /v1/session-ticket`, `DELETE /v1/auth/sessions/{id}`,
 `PUT /v1/auth/password`, `DELETE /v1/account`, `GET /v1/keys` — has **zero Lambda handlers and zero CDK

@@ -32,6 +32,8 @@ import type {
   PlansResponse,
   UserKeysRequest,
   UserKeysResponse,
+  UpdateWrappedDekRequest,
+  UpdateWrappedDekResponse,
   SessionTicketRequest,
   SessionTicketResponse,
   SessionTicketPublicKeyResponse,
@@ -260,6 +262,12 @@ export async function getUserKeys(): Promise<UserKeysResponse> {
 export async function createUserKeys(request: UserKeysRequest): Promise<UserKeysResponse> {
   const res = await authedFetch('/v1/keys', { method: 'POST', body: JSON.stringify(request) })
   return parseOrThrow<UserKeysResponse>(res)
+}
+
+/** PUT /v1/keys — rewraps the DEK envelope after a recovery-code-based account recovery (ADR 0014); 404s (`keys_not_found`) if no key bundle exists yet. */
+export async function updateWrappedDek(request: UpdateWrappedDekRequest): Promise<UpdateWrappedDekResponse> {
+  const res = await authedFetch('/v1/keys', { method: 'PUT', body: JSON.stringify(request) })
+  return parseOrThrow<UpdateWrappedDekResponse>(res)
 }
 
 /** POST /v1/session-ticket — `request.wrappedDek` must already be RSA-OAEP-wrapped via `wrapDekForSessionTicket` (lib/crypto). */
