@@ -69,6 +69,20 @@ export const LibraryTopicVersionItemSchema = z.object({
   // LibraryTopicDetailResponseSchema.body already expected — a real gap,
   // not a style choice, caught while wiring the first Library read handler.
   body: z.string(),
+  // Intelligence Spec §18/§20 "Canonical Learning Topic Structure" —
+  // KnowledgeTopic{}'s 5 authorable content sections, added for the
+  // Contextual Learning & Side-Panel build (see library-topics.seed.ts's
+  // doc comment for content provenance). All optional and additive: `body`
+  // stays the authoritative "Understand" content, and a topic missing any
+  // of these degrades honestly (the Side Panel shows "not yet written" for
+  // that section) rather than fabricating or hiding it — this is what keeps
+  // a future unauthored topic safe, not just today's 6.
+  quickDefinition: z.string().optional(), // Quick Learn — 1-2 sentences, shown inline without leaving chat
+  howItMayShowUp: z.array(z.string()).optional(), // Recognize
+  possibleRoots: z.array(z.string()).optional(), // Possible Roots — tentative, never asserts one cause
+  reflectionQuestions: z.array(z.string()).optional(), // Personal Reflection
+  waysToWorkWithIt: z.array(z.string()).optional(), // Work With It — small practices, not "fix yourself"
+  recommendedRooms: z.array(z.enum(['mirror', 'decision'])).optional(), // Go Deeper routing
   status: z.enum(['draft', 'active', 'retired']),
   createdAt: z.string().datetime(),
 })

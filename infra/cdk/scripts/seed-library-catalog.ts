@@ -43,6 +43,12 @@ async function main() {
       taxonomyCategory: topic.taxonomyCategory,
       title: topic.title,
       body: topic.body,
+      quickDefinition: topic.quickDefinition,
+      howItMayShowUp: topic.howItMayShowUp,
+      possibleRoots: topic.possibleRoots,
+      reflectionQuestions: topic.reflectionQuestions,
+      waysToWorkWithIt: topic.waysToWorkWithIt,
+      recommendedRooms: topic.recommendedRooms,
       status: 'active',
       createdAt: now,
     })

@@ -30,9 +30,19 @@ export const LibraryTopicDetailResponseSchema = z.object({
   slug: z.string(),
   title: z.string(),
   taxonomyCategory: z.string(),
-  body: z.string(), // authored content
+  body: z.string(), // authored content — "Understand" section
   personalizedExplanation: z.string().nullable(), // null if no confirmed signals to personalize from yet
   promptRef: z.string().optional(), // present only when personalizedExplanation is non-null
+  // Intelligence Spec §18/§20 — see dynamo/global-tables.ts's
+  // LibraryTopicVersionItemSchema for the same fields' provenance/intent.
+  // Optional passthrough: a topic authored before this session (or a future
+  // one never given full content) simply omits them.
+  quickDefinition: z.string().optional(),
+  howItMayShowUp: z.array(z.string()).optional(),
+  possibleRoots: z.array(z.string()).optional(),
+  reflectionQuestions: z.array(z.string()).optional(),
+  waysToWorkWithIt: z.array(z.string()).optional(),
+  recommendedRooms: z.array(z.enum(['mirror', 'decision'])).optional(),
 })
 export type LibraryTopicDetailResponse = z.infer<typeof LibraryTopicDetailResponseSchema>
 

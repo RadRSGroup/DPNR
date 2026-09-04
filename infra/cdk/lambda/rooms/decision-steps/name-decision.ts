@@ -9,7 +9,13 @@ import type { DecisionContent } from './helpers'
 import type { StepDefinition } from './types'
 
 const RefineInput = z.object({ title: z.string().min(1) })
-const SubmitInput = z.object({ title: z.string().min(1), subtitle: z.string().optional() })
+const SubmitInput = z.object({
+  title: z.string().min(1),
+  subtitle: z.string().optional(),
+  // Intelligence Spec §18/Appendix B — see mirror-steps/situation.ts's
+  // identical field for provenance.
+  sourceLibraryTopic: z.string().optional(),
+})
 
 export const nameDecisionStep: StepDefinition = {
   allowedActions: ['SUBMIT_STEP', 'REFINE'],
@@ -29,7 +35,7 @@ export const nameDecisionStep: StepDefinition = {
       }
     }
 
-    const { title, subtitle } = parseValue(ctx.input, SubmitInput)
+    const { title, subtitle, sourceLibraryTopic } = parseValue(ctx.input, SubmitInput)
     const now = new Date().toISOString()
     const decision: DecisionItem = {
       pk: ctx.pk,
@@ -40,6 +46,7 @@ export const nameDecisionStep: StepDefinition = {
       lens: null,
       reviewDate: null,
       content: await ctx.crypto.encryptField<DecisionContent>({ title, subtitle: subtitle ?? null, narrative: '' }),
+      sourceLibraryTopic,
       createdAt: now,
       updatedAt: now,
     }

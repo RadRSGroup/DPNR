@@ -23,6 +23,8 @@ const JOURNEY = [
 interface Props {
   userName: string
   onStart: () => void
+  /** Intelligence Spec §18/Appendix B — set when arriving via a Library topic's "Explore in Decision Room" action. */
+  sourceTopicTitle?: string | null
 }
 
 /**
@@ -43,7 +45,7 @@ interface Props {
  * invented percentages. "Today's Guidance" reuses the real Daily Card
  * (`GET /v1/companion/context`) — same data Companion's own widget shows.
  */
-export default function DecisionRoomLanding({ userName, onStart }: Props) {
+export default function DecisionRoomLanding({ userName, onStart, sourceTopicTitle }: Props) {
   const router = useRouter()
   const firstName = userName.includes('@') ? userName.split('@')[0] : userName.split(' ')[0] || userName
   const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
@@ -69,6 +71,9 @@ export default function DecisionRoomLanding({ userName, onStart }: Props) {
                 <p className="text-sm text-[var(--color-text-secondary)] mt-1">
                   Make aligned choices with clarity and confidence.
                 </p>
+                {sourceTopicTitle && (
+                  <p className="text-xs text-purple-300/70 mt-2">Exploring: {sourceTopicTitle}</p>
+                )}
               </div>
               <button
                 onClick={onStart}

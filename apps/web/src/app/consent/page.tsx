@@ -57,7 +57,7 @@ function ConsentContent() {
 
       <div className="pt-16 pb-6 text-center">
         <div className="w-14 h-14 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-2xl mx-auto mb-4">✦</div>
-        <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR · Workshop Rooms</p>
+        <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR · InnerOS</p>
         <h1 className="text-white text-xl font-light">Before you begin</h1>
         <p className="text-white/40 text-sm mt-2">Please review how we handle your data.</p>
       </div>

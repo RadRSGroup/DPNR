@@ -54,6 +54,10 @@ function timeGreeting() {
 export default function CompanionPage() {
   const router = useRouter()
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  // Intelligence Spec §18/Appendix B — threaded down into DirectiveCard so a
+  // "Explore in Mirror/Decision Room" action from a Library topic can carry
+  // "source session" context, per the flow's own worked example.
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
@@ -75,6 +79,7 @@ export default function CompanionPage() {
         const context = await getCompanionContext()
         setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt })))
         setDailyCard(context.dailyCard)
+        setSessionId(context.sessionId)
       } catch {
         // Degrades to an empty chat — same tolerance the Dashboard page uses.
       } finally {
@@ -99,6 +104,7 @@ export default function CompanionPage() {
     try {
       const clientMessageId = crypto.randomUUID()
       const res = await sendCompanionMessage({ text, clientMessageId })
+      setSessionId(res.sessionId)
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', text: res.reply, createdAt: new Date().toISOString(), directive: res.directive },
@@ -133,10 +139,14 @@ export default function CompanionPage() {
     textareaRef.current?.focus()
   }
 
-  // Stay visible alongside an active thread (not just on the empty state) —
-  // matches the reference, which shows these as permanent shortcuts rather
-  // than a first-message-only affordance.
-  const showPrompts = !loading
+  // Reversed from Session 23's "stay visible alongside an active thread"
+  // decision, per direct user feedback (a screenshot showing the greeting +
+  // quick prompts + mobile Explore row squeezing the actual chat thread
+  // into a few visible lines): the landing chrome now only shows on the
+  // true empty state, so an active conversation gets nearly the full
+  // vertical space.
+  const isLanding = !loading && messages.length === 0
+  const showPrompts = isLanding
 
   return (
     <div className="relative h-[calc(100dvh-4rem)] lg:h-dvh flex flex-col overflow-hidden">
@@ -147,42 +157,49 @@ export default function CompanionPage() {
       <div className="flex-1 overflow-hidden lg:grid lg:grid-cols-3 lg:gap-6 lg:px-8 lg:pt-6">
         {/* Main column */}
         <div className="lg:col-span-2 h-full flex flex-col overflow-hidden max-w-[393px] lg:max-w-none mx-auto w-full">
-          {/* Mobile: plain text greeting, no room for hero art here. */}
-          <div className="px-5 pt-14 pb-1 lg:hidden">
-            <h1 className="font-display text-2xl text-white flex items-center gap-2">
-              {timeGreeting()}{firstName ? `, ${firstName}` : ''} <Sparkles className="w-5 h-5 text-[var(--color-amber-400)]" />
-            </h1>
-          </div>
+          {/* Mobile: plain text greeting, no room for hero art here. Only on
+              the true landing state — see isLanding's doc comment above. */}
+          {isLanding && (
+            <div className="px-5 pt-14 pb-1 lg:hidden">
+              <h1 className="font-display text-2xl text-white flex items-center gap-2">
+                {timeGreeting()}{firstName ? `, ${firstName}` : ''} <Sparkles className="w-5 h-5 text-[var(--color-amber-400)]" />
+              </h1>
+            </div>
+          )}
 
           {/* Desktop: one hero banner card, same idiom as DecisionRoomLanding/
               MirrorRoomLanding — the portrait bleeds to the card's own top/
               bottom/right edges (an expected crop, not a seam) and only
               fades where it meets the greeting text, into this card's own
-              background color so the fade can't mismatch. */}
-          <div className="hidden lg:block relative overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-glass)] bg-[var(--color-surface-glass)] h-64 mb-4">
-            <div className="absolute right-0 top-0 bottom-0 w-80 [mask-image:linear-gradient(to_left,black_55%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_left,black_55%,transparent_100%)]">
-              <Image
-                src="/images/companion/companion-hero.webp"
-                alt=""
-                fill
-                sizes="320px"
-                className="object-cover object-top"
-                priority
-              />
+              background color so the fade can't mismatch. Landing-only, same
+              reasoning as the mobile greeting above. */}
+          {isLanding && (
+            <div className="hidden lg:block relative overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-glass)] bg-[var(--color-surface-glass)] h-64 mb-4">
+              <div className="absolute right-0 top-0 bottom-0 w-80 [mask-image:linear-gradient(to_left,black_55%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_left,black_55%,transparent_100%)]">
+                <Image
+                  src="/images/companion/companion-hero.webp"
+                  alt=""
+                  fill
+                  sizes="320px"
+                  className="object-cover object-top"
+                  priority
+                />
+              </div>
+              <div className="relative z-10 h-full flex flex-col justify-center px-8 max-w-[55%]">
+                <h1 className="font-display text-3xl text-white flex items-center gap-2">
+                  {timeGreeting()}{firstName ? `, ${firstName}` : ''} <Sparkles className="w-5 h-5 text-[var(--color-amber-400)]" />
+                </h1>
+                <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+                  I&apos;m here with you. Let&apos;s continue where you are.
+                </p>
+              </div>
             </div>
-            <div className="relative z-10 h-full flex flex-col justify-center px-8 max-w-[55%]">
-              <h1 className="font-display text-3xl text-white flex items-center gap-2">
-                {timeGreeting()}{firstName ? `, ${firstName}` : ''} <Sparkles className="w-5 h-5 text-[var(--color-amber-400)]" />
-              </h1>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                I&apos;m here with you. Let&apos;s continue where you are.
-              </p>
-            </div>
-          </div>
+          )}
 
           {/* Daily Card — mobile position, inline above the thread. Desktop
-              shows the same widget in the right column instead (below). */}
-          {dailyCard && (
+              shows the same widget in the right column instead (below).
+              Landing-only now — see isLanding's doc comment above. */}
+          {dailyCard && isLanding && (
             <div className="lg:hidden px-5 pt-2">
               <DailyGuidanceCard dailyCard={dailyCard} showImage={false} />
             </div>
@@ -207,7 +224,10 @@ export default function CompanionPage() {
             </div>
           )}
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 lg:px-0 space-y-3 pb-2 pt-2">
+          {/* pt-14 replaces the greeting block's own safe-area top padding
+              once the conversation is active and the greeting is hidden —
+              this page has no other fixed header providing that space. */}
+          <div ref={scrollRef} className={`flex-1 overflow-y-auto px-5 lg:px-0 space-y-3 pb-2 ${isLanding ? 'pt-2' : 'pt-14 lg:pt-2'}`}>
             {loading && <p className="text-white/30 text-sm text-center pt-8">Loading…</p>}
 
             {!loading && messages.length === 0 && (
@@ -231,7 +251,7 @@ export default function CompanionPage() {
                   >
                     {m.text}
                   </div>
-                  {m.directive && <DirectiveCard directive={m.directive} />}
+                  {m.directive && <DirectiveCard directive={m.directive} sourceSessionId={sessionId} />}
                 </div>
               </div>
             ))}
@@ -252,7 +272,12 @@ export default function CompanionPage() {
           {/* Direct navigation to the wider platform from Main Chat itself —
               spec Table 2's own "Surface / Navigation behavior" row. On
               desktop the sidebar already covers every destination here, so
-              this row is mobile-only. */}
+              this row is mobile-only. Landing-only now too — the bottom tab
+              bar (Chat/Dashboard/Mirror/Decision/Profile) already gives
+              persistent mobile navigation once a conversation is active, so
+              this row's job here is a first-visit convenience, not the only
+              way to navigate. */}
+          {isLanding && (
           <div className="px-5 pt-2 lg:hidden">
             <p className="text-white/40 text-xs uppercase tracking-wide mb-2">Explore</p>
             <div className="grid grid-cols-4 gap-2">
@@ -270,6 +295,7 @@ export default function CompanionPage() {
               </Link>
             </div>
           </div>
+          )}
 
           <div className="px-5 lg:px-0 pb-4 pt-3 flex items-end gap-2">
             <textarea

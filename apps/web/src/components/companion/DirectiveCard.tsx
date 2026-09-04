@@ -1,11 +1,15 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import type { CompanionDirective, LibraryTopicDetailResponse } from '@dpnr/shared-types'
 import { getLibraryTopic } from '@/lib/api/v1-client'
+import LibrarySidePanel from './LibrarySidePanel'
 
 interface Props {
   directive: CompanionDirective
+  /** Companion's own session id, threaded down only for the Side Panel's room-handoff query params. */
+  sourceSessionId?: string | null
 }
 
 /**
@@ -14,13 +18,15 @@ interface Props {
  * spec frames this as "route contextually," a suggestion the user acts on,
  * not a forced transition (companion/message.ts's own doc comment).
  *
- * `open_library_topic` has nowhere to navigate to yet — there is no Library
- * frontend at all (docs/PHASE_AUDIT.md §4.6 only scoped Dashboard's port
- * this round). Rather than block on building one, this fetches the real
- * topic and expands it inline, the smallest honest way to "surface a
- * Library topic" without inventing a whole Library section.
+ * `open_library_topic`'s depth ladder (Intelligence Spec §18): Quick Learn
+ * (this card, auto-loaded, no tap required — "answer without breaking
+ * conversation") → Side Panel (`LibrarySidePanel`, structured sections) →
+ * the real `/library/[slug]` page. Previously this card duplicated the full
+ * topic body inline (written before `/library/[slug]` existed) — now it
+ * links to the real page instead, closing the "same object, many surfaces"
+ * duplication risk.
  */
-export default function DirectiveCard({ directive }: Props) {
+export default function DirectiveCard({ directive, sourceSessionId }: Props) {
   const router = useRouter()
 
   if (directive.kind === 'open_room') {
@@ -48,47 +54,49 @@ export default function DirectiveCard({ directive }: Props) {
     )
   }
 
-  return <LibraryTopicCard slug={directive.topicSlug} />
+  return <LibraryTopicCard slug={directive.topicSlug} sourceSessionId={sourceSessionId} />
 }
 
-function LibraryTopicCard({ slug }: { slug: string }) {
-  const [state, setState] = useState<'collapsed' | 'loading' | 'error'>('collapsed')
+function LibraryTopicCard({ slug, sourceSessionId }: { slug: string; sourceSessionId?: string | null }) {
   const [topic, setTopic] = useState<LibraryTopicDetailResponse | null>(null)
+  const [error, setError] = useState(false)
+  const [panelOpen, setPanelOpen] = useState(false)
 
-  async function expand() {
-    if (topic) { setTopic(null); return } // collapse back
-    setState('loading')
-    try {
-      const detail = await getLibraryTopic(slug)
-      setTopic(detail)
-      setState('collapsed')
-    } catch {
-      setState('error')
-    }
-  }
+  // Eager, single-item read on mount — "answer without breaking
+  // conversation" means the Quick Learn text should just appear, not wait
+  // behind a tap (§18's own table: "2-3 sentence definition + optional
+  // 'Understand deeper'").
+  useEffect(() => {
+    let ignore = false
+    getLibraryTopic(slug)
+      .then((t) => { if (!ignore) setTopic(t) })
+      .catch(() => { if (!ignore) setError(true) })
+    return () => { ignore = true }
+  }, [slug])
 
   return (
-    <div className="mt-2 w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3">
-      <button onClick={expand} className="w-full text-left flex items-center justify-between">
-        <div>
-          <p className="text-white/80 text-sm font-medium">{topic?.title ?? slug.replace(/-/g, ' ')}</p>
-          <p className="text-white/40 text-xs mt-0.5">
-            {state === 'loading' ? 'Loading…' : state === 'error' ? 'Couldn\'t load — tap to retry' : topic ? 'Tap to collapse' : 'From the Library · tap to read'}
-          </p>
-        </div>
-        <span className="text-white/30 text-xs">{topic ? '▲' : '▼'}</span>
-      </button>
-      {topic && (
-        <div className="mt-3 pt-3 border-t border-white/10 space-y-3">
-          <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{topic.body}</p>
-          {topic.personalizedExplanation && (
-            <div className="bg-purple-900/20 border border-purple-700/30 rounded-xl p-3">
-              <p className="text-purple-300/70 text-xs uppercase tracking-wide mb-1">For you</p>
-              <p className="text-white/70 text-sm leading-relaxed">{topic.personalizedExplanation}</p>
-            </div>
-          )}
-        </div>
+    <>
+      <div className="mt-2 w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 space-y-2">
+        <p className="text-white/80 text-sm font-medium">{topic?.title ?? slug.replace(/-/g, ' ')}</p>
+        {!topic && !error && <p className="text-white/30 text-xs">From the Library · loading…</p>}
+        {error && <p className="text-white/30 text-xs">Couldn&apos;t load this topic right now.</p>}
+        {topic?.quickDefinition && (
+          <p className="text-white/70 text-sm leading-relaxed">{topic.quickDefinition}</p>
+        )}
+        {topic && (
+          <div className="flex items-center gap-4 pt-1">
+            <button onClick={() => setPanelOpen(true)} className="text-purple-300 text-xs hover:text-purple-200 transition-colors">
+              Understand deeper →
+            </button>
+            <Link href={`/library/${slug}`} className="text-white/40 text-xs hover:text-white/60 transition-colors">
+              View full topic
+            </Link>
+          </div>
+        )}
+      </div>
+      {panelOpen && (
+        <LibrarySidePanel slug={slug} sourceSessionId={sourceSessionId} onClose={() => setPanelOpen(false)} />
       )}
-    </div>
+    </>
   )
 }

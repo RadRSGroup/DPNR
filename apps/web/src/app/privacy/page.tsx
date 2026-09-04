@@ -13,7 +13,7 @@ export default async function PrivacyPage() {
 
       <div className="pt-14 pb-8">
         <Link href={backHref} className="text-purple-400 text-sm">← Back</Link>
-        <p className="text-purple-400 text-xs tracking-widest uppercase mt-6 mb-2">DPNR · Workshop Rooms</p>
+        <p className="text-purple-400 text-xs tracking-widest uppercase mt-6 mb-2">DPNR · InnerOS</p>
         <h1 className="text-white text-2xl font-light">Privacy & Data Policy</h1>
         <p className="text-white/30 text-xs mt-2">Effective date: June 2026 · Last updated: June 2026</p>
       </div>
@@ -21,10 +21,10 @@ export default async function PrivacyPage() {
       <div className="space-y-8 text-white/70 text-sm leading-relaxed">
 
         <Section title="What We Collect">
-          <p>When you use Workshop Rooms we collect:</p>
+          <p>When you use DPNR we collect:</p>
           <ul>
-            <li><strong className="text-white/90">Account data:</strong> Email address, hashed password (or OAuth token), and subscription tier.</li>
-            <li><strong className="text-white/90">Decision content:</strong> Titles, narratives, option descriptions, emotion maps, tags, projections, journal check-ins, and outcomes — everything you type into the app.</li>
+            <li><strong className="text-white/90">Account data:</strong> Email address, hashed password (managed via AWS Cognito) or OAuth token, and subscription tier.</li>
+            <li><strong className="text-white/90">Your content:</strong> Everything you type into the app — Companion conversations, Decision Room narratives and options, Mirror Room reflections, journal check-ins, commitments, and outcomes.</li>
             <li><strong className="text-white/90">Usage data:</strong> AI token consumption per session, step completion events, and timestamps.</li>
             <li><strong className="text-white/90">Payment data:</strong> Subscription status and billing history. Card details are held exclusively by Grow (our payment processor) — we never store raw card numbers.</li>
           </ul>
@@ -40,8 +40,8 @@ export default async function PrivacyPage() {
             </thead>
             <tbody className="divide-y divide-white/5">
               {[
-                ['Deliver the 7-step decision flow and AI responses', 'Contractual necessity'],
-                ['Store and display your decisions and history', 'Contractual necessity'],
+                ['Deliver Companion, Decision Room, Mirror Room, and other guided AI features', 'Contractual necessity'],
+                ['Store and display your content and history', 'Contractual necessity'],
                 ['Process subscription payments', 'Contractual necessity'],
                 ['Anonymised analysis to improve AI prompts and product design', 'Legitimate interest (opt-out available)'],
                 ['Aggregate usage reporting (no individual attribution)', 'Legitimate interest'],
@@ -67,15 +67,14 @@ export default async function PrivacyPage() {
         </Section>
 
         <Section title="AI Processing">
-          <p>Your decision content is sent to OpenAI&apos;s API to generate reflections and suggestions. OpenAI processes this data under their <a href="https://openai.com/policies/api-data-usage-policies" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300">API Data Usage Policy</a>, which states that API inputs and outputs are not used to train OpenAI models by default.</p>
-          <p>We do not send your email address or account ID to OpenAI — only the decision content needed to generate a response.</p>
+          <p>Your content is sent to Anthropic&apos;s Claude models, via AWS Bedrock, to generate reflections and suggestions. This runs under Anthropic and AWS&apos;s own commercial API data-use terms, under which your inputs and outputs are not used to train their models.</p>
+          <p>We do not send your email address or account ID to our AI provider — only the content needed to generate a response, and only for the duration of that request.</p>
         </Section>
 
         <Section title="Data Sharing">
           <p>We share data only with:</p>
           <ul>
-            <li><strong className="text-white/90">Supabase</strong> — database and authentication hosting (EU region)</li>
-            <li><strong className="text-white/90">OpenAI</strong> — AI response generation (content only, no PII)</li>
+            <li><strong className="text-white/90">Amazon Web Services (AWS)</strong> — authentication (Cognito), database and encrypted content storage (DynamoDB), and AI response generation (Bedrock/Anthropic Claude — content only, no PII)</li>
             <li><strong className="text-white/90">Grow</strong> — Israeli payment processing (billing data only)</li>
             <li><strong className="text-white/90">Vercel</strong> — application hosting</li>
           </ul>
@@ -105,11 +104,11 @@ export default async function PrivacyPage() {
         </Section>
 
         <Section title="Security">
-          <p>All data is encrypted in transit (TLS) and at rest. Row-Level Security (RLS) policies in our database ensure each user can only access their own data. Passwords are never stored in plain text.</p>
+          <p>All data is encrypted in transit (TLS) and at rest. Your personal content — decisions, reflections, journal entries, and conversations — is additionally protected with per-user end-to-end encryption: each account has its own encryption key, wrapped under your password (and a one-time recovery code) using AWS KMS, so your content is never readable in plain form outside an authenticated session of yours. Application-level access controls ensure each user can only reach their own data. Passwords are never stored in plain text.</p>
         </Section>
 
         <Section title="Cookies">
-          <p>We use a single session cookie for authentication (set by Supabase). We do not use tracking or advertising cookies.</p>
+          <p>We use a session cookie to keep you signed in, alongside authentication tokens (issued by AWS Cognito) held in your browser. We do not use tracking or advertising cookies.</p>
         </Section>
 
         <Section title="Changes">

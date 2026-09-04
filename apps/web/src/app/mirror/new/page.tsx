@@ -53,6 +53,14 @@ function NewMirrorContent() {
   const router = useRouter()
   const params = useSearchParams()
   const resumeId = params.get('resume')
+  // Intelligence Spec §18/Appendix B "Mirror receives context (topic +
+  // domain + source session)" — only set when arriving via a Library
+  // topic's "Explore in Mirror Room" action (LibrarySidePanel.tsx).
+  // `sourceSessionId` (the Companion session) rides along in the URL too,
+  // but isn't consumed here yet — MirrorSessionItem only persists the topic
+  // slug this pass (see mirror-room.ts's sourceLibraryTopic doc comment).
+  const sourceTopic = params.get('topic')
+  const sourceTopicTitle = params.get('topicTitle')
 
   const [showWelcome, setShowWelcome] = useState(!resumeId)
   const [completed, setCompleted] = useState(false)
@@ -201,7 +209,7 @@ function NewMirrorContent() {
 
   async function completeStep01(situation: string, trigger: string) {
     update({ situation, trigger })
-    await submitStepAndAdvance('SITUATION', { situation, trigger })
+    await submitStepAndAdvance('SITUATION', { situation, trigger, sourceLibraryTopic: sourceTopic ?? undefined })
   }
 
   async function completeStep02(thought: string, emotion: string, bodyResponse: string, automaticReaction: string) {
@@ -278,7 +286,7 @@ function NewMirrorContent() {
     }
 
     if (showWelcome) {
-      return <MirrorRoomLanding userName={userName} onStart={() => setShowWelcome(false)} />
+      return <MirrorRoomLanding userName={userName} onStart={() => setShowWelcome(false)} sourceTopicTitle={sourceTopicTitle} />
     }
 
     switch (currentStepId) {

@@ -8,7 +8,20 @@ import { getLibraryTopic } from '@/lib/api/v1-client'
 import type { LibraryTopicDetailResponse } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 
-/** Topic detail — same body/personalizedExplanation rendering as Companion's inline `DirectiveCard`, as a real page. */
+const ROOM_LABEL: Record<'mirror' | 'decision', string> = {
+  mirror: 'Explore in Mirror Room',
+  decision: 'Explore in Decision Room',
+}
+
+/**
+ * Topic detail — reads the same canonical `LibraryTopicDetailResponse`
+ * `DirectiveCard`/`LibrarySidePanel` read, and renders the same Intelligence
+ * Spec §20 sections `LibrarySidePanel` shows in Main Chat's Side Panel —
+ * "same object, many surfaces" (§18) means this page and the Side Panel must
+ * never show different content for the same topic. A topic missing any
+ * section (authored before this session, or never given full content)
+ * simply omits that section rather than fabricating or hiding it.
+ */
 export default function LibraryTopicPage() {
   const router = useRouter()
   const params = useParams<{ slug: string }>()
@@ -60,9 +73,66 @@ export default function LibraryTopicPage() {
                 <p className="text-white/70 text-sm leading-relaxed">{topic.personalizedExplanation}</p>
               </Card>
             )}
+
+            {topic.howItMayShowUp && topic.howItMayShowUp.length > 0 && (
+              <TopicSection title="Recognize — how it may show up" items={topic.howItMayShowUp} />
+            )}
+
+            {topic.possibleRoots && topic.possibleRoots.length > 0 && (
+              <div>
+                <p className="text-white/50 text-xs uppercase tracking-wide mb-1">Possible roots — what may be underneath</p>
+                <p className="text-white/40 text-xs mb-2">Possibilities to consider, not a diagnosis — only one might fit, or none.</p>
+                <BulletList items={topic.possibleRoots} />
+              </div>
+            )}
+
+            {topic.reflectionQuestions && topic.reflectionQuestions.length > 0 && (
+              <TopicSection title="Personal reflection" items={topic.reflectionQuestions} />
+            )}
+
+            {topic.waysToWorkWithIt && topic.waysToWorkWithIt.length > 0 && (
+              <TopicSection title="Work with it" items={topic.waysToWorkWithIt} />
+            )}
+
+            {topic.recommendedRooms && topic.recommendedRooms.length > 0 && (
+              <div className="pt-2 space-y-2">
+                {topic.recommendedRooms.map((room) => (
+                  <button
+                    key={room}
+                    onClick={() => router.push(`/${room}/new?topic=${encodeURIComponent(params.slug)}&topicTitle=${encodeURIComponent(topic.title)}`)}
+                    className="w-full text-left bg-[var(--color-violet-600)]/20 border border-[var(--color-violet-500)]/40 hover:bg-[var(--color-violet-600)]/30 rounded-2xl px-4 py-3 transition-colors"
+                  >
+                    <p className="text-[var(--color-violet-200)] text-sm font-medium">{ROOM_LABEL[room]}</p>
+                    <p className="text-[var(--color-violet-300)]/60 text-xs mt-0.5">Tap to open →</p>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
     </div>
+  )
+}
+
+function TopicSection({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div>
+      <p className="text-white/50 text-xs uppercase tracking-wide mb-2">{title}</p>
+      <BulletList items={items} />
+    </div>
+  )
+}
+
+function BulletList({ items }: { items: string[] }) {
+  return (
+    <ul className="space-y-1.5">
+      {items.map((item, i) => (
+        <li key={i} className="text-white/70 text-sm leading-relaxed flex gap-2">
+          <span className="text-[var(--color-violet-400)]/60 shrink-0">·</span>
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
   )
 }

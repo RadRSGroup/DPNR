@@ -103,6 +103,11 @@ export const DecisionItemSchema = z.object({
   lens: LensSchema.nullable(),
   reviewDate: z.string().date().nullable(),
   content: EncryptedBlobSchema, // wraps { title, subtitle, narrative }
+  // Intelligence Spec §18/Appendix B — see mirror-room.ts's
+  // MirrorSessionItemSchema.sourceLibraryTopic for the identical field's
+  // provenance/intent (set via a Library topic's "Explore in Decision Room"
+  // action, traceability only, not yet threaded into prompts).
+  sourceLibraryTopic: z.string().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })

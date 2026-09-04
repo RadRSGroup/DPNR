@@ -109,6 +109,12 @@ function NewDecisionContent() {
   const router = useRouter()
   const params = useSearchParams()
   const resumeId = params.get('resume')
+  // Intelligence Spec §18/Appendix B — only set when arriving via a Library
+  // topic's "Explore in Decision Room" action (LibrarySidePanel.tsx).
+  // `sourceSessionId` rides along in the URL too but isn't consumed here
+  // yet — DecisionItem only persists the topic slug this pass.
+  const sourceTopic = params.get('topic')
+  const sourceTopicTitle = params.get('topicTitle')
 
   const [introStep, setIntroStep] = useState<-1 | 0 | null>(resumeId ? null : -1)
   const [celebrating, setCelebrating] = useState(false)
@@ -304,7 +310,7 @@ function NewDecisionContent() {
 
   async function completeStep01(title: string, subtitle?: string) {
     update({ title, subtitle })
-    await submitStepAndAdvance('NAME_DECISION', { title, subtitle })
+    await submitStepAndAdvance('NAME_DECISION', { title, subtitle, sourceLibraryTopic: sourceTopic ?? undefined })
   }
 
   async function completeStep02(narrative: string, optionA: DecisionOption, optionB: DecisionOption) {
@@ -446,7 +452,7 @@ function NewDecisionContent() {
     }
 
     if (introStep === -1) {
-      return <DecisionRoomLanding userName={userName} onStart={() => setIntroStep(0)} />
+      return <DecisionRoomLanding userName={userName} onStart={() => setIntroStep(0)} sourceTopicTitle={sourceTopicTitle} />
     }
 
     if (introStep === 0) {

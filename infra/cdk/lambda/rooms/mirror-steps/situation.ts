@@ -9,6 +9,10 @@ import type { StepDefinition } from '../types'
 const SubmitInput = z.object({
   situation: z.string().min(1),
   trigger: z.string().min(1),
+  // Intelligence Spec §18/Appendix B "Mirror receives context (topic +
+  // domain + source session)" — set only when this session was started via
+  // a Library topic's "Explore in Mirror Room" action.
+  sourceLibraryTopic: z.string().optional(),
 })
 
 /**
@@ -23,7 +27,7 @@ const SubmitInput = z.object({
 export const situationStep: StepDefinition = {
   allowedActions: ['SUBMIT_STEP'],
   handle: async (ctx) => {
-    const { situation, trigger } = parseValue(ctx.input, SubmitInput)
+    const { situation, trigger, sourceLibraryTopic } = parseValue(ctx.input, SubmitInput)
     const now = new Date().toISOString()
     const content: MirrorContent = {
       situation,
@@ -45,6 +49,7 @@ export const situationStep: StepDefinition = {
       status: 'active',
       currentStepId: 'SITUATION',
       content: await ctx.crypto.encryptField<MirrorContent>(content),
+      sourceLibraryTopic,
       createdAt: now,
       updatedAt: now,
     }

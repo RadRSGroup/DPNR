@@ -14,7 +14,7 @@ export default async function TermsPage() {
 
       <div className="pt-14 pb-8">
         <Link href={backHref} className="text-purple-400 text-sm">← Back</Link>
-        <p className="text-purple-400 text-xs tracking-widest uppercase mt-6 mb-2">DPNR · Workshop Rooms</p>
+        <p className="text-purple-400 text-xs tracking-widest uppercase mt-6 mb-2">DPNR · InnerOS</p>
         <h1 className="text-white text-2xl font-light">Terms of Use</h1>
         <p className="text-white/30 text-xs mt-2">Effective date: June 2026 · Last updated: June 2026</p>
       </div>
@@ -22,17 +22,17 @@ export default async function TermsPage() {
       <div className="prose prose-invert prose-sm max-w-none space-y-8 text-white/70 text-sm leading-relaxed">
 
         <Section title="1. Acceptance of Terms">
-          <p>By creating an account or using Workshop Rooms (&quot;the Service&quot;), you agree to be bound by these Terms of Use and our Privacy & Data Policy. If you do not agree, do not use the Service.</p>
+          <p>By creating an account or using DPNR (&quot;the Service&quot;), you agree to be bound by these Terms of Use and our Privacy & Data Policy. If you do not agree, do not use the Service.</p>
           <p>These terms apply to all users, including free-tier and paid subscribers.</p>
         </Section>
 
         <Section title="2. Description of Service">
-          <p>Workshop Rooms is an AI-assisted personal decision-making application. It guides users through a structured 7-step process to explore, map, and reflect on meaningful decisions. The Service uses OpenAI&apos;s language models to generate reflections, suggestions, and projections based on content you provide.</p>
+          <p>DPNR is an AI-assisted personal-development platform. It includes a conversational Companion, structured guided sessions (Decision Room, Mirror Room), a personal Digital Twin that reflects patterns and progress back to you, and a content Library — together helping you explore, reflect on, and act on what matters to you. The Service uses AI language models (currently Anthropic&apos;s Claude, via AWS Bedrock) to generate reflections, suggestions, and projections based on content you provide.</p>
           <p><strong className="text-white/90">The Service is not a mental health service, therapy, or medical advice platform.</strong> It is a self-reflective tool. If you are in distress, please seek professional support.</p>
         </Section>
 
         <Section title="3. Eligibility">
-          <p>You must be at least 16 years old to use Workshop Rooms. By registering, you confirm that you meet this requirement.</p>
+          <p>You must be at least 16 years old to use the Service. By registering, you confirm that you meet this requirement.</p>
         </Section>
 
         <Section title="4. User Accounts">
@@ -65,12 +65,12 @@ export default async function TermsPage() {
         </Section>
 
         <Section title="7. Data Use for Service Improvement">
-          <p>To improve Workshop Rooms&apos; AI quality, product design, and user experience, we may analyse usage patterns and content in anonymised, aggregated form. This means:</p>
+          <p>To improve the Service&apos;s AI quality, product design, and user experience, we may analyse usage patterns and content in anonymised, aggregated form. This means:</p>
           <ul>
             <li><strong className="text-white/90">Anonymisation:</strong> Personal identifiers (name, email, account ID) are removed before any analytical use.</li>
             <li><strong className="text-white/90">Aggregation:</strong> Insights are derived from patterns across many users — no individual decision narrative is read or attributed.</li>
             <li><strong className="text-white/90">No profiling:</strong> We do not build individual user profiles for advertising or third-party sale.</li>
-            <li><strong className="text-white/90">AI training:</strong> Your content may be used in anonymised form to fine-tune or evaluate our internal AI prompts. We do not share raw User Content with OpenAI for training purposes beyond standard API usage under OpenAI&apos;s data terms.</li>
+            <li><strong className="text-white/90">AI training:</strong> Your content may be used in anonymised form to fine-tune or evaluate our internal AI prompts. We do not share raw User Content with our AI model provider for training purposes beyond standard API usage under that provider&apos;s own data terms.</li>
           </ul>
           <p>You may opt out of anonymised analytical use by contacting us. Opting out does not affect your ability to use the Service.</p>
         </Section>

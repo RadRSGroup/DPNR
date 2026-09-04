@@ -15,6 +15,8 @@ import type { CompanionContextResponse, TwinListResponse } from '@dpnr/shared-ty
 interface Props {
   userName: string
   onStart: () => void
+  /** Intelligence Spec §18/Appendix B — set when arriving via a Library topic's "Explore in Mirror Room" action. */
+  sourceTopicTitle?: string | null
 }
 
 /**
@@ -50,7 +52,7 @@ interface Props {
  * "Patterns Track" widget already shows — same data, same honesty, just
  * also surfaced here since Mirror Room is where those patterns get explored.
  */
-export default function MirrorRoomLanding({ userName, onStart }: Props) {
+export default function MirrorRoomLanding({ userName, onStart, sourceTopicTitle }: Props) {
   const router = useRouter()
   const firstName = userName.includes('@') ? userName.split('@')[0] : userName.split(' ')[0] || userName
   const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
@@ -90,6 +92,9 @@ export default function MirrorRoomLanding({ userName, onStart }: Props) {
               <p className="text-sm text-[var(--color-text-secondary)] mt-1">
                 Notice what this moment reveals within you. Breathe and begin.
               </p>
+              {sourceTopicTitle && (
+                <p className="text-xs text-purple-300/70 mt-2">Exploring: {sourceTopicTitle}</p>
+              )}
             </div>
 
             <div className="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">

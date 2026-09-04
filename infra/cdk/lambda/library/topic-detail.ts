@@ -117,6 +117,14 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       body: versionItem.body,
       personalizedExplanation,
       promptRef: usedPromptRef,
+      // Intelligence Spec §18/§20 structured sections — passthrough only,
+      // undefined on any topic authored before this session.
+      quickDefinition: versionItem.quickDefinition,
+      howItMayShowUp: versionItem.howItMayShowUp,
+      possibleRoots: versionItem.possibleRoots,
+      reflectionQuestions: versionItem.reflectionQuestions,
+      waysToWorkWithIt: versionItem.waysToWorkWithIt,
+      recommendedRooms: versionItem.recommendedRooms,
     }
     return jsonResponse(200, body)
   } catch (err) {

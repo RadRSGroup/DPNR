@@ -22,6 +22,14 @@ export const MirrorSessionItemSchema = z.object({
   status: MirrorSessionStatusSchema,
   currentStepId: z.string().optional(),
   content: EncryptedBlobSchema, // wraps { situation, trigger, thought, emotion, bodyResponse, automaticReaction, copingResponse, recurringPattern, energyMoodEffect, lifeDomain, commitment }
+  // Intelligence Spec §18/Appendix B Flow 1 "Mirror receives context (topic
+  // + domain + source session)" — set only when the session was started via
+  // a Library topic's "Explore in Mirror Room" action (LibrarySidePanel.tsx).
+  // Plaintext catalog slug, not personal data — same non-sensitive-config
+  // reasoning LibraryTopicVersionItem's own taxonomyCategory already gets.
+  // Traceability only this pass — not yet threaded into the room's own AI
+  // prompts (a separate, deeper prompt-engineering task).
+  sourceLibraryTopic: z.string().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })
