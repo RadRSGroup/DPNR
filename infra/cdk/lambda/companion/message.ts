@@ -14,13 +14,14 @@ import {
   type TwinSignalItem,
   type OpenThreadItem,
   type InteractionMode,
+  type PromptVersionItem,
   LifeDomainCategorySchema,
 } from '@dpnr/shared-types'
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { requireConsent } from '../lib/consent'
 import { consumeCredits, COMPANION_MESSAGE_COST } from '../lib/credits'
 import { getSessionCrypto, type SessionCrypto } from '../lib/session-crypto'
-import { resolvePromptVersion } from '../lib/prompt-registry'
+import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
 import { listActiveTopics } from '../lib/library-catalog'
 import { gatherContinuityContext } from '../continuity/gather-context'
@@ -437,7 +438,7 @@ async function runOnboardingTurn(
 
   const reply = typeof result.reply === 'string' ? result.reply : ''
   if (result.readyForRoadmap === true) {
-    await persistInitialRoadmap(crypto, pk, sessionId, result)
+    await persistInitialRoadmap(crypto, pk, sessionId, result, version)
   }
   return { reply, directive: null }
 }
@@ -446,7 +447,8 @@ async function persistInitialRoadmap(
   crypto: SessionCrypto,
   pk: string,
   sessionId: string,
-  result: Record<string, unknown>
+  result: Record<string, unknown>,
+  version: PromptVersionItem
 ): Promise<void> {
   const currentFocus = typeof result.currentFocus === 'string' ? result.currentFocus : ''
   const theme = typeof result.theme === 'string' ? result.theme : ''
@@ -480,6 +482,16 @@ async function persistInitialRoadmap(
 
   const currentFocusSignalId = randomUUID()
   const directionSignalId = randomUUID()
+  // signalType 'explicit_statement' matches this function's own reasoning
+  // above: the person directly stated their own focus in conversation, not
+  // an indirect model inference. direction/strength are hardcoded rather
+  // than computed via lib/signal-classification.ts because these two
+  // signals are — by construction — always the first-ever signal onboarding
+  // writes in their domain for a brand-new user, so 'emerging' isn't a
+  // guess; confidence is already 1 (an unambiguous explicit statement), so
+  // strength (how central the pattern is, not how certain the extraction
+  // is) is set the same way.
+  const onboardingRef = promptRef('companion', 'onboard', version)
   const signals: TwinSignalItem[] = [
     {
       pk,
@@ -490,6 +502,11 @@ async function persistInitialRoadmap(
       confidence: 1,
       source: 'onboarding',
       sourceSessionId: sessionId,
+      signalType: 'explicit_statement',
+      promptRef: onboardingRef,
+      modelRef: version.modelParams.model,
+      direction: 'emerging',
+      strength: 1,
       content: await crypto.encryptField<{ description: string }>({ description: currentFocus }),
       createdAt: now,
       updatedAt: now,
@@ -503,6 +520,11 @@ async function persistInitialRoadmap(
       confidence: 1,
       source: 'onboarding',
       sourceSessionId: sessionId,
+      signalType: 'explicit_statement',
+      promptRef: onboardingRef,
+      modelRef: version.modelParams.model,
+      direction: 'emerging',
+      strength: 1,
       content: await crypto.encryptField<{ description: string }>({ description: direction }),
       createdAt: now,
       updatedAt: now,

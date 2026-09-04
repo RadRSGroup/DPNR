@@ -5,6 +5,8 @@ import {
   LifeDomainCategorySchema,
   ArchetypeSchema,
   RoadmapLifecycleStateSchema,
+  SignalTypeSchema,
+  SignalDirectionSchema,
 } from '../dynamo/twin'
 
 /**
@@ -105,6 +107,14 @@ export const TwinListResponseSchema = z.object({
       // duplicating Dashboard's aggregate logic for one filtered view.
       lifeDomain: LifeDomainCategorySchema.optional(),
       archetype: ArchetypeSchema.optional(),
+      // Signal-model enrichment (Intelligence Spec §7) — same "flat data,
+      // absent until set" treatment as lifeDomain/archetype above.
+      // promptRef/modelRef are deliberately not exposed here — internal
+      // traceability, not user-facing product data (still available via a
+      // real GDPR export, which returns raw stored item fields as-is).
+      signalType: SignalTypeSchema.optional(),
+      direction: SignalDirectionSchema.optional(),
+      strength: z.number().min(0).max(1).optional(),
     })
   ),
 })

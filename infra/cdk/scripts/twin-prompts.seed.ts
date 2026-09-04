@@ -88,13 +88,28 @@ Archetype — exactly one of:
 - visionary: imagining, building toward, or moving toward a future state
 - protector: safety, boundaries, control, guarding against harm
 
-Choose the single best fit for each, even if the signal could loosely fit more than one — a forced single choice, not a distribution. Never invent detail beyond what the signal description actually says.`,
+Choose the single best fit for each, even if the signal could loosely fit more than one — a forced single choice, not a distribution. Never invent detail beyond what the signal description actually says.
+
+You're also given this person's other already-confirmed signals in the same domain (oldest evidence first is not guaranteed — treat them only as prior evidence, not a timeline). Using that evidence, also set:
+
+direction — exactly one of:
+- emerging: no prior evidence exists in this domain; this is the first
+- recurring: prior evidence exists and this signal describes essentially the same thing showing up again
+- increasing: prior evidence exists and this signal shows the pattern intensifying/growing
+- decreasing: prior evidence exists and this signal shows the pattern easing/shrinking
+- stable: prior evidence exists and this signal is consistent with it, no real change in intensity
+- mixed: prior evidence exists but this signal contradicts or sits in tension with it
+
+strength — a 0–1 number for how strong/central this pattern is in the person's life, not how confident you are the description is accurate (that's a separate, already-set confidence score you don't need to touch). A single mild moment is low strength even if you're fully confident it happened; a pervasive, life-shaping pattern is high strength.`,
     userTemplate: `Signal domain: {{signalDomain}}
-Signal description: {{signalDescription}}`,
-    variables: ['signalDomain', 'signalDescription'],
+Signal description: {{signalDescription}}
+
+Other already-confirmed signals in this same domain:
+{{priorSignalsInDomain}}`,
+    variables: ['signalDomain', 'signalDescription', 'priorSignalsInDomain'],
     outputSchema: {
       type: 'object',
-      required: ['lifeDomain', 'archetype'],
+      required: ['lifeDomain', 'archetype', 'direction', 'strength'],
       properties: {
         lifeDomain: {
           type: 'string',
@@ -109,14 +124,22 @@ Signal description: {{signalDescription}}`,
           ],
         },
         archetype: { type: 'string', enum: ['healer', 'seeker', 'visionary', 'protector'] },
+        direction: {
+          type: 'string',
+          enum: ['emerging', 'recurring', 'increasing', 'decreasing', 'stable', 'mixed'],
+        },
+        strength: { type: 'number' },
       },
     },
     notes:
       'signalDomain = the Twin signal\'s own domain tag (pattern/trigger/value/commitment) for context, not the ' +
       'thing being classified — this prompt adds a second, orthogonal classification (life-domain + archetype) ' +
       'on top of that existing tag, it doesn\'t replace it. signalDescription = the decrypted description text. ' +
-      'Has never run against a live model with real signal data — a design-level first draft, same status every ' +
-      'other net-new prompt gets before its own product review; this session only verified the calling ' +
-      'convention and data plumbing live.',
+      'priorSignalsInDomain = up to 5 other confirmed signals\' decrypted descriptions in the same domain, most ' +
+      'recent first, or an explicit "(none — first in domain)" string (lib/signal-classification.ts) — the ' +
+      'evidence direction/strength (Session 35, Intelligence Spec §7) are judged against. Has never run against ' +
+      'a live model with real signal data — a design-level first draft, same status every other net-new prompt ' +
+      'gets before its own product review; verify the calling convention and data plumbing live before treating ' +
+      'the classification *behavior* itself as final.',
   },
 ]

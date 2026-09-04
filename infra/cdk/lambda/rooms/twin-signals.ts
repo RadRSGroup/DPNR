@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, type TwinSignalItem, type TwinSignalSource, type SessionSummaryItem } from '@dpnr/shared-types'
 import type { SessionCrypto } from '../lib/session-crypto'
-import { resolvePromptVersion } from '../lib/prompt-registry'
+import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
 
@@ -63,6 +63,12 @@ export async function extractCandidateSignals(
         confidence: signal.confidence,
         source,
         sourceSessionId: sessionId,
+        // Genuinely inferred from indirect session content (a summary, not
+        // a verbatim statement) — the model_inference case (Intelligence
+        // Spec §7's signal_type, distinct from `source` above).
+        signalType: 'model_inference',
+        promptRef: promptRef('twin', 'extract_signals', version),
+        modelRef: version.modelParams.model,
         content: await crypto.encryptField({ description: signal.description }),
         createdAt: now,
         updatedAt: now,

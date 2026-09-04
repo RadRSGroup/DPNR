@@ -38,6 +38,9 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
           description: (await crypto.decryptField<{ description: string }>(item.content)).description,
           lifeDomain: item.lifeDomain,
           archetype: item.archetype,
+          signalType: item.signalType,
+          direction: item.direction,
+          strength: item.strength,
         }))
     )
 

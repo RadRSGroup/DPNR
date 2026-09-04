@@ -110,6 +110,39 @@ export const TwinSignalSourceSchema = z.enum([
 export type TwinSignalSource = z.infer<typeof TwinSignalSourceSchema>
 
 /**
+ * Intelligence Spec §7 "Evidence & Signal Model" — *how* a signal was
+ * derived, as distinct from `TwinSignalSource` (*where* it came from).
+ * The spec keeps these as two orthogonal fields; this codebase had
+ * conflated them until now (see docs/INTELLIGENCE_SPEC_AUDIT.md §7).
+ * `user_choice`/`real_world_followup` have no real call site yet — no
+ * direct-user-add-a-signal UI exists, same honest-gap treatment as other
+ * unreachable-today enum values in this codebase (e.g. `noActionReason`).
+ */
+export const SignalTypeSchema = z.enum([
+  'explicit_statement',
+  'user_choice',
+  'model_inference',
+  'real_world_followup',
+])
+export type SignalType = z.infer<typeof SignalTypeSchema>
+
+/**
+ * Intelligence Spec §7 — how this signal's evidence relates to the user's
+ * prior confirmed signals in the same domain. `emerging` is the base case
+ * (no prior confirmed signal existed in this domain yet); the rest are only
+ * ever set by comparing against history (lib/signal-classification.ts).
+ */
+export const SignalDirectionSchema = z.enum([
+  'emerging',
+  'recurring',
+  'increasing',
+  'decreasing',
+  'stable',
+  'mixed',
+])
+export type SignalDirection = z.infer<typeof SignalDirectionSchema>
+
+/**
  * Life Domains taxonomy (Session 19) — the 7 categories Growth Tracker/My
  * Evolution Map/Dashboard all show percentages for. Labels match the
  * visual design reference exactly (`docs/UI reference for platform.pdf`).
@@ -165,6 +198,29 @@ export const TwinSignalItemSchema = z.object({
   // taxonomy for someone with zero classified signals.
   lifeDomain: LifeDomainCategorySchema.optional(),
   archetype: ArchetypeSchema.optional(),
+  // Signal-model enrichment (Intelligence Spec §7/§28) — all five optional,
+  // same "absent for signals created before this existed" convention as
+  // lifeDomain/archetype/sourceSessionId above.
+  //
+  // signalType/promptRef/modelRef are set once, at creation time, by
+  // whichever pipeline wrote the signal (rooms/twin-signals.ts,
+  // companion/message.ts's persistInitialRoadmap). promptRef follows the
+  // same "domain/name@vN" convention SessionSummaryItem.promptRef already
+  // uses (lib/prompt-registry.ts's promptRef() helper); modelRef is the
+  // resolved Bedrock model id that produced it.
+  signalType: SignalTypeSchema.optional(),
+  promptRef: z.string().optional(),
+  modelRef: z.string().optional(),
+  // direction/strength are set later, at confirm-time, by
+  // lib/signal-classification.ts (same trigger as lifeDomain/archetype) —
+  // except onboarding's two always-pre-confirmed signals, which are the
+  // first-ever signal in their domain by construction and get these
+  // hardcoded at creation instead of a model call. strength is distinct
+  // from confidence: confidence is the model's certainty the description
+  // accurately reflects the evidence; strength is how strong/central the
+  // underlying pattern itself is judged to be.
+  direction: SignalDirectionSchema.optional(),
+  strength: z.number().min(0).max(1).optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })
