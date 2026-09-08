@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Sidebar from '@/components/layout/Sidebar'
 
 const TOTAL_STEPS = 6
 
@@ -77,7 +78,10 @@ export default function MirrorStepShell({
   const showStoppingCue = !stoppingCueDismissed && elapsedSeconds >= initialMinutes * 60 * STOPPING_CUE_FRACTION
 
   return (
-    <div className="relative h-dvh flex flex-col bg-[var(--color-bg-base)] overflow-hidden max-w-[393px] mx-auto">
+    <div className="lg:flex lg:min-h-screen">
+      <Sidebar />
+      <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
+    <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] flex flex-col bg-[var(--color-bg-base)] overflow-hidden max-w-[393px] mx-auto lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
       {/* Galaxy background */}
       <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-canvas-from)] via-[var(--color-bg-canvas-via)] to-[var(--color-bg-canvas-to)] -z-10" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
@@ -208,6 +212,8 @@ export default function MirrorStepShell({
           </div>
         </div>
       )}
+    </div>
+      </main>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { CalendarButtons } from '@/components/ui/CalendarButtons'
+import Sidebar from '@/components/layout/Sidebar'
 
 interface Props {
   sessionTitle: string
@@ -25,7 +26,10 @@ export default function CommitmentScreen({ sessionTitle, onDone, onBack }: Props
   const calendarDate = addDays(7)
 
   return (
-    <div className="relative h-dvh max-w-[393px] mx-auto flex flex-col bg-[#0a0a0f] overflow-hidden">
+    <div className="lg:flex lg:min-h-screen">
+      <Sidebar />
+      <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
+    <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] max-w-[393px] mx-auto flex flex-col bg-[#0a0a0f] overflow-hidden lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
       <div className="absolute inset-0 bg-[#1a0826] -z-10" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.45)_0%,_rgba(80,20,140,0.25)_45%,_transparent_75%)] -z-10" />
 
@@ -79,6 +83,8 @@ export default function CommitmentScreen({ sessionTitle, onDone, onBack }: Props
           Done
         </button>
       </div>
+    </div>
+      </main>
     </div>
   )
 }

@@ -4,14 +4,18 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { TrendingUp, Sparkles, Layers, Waves } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
-import { getDashboard, getDecisionsList, getCompanionContext } from '@/lib/api/v1-client'
-import type { DashboardResponse, DecisionsListResponse, CompanionContextResponse } from '@dpnr/shared-types'
-import { LIFE_DOMAIN_LABELS, ARCHETYPE_LABELS } from '@dpnr/shared-types'
+import { getDashboard, getDecisionsList, getCompanionContext, getGrowthValuesNeeds } from '@/lib/api/v1-client'
+import type { DashboardResponse, DecisionsListResponse, CompanionContextResponse, GrowthValuesNeedsResponse } from '@dpnr/shared-types'
+import { LIFE_DOMAIN_LABELS } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 import ProgressRing from '@/components/ui/ProgressRing'
 import DailyGuidanceCard from '@/components/companion/DailyGuidanceCard'
 import RoadmapTimelineCard from '@/components/shared/RoadmapTimelineCard'
+import AlignmentHistoryChart from '@/components/shared/AlignmentHistoryChart'
 import { DOMAIN_META } from '@/components/shared/domain-meta'
+import StatTile from '@/components/shared/StatTile'
+import ArchetypeBadge from '@/components/shared/ArchetypeBadge'
+import { timeAgo } from '@/lib/format'
 
 /**
  * Growth Tracker (Slice 4 of the 6-slice reference-mockup parity plan,
@@ -30,36 +34,23 @@ import { DOMAIN_META } from '@/components/shared/domain-meta'
  * "honest where not cheap" decision for Slice 4, these render as plain
  * "not enough signal yet" cards rather than an invented 5-dimension score or
  * sentiment trend — that is deliberate, not a bug or a gap for a future
- * session to quietly "complete" with fabricated numbers.
+ * session to quietly "complete" with fabricated numbers. "Pillars Snapshot"
+ * (a radar-chart re-visualization of the same 5 concepts) is bundled under
+ * this same honest gap for the same reason.
+ *
+ * Values & Needs Snapshot is real, added later: `GET
+ * /v1/rooms/decisions/values-needs` tallies every `value`/`need`-typed tag
+ * ever submitted across all of a person's past decisions (Decision Room's
+ * VALUES_NEEDS step) by label frequency — genuine cross-decision
+ * aggregation, not a stub or a new taxonomy.
  */
-
-// `Date.now()` specifically trips apps/web's `react-hooks/purity` lint rule
-// even outside a hook (Session 24 found this) — `new Date().getTime()` does not.
-function timeAgo(iso: string): string {
-  const days = Math.floor((new Date().getTime() - new Date(iso).getTime()) / (24 * 60 * 60 * 1000))
-  if (days <= 0) return 'Today'
-  if (days === 1) return '1 day ago'
-  if (days < 14) return `${days} days ago`
-  const weeks = Math.floor(days / 7)
-  if (weeks < 8) return `${weeks} week${weeks > 1 ? 's' : ''} ago`
-  const months = Math.floor(days / 30)
-  return `${months} month${months > 1 ? 's' : ''} ago`
-}
-
-function StatTile({ label, value }: { label: string; value: string }) {
-  return (
-    <Card className="text-center">
-      <p className="text-lg lg:text-xl text-white font-medium">{value}</p>
-      <p className="text-[11px] text-white/40 mt-1">{label}</p>
-    </Card>
-  )
-}
 
 function GrowthTrackerContent() {
   const router = useRouter()
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null)
   const [decisions, setDecisions] = useState<DecisionsListResponse['decisions']>([])
   const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
+  const [valuesNeeds, setValuesNeeds] = useState<GrowthValuesNeedsResponse | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -78,6 +69,7 @@ function GrowthTrackerContent() {
       // Fetched separately, own failure boundary — same pattern Dashboard uses.
       getDecisionsList().then((r) => setDecisions(r.decisions)).catch(() => {})
       getCompanionContext().then((c) => setDailyCard(c.dailyCard)).catch(() => {})
+      getGrowthValuesNeeds().then(setValuesNeeds).catch(() => {})
     }
     load()
   }, [router])
@@ -107,9 +99,10 @@ function GrowthTrackerContent() {
         <div className="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
           {/* Main column */}
           <div className="lg:col-span-2 space-y-4 lg:space-y-6">
-            {/* Alignment Score + this slice's two new real counts. */}
-            <div className="grid grid-cols-3 gap-3">
+            {/* Alignment Score + this slice's real monthly counts. */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <StatTile label="Alignment Score" value={loading ? '…' : dashboard?.alignmentScore != null ? `${dashboard.alignmentScore}%` : '—'} />
+              <StatTile label="Areas Growing" value={loading ? '…' : String(dashboard?.areasGrowing ?? 0)} />
               <StatTile label="Patterns Shifting" value={loading ? '…' : String(dashboard?.patternsShifting ?? 0)} />
               <StatTile label="Insights Gained" value={loading ? '…' : String(dashboard?.insightsGained ?? 0)} />
             </div>
@@ -151,24 +144,79 @@ function GrowthTrackerContent() {
               </Card>
             )}
 
+            {/* Alignment Over Time — the same real daily snapshots Dashboard's
+                compact "My Evolution" sparkline reads (`GET /v1/dashboard`'s
+                `alignmentHistory`), charted properly here with axis labels
+                and a 7D/30D range toggle. `>= 2` matches Dashboard's own
+                honesty gate — a single point can't show a trend. */}
+            {!loading && (dashboard?.alignmentHistory?.length ?? 0) >= 2 && (
+              <Card>
+                <p className="text-sm text-white mb-1">Alignment Over Time</p>
+                <p className="text-xs text-white/40 mb-4">Your overall alignment trend</p>
+                <AlignmentHistoryChart points={dashboard!.alignmentHistory} />
+              </Card>
+            )}
+
             {/* Roadmap timeline — the exact same real card Dashboard shows,
                 shared via RoadmapTimelineCard so the two never drift apart. */}
             {!loading && dashboard?.roadmap && <RoadmapTimelineCard roadmap={dashboard.roadmap} />}
 
-            {/* Leading Archetypes — same real aggregate Dashboard reads. */}
+            {/* Your Archetypes — same real aggregate Dashboard reads, titled
+                to match this screen's own reference label (the reference's
+                different-looking archetype names on this specific page are
+                mockup inconsistency, not a second real taxonomy — see
+                archetype-meta.ts). Illustrated via a shared icon+gradient
+                badge rather than the reference's portrait photography, which
+                has no real asset behind it. */}
             {!loading && (dashboard?.archetypes?.length ?? 0) > 0 && (
               <Card>
-                <p className="text-sm text-white mb-1">Leading Archetypes</p>
+                <p className="text-sm text-white mb-1">Your Archetypes</p>
                 <p className="text-xs text-white/40 mb-4">The energies that show up for you</p>
                 <div className="grid grid-cols-2 gap-3">
                   {dashboard!.archetypes.map((a) => (
-                    <div key={a.archetype} className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--color-violet-500)] to-[var(--color-amber-400)] flex items-center justify-center text-[10px] font-medium text-white shrink-0">
-                        {a.percent}%
-                      </div>
-                      <span className="text-sm text-white/70">{ARCHETYPE_LABELS[a.archetype]}</span>
-                    </div>
+                    <ArchetypeBadge key={a.archetype} archetype={a.archetype} percent={a.percent} />
                   ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Values & Needs Snapshot — real cross-decision tag aggregate,
+                see this file's own doc comment above. Omitted entirely
+                (rather than shown empty) if the person hasn't reached
+                Decision Room's VALUES_NEEDS step in any decision yet. */}
+            {!loading && ((valuesNeeds?.topValues.length ?? 0) > 0 || (valuesNeeds?.topNeeds.length ?? 0) > 0) && (
+              <Card>
+                <p className="text-sm text-white mb-1">Values &amp; Needs Snapshot</p>
+                <p className="text-xs text-white/40 mb-4">What drives you and what you need more of</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[11px] text-white/40 uppercase tracking-wide mb-2">Top Values</p>
+                    {valuesNeeds!.topValues.length === 0 ? (
+                      <p className="text-xs text-white/30">Nothing yet</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {valuesNeeds!.topValues.map((v) => (
+                          <span key={v} className="text-xs text-white/70 bg-white/5 border border-white/10 rounded-full px-2.5 py-1">
+                            {v}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-white/40 uppercase tracking-wide mb-2">Top Needs</p>
+                    {valuesNeeds!.topNeeds.length === 0 ? (
+                      <p className="text-xs text-white/30">Nothing yet</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {valuesNeeds!.topNeeds.map((n) => (
+                          <span key={n} className="text-xs text-white/70 bg-white/5 border border-white/10 rounded-full px-2.5 py-1">
+                            {n}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </Card>
             )}

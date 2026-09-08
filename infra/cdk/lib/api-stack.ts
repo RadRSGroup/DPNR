@@ -803,6 +803,20 @@ export class ApiStack extends Stack {
     props.sessionTicketsKmsKey.grantDecrypt(listDecisionsFn)
     props.sessionTicketsTable.grantReadData(listDecisionsFn)
 
+    const valuesNeedsFn = new lambda.NodejsFunction(this, 'ValuesNeedsFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/rooms/values-needs.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
+      description: 'GET /v1/rooms/decisions/values-needs — Growth Tracker\'s real cross-decision Top Values/Top Needs tally.',
+    })
+    props.applicationTable.grantReadData(valuesNeedsFn)
+    props.sessionTicketsKmsKey.grantDecrypt(valuesNeedsFn)
+    props.sessionTicketsTable.grantReadData(valuesNeedsFn)
+
     const listMirrorsFn = new lambda.NodejsFunction(this, 'ListMirrorsFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/rooms/list-mirrors.ts'),
@@ -851,6 +865,13 @@ export class ApiStack extends Stack {
       path: '/v1/rooms/decisions',
       methods: [apigwv2.HttpMethod.GET],
       integration: new integrations.HttpLambdaIntegration('ListDecisionsIntegration', listDecisionsFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/rooms/decisions/values-needs',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('ValuesNeedsIntegration', valuesNeedsFn),
       authorizer: this.cognitoAuthorizer,
     })
 

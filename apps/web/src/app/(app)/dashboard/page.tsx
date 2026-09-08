@@ -15,12 +15,13 @@ import {
   updateRoadmapLifecycle,
 } from '@/lib/api/v1-client'
 import type { DashboardResponse, TwinListResponse, CompanionContextResponse } from '@dpnr/shared-types'
-import { LIFE_DOMAIN_LABELS, ARCHETYPE_LABELS } from '@dpnr/shared-types'
+import { LIFE_DOMAIN_LABELS } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 import ProgressRing from '@/components/ui/ProgressRing'
 import DailyGuidanceCard from '@/components/companion/DailyGuidanceCard'
 import RoadmapTimelineCard from '@/components/shared/RoadmapTimelineCard'
 import TwinCalibrationCard from '@/components/shared/TwinCalibrationCard'
+import ArchetypeBadge from '@/components/shared/ArchetypeBadge'
 
 /**
  * Labels for continuityCue kinds OTHER than 'daily_card' — that one now
@@ -375,12 +376,7 @@ function DashboardContent() {
                 <p className="text-xs text-white/40 mb-4">The energies that show up for you</p>
                 <div className="grid grid-cols-2 gap-3">
                   {dashboard!.archetypes.map((a) => (
-                    <div key={a.archetype} className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--color-violet-500)] to-[var(--color-amber-400)] flex items-center justify-center text-[10px] font-medium text-white shrink-0">
-                        {a.percent}%
-                      </div>
-                      <span className="text-sm text-white/70">{ARCHETYPE_LABELS[a.archetype]}</span>
-                    </div>
+                    <ArchetypeBadge key={a.archetype} archetype={a.archetype} percent={a.percent} />
                   ))}
                 </div>
               </Card>

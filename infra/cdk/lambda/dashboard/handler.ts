@@ -142,6 +142,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const confirmedThisMonth = twinSignals.filter((s) => s.status === 'confirmed' && s.createdAt.slice(0, 10) >= monthStart)
     const insightsGained = confirmedThisMonth.length
     const patternsShifting = confirmedThisMonth.filter((s) => s.domain === 'pattern').length
+    const areasGrowing = new Set(confirmedThisMonth.map((s) => s.lifeDomain).filter((d): d is NonNullable<typeof d> => d != null)).size
 
     // Priority order per spec §2 Golden Path B step 3 ("Daily Card, relevant
     // continuation, upcoming commitment, Roadmap cue... only when useful"):
@@ -179,6 +180,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       archetypes,
       insightsGained,
       patternsShifting,
+      areasGrowing,
     }
     return jsonResponse(200, body)
   } catch (err) {

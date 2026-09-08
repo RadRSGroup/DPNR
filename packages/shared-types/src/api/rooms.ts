@@ -133,6 +133,22 @@ export const DecisionsListResponseSchema = z.object({
 export type DecisionsListResponse = z.infer<typeof DecisionsListResponseSchema>
 
 /**
+ * GET /v1/rooms/decisions/values-needs — a real cross-decision aggregate,
+ * not a stub. Every `value`/`need`-typed `DecisionTagItem` a person has ever
+ * submitted (Decision Room's VALUES_NEEDS step, `TagTypeSchema`) across
+ * every one of their decisions, tallied by label frequency (case/whitespace
+ * normalized), most-common first, capped to a handful per list — Growth
+ * Tracker's "Values & Needs Snapshot". No new taxonomy: this reads real
+ * free-text tags exactly as the person entered them, it doesn't classify
+ * or invent categories.
+ */
+export const GrowthValuesNeedsResponseSchema = z.object({
+  topValues: z.array(z.string()),
+  topNeeds: z.array(z.string()),
+})
+export type GrowthValuesNeedsResponse = z.infer<typeof GrowthValuesNeedsResponseSchema>
+
+/**
  * GET /v1/rooms/mirrors — same shape of read, for Mirror Room. No title
  * field exists on MirrorSessionItemSchema (dynamo/mirror-room.ts) — every
  * field lives inside its encrypted `content` blob — so `label` is a short

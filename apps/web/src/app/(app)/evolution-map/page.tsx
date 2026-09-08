@@ -9,6 +9,7 @@ import { LIFE_DOMAIN_LABELS } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 import ProgressRing from '@/components/ui/ProgressRing'
 import RoadmapTimelineCard from '@/components/shared/RoadmapTimelineCard'
+import StatTile from '@/components/shared/StatTile'
 import { DOMAIN_META } from '@/components/shared/domain-meta'
 
 /**
@@ -128,6 +129,18 @@ function EvolutionMapContent() {
 
   const hasDomains = !loading && dashboard != null && dashboard.lifeDomains.length > 0
 
+  // "Your Map at a Glance" — every number here already exists in data this
+  // page already fetches; this is just a rollup that was never assembled.
+  // Active Goals/Milestones are account-wide (not filtered to the currently
+  // selected domain), matching the reference's own glance-row framing as an
+  // overview, distinct from the domain-filtered "Goals & Dreams" list below.
+  const lifeDomainsCount = dashboard?.lifeDomains.length ?? 0
+  const averageProgress = lifeDomainsCount > 0
+    ? Math.round(dashboard!.lifeDomains.reduce((sum, d) => sum + d.percent, 0) / lifeDomainsCount)
+    : 0
+  const activeGoalsCount = commitments.filter((c) => c.status === 'open').length
+  const milestonesAchievedCount = commitments.filter((c) => c.status === 'completed').length
+
   return (
     <div className="relative min-h-screen">
       <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-canvas-from)] via-[var(--color-bg-canvas-via)] to-[var(--color-bg-canvas-to)] -z-10" />
@@ -145,6 +158,14 @@ function EvolutionMapContent() {
         <div className="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
           {/* Main column */}
           <div className="lg:col-span-2 space-y-4 lg:space-y-6">
+            {/* Your Map at a Glance */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatTile label="Life Domains" value={loading ? '…' : String(lifeDomainsCount)} />
+              <StatTile label="Average Progress" value={loading ? '…' : `${averageProgress}%`} />
+              <StatTile label="Active Goals" value={loading ? '…' : String(activeGoalsCount)} />
+              <StatTile label="Milestones Achieved" value={loading ? '…' : String(milestonesAchievedCount)} />
+            </div>
+
             {!loading && !hasDomains && (
               <Card>
                 <p className="text-sm text-white mb-2">Life Domains</p>

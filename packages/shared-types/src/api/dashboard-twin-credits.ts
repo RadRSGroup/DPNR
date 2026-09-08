@@ -87,6 +87,12 @@ export const DashboardResponseSchema = z.object({
   // domain='pattern' subset of that same window.
   insightsGained: z.number().int().min(0),
   patternsShifting: z.number().int().min(0),
+  // Growth Tracker's "Areas Growing" — count of distinct Life Domains with
+  // at least one confirmed Twin signal created this calendar month (UTC).
+  // Same confirmed-this-month window and twinSignals query as
+  // insightsGained/patternsShifting above, just grouped by domain instead
+  // of counted flat — no new DB read, no new signal concept.
+  areasGrowing: z.number().int().min(0),
 })
 export type DashboardResponse = z.infer<typeof DashboardResponseSchema>
 

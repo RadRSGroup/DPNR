@@ -24,6 +24,7 @@ import type {
   DailyCardFeedbackRequest,
   DailyCardFeedbackResponse,
   DecisionsListResponse,
+  GrowthValuesNeedsResponse,
   MirrorsListResponse,
   CreditsTransactionsResponse,
   CreateCommitmentRequest,
@@ -97,6 +98,11 @@ export async function getMirrorFull(id: string): Promise<MirrorRoomFullResponse>
 export async function getDecisionsList(): Promise<DecisionsListResponse> {
   const res = await authedFetch('/v1/rooms/decisions')
   return parseOrThrow<DecisionsListResponse>(res)
+}
+
+export async function getGrowthValuesNeeds(): Promise<GrowthValuesNeedsResponse> {
+  const res = await authedFetch('/v1/rooms/decisions/values-needs')
+  return parseOrThrow<GrowthValuesNeedsResponse>(res)
 }
 
 export async function getMirrorsList(): Promise<MirrorsListResponse> {

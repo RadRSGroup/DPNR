@@ -1,5 +1,6 @@
 'use client'
 import { useRouter } from 'next/navigation'
+import Sidebar from '@/components/layout/Sidebar'
 
 /**
  * Renders instead of the room's normal step flow when a
@@ -26,7 +27,10 @@ export default function SafetyInterventionScreen({
   const router = useRouter()
 
   return (
-    <div className="relative min-h-screen max-w-[393px] mx-auto flex flex-col items-center justify-center px-6 text-center space-y-6">
+    <div className="lg:flex lg:min-h-screen">
+      <Sidebar />
+      <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
+    <div className="relative min-h-screen lg:min-h-0 max-w-[393px] mx-auto flex flex-col items-center justify-center px-6 text-center space-y-6 lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl lg:py-16">
       <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
       <p className="text-white/90 text-base leading-relaxed">{message}</p>
       <button
@@ -35,6 +39,8 @@ export default function SafetyInterventionScreen({
       >
         Return to Dashboard
       </button>
+    </div>
+      </main>
     </div>
   )
 }

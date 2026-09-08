@@ -8,8 +8,9 @@ import MobileNav from '@/components/layout/MobileNav'
 import Card from '@/components/ui/Card'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import DailyGuidanceCard from '@/components/companion/DailyGuidanceCard'
-import { getCompanionContext } from '@/lib/api/v1-client'
-import type { CompanionContextResponse } from '@dpnr/shared-types'
+import { getCompanionContext, getDecisionsList } from '@/lib/api/v1-client'
+import type { CompanionContextResponse, DecisionsListResponse } from '@dpnr/shared-types'
+import { timeAgo } from '@/lib/format'
 
 const JOURNEY = [
   { label: 'Define', icon: Search, copy: 'Get clear on what this decision is really about.' },
@@ -37,24 +38,35 @@ interface Props {
  * the whole route in the shared shell would put the sidebar/mobile-nav
  * around that too.
  *
- * The reference's "Recent Decisions" and "Options Overview" widgets have no
- * real backend (no `GET /v1/decisions` list exists — the same honest gap
- * Dashboard's own port already flagged for its dropped decision-history
- * section). Recent Decisions renders an honest empty state instead of
- * fabricated rows; Options Overview is omitted rather than shown with
- * invented percentages. "Today's Guidance" reuses the real Daily Card
- * (`GET /v1/companion/context`) — same data Companion's own widget shows.
+ * Recent Decisions reuses `GET /v1/rooms/decisions` (the same summary list
+ * Growth Tracker's own "Recent Decisions" card already consumes) — this used
+ * to render a hardcoded empty state under a since-corrected claim that no
+ * list endpoint existed. Options Overview (choices-made / choices-explored
+ * percentages) still has no real backend to draw from, so it stays omitted
+ * rather than shown with invented numbers. "Today's Guidance" reuses the
+ * real Daily Card (`GET /v1/companion/context`) — same data Companion's own
+ * widget shows.
  */
 export default function DecisionRoomLanding({ userName, onStart, sourceTopicTitle }: Props) {
   const router = useRouter()
   const firstName = userName.includes('@') ? userName.split('@')[0] : userName.split(' ')[0] || userName
   const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
+  const [decisions, setDecisions] = useState<DecisionsListResponse['decisions']>([])
+  const [decisionsLoading, setDecisionsLoading] = useState(true)
 
   useEffect(() => {
     getCompanionContext().then((c) => setDailyCard(c.dailyCard)).catch(() => {
       // Honest degrade — the guidance card just doesn't render.
     })
+    getDecisionsList()
+      .then((r) => setDecisions(r.decisions))
+      .catch(() => {
+        // Honest degrade — falls through to the same empty-state copy a genuinely-empty list shows.
+      })
+      .finally(() => setDecisionsLoading(false))
   }, [])
+
+  const recentDecisions = decisions.slice(0, 3)
 
   return (
     <div className="lg:flex lg:min-h-screen">
@@ -152,9 +164,30 @@ export default function DecisionRoomLanding({ userName, onStart, sourceTopicTitl
               <div className="space-y-4 lg:space-y-6 mt-4 lg:mt-0">
                 <Card>
                   <p className="text-sm text-white mb-1">Recent Decisions</p>
-                  <p className="text-white/30 text-xs">
-                    Once you complete a decision here, it&apos;ll show up in this list.
-                  </p>
+                  <p className="text-white/30 text-xs mb-3">Your past decisions</p>
+                  {decisionsLoading ? (
+                    <p className="text-white/30 text-xs">Loading…</p>
+                  ) : recentDecisions.length === 0 ? (
+                    <p className="text-white/30 text-xs">
+                      Once you complete a decision here, it&apos;ll show up in this list.
+                    </p>
+                  ) : (
+                    <div className="space-y-1">
+                      {recentDecisions.map((d) => (
+                        <button
+                          key={d.decisionId}
+                          onClick={() => router.push(`/decision/${d.decisionId}`)}
+                          className="w-full flex items-center justify-between gap-3 rounded-xl -mx-2 px-2 py-2 hover:bg-white/5 transition-colors text-left"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm text-white/80 line-clamp-1">{d.title}</p>
+                            <p className="text-xs text-white/40">{timeAgo(d.createdAt)}</p>
+                          </div>
+                          <span className="text-xs text-white/40 capitalize shrink-0">{d.status}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </Card>
 
                 {dailyCard && <DailyGuidanceCard dailyCard={dailyCard} />}

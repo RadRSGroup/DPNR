@@ -1,4 +1,5 @@
 'use client'
+import Sidebar from '@/components/layout/Sidebar'
 
 const AFFIRMATIONS = [
   'Looking honestly at yourself takes real courage.',
@@ -26,7 +27,10 @@ export default function CompletionScreen({ userName, situation, trigger, synthes
   const affirmation = AFFIRMATIONS[Math.floor(situation.length % AFFIRMATIONS.length)]
 
   return (
-    <div className="relative h-dvh max-w-[393px] mx-auto flex flex-col overflow-hidden">
+    <div className="lg:flex lg:min-h-screen">
+      <Sidebar />
+      <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
+    <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] max-w-[393px] mx-auto flex flex-col overflow-hidden lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
       <div className="absolute inset-0 bg-[#1a0826] -z-10" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.5)_0%,_rgba(80,20,140,0.3)_45%,_transparent_75%)] -z-10" />
 
@@ -74,6 +78,8 @@ export default function CompletionScreen({ userName, situation, trigger, synthes
           Back to InnerOS
         </button>
       </div>
+    </div>
+      </main>
     </div>
   )
 }

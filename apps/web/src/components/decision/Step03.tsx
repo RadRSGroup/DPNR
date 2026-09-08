@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import StepShell from './StepShell'
+import Sidebar from '@/components/layout/Sidebar'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
@@ -56,7 +57,10 @@ export default function Step03({ decisionTitle, initialBodyLocation, initialEmot
 
   if (reflection) {
     return (
-      <div className="relative h-dvh flex flex-col overflow-hidden max-w-[393px] mx-auto">
+      <div className="lg:flex lg:min-h-screen">
+      <Sidebar />
+      <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
+      <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] flex flex-col overflow-hidden max-w-[393px] mx-auto lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
         {/* Warm mauve background — matches SectionSummaryScreen */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#3d0d52] via-[#2a0940] to-[#1c052e] -z-10" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_55%_at_50%_0%,_rgba(210,80,230,0.22)_0%,_transparent_70%)] -z-10" />
@@ -183,6 +187,8 @@ export default function Step03({ decisionTitle, initialBodyLocation, initialEmot
           </button>
         </div>
       </div>
+      </main>
+    </div>
     )
   }
 

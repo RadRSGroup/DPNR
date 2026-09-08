@@ -1,6 +1,7 @@
 'use client'
 import { useRouter } from 'next/navigation'
 import PrimaryButton from '@/components/ui/PrimaryButton'
+import Sidebar from '@/components/layout/Sidebar'
 
 interface Props {
   onNext: () => void
@@ -10,7 +11,10 @@ interface Props {
 export default function MomentScreen({ onNext, onBack }: Props) {
   const router = useRouter()
   return (
-    <div className="relative h-dvh flex flex-col bg-[#0a0a0f] overflow-hidden max-w-[393px] mx-auto">
+    <div className="lg:flex lg:min-h-screen">
+      <Sidebar />
+      <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
+    <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] flex flex-col bg-[#0a0a0f] overflow-hidden max-w-[393px] mx-auto lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
       <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
 
@@ -65,6 +69,8 @@ export default function MomentScreen({ onNext, onBack }: Props) {
           </div>
         </div>
       </div>
+    </div>
+      </main>
     </div>
   )
 }

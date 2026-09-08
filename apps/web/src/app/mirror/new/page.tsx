@@ -11,6 +11,7 @@ import CommitmentScreen from '@/components/mirror/CommitmentScreen'
 import CompletionScreen from '@/components/mirror/CompletionScreen'
 import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
 import SafetyInterventionScreen from '@/components/shared/SafetyInterventionScreen'
+import Sidebar from '@/components/layout/Sidebar'
 import type { RefineFn } from '@/lib/useAI'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { submitRoomCommand, getMirrorFull, ApiError } from '@/lib/api/v1-client'
@@ -244,21 +245,27 @@ function NewMirrorContent() {
   function renderStep() {
     if (resumeLoading) {
       return (
-        <div className="relative min-h-screen max-w-[393px] mx-auto flex items-center justify-center">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
-          <div className="w-8 h-8 border-2 border-purple-500/40 border-t-purple-500 rounded-full animate-spin" />
+        <div className="lg:flex lg:min-h-screen">
+          <Sidebar />
+          <main className="flex-1 flex items-center justify-center min-h-screen">
+            <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+            <div className="w-8 h-8 border-2 border-purple-500/40 border-t-purple-500 rounded-full animate-spin" />
+          </main>
         </div>
       )
     }
 
     if (fatalError) {
       return (
-        <div className="relative min-h-screen max-w-[393px] mx-auto flex flex-col items-center justify-center px-6 text-center space-y-4">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
-          <p className="text-white/70 text-sm">{fatalError}</p>
-          <button onClick={() => router.push('/dashboard')} className="text-purple-400 text-sm underline">
-            Back to InnerOS
-          </button>
+        <div className="lg:flex lg:min-h-screen">
+          <Sidebar />
+          <main className="flex-1 flex flex-col items-center justify-center min-h-screen px-6 text-center space-y-4">
+            <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+            <p className="text-white/70 text-sm">{fatalError}</p>
+            <button onClick={() => router.push('/dashboard')} className="text-purple-400 text-sm underline">
+              Back to InnerOS
+            </button>
+          </main>
         </div>
       )
     }
@@ -383,9 +390,12 @@ function NewMirrorContent() {
 export default function NewMirrorPage() {
   return (
     <Suspense fallback={
-      <div className="relative min-h-screen max-w-[393px] mx-auto flex items-center justify-center">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
-        <div className="w-8 h-8 border-2 border-purple-500/40 border-t-purple-500 rounded-full animate-spin" />
+      <div className="lg:flex lg:min-h-screen">
+        <Sidebar />
+        <main className="flex-1 flex items-center justify-center min-h-screen">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+          <div className="w-8 h-8 border-2 border-purple-500/40 border-t-purple-500 rounded-full animate-spin" />
+        </main>
       </div>
     }>
       <NewMirrorContent />
