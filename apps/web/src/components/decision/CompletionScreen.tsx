@@ -2,6 +2,7 @@
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
+import InvertedButton from '@/components/ui/InvertedButton'
 
 const AFFIRMATIONS = [
   'You showed up for yourself today. That takes real courage.',
@@ -135,12 +136,7 @@ export default function CompletionScreen({
             View full summary
           </button>
         )}
-        <button
-          onClick={onDone}
-          className="w-full py-3.5 rounded-full bg-white/90 hover:bg-white active:scale-[0.98] text-[#1a0826] text-sm font-semibold transition-all"
-        >
-          Back to InnerOS
-        </button>
+        <InvertedButton onClick={onDone} className="w-full py-3.5" label="Back to InnerOS" />
       </div>
     </div>
       </main>

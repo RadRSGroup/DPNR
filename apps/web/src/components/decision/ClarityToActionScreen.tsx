@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import StepShell from './StepShell'
 import { useAI, RefineFn } from '@/lib/useAI'
+import InvertedButton from '@/components/ui/InvertedButton'
 
 interface ClarityToActionScreenProps {
   decisionTitle: string
@@ -119,13 +120,12 @@ export default function ClarityToActionScreen({
           >
             Skip
           </button>
-          <button
+          <InvertedButton
             onClick={() => onCommit(nextStep.trim(), selectedFeelings)}
             disabled={!nextStep.trim()}
-            className="flex-1 py-3.5 rounded-full bg-white/90 hover:bg-white active:scale-[0.98] text-[#1a0826] text-sm font-semibold transition-all disabled:opacity-40 disabled:pointer-events-none"
-          >
-            Commit to This Step
-          </button>
+            className="flex-1 py-3.5"
+            label="Commit to This Step"
+          />
         </div>
       </div>
     </StepShell>

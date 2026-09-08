@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { CalendarButtons } from '@/components/ui/CalendarButtons'
 import Sidebar from '@/components/layout/Sidebar'
+import InvertedButton from '@/components/ui/InvertedButton'
 
 interface CommitmentScreenProps {
   decisionTitle: string
@@ -89,12 +90,7 @@ export default function CommitmentScreen({ decisionTitle, nextStep, onDone, onBa
         >
           Back
         </button>
-        <button
-          onClick={() => onDone(commitment.trim())}
-          className="flex-1 py-3.5 rounded-full bg-white/90 hover:bg-white active:scale-[0.98] text-[#1a0826] text-sm font-semibold transition-all"
-        >
-          Done
-        </button>
+        <InvertedButton onClick={() => onDone(commitment.trim())} className="flex-1 py-3.5" label="Done" />
       </div>
     </div>
       </main>

@@ -1,6 +1,7 @@
 'use client'
 import Image from 'next/image'
 import Sidebar from '@/components/layout/Sidebar'
+import InvertedButton from '@/components/ui/InvertedButton'
 
 const AFFIRMATIONS = [
   'Looking honestly at yourself takes real courage.',
@@ -75,12 +76,7 @@ export default function CompletionScreen({ userName, situation, trigger, synthes
       </div>
 
       <div className="absolute bottom-0 inset-x-0 px-5 pb-8 pt-4 bg-gradient-to-t from-[#1a0826] via-[#1a0826]/80 to-transparent">
-        <button
-          onClick={onDone}
-          className="w-full py-3.5 rounded-full bg-white/90 hover:bg-white active:scale-[0.98] text-[#1a0826] text-sm font-semibold transition-all"
-        >
-          Back to InnerOS
-        </button>
+        <InvertedButton onClick={onDone} className="w-full py-3.5" label="Back to InnerOS" />
       </div>
     </div>
       </main>

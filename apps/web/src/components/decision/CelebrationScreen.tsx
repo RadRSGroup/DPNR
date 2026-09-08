@@ -1,5 +1,6 @@
 'use client'
 import Sidebar from '@/components/layout/Sidebar'
+import InvertedButton from '@/components/ui/InvertedButton'
 
 const AFFIRMATIONS = [
   'You showed up for yourself today. That takes real courage.',
@@ -80,12 +81,7 @@ export default function CelebrationScreen({ userName, decisionTitle, onContinue 
         </div>
 
         {/* CTA */}
-        <button
-          onClick={onContinue}
-          className="w-full py-4 rounded-full bg-white/90 hover:bg-white active:scale-[0.98] text-[#1a0826] text-sm font-semibold transition-all shadow-lg"
-        >
-          See your summary →
-        </button>
+        <InvertedButton onClick={onContinue} className="w-full py-4 shadow-lg" label="See your summary →" />
 
         <button
           onClick={onContinue}

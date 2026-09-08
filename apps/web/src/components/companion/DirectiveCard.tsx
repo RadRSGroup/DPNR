@@ -5,6 +5,7 @@ import Link from 'next/link'
 import type { CompanionDirective, LibraryTopicDetailResponse } from '@dpnr/shared-types'
 import { getLibraryTopic } from '@/lib/api/v1-client'
 import LibrarySidePanel from './LibrarySidePanel'
+import Card from '@/components/ui/Card'
 
 interface Props {
   directive: CompanionDirective
@@ -76,7 +77,7 @@ function LibraryTopicCard({ slug, sourceSessionId }: { slug: string; sourceSessi
 
   return (
     <>
-      <div className="mt-2 w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 space-y-2">
+      <Card className="mt-2 w-full !px-4 !py-3 space-y-2">
         <p className="text-white/80 text-sm font-medium">{topic?.title ?? slug.replace(/-/g, ' ')}</p>
         {!topic && !error && <p className="text-[var(--color-text-tertiary)] text-xs">From the Library · loading…</p>}
         {error && <p className="text-[var(--color-text-tertiary)] text-xs">Couldn&apos;t load this topic right now.</p>}
@@ -93,7 +94,7 @@ function LibraryTopicCard({ slug, sourceSessionId }: { slug: string; sourceSessi
             </Link>
           </div>
         )}
-      </div>
+      </Card>
       {panelOpen && (
         <LibrarySidePanel slug={slug} sourceSessionId={sourceSessionId} onClose={() => setPanelOpen(false)} />
       )}

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { grantConsent } from '@/lib/api/v1-client'
 import { markConsentedLocally } from '@/lib/cognito/client'
+import Card from '@/components/ui/Card'
 
 const POINTS = [
   {
@@ -68,13 +69,13 @@ function ConsentContent() {
 
       <div className="flex-1 space-y-3">
         {POINTS.map(p => (
-          <div key={p.title} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex gap-3">
+          <Card key={p.title} className="flex gap-3">
             <span className="text-lg flex-shrink-0 mt-0.5">{p.icon}</span>
             <div>
               <p className="text-white/90 text-sm font-medium">{p.title}</p>
               <p className="text-white/50 text-xs mt-1 leading-relaxed">{p.body}</p>
             </div>
-          </div>
+          </Card>
         ))}
 
         <p className="text-[var(--color-text-tertiary)] text-xs text-center px-2 leading-relaxed">

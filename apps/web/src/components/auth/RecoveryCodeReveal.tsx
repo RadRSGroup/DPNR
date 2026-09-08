@@ -2,6 +2,7 @@
 import Image from 'next/image'
 import { useState } from 'react'
 import type { RecoveryCode } from '@/lib/crypto'
+import Card from '@/components/ui/Card'
 
 interface RecoveryCodeRevealProps {
   recoveryCode: RecoveryCode
@@ -45,11 +46,11 @@ export default function RecoveryCodeReveal({
       </div>
 
       <div className="flex-1 space-y-4">
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+        <Card className="!p-5">
           <p className="text-white font-mono text-base tracking-wide text-center break-all select-all">
             {recoveryCode.display}
           </p>
-        </div>
+        </Card>
 
         <p className="text-[var(--color-text-tertiary)] text-xs text-center px-2 leading-relaxed">
           Write it down or save it in a password manager — not just a screenshot you might lose.

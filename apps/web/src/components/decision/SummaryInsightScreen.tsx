@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import StepShell from './StepShell'
 import { useAI, RefineFn } from '@/lib/useAI'
+import InvertedButton from '@/components/ui/InvertedButton'
 
 interface SummaryInsightScreenProps {
   decisionTitle: string
@@ -112,13 +113,12 @@ export default function SummaryInsightScreen({
           >
             Back
           </button>
-          <button
+          <InvertedButton
             onClick={onContinue}
             disabled={!agreement || !insight}
-            className="flex-1 py-3.5 rounded-full bg-white/90 hover:bg-white active:scale-[0.98] text-[#1a0826] text-sm font-semibold transition-all disabled:opacity-40 disabled:pointer-events-none"
-          >
-            Supporting Yourself
-          </button>
+            className="flex-1 py-3.5"
+            label="Supporting Yourself"
+          />
         </div>
       </div>
     </StepShell>
