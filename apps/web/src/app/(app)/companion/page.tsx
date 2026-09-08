@@ -241,7 +241,7 @@ export default function CompanionPage() {
 
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={m.role === 'user' ? 'max-w-[85%]' : 'max-w-[90%]'}>
+                <div className={m.role === 'user' ? 'max-w-[85%] lg:max-w-[400px]' : 'max-w-[90%] lg:max-w-[480px]'}>
                   <div
                     className={
                       m.role === 'user'
