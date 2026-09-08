@@ -33,13 +33,13 @@ export function TokenCapModal({ onClose }: Props) {
           >
             <div>
               <p className="font-medium text-sm">Pro — $25/mo</p>
-              <p className="text-white/30 text-xs mt-0.5">Unlimited AI decisions</p>
+              <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">Unlimited AI decisions</p>
             </div>
             <span className="text-white/20">›</span>
           </Link>
         </div>
 
-        <button onClick={onClose} className="w-full text-white/30 text-sm hover:text-white/50 transition-colors py-1">
+        <button onClick={onClose} className="w-full text-[var(--color-text-tertiary)] text-sm hover:text-white/50 transition-colors py-1">
           Not now
         </button>
       </div>

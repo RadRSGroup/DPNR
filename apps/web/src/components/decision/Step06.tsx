@@ -181,7 +181,7 @@ export default function Step06({ decisionTitle, optionA, optionB, initialValuesA
             onChange={e => setCustomInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addCustom()}
             placeholder="Add your own..."
-            className="flex-1 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-white text-xs placeholder-white/30 focus:outline-none focus:border-purple-500/50"
+            className="flex-1 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-white text-xs placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-purple-500/50"
           />
           <button
             onClick={addCustom}

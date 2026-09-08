@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import Sidebar from '@/components/layout/Sidebar'
 
 const AFFIRMATIONS = [
@@ -31,7 +32,10 @@ export default function CompletionScreen({ userName, situation, trigger, synthes
       <Sidebar />
       <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
     <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] max-w-[393px] mx-auto flex flex-col overflow-hidden lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
-      <div className="absolute inset-0 bg-[#1a0826] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/mirror-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.5)_0%,_rgba(80,20,140,0.3)_45%,_transparent_75%)] -z-10" />
 
       <div className="flex-1 overflow-y-auto px-6 pt-16 pb-32 space-y-6">
@@ -64,7 +68,7 @@ export default function CompletionScreen({ userName, situation, trigger, synthes
 
         {commitment && (
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-1">
-            <p className="text-white/30 text-xs uppercase tracking-wide">Your commitment</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">Your commitment</p>
             <p className="text-white/70 text-sm leading-relaxed">{commitment}</p>
           </div>
         )}

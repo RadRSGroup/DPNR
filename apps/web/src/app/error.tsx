@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useEffect } from 'react'
 import Link from 'next/link'
 
@@ -15,8 +16,11 @@ export default function GlobalError({
 
   return (
     <div className="relative min-h-screen max-w-[393px] mx-auto flex flex-col items-center justify-center px-6 gap-6">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
-      <p className="text-white/40 text-xs uppercase tracking-widest">Something went wrong</p>
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
+      <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-widest">Something went wrong</p>
       <p className="text-white/60 text-sm text-center leading-relaxed">
         An unexpected error occurred. Your progress is saved — you can continue from InnerOS.
       </p>

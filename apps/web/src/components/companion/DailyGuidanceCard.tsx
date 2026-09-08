@@ -47,8 +47,8 @@ export default function DailyGuidanceCard({ dailyCard: initial, title = "Today's
   return (
     <Card className="relative overflow-hidden">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-white/40 text-xs uppercase tracking-wide">{title}</p>
-        <button onClick={() => feedback('dismiss')} className="text-white/30 hover:text-white/60 text-sm" title="Dismiss">
+        <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">{title}</p>
+        <button onClick={() => feedback('dismiss')} className="text-[var(--color-text-tertiary)] hover:text-white/60 text-sm" title="Dismiss">
           ×
         </button>
       </div>
@@ -65,7 +65,7 @@ export default function DailyGuidanceCard({ dailyCard: initial, title = "Today's
           className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
             dailyCard.feedback === 'relevant'
               ? 'border-[var(--color-violet-500)]/50 text-[var(--color-violet-300)] bg-[var(--color-violet-900)]/20'
-              : 'border-white/10 text-white/40 hover:text-white/60 disabled:opacity-40'
+              : 'border-white/10 text-[var(--color-text-tertiary)] hover:text-white/60 disabled:opacity-40'
           }`}
         >
           Useful
@@ -76,7 +76,7 @@ export default function DailyGuidanceCard({ dailyCard: initial, title = "Today's
           className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
             dailyCard.feedback === 'not_relevant'
               ? 'border-[var(--color-violet-500)]/50 text-[var(--color-violet-300)] bg-[var(--color-violet-900)]/20'
-              : 'border-white/10 text-white/40 hover:text-white/60 disabled:opacity-40'
+              : 'border-white/10 text-[var(--color-text-tertiary)] hover:text-white/60 disabled:opacity-40'
           }`}
         >
           Not for me

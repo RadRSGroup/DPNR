@@ -47,7 +47,7 @@ export default function Sidebar() {
             >
               <Icon className="w-[18px] h-[18px] shrink-0" />
               <span className="flex-1">{item.label}</span>
-              {item.comingSoon && <span className="text-[10px] uppercase tracking-wide text-white/40">Soon</span>}
+              {item.comingSoon && <span className="text-[10px] uppercase tracking-wide text-[var(--color-text-tertiary)]">Soon</span>}
             </Link>
           )
         })}
@@ -67,7 +67,7 @@ export default function Sidebar() {
         <Headphones className="w-[18px] h-[18px]" />
         <div>
           <div>Need help?</div>
-          <div className="text-xs text-white/30">We&apos;re here for you</div>
+          <div className="text-xs text-[var(--color-text-tertiary)]">We&apos;re here for you</div>
         </div>
       </div>
     </aside>
@@ -82,9 +82,9 @@ function SidebarMiniCard({ href, icon, title, subtitle }: { href: string; icon: 
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-sm text-white leading-tight truncate">{title}</div>
-        <div className="text-xs text-white/40 leading-tight truncate">{subtitle}</div>
+        <div className="text-xs text-[var(--color-text-tertiary)] leading-tight truncate">{subtitle}</div>
       </div>
-      <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/40 shrink-0" />
+      <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-[var(--color-text-tertiary)] shrink-0" />
     </Link>
   )
 }

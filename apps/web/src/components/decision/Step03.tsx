@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import StepShell from './StepShell'
@@ -62,7 +63,10 @@ export default function Step03({ decisionTitle, initialBodyLocation, initialEmot
       <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
       <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] flex flex-col overflow-hidden max-w-[393px] mx-auto lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
         {/* Warm mauve background — matches SectionSummaryScreen */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#3d0d52] via-[#2a0940] to-[#1c052e] -z-10" />
+        <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/decision-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_55%_at_50%_0%,_rgba(210,80,230,0.22)_0%,_transparent_70%)] -z-10" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_80%_80%,_rgba(160,40,200,0.12)_0%,_transparent_60%)] -z-10" />
 
@@ -76,7 +80,7 @@ export default function Step03({ decisionTitle, initialBodyLocation, initialEmot
           >✕</button>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full bg-purple-400/40 flex items-center justify-center text-xs">✦</div>
-            <span className="text-white/40 text-xs">Manifest yo...</span>
+            <span className="text-[var(--color-text-tertiary)] text-xs">Manifest yo...</span>
           </div>
           <div className="w-8 h-8" />
         </div>
@@ -111,13 +115,13 @@ export default function Step03({ decisionTitle, initialBodyLocation, initialEmot
             <p className="text-fuchsia-300 text-xs uppercase tracking-widest font-semibold">
               Your selection: {bodyLocation} · {resolvedEmotion}
             </p>
-            <p className="text-white/40 text-xs font-medium uppercase tracking-wide">A word from Us:</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs font-medium uppercase tracking-wide">A word from Us:</p>
             <p className="text-white/80 text-sm leading-relaxed">{reflection}</p>
           </div>
 
           {/* Do You Agree? */}
           <div className="space-y-3">
-            <p className="text-white/30 text-xs text-center tracking-widest">— Do You Agree? —</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs text-center tracking-widest">— Do You Agree? —</p>
             <div className="grid grid-cols-2 gap-2">
               {([
                 ['accurate', 'Accurate'],
@@ -148,13 +152,13 @@ export default function Step03({ decisionTitle, initialBodyLocation, initialEmot
             </div>
             {response === 'refine' && (
               <div className="pt-1 space-y-1 fade-up">
-                <p className="text-white/40 text-xs">Add or edit — make it yours:</p>
+                <p className="text-[var(--color-text-tertiary)] text-xs">Add or edit — make it yours:</p>
                 <textarea
                   autoFocus
                   value={userRefinement}
                   onChange={e => setUserRefinement(e.target.value.slice(0, 600))}
                   rows={4}
-                  className="w-full bg-white/5 border border-fuchsia-700/40 rounded-xl px-3 py-2.5 text-white placeholder-white/25 text-sm resize-none focus:outline-none focus:border-fuchsia-500/60 transition-colors"
+                  className="w-full bg-white/5 border border-fuchsia-700/40 rounded-xl px-3 py-2.5 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-fuchsia-500/60 transition-colors"
                 />
               </div>
             )}
@@ -246,7 +250,7 @@ export default function Step03({ decisionTitle, initialBodyLocation, initialEmot
             value={customEmotion}
             onChange={e => { setCustomEmotion(e.target.value); setEmotion(null) }}
             placeholder="Or type your own…"
-            className="w-full bg-white/5 border border-white/15 rounded-full px-4 py-2 text-white placeholder-white/30 text-sm focus:outline-none focus:border-fuchsia-500/60 transition-colors"
+            className="w-full bg-white/5 border border-white/15 rounded-full px-4 py-2 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-fuchsia-500/60 transition-colors"
           />
         </div>
 

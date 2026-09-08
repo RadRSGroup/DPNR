@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -8,13 +9,20 @@ import { getLibraryTopics, getLibraryRecommendations } from '@/lib/api/v1-client
 import type { LibraryTopicSummary, LibraryRecommendationsResponse } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 
-const CATEGORY_STYLE: Record<string, { icon: typeof BookOpen; from: string; to: string }> = {
-  'Patterns & Beliefs': { icon: Layers, from: 'var(--color-violet-600)', to: 'var(--color-violet-900)' },
-  'Inner World': { icon: Heart, from: 'var(--color-magenta-500)', to: 'var(--color-violet-900)' },
-  'Values & Needs': { icon: Target, from: 'var(--color-amber-400)', to: 'var(--color-violet-900)' },
-  'Direction & Creation': { icon: Compass, from: 'var(--color-violet-500)', to: 'var(--color-violet-950)' },
+// Badge art per real taxonomy category — cropped from the reference PDF's
+// "Understanding Patterns" mandala row (docs/UI reference for platform.pdf,
+// page 5). Purely an aesthetic/energetic pairing, not a literal match: the
+// reference's 6 icons are named emotions (Pleasure, Avoidance, Anger, Fear,
+// Sadness, Disgust), not this app's real 4 categories, so each mapping below
+// is a judgment call, not a semantic one. `icon` stays as the lucide-react
+// fallback for a category with no reference-derived art.
+const CATEGORY_STYLE: Record<string, { icon: typeof BookOpen; image: string | null }> = {
+  'Patterns & Beliefs': { icon: Layers, image: '/images/categories/patterns-beliefs.webp' },
+  'Inner World': { icon: Heart, image: '/images/categories/inner-world.webp' },
+  'Values & Needs': { icon: Target, image: '/images/categories/values-needs.webp' },
+  'Direction & Creation': { icon: Compass, image: '/images/categories/direction-creation.webp' },
 }
-const DEFAULT_STYLE = { icon: BookOpen, from: 'var(--color-violet-500)', to: 'var(--color-violet-900)' }
+const DEFAULT_STYLE = { icon: BookOpen, image: null as string | null }
 
 /**
  * Content & Learning's hub — reskinned against the reference screen (Session
@@ -91,7 +99,10 @@ export default function LibraryPage() {
 
   return (
     <div className="relative min-h-screen">
-      <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-canvas-from)] via-[var(--color-bg-canvas-via)] to-[var(--color-bg-canvas-to)] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/library-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
       <div className="max-w-[393px] lg:max-w-none mx-auto px-5 lg:px-8 pb-10 lg:pb-12">
         <div className="pt-14 lg:pt-8 pb-6 lg:flex lg:items-end lg:justify-between">
@@ -102,43 +113,37 @@ export default function LibraryPage() {
             </p>
           </div>
           <div className="relative mt-4 lg:mt-0 lg:w-72">
-            <Search className="w-4 h-4 text-white/30 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[var(--color-text-tertiary)] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search topics..."
-              className="w-full bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] rounded-full pl-10 pr-4 py-2.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors"
+              className="w-full bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] rounded-full pl-10 pr-4 py-2.5 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors"
             />
           </div>
         </div>
 
-        {loading && <p className="text-white/30 text-sm text-center pt-8">Loading…</p>}
+        {loading && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">Loading…</p>}
 
         {!loading && topics?.length === 0 && (
           <Card>
-            <p className="text-white/30 text-sm">Nothing in the Library yet.</p>
+            <p className="text-[var(--color-text-tertiary)] text-sm">Nothing in the Library yet.</p>
           </Card>
         )}
 
         {!loading && featured && !query && (
           <Link href={`/library/${featured.slug}`} className="block mb-6">
             <Card className="!p-0 overflow-hidden lg:flex lg:items-center">
-              <div
-                className="h-32 lg:h-40 lg:w-56 lg:shrink-0 flex items-center justify-center"
-                style={{ background: `linear-gradient(135deg, ${(CATEGORY_STYLE[featured.taxonomyCategory] ?? DEFAULT_STYLE).from}, ${(CATEGORY_STYLE[featured.taxonomyCategory] ?? DEFAULT_STYLE).to})` }}
-              >
-                {(() => {
-                  const Icon = (CATEGORY_STYLE[featured.taxonomyCategory] ?? DEFAULT_STYLE).icon
-                  return <Icon className="w-10 h-10 text-white/70" />
-                })()}
+              <div className="relative h-32 lg:h-40 lg:w-56 lg:shrink-0">
+                <Image src="/images/library/library-hero.webp" alt="" fill sizes="(min-width: 1024px) 224px, 100vw" className="object-cover" />
               </div>
               <div className="p-5 flex-1 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-1">Featured Today</p>
                   <p className="text-white text-base font-medium">{featured.title}</p>
-                  <p className="text-white/40 text-xs mt-1">{featured.taxonomyCategory}</p>
+                  <p className="text-[var(--color-text-tertiary)] text-xs mt-1">{featured.taxonomyCategory}</p>
                 </div>
-                <ArrowRight className="w-4 h-4 text-white/30 shrink-0" />
+                <ArrowRight className="w-4 h-4 text-[var(--color-text-tertiary)] shrink-0" />
               </div>
             </Card>
           </Link>
@@ -152,7 +157,7 @@ export default function LibraryPage() {
                 <Link key={topic.slug} href={`/library/${topic.slug}`}>
                   <Card className="h-full hover:border-white/20 transition-colors">
                     <p className="text-white text-sm">{topic.title}</p>
-                    <p className="text-white/40 text-xs mt-1">{reason}</p>
+                    <p className="text-[var(--color-text-tertiary)] text-xs mt-1">{reason}</p>
                   </Card>
                 </Link>
               ))}
@@ -173,12 +178,15 @@ export default function LibraryPage() {
                 {items.map((topic) => (
                   <Link key={topic.slug} href={`/library/${topic.slug}`}>
                     <Card className="h-full hover:border-white/20 active:scale-[0.98] transition-all">
-                      <div
-                        className="w-9 h-9 rounded-full flex items-center justify-center mb-3"
-                        style={{ background: `linear-gradient(135deg, ${style.from}, ${style.to})` }}
-                      >
-                        <Icon className="w-4 h-4 text-white/80" />
-                      </div>
+                      {style.image ? (
+                        <div className="relative w-9 h-9 rounded-full overflow-hidden mb-3">
+                          <Image src={style.image} alt="" fill sizes="36px" className="object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center mb-3 bg-[var(--color-violet-900)]">
+                          <Icon className="w-4 h-4 text-white/80" />
+                        </div>
+                      )}
                       <p className="text-white text-sm leading-snug">{topic.title}</p>
                     </Card>
                   </Link>
@@ -189,7 +197,7 @@ export default function LibraryPage() {
         })}
 
         {!loading && filtered?.length === 0 && topics && topics.length > 0 && (
-          <p className="text-white/30 text-sm text-center pt-8">No topics match &ldquo;{query}&rdquo;.</p>
+          <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">No topics match &ldquo;{query}&rdquo;.</p>
         )}
       </div>
     </div>

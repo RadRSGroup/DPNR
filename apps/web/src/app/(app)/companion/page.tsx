@@ -150,7 +150,10 @@ export default function CompanionPage() {
 
   return (
     <div className="relative h-[calc(100dvh-4rem)] lg:h-dvh flex flex-col overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-canvas-from)] via-[var(--color-bg-canvas-via)] to-[var(--color-bg-canvas-to)] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/companion-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
       {creditsExhausted && <CreditsExhaustedModal onClose={() => setCreditsExhausted(false)} />}
 
@@ -228,12 +231,12 @@ export default function CompanionPage() {
               once the conversation is active and the greeting is hidden —
               this page has no other fixed header providing that space. */}
           <div ref={scrollRef} className={`flex-1 overflow-y-auto px-5 lg:px-0 space-y-3 pb-2 ${isLanding ? 'pt-2' : 'pt-14 lg:pt-2'}`}>
-            {loading && <p className="text-white/30 text-sm text-center pt-8">Loading…</p>}
+            {loading && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">Loading…</p>}
 
             {!loading && messages.length === 0 && (
               <div className="pt-4 text-center space-y-2">
                 <p className="text-white/50 text-sm leading-relaxed">Hi — what&apos;s on your mind?</p>
-                <p className="text-white/25 text-xs">
+                <p className="text-[var(--color-text-tertiary)] text-xs">
                   I can help you think something through, or point you to a Room or a Library topic.
                 </p>
               </div>
@@ -279,7 +282,7 @@ export default function CompanionPage() {
               way to navigate. */}
           {isLanding && (
           <div className="px-5 pt-2 lg:hidden">
-            <p className="text-white/40 text-xs uppercase tracking-wide mb-2">Explore</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-2">Explore</p>
             <div className="grid grid-cols-4 gap-2">
               <Link href="/dashboard" className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all">
                 <p className="text-white text-xs font-medium">InnerOS</p>
@@ -306,7 +309,7 @@ export default function CompanionPage() {
               placeholder="Share anything with me..."
               rows={1}
               disabled={loading}
-              className="flex-1 bg-[var(--color-surface-glass)] border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 text-base resize-none focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors max-h-32"
+              className="flex-1 bg-[var(--color-surface-glass)] border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors max-h-32"
             />
             <button
               onClick={handleSend}
@@ -327,8 +330,8 @@ export default function CompanionPage() {
             <DailyGuidanceCard dailyCard={dailyCard} />
           ) : (
             <Card>
-              <p className="text-white/40 text-xs uppercase tracking-wide">Today&apos;s Guidance</p>
-              <p className="text-white/30 text-sm mt-2">Nothing new right now — check back tomorrow.</p>
+              <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">Today&apos;s Guidance</p>
+              <p className="text-[var(--color-text-tertiary)] text-sm mt-2">Nothing new right now — check back tomorrow.</p>
             </Card>
           )}
         </div>

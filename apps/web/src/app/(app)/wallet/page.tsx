@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -66,13 +67,13 @@ function PlanCard({ plan }: { plan: PlanSummary }) {
       <p className="text-white text-sm font-medium">{plan.displayName}</p>
       <p className="text-white text-xl font-light mt-1">
         {formatPrice(plan)}
-        {plan.billingFrequency === 'monthly' && <span className="text-xs text-white/40"> / month</span>}
+        {plan.billingFrequency === 'monthly' && <span className="text-xs text-[var(--color-text-tertiary)]"> / month</span>}
       </p>
-      <p className="text-xs text-white/40 mt-1 mb-4">{plan.credits} credits</p>
+      <p className="text-xs text-[var(--color-text-tertiary)] mt-1 mb-4">{plan.credits} credits</p>
       <button
         disabled
         title="Purchasing isn't available yet — real payment credentials aren't set up."
-        className="mt-auto w-full py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/30 text-sm font-medium cursor-not-allowed"
+        className="mt-auto w-full py-2.5 rounded-xl bg-white/5 border border-white/10 text-[var(--color-text-tertiary)] text-sm font-medium cursor-not-allowed"
       >
         Coming soon
       </button>
@@ -114,7 +115,10 @@ export default function WalletPage() {
 
   return (
     <div className="relative min-h-screen">
-      <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-canvas-from)] via-[var(--color-bg-canvas-via)] to-[var(--color-bg-canvas-to)] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/wallet-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
       <div className="max-w-[393px] lg:max-w-none mx-auto px-5 lg:px-8 pb-10 lg:pb-12">
         <div className="pt-14 lg:pt-8 pb-6">
@@ -126,15 +130,32 @@ export default function WalletPage() {
           </p>
         </div>
 
+        <Card className="relative overflow-hidden !p-0 mb-4 lg:mb-6 hidden lg:block">
+          <div className="relative h-40 lg:h-48">
+            <Image
+              src="/images/wallet/wallet-hero.webp"
+              alt=""
+              fill
+              sizes="100vw"
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-base)] via-transparent to-transparent" />
+            <div className="absolute inset-0 flex flex-col items-start justify-end p-5 lg:p-8">
+              <h2 className="font-display text-xl lg:text-2xl text-white">Small gifts. Big impact.</h2>
+              <p className="text-white/60 text-sm mt-1 max-w-sm">Every credit is an investment in your own growth.</p>
+            </div>
+          </div>
+        </Card>
+
         <div className="space-y-4 lg:space-y-6">
           {/* Balance */}
           <Card>
-            <p className="text-white/40 text-xs uppercase tracking-wide mb-2">Your Balance</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-2">Your Balance</p>
             <div className="flex items-end justify-between flex-wrap gap-3">
               <div>
                 <p className="text-white text-3xl font-light">
                   {credits ? credits.balance : loading ? '…' : 0}
-                  <span className="text-sm text-white/40 font-normal ml-2">Credits</span>
+                  <span className="text-sm text-[var(--color-text-tertiary)] font-normal ml-2">Credits</span>
                 </p>
                 {credits?.isExhausted && <p className="text-red-400/80 text-xs mt-1">Out of credits</p>}
                 {credits && !credits.isExhausted && credits.isLow && (
@@ -153,7 +174,7 @@ export default function WalletPage() {
           {/* Earn More Credits */}
           <Card>
             <p className="text-sm text-white mb-1">Earn More Credits</p>
-            <p className="text-xs text-white/40 mb-4">Grow your wallet by taking action and investing in yourself.</p>
+            <p className="text-xs text-[var(--color-text-tertiary)] mb-4">Grow your wallet by taking action and investing in yourself.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Link
                 href="/evolution-map"
@@ -161,7 +182,7 @@ export default function WalletPage() {
               >
                 <Target className="w-4 h-4 text-[var(--color-violet-400)] mb-2" />
                 <p className="text-white text-sm font-medium">Weekly Goal Achieved</p>
-                <p className="text-white/40 text-xs mt-1 mb-2">Complete a goal you set for yourself.</p>
+                <p className="text-[var(--color-text-tertiary)] text-xs mt-1 mb-2">Complete a goal you set for yourself.</p>
                 <p className="text-orange-300 text-xs font-medium">+{EARN_COMMITMENT_COMPLETED_CREDITS} Credits</p>
               </Link>
               <Link
@@ -170,7 +191,7 @@ export default function WalletPage() {
               >
                 <Hexagon className="w-4 h-4 text-[var(--color-violet-400)] mb-2" />
                 <p className="text-white text-sm font-medium">Complete a Reflection</p>
-                <p className="text-white/40 text-xs mt-1 mb-2">Finish a Mirror Room exercise.</p>
+                <p className="text-[var(--color-text-tertiary)] text-xs mt-1 mb-2">Finish a Mirror Room exercise.</p>
                 <p className="text-orange-300 text-xs font-medium">+{EARN_REFLECTION_COMPLETED_CREDITS} Credits</p>
               </Link>
             </div>
@@ -180,11 +201,11 @@ export default function WalletPage() {
             {/* Choose Your Plan */}
             <Card>
               <p className="text-sm text-white mb-1">Choose Your Plan</p>
-              <p className="text-xs text-white/40 mb-4">More credits. More insights. More you.</p>
+              <p className="text-xs text-[var(--color-text-tertiary)] mb-4">More credits. More insights. More you.</p>
               {loading ? (
-                <p className="text-xs text-white/40">Loading…</p>
+                <p className="text-xs text-[var(--color-text-tertiary)]">Loading…</p>
               ) : subscriptions.length === 0 ? (
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-[var(--color-text-tertiary)]">
                   Plans are coming soon — pricing hasn&apos;t been finalized yet.
                 </p>
               ) : (
@@ -197,11 +218,11 @@ export default function WalletPage() {
             {/* Buy Credit Packages */}
             <Card>
               <p className="text-sm text-white mb-1">Buy Credit Packages</p>
-              <p className="text-xs text-white/40 mb-4">One-time credit packs. Use whenever you need.</p>
+              <p className="text-xs text-[var(--color-text-tertiary)] mb-4">One-time credit packs. Use whenever you need.</p>
               {loading ? (
-                <p className="text-xs text-white/40">Loading…</p>
+                <p className="text-xs text-[var(--color-text-tertiary)]">Loading…</p>
               ) : creditPacks.length === 0 ? (
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-[var(--color-text-tertiary)]">
                   Credit packs are coming soon — pricing hasn&apos;t been finalized yet.
                 </p>
               ) : (
@@ -215,11 +236,11 @@ export default function WalletPage() {
           {/* Recent Transactions */}
           <Card>
             <p className="text-sm text-white mb-1">Your Recent Transactions</p>
-            <p className="text-xs text-white/40 mb-4">The real ledger behind your balance.</p>
+            <p className="text-xs text-[var(--color-text-tertiary)] mb-4">The real ledger behind your balance.</p>
             {loading ? (
-              <p className="text-xs text-white/40">Loading…</p>
+              <p className="text-xs text-[var(--color-text-tertiary)]">Loading…</p>
             ) : transactions.length === 0 ? (
-              <p className="text-xs text-white/40">No transactions yet.</p>
+              <p className="text-xs text-[var(--color-text-tertiary)]">No transactions yet.</p>
             ) : (
               <div className="space-y-1">
                 {transactions.slice(0, 10).map((t, i) => (
@@ -228,11 +249,11 @@ export default function WalletPage() {
                       {t.amount >= 0 ? (
                         <ArrowUpRight className="w-4 h-4 text-green-400/70 shrink-0" />
                       ) : (
-                        <ArrowDownRight className="w-4 h-4 text-white/30 shrink-0" />
+                        <ArrowDownRight className="w-4 h-4 text-[var(--color-text-tertiary)] shrink-0" />
                       )}
                       <div className="min-w-0">
                         <p className="text-white/80 text-sm truncate">{reasonLabel(t.reason)}</p>
-                        <p className="text-white/30 text-xs">{new Date(t.createdAt).toLocaleDateString()}</p>
+                        <p className="text-[var(--color-text-tertiary)] text-xs">{new Date(t.createdAt).toLocaleDateString()}</p>
                       </div>
                     </div>
                     <p className={`text-sm font-medium shrink-0 ${t.amount >= 0 ? 'text-green-400/80' : 'text-white/50'}`}>

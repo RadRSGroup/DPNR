@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles, Eye, HeartHandshake, Repeat, Plus, Target } from 'lucide-react'
@@ -143,7 +144,10 @@ function EvolutionMapContent() {
 
   return (
     <div className="relative min-h-screen">
-      <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-canvas-from)] via-[var(--color-bg-canvas-via)] to-[var(--color-bg-canvas-to)] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/evolution-map-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
       <div className="max-w-[393px] lg:max-w-none mx-auto px-5 lg:px-8 pb-10 lg:pb-12">
         <div className="pt-14 lg:pt-8 pb-6">
@@ -154,6 +158,23 @@ function EvolutionMapContent() {
             Your personal roadmap to growth, alignment, and the life you&apos;re here to create.
           </p>
         </div>
+
+        <Card className="relative overflow-hidden !p-0 mb-4 lg:mb-6 hidden lg:block">
+          <div className="relative h-40 lg:h-48">
+            <Image
+              src="/images/evolution-map/evolution-map-hero.webp"
+              alt=""
+              fill
+              sizes="100vw"
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-base)] via-transparent to-transparent" />
+            <div className="absolute inset-0 flex flex-col items-start justify-end p-5 lg:p-8">
+              <h2 className="font-display text-xl lg:text-2xl text-white">You set the goals. We guide the way.</h2>
+              <p className="text-white/60 text-sm mt-1 max-w-sm">Track your progress, celebrate wins, and evolve intentionally.</p>
+            </div>
+          </div>
+        </Card>
 
         <div className="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
           {/* Main column */}
@@ -169,7 +190,7 @@ function EvolutionMapContent() {
             {!loading && !hasDomains && (
               <Card>
                 <p className="text-sm text-white mb-2">Life Domains</p>
-                <p className="text-xs text-white/40 leading-relaxed">
+                <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed">
                   Nothing here yet — complete a Decision Room or Mirror Room session and confirm a few
                   signals in InnerSelf to start building your Life Domains picture.
                 </p>
@@ -179,7 +200,7 @@ function EvolutionMapContent() {
             {hasDomains && (
               <Card>
                 <p className="text-sm text-white mb-1">Life Domains</p>
-                <p className="text-xs text-white/40 mb-4">Explore and grow in every area of your life</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">Explore and grow in every area of your life</p>
                 <div className="space-y-2">
                   {dashboard!.lifeDomains.map((d) => {
                     const meta = DOMAIN_META[d.domain]
@@ -197,7 +218,7 @@ function EvolutionMapContent() {
                           <Icon className="w-3 h-3" style={{ color: meta.color }} />
                         </ProgressRing>
                         <span className="text-sm text-white/80 flex-1">{LIFE_DOMAIN_LABELS[d.domain]}</span>
-                        <span className="text-xs text-white/40 shrink-0">{d.percent}%</span>
+                        <span className="text-xs text-[var(--color-text-tertiary)] shrink-0">{d.percent}%</span>
                       </button>
                     )
                   })}
@@ -208,9 +229,9 @@ function EvolutionMapContent() {
             {hasDomains && selectedDomain && (
               <Card>
                 <p className="text-sm text-white mb-1">Focus Areas — {LIFE_DOMAIN_LABELS[selectedDomain]}</p>
-                <p className="text-xs text-white/40 mb-4">What DPNR has confirmed with you here</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">What DPNR has confirmed with you here</p>
                 {focusAreas.length === 0 ? (
-                  <p className="text-xs text-white/40">Nothing confirmed in this domain yet.</p>
+                  <p className="text-xs text-[var(--color-text-tertiary)]">Nothing confirmed in this domain yet.</p>
                 ) : (
                   <ul className="space-y-2">
                     {focusAreas.map((s) => (
@@ -228,7 +249,7 @@ function EvolutionMapContent() {
                 this file's own doc comment above. */}
             <Card>
               <p className="text-sm text-white mb-1">The Shape of This Work</p>
-              <p className="text-xs text-white/40 mb-4">
+              <p className="text-xs text-[var(--color-text-tertiary)] mb-4">
                 A general framework for this kind of growth work — not a tracker of exactly where you are.
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -238,7 +259,7 @@ function EvolutionMapContent() {
                       <stage.icon className="w-4 h-4 text-white/50" />
                     </div>
                     <p className="text-white text-xs font-medium">{stage.label}</p>
-                    <p className="text-white/30 text-[10px] mt-0.5 leading-snug hidden sm:block">{stage.copy}</p>
+                    <p className="text-[var(--color-text-tertiary)] text-[10px] mt-0.5 leading-snug hidden sm:block">{stage.copy}</p>
                   </div>
                 ))}
               </div>
@@ -261,7 +282,7 @@ function EvolutionMapContent() {
                   <Plus className="w-3.5 h-3.5" /> Add Goal
                 </button>
               </div>
-              <p className="text-xs text-white/40 mb-4">What you truly want to create</p>
+              <p className="text-xs text-[var(--color-text-tertiary)] mb-4">What you truly want to create</p>
 
               {showAddGoal && (
                 <form onSubmit={submitGoal} className="mb-4 space-y-2 rounded-xl bg-white/5 border border-[var(--color-border-glass)] p-3">
@@ -271,7 +292,7 @@ function EvolutionMapContent() {
                     placeholder="What do you want to create?"
                     required
                     rows={2}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[var(--color-violet-500)]/60"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-2 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60"
                   />
                   <div className="flex items-center gap-2">
                     <select
@@ -312,16 +333,16 @@ function EvolutionMapContent() {
               )}
 
               {loading ? (
-                <p className="text-xs text-white/40">Loading…</p>
+                <p className="text-xs text-[var(--color-text-tertiary)]">Loading…</p>
               ) : openGoals.length === 0 ? (
-                <p className="text-xs text-white/40">No goals here yet.</p>
+                <p className="text-xs text-[var(--color-text-tertiary)]">No goals here yet.</p>
               ) : (
                 <div className="space-y-2">
                   {openGoals.map((g) => (
                     <div key={g.commitmentId} className="rounded-xl bg-white/5 px-3 py-2.5">
                       <p className="text-sm text-white/80">{g.description}</p>
                       <div className="flex items-center justify-between mt-1">
-                        <p className="text-xs text-white/40">
+                        <p className="text-xs text-[var(--color-text-tertiary)]">
                           Target: {g.reviewDate ?? 'Ongoing'}
                           {!selectedDomain && g.lifeDomain && ` · ${LIFE_DOMAIN_LABELS[g.lifeDomain]}`}
                         </p>

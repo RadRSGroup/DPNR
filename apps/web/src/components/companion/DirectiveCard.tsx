@@ -49,7 +49,7 @@ export default function DirectiveCard({ directive, sourceSessionId }: Props) {
         className="mt-2 w-full text-left bg-white/5 border border-white/15 hover:border-white/30 rounded-2xl px-4 py-3 transition-colors"
       >
         <p className="text-white/80 text-sm font-medium">Open InnerOS</p>
-        <p className="text-white/40 text-xs mt-0.5">Tap to open →</p>
+        <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">Tap to open →</p>
       </button>
     )
   }
@@ -78,8 +78,8 @@ function LibraryTopicCard({ slug, sourceSessionId }: { slug: string; sourceSessi
     <>
       <div className="mt-2 w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 space-y-2">
         <p className="text-white/80 text-sm font-medium">{topic?.title ?? slug.replace(/-/g, ' ')}</p>
-        {!topic && !error && <p className="text-white/30 text-xs">From the Library · loading…</p>}
-        {error && <p className="text-white/30 text-xs">Couldn&apos;t load this topic right now.</p>}
+        {!topic && !error && <p className="text-[var(--color-text-tertiary)] text-xs">From the Library · loading…</p>}
+        {error && <p className="text-[var(--color-text-tertiary)] text-xs">Couldn&apos;t load this topic right now.</p>}
         {topic?.quickDefinition && (
           <p className="text-white/70 text-sm leading-relaxed">{topic.quickDefinition}</p>
         )}
@@ -88,7 +88,7 @@ function LibraryTopicCard({ slug, sourceSessionId }: { slug: string; sourceSessi
             <button onClick={() => setPanelOpen(true)} className="text-purple-300 text-xs hover:text-purple-200 transition-colors">
               Understand deeper →
             </button>
-            <Link href={`/library/${slug}`} className="text-white/40 text-xs hover:text-white/60 transition-colors">
+            <Link href={`/library/${slug}`} className="text-[var(--color-text-tertiary)] text-xs hover:text-white/60 transition-colors">
               View full topic
             </Link>
           </div>

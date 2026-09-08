@@ -52,7 +52,7 @@ export function CalendarButtons({ title, date, description = '' }: Props) {
 
   return (
     <div className="space-y-2">
-      <p className="text-white/30 text-xs text-center">
+      <p className="text-[var(--color-text-tertiary)] text-xs text-center">
         Add check-in reminder · {displayDate}
       </p>
       <div className="grid grid-cols-3 gap-2">

@@ -73,7 +73,10 @@ export default function DecisionRoomLanding({ userName, onStart, sourceTopicTitl
       <Sidebar />
       <main className="flex-1 pb-20 lg:pb-0">
         <div className="relative min-h-screen">
-          <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-canvas-from)] via-[var(--color-bg-canvas-via)] to-[var(--color-bg-canvas-to)] -z-10" />
+          <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/decision-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
           <div className="max-w-[393px] lg:max-w-none mx-auto px-5 lg:px-8 pb-10 lg:pb-12">
             <div className="pt-14 lg:pt-8 pb-6 flex items-center justify-between">
@@ -120,7 +123,7 @@ export default function DecisionRoomLanding({ userName, onStart, sourceTopicTitl
 
                 <Card>
                   <p className="text-white text-sm mb-1">Your Decision Journey</p>
-                  <p className="text-white/40 text-xs mb-4">A simple process to move from confusion to clarity.</p>
+                  <p className="text-[var(--color-text-tertiary)] text-xs mb-4">A simple process to move from confusion to clarity.</p>
                   <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
                     {JOURNEY.map((j, i) => (
                       <div key={j.label} className="text-center">
@@ -131,10 +134,10 @@ export default function DecisionRoomLanding({ userName, onStart, sourceTopicTitl
                               : 'border-white/15'
                           }`}
                         >
-                          <j.icon className={`w-4 h-4 ${i === 0 ? 'text-[var(--color-violet-400)]' : 'text-white/40'}`} />
+                          <j.icon className={`w-4 h-4 ${i === 0 ? 'text-[var(--color-violet-400)]' : 'text-[var(--color-text-tertiary)]'}`} />
                         </div>
                         <p className="text-white text-xs font-medium">{j.label}</p>
-                        <p className="text-white/30 text-[10px] mt-0.5 leading-snug hidden lg:block">{j.copy}</p>
+                        <p className="text-[var(--color-text-tertiary)] text-[10px] mt-0.5 leading-snug hidden lg:block">{j.copy}</p>
                       </div>
                     ))}
                   </div>
@@ -144,10 +147,10 @@ export default function DecisionRoomLanding({ userName, onStart, sourceTopicTitl
                   <div>
                     <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">Step 1 of 7</p>
                     <p className="text-white text-base font-medium">Name the Decision</p>
-                    <p className="text-white/40 text-sm mt-1 max-w-md">
+                    <p className="text-[var(--color-text-tertiary)] text-sm mt-1 max-w-md">
                       Let&apos;s start by getting clear on what this decision is really about.
                     </p>
-                    <p className="text-white/30 text-xs mt-2 flex items-center gap-1.5">
+                    <p className="text-[var(--color-text-tertiary)] text-xs mt-2 flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5" /> Takes about 25 minutes
                     </p>
                   </div>
@@ -164,11 +167,11 @@ export default function DecisionRoomLanding({ userName, onStart, sourceTopicTitl
               <div className="space-y-4 lg:space-y-6 mt-4 lg:mt-0">
                 <Card>
                   <p className="text-sm text-white mb-1">Recent Decisions</p>
-                  <p className="text-white/30 text-xs mb-3">Your past decisions</p>
+                  <p className="text-[var(--color-text-tertiary)] text-xs mb-3">Your past decisions</p>
                   {decisionsLoading ? (
-                    <p className="text-white/30 text-xs">Loading…</p>
+                    <p className="text-[var(--color-text-tertiary)] text-xs">Loading…</p>
                   ) : recentDecisions.length === 0 ? (
-                    <p className="text-white/30 text-xs">
+                    <p className="text-[var(--color-text-tertiary)] text-xs">
                       Once you complete a decision here, it&apos;ll show up in this list.
                     </p>
                   ) : (
@@ -181,9 +184,9 @@ export default function DecisionRoomLanding({ userName, onStart, sourceTopicTitl
                         >
                           <div className="min-w-0">
                             <p className="text-sm text-white/80 line-clamp-1">{d.title}</p>
-                            <p className="text-xs text-white/40">{timeAgo(d.createdAt)}</p>
+                            <p className="text-xs text-[var(--color-text-tertiary)]">{timeAgo(d.createdAt)}</p>
                           </div>
-                          <span className="text-xs text-white/40 capitalize shrink-0">{d.status}</span>
+                          <span className="text-xs text-[var(--color-text-tertiary)] capitalize shrink-0">{d.status}</span>
                         </button>
                       ))}
                     </div>
@@ -197,7 +200,7 @@ export default function DecisionRoomLanding({ userName, onStart, sourceTopicTitl
                 </div>
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="w-full text-center text-white/40 hover:text-white/60 text-xs underline"
+                  className="w-full text-center text-[var(--color-text-tertiary)] hover:text-white/60 text-xs underline"
                 >
                   Back to InnerOS
                 </button>

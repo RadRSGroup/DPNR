@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -79,14 +80,20 @@ export default function AccountPage() {
 
   if (loading) return (
     <div className="relative min-h-screen flex items-center justify-center">
-      <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-canvas-from)] via-[var(--color-bg-canvas-via)] to-[var(--color-bg-canvas-to)] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
       <div className="w-8 h-8 border-2 border-[var(--color-violet-500)]/40 border-t-[var(--color-violet-500)] rounded-full animate-spin" />
     </div>
   )
 
   return (
     <div className="relative min-h-screen">
-      <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-canvas-from)] via-[var(--color-bg-canvas-via)] to-[var(--color-bg-canvas-to)] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
       <div className="max-w-[393px] lg:max-w-2xl mx-auto px-5 lg:px-8 pb-16 lg:pb-12">
         <div className="pt-14 lg:pt-8 pb-6">
@@ -102,7 +109,7 @@ export default function AccountPage() {
               real Grow integration (see docs/PHASE_AUDIT.md's Session 10 update) — so
               "Upgrade" links to /wallet, it doesn't complete a purchase. */}
           <Card>
-            <p className="text-white/40 text-xs uppercase tracking-wide mb-3">Credits</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-3">Credits</p>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-white text-lg font-light">{credits ? credits.balance : '…'}</p>
@@ -122,18 +129,18 @@ export default function AccountPage() {
           {/* Plan — every account is honestly on the free Beta tier today, not a stored,
               per-user value; paid plans/packages aren't purchasable yet (see above). */}
           <Card>
-            <p className="text-white/40 text-xs uppercase tracking-wide mb-3">Subscription</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-3">Subscription</p>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-white text-sm font-medium">Free — Beta</p>
-                <p className="text-white/30 text-xs mt-0.5">Paid plans are coming soon</p>
+                <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">Paid plans are coming soon</p>
               </div>
             </div>
           </Card>
 
           {/* Legal */}
           <Card className="space-y-3">
-            <p className="text-white/40 text-xs uppercase tracking-wide">Legal</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">Legal</p>
             <Link href="/terms" className="flex items-center justify-between text-white/60 hover:text-white text-sm transition-colors">
               Terms of Use <span className="text-white/20">›</span>
             </Link>
@@ -145,11 +152,11 @@ export default function AccountPage() {
 
           {/* Data */}
           <Card className="space-y-4">
-            <p className="text-white/40 text-xs uppercase tracking-wide">Your Data</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">Your Data</p>
 
             <div>
               <p className="text-white/80 text-sm font-medium">Download my data</p>
-              <p className="text-white/40 text-xs mt-1 mb-3">
+              <p className="text-[var(--color-text-tertiary)] text-xs mt-1 mb-3">
                 Export all your decisions, reflections, and account data as a JSON file.
               </p>
               <button
@@ -163,7 +170,7 @@ export default function AccountPage() {
 
             <div className="border-t border-white/8 pt-4">
               <p className="text-white/80 text-sm font-medium">Delete my account</p>
-              <p className="text-white/40 text-xs mt-1 mb-3">
+              <p className="text-[var(--color-text-tertiary)] text-xs mt-1 mb-3">
                 Permanently deletes your account and all decisions, reflections, and personal data. This cannot be undone.
               </p>
 
@@ -204,7 +211,7 @@ export default function AccountPage() {
                     </button>
                     <button
                       onClick={() => { setDeleteStep('idle'); setDeleteConfirm('') }}
-                      className="px-4 text-white/30 text-sm hover:text-white/50 transition-colors"
+                      className="px-4 text-[var(--color-text-tertiary)] text-sm hover:text-white/50 transition-colors"
                     >
                       Cancel
                     </button>
@@ -221,7 +228,7 @@ export default function AccountPage() {
               signOut()
               router.push('/login')
             }}
-            className="w-full py-3.5 rounded-2xl border border-white/10 text-white/40 hover:text-white/60 hover:border-white/20 text-sm transition-all"
+            className="w-full py-3.5 rounded-2xl border border-white/10 text-[var(--color-text-tertiary)] hover:text-white/60 hover:border-white/20 text-sm transition-all"
           >
             Sign out
           </button>

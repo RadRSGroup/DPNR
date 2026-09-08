@@ -44,9 +44,9 @@ export default function Step01({ initialTitle = '', initialSubtitle, onRefine, o
               onChange={e => setTitle(e.target.value.slice(0, 500))}
               placeholder="Name your decision..."
               rows={2}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
             />
-            <p className="text-white/30 text-xs text-right">{title.length}/500</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs text-right">{title.length}/500</p>
           </div>
 
           {/* AI subtitle */}
@@ -56,7 +56,7 @@ export default function Step01({ initialTitle = '', initialSubtitle, onRefine, o
               <p className="text-white/80 text-sm italic">&quot;{subtitle}&quot;</p>
               <button
                 onClick={() => setSubtitle(undefined)}
-                className="text-white/30 hover:text-white/50 text-xs transition-colors"
+                className="text-[var(--color-text-tertiary)] hover:text-white/50 text-xs transition-colors"
               >
                 Dismiss
               </button>

@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -117,7 +118,10 @@ export default function ForgotPasswordPage() {
     }
     return (
       <div className="relative min-h-screen max-w-[393px] mx-auto px-5 flex flex-col justify-center">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+        <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
         <div className="text-center space-y-4">
           <div className="w-16 h-16 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-3xl mx-auto">✓</div>
           <h2 className="text-white text-xl font-light">Password reset</h2>
@@ -138,7 +142,10 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="relative min-h-screen max-w-[393px] mx-auto px-5 flex flex-col justify-center">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
       <div className="mb-10 text-center">
         <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR</p>
@@ -147,7 +154,7 @@ export default function ForgotPasswordPage() {
           {stage === 'reset' && 'Check your email'}
           {stage === 'recover' && 'Enter your recovery code'}
         </h1>
-        <p className="text-white/40 text-sm mt-2">
+        <p className="text-[var(--color-text-tertiary)] text-sm mt-2">
           {stage === 'request' && "We'll send a code to your email."}
           {stage === 'reset' && (
             <>
@@ -173,7 +180,7 @@ export default function ForgotPasswordPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-white/30 text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
           />
           <button
             type="submit"
@@ -194,7 +201,7 @@ export default function ForgotPasswordPage() {
             value={code}
             onChange={(e) => setCode(e.target.value)}
             required
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-white/30 text-sm text-center tracking-[0.3em] focus:outline-none focus:border-purple-500/60 transition-colors"
+            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm text-center tracking-[0.3em] focus:outline-none focus:border-purple-500/60 transition-colors"
           />
           <input
             type="password"
@@ -202,7 +209,7 @@ export default function ForgotPasswordPage() {
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             required
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-white/30 text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
           />
           <input
             type="password"
@@ -210,7 +217,7 @@ export default function ForgotPasswordPage() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-white/30 text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
           />
           <button
             type="submit"
@@ -230,7 +237,7 @@ export default function ForgotPasswordPage() {
             value={recoveryCodeInput}
             onChange={(e) => setRecoveryCodeInput(e.target.value)}
             required
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-white/30 text-sm text-center tracking-widest font-mono focus:outline-none focus:border-purple-500/60 transition-colors"
+            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm text-center tracking-widest font-mono focus:outline-none focus:border-purple-500/60 transition-colors"
           />
           <button
             type="submit"
@@ -242,7 +249,7 @@ export default function ForgotPasswordPage() {
         </form>
       )}
 
-      <p className="text-center text-white/30 text-sm mt-8">
+      <p className="text-center text-[var(--color-text-tertiary)] text-sm mt-8">
         <Link href="/login" className="text-purple-400 hover:text-purple-300">Back to sign in</Link>
       </p>
     </div>

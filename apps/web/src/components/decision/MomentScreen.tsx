@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import Sidebar from '@/components/layout/Sidebar'
@@ -15,7 +16,10 @@ export default function MomentScreen({ onNext, onBack }: Props) {
       <Sidebar />
       <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
     <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] flex flex-col bg-[#0a0a0f] overflow-hidden max-w-[393px] mx-auto lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/decision-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
 
       {/* Top bar — matches StepShell */}
@@ -28,8 +32,8 @@ export default function MomentScreen({ onNext, onBack }: Props) {
           <div className="w-6 h-6 rounded-full bg-purple-500/40 flex items-center justify-center text-xs">
             ✦
           </div>
-          <span className="text-white/40 text-xs">Manifest yo...</span>
-          <span className="text-white/30 text-xs">28 min</span>
+          <span className="text-[var(--color-text-tertiary)] text-xs">Manifest yo...</span>
+          <span className="text-[var(--color-text-tertiary)] text-xs">28 min</span>
         </div>
         <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white/60 text-sm">?</div>
       </div>

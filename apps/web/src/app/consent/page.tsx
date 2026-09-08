@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -53,13 +54,16 @@ function ConsentContent() {
 
   return (
     <div className="relative min-h-screen max-w-[393px] mx-auto px-5 pb-10 flex flex-col">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
       <div className="pt-16 pb-6 text-center">
         <div className="w-14 h-14 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-2xl mx-auto mb-4">✦</div>
         <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR · InnerOS</p>
         <h1 className="text-white text-xl font-light">Before you begin</h1>
-        <p className="text-white/40 text-sm mt-2">Please review how we handle your data.</p>
+        <p className="text-[var(--color-text-tertiary)] text-sm mt-2">Please review how we handle your data.</p>
       </div>
 
       <div className="flex-1 space-y-3">
@@ -73,7 +77,7 @@ function ConsentContent() {
           </div>
         ))}
 
-        <p className="text-white/30 text-xs text-center px-2 leading-relaxed">
+        <p className="text-[var(--color-text-tertiary)] text-xs text-center px-2 leading-relaxed">
           By continuing you agree to our{' '}
           <Link href="/terms" target="_blank" className="text-purple-400 underline">Terms of Use</Link>
           {' '}and{' '}

@@ -59,14 +59,14 @@ export default function ClarityToActionScreen({
         <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-4 space-y-3">
           <div className="space-y-1">
             <p className="text-white text-sm font-medium">Your Next Small Step</p>
-            <p className="text-white/40 text-xs">What is one small step that moves you slightly toward this direction?</p>
-            <p className="text-white/30 text-xs">It should feel: <span className="text-white/50">Small • Safe • Possible within the next few days</span></p>
+            <p className="text-[var(--color-text-tertiary)] text-xs">What is one small step that moves you slightly toward this direction?</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs">It should feel: <span className="text-white/50">Small • Safe • Possible within the next few days</span></p>
           </div>
 
           <div className="space-y-1">
             <p className="text-white/50 text-xs">My next step:</p>
             {loading && !suggestedStep ? (
-              <div className="flex items-center gap-2 text-white/30 text-xs py-2">
+              <div className="flex items-center gap-2 text-[var(--color-text-tertiary)] text-xs py-2">
                 <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
@@ -78,7 +78,7 @@ export default function ClarityToActionScreen({
                 value={nextStep}
                 onChange={e => setNextStep(e.target.value.slice(0, 300))}
                 rows={3}
-                className="w-full bg-white/8 border border-white/10 rounded-xl px-3 py-2.5 text-white/80 text-sm resize-none focus:outline-none focus:border-purple-500/50 transition-colors placeholder-white/25"
+                className="w-full bg-white/8 border border-white/10 rounded-xl px-3 py-2.5 text-white/80 text-sm resize-none focus:outline-none focus:border-purple-500/50 transition-colors placeholder-[var(--color-text-tertiary)]"
                 placeholder="Describe your next small step…"
               />
             )}
@@ -115,7 +115,7 @@ export default function ClarityToActionScreen({
           </button>
           <button
             onClick={onSkip}
-            className="px-5 py-3.5 rounded-full border border-white/15 text-white/40 hover:text-white/60 text-sm transition-all"
+            className="px-5 py-3.5 rounded-full border border-white/15 text-[var(--color-text-tertiary)] hover:text-white/60 text-sm transition-all"
           >
             Skip
           </button>

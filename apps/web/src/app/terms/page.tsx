@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { cookies } from 'next/headers'
 
@@ -10,13 +11,16 @@ export default async function TermsPage() {
 
   return (
     <div className="relative min-h-screen max-w-[680px] mx-auto px-5 pb-20">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
       <div className="pt-14 pb-8">
         <Link href={backHref} className="text-purple-400 text-sm">← Back</Link>
         <p className="text-purple-400 text-xs tracking-widest uppercase mt-6 mb-2">DPNR · InnerOS</p>
         <h1 className="text-white text-2xl font-light">Terms of Use</h1>
-        <p className="text-white/30 text-xs mt-2">Effective date: June 2026 · Last updated: June 2026</p>
+        <p className="text-[var(--color-text-tertiary)] text-xs mt-2">Effective date: June 2026 · Last updated: June 2026</p>
       </div>
 
       <div className="prose prose-invert prose-sm max-w-none space-y-8 text-white/70 text-sm leading-relaxed">
@@ -117,7 +121,7 @@ export default async function TermsPage() {
         </Section>
 
         <div className="pt-4 border-t border-white/10">
-          <p className="text-white/30 text-xs">Questions? Contact us at <span className="text-purple-400">support@dpnr.app</span></p>
+          <p className="text-[var(--color-text-tertiary)] text-xs">Questions? Contact us at <span className="text-purple-400">support@dpnr.app</span></p>
           <div className="flex gap-4 mt-3">
             <Link href="/privacy" className="text-purple-400 text-xs hover:text-purple-300">Privacy & Data Policy →</Link>
             <Link href="/account" className="text-purple-400 text-xs hover:text-purple-300">Account Settings →</Link>

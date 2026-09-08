@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -104,7 +105,10 @@ export default function SignupPage() {
   if (stage === 'confirm') {
     return (
       <div className="relative min-h-screen max-w-[393px] mx-auto px-5 flex flex-col justify-center">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+        <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
         <div className="text-center space-y-4 mb-6">
           <div className="w-16 h-16 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-3xl mx-auto">✦</div>
           <h2 className="text-white text-xl font-light">Check your email</h2>
@@ -125,7 +129,7 @@ export default function SignupPage() {
             value={code}
             onChange={e => setCode(e.target.value)}
             required
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-white/30 text-sm text-center tracking-[0.3em] focus:outline-none focus:border-purple-500/60 transition-colors"
+            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm text-center tracking-[0.3em] focus:outline-none focus:border-purple-500/60 transition-colors"
           />
           <button
             type="submit"
@@ -145,7 +149,10 @@ export default function SignupPage() {
 
   return (
     <div className="relative min-h-screen max-w-[393px] mx-auto px-5 flex flex-col justify-center">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
       <div className="mb-10 text-center">
         <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR</p>
@@ -153,7 +160,7 @@ export default function SignupPage() {
           <h1 className="text-white text-2xl font-light">InnerOS</h1>
           <span className="absolute top-1/2 left-full -translate-y-1/2 ml-2 text-[10px] font-semibold tracking-widest uppercase text-yellow-400 border border-yellow-400/40 rounded-full px-2 py-0.5 whitespace-nowrap">Beta</span>
         </div>
-        <p className="text-white/40 text-sm mt-2">Create your free account</p>
+        <p className="text-[var(--color-text-tertiary)] text-sm mt-2">Create your free account</p>
       </div>
 
       {error && (
@@ -163,22 +170,34 @@ export default function SignupPage() {
       )}
 
       <form onSubmit={handleSignup} className="space-y-4">
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          required
-          className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-white/30 text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
-        />
-        <input
-          type="password"
-          placeholder="Password (min. 8 characters)"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          required
-          className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-white/30 text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
-        />
+        <div>
+          <label htmlFor="signup-email" className="block text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide mb-1.5">
+            Email
+          </label>
+          <input
+            id="signup-email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            required
+            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+          />
+        </div>
+        <div>
+          <label htmlFor="signup-password" className="block text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide mb-1.5">
+            Password <span className="normal-case">(min. 8 characters)</span>
+          </label>
+          <input
+            id="signup-password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            required
+            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+          />
+        </div>
         {/* Consent */}
         <label className="flex items-start gap-3 cursor-pointer group">
           <div
@@ -207,7 +226,7 @@ export default function SignupPage() {
         </button>
       </form>
 
-      <p className="text-center text-white/30 text-sm mt-8">
+      <p className="text-center text-[var(--color-text-tertiary)] text-sm mt-8">
         Already have an account?{' '}
         <Link href="/login" className="text-purple-400 hover:text-purple-300">Sign in</Link>
       </p>

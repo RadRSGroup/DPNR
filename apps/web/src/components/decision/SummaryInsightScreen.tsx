@@ -60,7 +60,7 @@ export default function SummaryInsightScreen({
 
             {/* AI insight */}
             {loading && !insight ? (
-              <div className="flex items-center justify-center gap-2 text-white/40 text-sm py-2">
+              <div className="flex items-center justify-center gap-2 text-[var(--color-text-tertiary)] text-sm py-2">
                 <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
@@ -76,7 +76,7 @@ export default function SummaryInsightScreen({
             {/* Divider */}
             <div className="flex items-center gap-3 pt-1">
               <div className="flex-1 h-px bg-white/10" />
-              <p className="text-white/30 text-xs">Do You Agree?</p>
+              <p className="text-[var(--color-text-tertiary)] text-xs">Do You Agree?</p>
               <div className="flex-1 h-px bg-white/10" />
             </div>
 

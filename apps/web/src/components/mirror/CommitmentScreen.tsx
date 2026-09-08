@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState } from 'react'
 import { CalendarButtons } from '@/components/ui/CalendarButtons'
 import Sidebar from '@/components/layout/Sidebar'
@@ -30,7 +31,10 @@ export default function CommitmentScreen({ sessionTitle, onDone, onBack }: Props
       <Sidebar />
       <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
     <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] max-w-[393px] mx-auto flex flex-col bg-[#0a0a0f] overflow-hidden lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
-      <div className="absolute inset-0 bg-[#1a0826] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/mirror-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.45)_0%,_rgba(80,20,140,0.25)_45%,_transparent_75%)] -z-10" />
 
       <div className="pt-14 px-5 pb-4 text-center space-y-1">
@@ -56,11 +60,11 @@ export default function CommitmentScreen({ sessionTitle, onDone, onBack }: Props
           onChange={e => setCommitment(e.target.value.slice(0, 300))}
           rows={3}
           placeholder='Type: "Next time this happens, I will..." (optional)'
-          className="w-full bg-white/8 border border-white/15 rounded-2xl px-4 py-3.5 text-white placeholder-white/30 text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+          className="w-full bg-white/8 border border-white/15 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
         />
 
         <div className="space-y-2">
-          <p className="text-white/30 text-xs text-center">Add a reminder</p>
+          <p className="text-[var(--color-text-tertiary)] text-xs text-center">Add a reminder</p>
           <CalendarButtons
             title={calendarTitle}
             date={calendarDate}

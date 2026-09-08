@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import Link from 'next/link'
 
 /**
@@ -14,12 +15,15 @@ import Link from 'next/link'
 export default function PricingPage() {
   return (
     <div className="relative min-h-screen max-w-[393px] mx-auto px-5 pb-16">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
       <div className="pt-14 pb-8">
         <Link href="/dashboard" className="text-purple-400 text-sm">← Back</Link>
         <h1 className="text-white text-2xl font-light mt-6">Credits & Packages</h1>
-        <p className="text-white/40 text-sm mt-2">
+        <p className="text-[var(--color-text-tertiary)] text-sm mt-2">
           DPNR runs on Credits, not a fixed monthly tier — you spend them only on real, meaningful actions.
         </p>
       </div>
@@ -36,7 +40,7 @@ export default function PricingPage() {
           <div className="flex items-end justify-between mb-3">
             <div>
               <h2 className="text-white font-medium text-lg">Starter Credits</h2>
-              <p className="text-white/40 text-xs mt-0.5">Included free at signup</p>
+              <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">Included free at signup</p>
             </div>
           </div>
           <ul className="space-y-2">
@@ -59,12 +63,12 @@ export default function PricingPage() {
           <div className="flex items-end justify-between mb-3">
             <div>
               <h2 className="text-white font-medium text-lg">Credit packs & plans</h2>
-              <p className="text-white/40 text-xs mt-0.5">Coming soon during Beta</p>
+              <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">Coming soon during Beta</p>
             </div>
           </div>
           <button
             disabled
-            className="w-full rounded-2xl px-5 py-3.5 text-sm font-medium bg-white/5 text-white/30 cursor-not-allowed"
+            className="w-full rounded-2xl px-5 py-3.5 text-sm font-medium bg-white/5 text-[var(--color-text-tertiary)] cursor-not-allowed"
           >
             Coming soon
           </button>

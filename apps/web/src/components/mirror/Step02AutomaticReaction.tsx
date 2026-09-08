@@ -61,7 +61,7 @@ export default function Step02AutomaticReaction({
               onChange={e => setThought(e.target.value.slice(0, 400))}
               placeholder="The first thought that crossed your mind..."
               rows={2}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
             />
           </div>
 
@@ -72,7 +72,7 @@ export default function Step02AutomaticReaction({
               onChange={e => setEmotion(e.target.value.slice(0, 200))}
               placeholder="Name the feeling..."
               rows={2}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
             />
           </div>
 
@@ -83,7 +83,7 @@ export default function Step02AutomaticReaction({
               onChange={e => setBodyResponse(e.target.value.slice(0, 200))}
               placeholder="Tight chest, clenched jaw, a knot in your stomach..."
               rows={2}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
             />
           </div>
 
@@ -112,7 +112,7 @@ export default function Step02AutomaticReaction({
               onChange={e => setAutomaticReaction(e.target.value.slice(0, 400))}
               placeholder="Your actual reaction, not what you wish you'd done..."
               rows={2}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
             />
           </div>
         </div>

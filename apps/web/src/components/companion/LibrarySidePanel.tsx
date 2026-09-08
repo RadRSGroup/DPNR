@@ -66,11 +66,11 @@ export default function LibrarySidePanel({ slug, sourceSessionId, onClose }: Pro
       <div className="relative w-full sm:w-[420px] sm:h-full max-h-[85vh] sm:max-h-none bg-[#130d1f] border-t sm:border-t-0 sm:border-l border-purple-700/40 rounded-t-3xl sm:rounded-none overflow-y-auto">
         <div className="sticky top-0 bg-[#130d1f]/95 backdrop-blur-sm border-b border-white/10 px-5 py-4 flex items-center justify-between">
           <p className="text-purple-300/70 text-xs uppercase tracking-wide">From the Library</p>
-          <button onClick={onClose} className="text-white/40 hover:text-white/70 text-sm" aria-label="Close">✕</button>
+          <button onClick={onClose} className="text-[var(--color-text-tertiary)] hover:text-white/70 text-sm" aria-label="Close">✕</button>
         </div>
 
         <div className="px-5 py-5 space-y-6">
-          {!topic && !error && <p className="text-white/40 text-sm text-center py-8">Loading…</p>}
+          {!topic && !error && <p className="text-[var(--color-text-tertiary)] text-sm text-center py-8">Loading…</p>}
           {error && <p className="text-red-400/80 text-sm text-center py-8">Couldn&apos;t load this topic.</p>}
 
           {topic && (
@@ -96,7 +96,7 @@ export default function LibrarySidePanel({ slug, sourceSessionId, onClose }: Pro
 
               {topic.possibleRoots && topic.possibleRoots.length > 0 && (
                 <Section title="Possible roots — what may be underneath">
-                  <p className="text-white/40 text-xs mb-2">Possibilities to consider, not a diagnosis — only one might fit, or none.</p>
+                  <p className="text-[var(--color-text-tertiary)] text-xs mb-2">Possibilities to consider, not a diagnosis — only one might fit, or none.</p>
                   <BulletList items={topic.possibleRoots} />
                 </Section>
               )}
@@ -126,7 +126,7 @@ export default function LibrarySidePanel({ slug, sourceSessionId, onClose }: Pro
                 ))}
                 <Link
                   href={`/library/${slug}`}
-                  className="block w-full text-center text-white/40 hover:text-white/60 text-xs underline py-2"
+                  className="block w-full text-center text-[var(--color-text-tertiary)] hover:text-white/60 text-xs underline py-2"
                 >
                   View full topic
                 </Link>

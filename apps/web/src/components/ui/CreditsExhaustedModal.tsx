@@ -31,7 +31,7 @@ export function CreditsExhaustedModal({ onClose }: Props) {
           <span className="text-white/60">›</span>
         </Link>
 
-        <button onClick={onClose} className="w-full text-white/30 text-sm hover:text-white/50 transition-colors py-1">
+        <button onClick={onClose} className="w-full text-[var(--color-text-tertiary)] text-sm hover:text-white/50 transition-colors py-1">
           Not now
         </button>
       </div>

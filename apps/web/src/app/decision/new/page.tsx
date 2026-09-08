@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import DecisionRoomLanding from '@/components/decision/DecisionRoomLanding'
@@ -401,7 +402,10 @@ function NewDecisionContent() {
         <div className="lg:flex lg:min-h-screen">
           <Sidebar />
           <main className="flex-1 flex items-center justify-center min-h-screen">
-            <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+            <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/decision-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
             <div className="w-8 h-8 border-2 border-purple-500/40 border-t-purple-500 rounded-full animate-spin" />
           </main>
         </div>
@@ -413,7 +417,10 @@ function NewDecisionContent() {
         <div className="lg:flex lg:min-h-screen">
           <Sidebar />
           <main className="flex-1 flex flex-col items-center justify-center min-h-screen px-6 text-center space-y-4">
-            <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+            <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/decision-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
             <p className="text-white/70 text-sm">{fatalError}</p>
             <button onClick={() => router.push('/dashboard')} className="text-purple-400 text-sm underline">
               Back to InnerOS
@@ -698,7 +705,10 @@ export default function NewDecisionPage() {
       <div className="lg:flex lg:min-h-screen">
         <Sidebar />
         <main className="flex-1 flex items-center justify-center min-h-screen">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+          <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/decision-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
           <div className="w-8 h-8 border-2 border-purple-500/40 border-t-purple-500 rounded-full animate-spin" />
         </main>
       </div>

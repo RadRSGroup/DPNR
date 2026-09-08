@@ -57,7 +57,7 @@ export default function Step04({ decisionTitle, optionA, optionB, initialLens, o
                 <span className="text-2xl">{lens.icon}</span>
                 <div>
                   <p className="text-white font-medium text-sm">{lens.label}</p>
-                  <p className="text-white/40 text-xs mt-0.5">{lens.description}</p>
+                  <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">{lens.description}</p>
                 </div>
                 {selected === lens.id && (
                   <span className="ml-auto text-purple-400 text-lg">✓</span>

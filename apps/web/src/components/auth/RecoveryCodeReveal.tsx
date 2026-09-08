@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState } from 'react'
 import type { RecoveryCode } from '@/lib/crypto'
 
@@ -31,13 +32,16 @@ export default function RecoveryCodeReveal({
 
   return (
     <div className="relative min-h-screen max-w-[393px] mx-auto px-5 pb-10 flex flex-col">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
       <div className="pt-16 pb-6 text-center">
         <div className="w-14 h-14 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-2xl mx-auto mb-4">🔑</div>
         <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR</p>
         <h1 className="text-white text-xl font-light">{title}</h1>
-        <p className="text-white/40 text-sm mt-2 leading-relaxed">{subtitle}</p>
+        <p className="text-[var(--color-text-tertiary)] text-sm mt-2 leading-relaxed">{subtitle}</p>
       </div>
 
       <div className="flex-1 space-y-4">
@@ -47,7 +51,7 @@ export default function RecoveryCodeReveal({
           </p>
         </div>
 
-        <p className="text-white/30 text-xs text-center px-2 leading-relaxed">
+        <p className="text-[var(--color-text-tertiary)] text-xs text-center px-2 leading-relaxed">
           Write it down or save it in a password manager — not just a screenshot you might lose.
         </p>
 

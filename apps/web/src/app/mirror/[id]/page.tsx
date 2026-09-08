@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -27,7 +28,7 @@ function Field({ label, value }: { label: string; value?: string }) {
   if (!value) return null
   return (
     <div>
-      <p className="text-white/30 text-xs uppercase tracking-wide mb-1">{label}</p>
+      <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-1">{label}</p>
       <p className="text-white/70 text-sm leading-relaxed">{value}</p>
     </div>
   )
@@ -63,14 +64,17 @@ export default function MirrorDetailPage() {
       <Sidebar />
       <main className="flex-1 pb-20 lg:pb-0">
         <div className="relative min-h-screen">
-          <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-canvas-from)] via-[var(--color-bg-canvas-via)] to-[var(--color-bg-canvas-to)] -z-10" />
+          <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/mirror-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
           <div className="max-w-[393px] lg:max-w-2xl mx-auto px-5 lg:px-8 pt-14 lg:pt-8 pb-10 lg:pb-12">
             <Link href="/mirror/new" className="text-[var(--color-violet-400)] text-sm">
               ← Mirror Room
             </Link>
 
-            {loading && <p className="text-white/30 text-sm text-center pt-12">Loading…</p>}
+            {loading && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-12">Loading…</p>}
 
             {!loading && notFound && (
               <div className="pt-12 text-center">

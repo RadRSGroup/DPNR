@@ -17,7 +17,7 @@ import type { DashboardResponse } from '@dpnr/shared-types'
 export default function RoadmapTimelineCard({ roadmap }: { roadmap: NonNullable<DashboardResponse['roadmap']> }) {
   return (
     <Card>
-      <p className="text-white/40 text-xs uppercase tracking-wide mb-4">My Roadmap</p>
+      <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-4">My Roadmap</p>
       <div className="flex flex-col lg:flex-row lg:items-start gap-3 lg:gap-2">
         <RoadmapNode label="Current Focus" value={roadmap.currentFocus} color="var(--color-amber-400)" />
         <div className="hidden lg:block w-6 h-px shrink-0 bg-gradient-to-r from-[var(--color-amber-400)] to-[var(--color-violet-500)] mt-2" />
@@ -33,7 +33,7 @@ function RoadmapNode({ label, value, color, align = 'left' }: { label: string; v
   return (
     <div className={`flex flex-col min-w-0 lg:flex-1 items-start text-left ${align === 'right' ? 'lg:items-end lg:text-right' : ''}`}>
       <div className="w-3 h-3 rounded-full mb-2 shrink-0" style={{ backgroundColor: color, boxShadow: `0 0 8px 0 ${color}` }} />
-      <p className="text-[10px] uppercase tracking-wide text-white/40">{label}</p>
+      <p className="text-[10px] uppercase tracking-wide text-[var(--color-text-tertiary)]">{label}</p>
       <p className="text-sm text-white mt-0.5 lg:line-clamp-2">{value}</p>
     </div>
   )

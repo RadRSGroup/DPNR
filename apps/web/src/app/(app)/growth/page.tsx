@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -78,7 +79,10 @@ function GrowthTrackerContent() {
 
   return (
     <div className="relative min-h-screen">
-      <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-canvas-from)] via-[var(--color-bg-canvas-via)] to-[var(--color-bg-canvas-to)] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/growth-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
       <div className="max-w-[393px] lg:max-w-none mx-auto px-5 lg:px-8 pb-10 lg:pb-12">
         <div className="pt-14 lg:pt-8 pb-6 flex items-center justify-between">
@@ -95,6 +99,23 @@ function GrowthTrackerContent() {
             <Sparkles className="w-4 h-4 text-[var(--color-amber-400)]" /> Breathe &amp; Check In
           </Link>
         </div>
+
+        <Card className="relative overflow-hidden !p-0 mb-4 lg:mb-6 hidden lg:block">
+          <div className="relative h-40 lg:h-48">
+            <Image
+              src="/images/growth/growth-hero.webp"
+              alt=""
+              fill
+              sizes="100vw"
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-base)] via-transparent to-transparent" />
+            <div className="absolute inset-0 flex flex-col items-start justify-end p-5 lg:p-8">
+              <h2 className="font-display text-xl lg:text-2xl text-white">You&apos;re growing. You&apos;re becoming.</h2>
+              <p className="text-white/60 text-sm mt-1 max-w-sm">This is your space to see yourself clearly, with compassion and truth.</p>
+            </div>
+          </div>
+        </Card>
 
         <div className="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
           {/* Main column */}
@@ -114,7 +135,7 @@ function GrowthTrackerContent() {
             {!loading && (dashboard?.lifeDomains?.length ?? 0) > 0 && (
               <Card>
                 <p className="text-sm text-white mb-1">Domains of Life</p>
-                <p className="text-xs text-white/40 mb-4">Your alignment across key life areas</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">Your alignment across key life areas</p>
                 {/* A single-column list, not a multi-column grid: a grid's
                     column count is keyed to viewport width, but this card's
                     own rendered width is a fraction of the viewport (it
@@ -136,7 +157,7 @@ function GrowthTrackerContent() {
                           <Icon className="w-3 h-3" style={{ color: meta.color }} />
                         </ProgressRing>
                         <span className="text-sm text-white/80 flex-1">{LIFE_DOMAIN_LABELS[d.domain]}</span>
-                        <span className="text-xs text-white/40 shrink-0">{d.percent}%</span>
+                        <span className="text-xs text-[var(--color-text-tertiary)] shrink-0">{d.percent}%</span>
                       </div>
                     )
                   })}
@@ -152,7 +173,7 @@ function GrowthTrackerContent() {
             {!loading && (dashboard?.alignmentHistory?.length ?? 0) >= 2 && (
               <Card>
                 <p className="text-sm text-white mb-1">Alignment Over Time</p>
-                <p className="text-xs text-white/40 mb-4">Your overall alignment trend</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">Your overall alignment trend</p>
                 <AlignmentHistoryChart points={dashboard!.alignmentHistory} />
               </Card>
             )}
@@ -171,7 +192,7 @@ function GrowthTrackerContent() {
             {!loading && (dashboard?.archetypes?.length ?? 0) > 0 && (
               <Card>
                 <p className="text-sm text-white mb-1">Your Archetypes</p>
-                <p className="text-xs text-white/40 mb-4">The energies that show up for you</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">The energies that show up for you</p>
                 <div className="grid grid-cols-2 gap-3">
                   {dashboard!.archetypes.map((a) => (
                     <ArchetypeBadge key={a.archetype} archetype={a.archetype} percent={a.percent} />
@@ -187,12 +208,12 @@ function GrowthTrackerContent() {
             {!loading && ((valuesNeeds?.topValues.length ?? 0) > 0 || (valuesNeeds?.topNeeds.length ?? 0) > 0) && (
               <Card>
                 <p className="text-sm text-white mb-1">Values &amp; Needs Snapshot</p>
-                <p className="text-xs text-white/40 mb-4">What drives you and what you need more of</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">What drives you and what you need more of</p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-[11px] text-white/40 uppercase tracking-wide mb-2">Top Values</p>
+                    <p className="text-[11px] text-[var(--color-text-tertiary)] uppercase tracking-wide mb-2">Top Values</p>
                     {valuesNeeds!.topValues.length === 0 ? (
-                      <p className="text-xs text-white/30">Nothing yet</p>
+                      <p className="text-xs text-[var(--color-text-tertiary)]">Nothing yet</p>
                     ) : (
                       <div className="flex flex-wrap gap-1.5">
                         {valuesNeeds!.topValues.map((v) => (
@@ -204,9 +225,9 @@ function GrowthTrackerContent() {
                     )}
                   </div>
                   <div>
-                    <p className="text-[11px] text-white/40 uppercase tracking-wide mb-2">Top Needs</p>
+                    <p className="text-[11px] text-[var(--color-text-tertiary)] uppercase tracking-wide mb-2">Top Needs</p>
                     {valuesNeeds!.topNeeds.length === 0 ? (
-                      <p className="text-xs text-white/30">Nothing yet</p>
+                      <p className="text-xs text-[var(--color-text-tertiary)]">Nothing yet</p>
                     ) : (
                       <div className="flex flex-wrap gap-1.5">
                         {valuesNeeds!.topNeeds.map((n) => (
@@ -228,20 +249,20 @@ function GrowthTrackerContent() {
             <div className="grid sm:grid-cols-2 gap-4 lg:gap-6">
               <Card className="opacity-80">
                 <div className="flex items-center gap-2 mb-2">
-                  <Layers className="w-4 h-4 text-white/40" />
+                  <Layers className="w-4 h-4 text-[var(--color-text-tertiary)]" />
                   <p className="text-sm text-white">Core Pillars</p>
                 </div>
-                <p className="text-xs text-white/40 leading-relaxed">
+                <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed">
                   Needs more real usage data before DPNR can compute a meaningful pillar-alignment
                   score. Not built yet — this is an honest gap, not a bug.
                 </p>
               </Card>
               <Card className="opacity-80">
                 <div className="flex items-center gap-2 mb-2">
-                  <Waves className="w-4 h-4 text-white/40" />
+                  <Waves className="w-4 h-4 text-[var(--color-text-tertiary)]" />
                   <p className="text-sm text-white">Emotional Landscape</p>
                 </div>
-                <p className="text-xs text-white/40 leading-relaxed">
+                <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed">
                   Needs a real emotion/sentiment-tracking model behind it, which doesn&apos;t exist
                   yet. Not built yet — this is an honest gap, not a bug.
                 </p>
@@ -253,11 +274,11 @@ function GrowthTrackerContent() {
           <div className="space-y-4 lg:space-y-6 mt-4 lg:mt-0">
             <Card>
               <p className="text-sm text-white mb-1">Recent Decisions</p>
-              <p className="text-xs text-white/40 mb-4">From your past decisions</p>
+              <p className="text-xs text-[var(--color-text-tertiary)] mb-4">From your past decisions</p>
               {loading ? (
-                <p className="text-xs text-white/40">Loading…</p>
+                <p className="text-xs text-[var(--color-text-tertiary)]">Loading…</p>
               ) : recentDecisions.length === 0 ? (
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-[var(--color-text-tertiary)]">
                   No decisions yet.{' '}
                   <Link href="/decision/new" className="text-[var(--color-violet-300)] hover:underline">
                     Start one
@@ -274,9 +295,9 @@ function GrowthTrackerContent() {
                     >
                       <div className="min-w-0">
                         <p className="text-sm text-white/80 line-clamp-1">{d.title}</p>
-                        <p className="text-xs text-white/40">{timeAgo(d.createdAt)}</p>
+                        <p className="text-xs text-[var(--color-text-tertiary)]">{timeAgo(d.createdAt)}</p>
                       </div>
-                      <span className="text-xs text-white/40 capitalize shrink-0">{d.status}</span>
+                      <span className="text-xs text-[var(--color-text-tertiary)] capitalize shrink-0">{d.status}</span>
                     </Link>
                   ))}
                 </div>
@@ -289,7 +310,7 @@ function GrowthTrackerContent() {
               !loading && (
                 <Card>
                   <p className="text-sm text-white mb-2">This Week&apos;s Reflection</p>
-                  <p className="text-xs text-white/40 leading-relaxed">
+                  <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed">
                     Nothing yet this week — your next Daily Card will show up here.
                   </p>
                 </Card>

@@ -34,7 +34,7 @@ export default function Home() {
           </Link>
         </div>
 
-        <p className="text-white/30 text-xs">~25 minutes · Private · AI-assisted</p>
+        <p className="text-[var(--color-text-tertiary)] text-xs">~25 minutes · Private · AI-assisted</p>
       </div>
     </main>
   );

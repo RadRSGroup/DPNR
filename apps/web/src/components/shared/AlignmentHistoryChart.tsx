@@ -60,7 +60,7 @@ export default function AlignmentHistoryChart({ points }: { points: Point[] }) {
               className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
                 range === opt.key
                   ? 'border-[var(--color-violet-500)] bg-[var(--color-violet-500)]/15 text-white'
-                  : 'border-white/10 text-white/40 hover:text-white/60'
+                  : 'border-white/10 text-[var(--color-text-tertiary)] hover:text-white/60'
               }`}
             >
               {opt.label}
@@ -70,7 +70,7 @@ export default function AlignmentHistoryChart({ points }: { points: Point[] }) {
         {latest && (
           <div className="text-right leading-none">
             <p className="text-lg text-white font-medium">{latest.score}%</p>
-            <p className="text-[10px] text-white/40 mt-0.5">Today</p>
+            <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">Today</p>
           </div>
         )}
       </div>

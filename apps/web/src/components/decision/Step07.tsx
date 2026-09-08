@@ -126,7 +126,7 @@ export default function Step07({
 
           <div className="space-y-0.5 text-center">
             <p className="text-white/70 text-sm">Imagine your life in one year</p>
-            <p className="text-white/40 text-xs">if you choose Option {currentOption}.</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs">if you choose Option {currentOption}.</p>
           </div>
 
           <div className="flex-1 space-y-2 no-scrollbar overflow-y-auto">
@@ -173,7 +173,7 @@ export default function Step07({
                   onChange={e => currentOption === 'A' ? setCustomA(e.target.value) : setCustomB(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && addCustom()}
                   placeholder="Something else?"
-                  className="flex-1 bg-white/5 border border-white/10 rounded-full px-3 py-2 text-white text-sm placeholder-white/30 focus:outline-none focus:border-purple-500/50"
+                  className="flex-1 bg-white/5 border border-white/10 rounded-full px-3 py-2 text-white text-sm placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-purple-500/50"
                 />
                 <button
                   onClick={addCustom}
@@ -203,7 +203,7 @@ export default function Step07({
           <div className="text-center space-y-1">
             <p className="text-purple-400 text-xs uppercase tracking-widest">Step 7 · Reflect</p>
             <h2 className="text-white text-lg font-light">You&apos;ve mapped both paths.</h2>
-            <p className="text-white/40 text-sm">Now let it settle. Which option leans closer to your truth?</p>
+            <p className="text-[var(--color-text-tertiary)] text-sm">Now let it settle. Which option leans closer to your truth?</p>
           </div>
 
           {/* Option lean selector */}
@@ -224,7 +224,7 @@ export default function Step07({
                   <p className="text-purple-400 text-xs font-medium">Option {label}</p>
                   <p className="text-white/70 text-xs leading-relaxed line-clamp-3">{opt.content}</p>
                   {projSelected.length > 0 && (
-                    <p className="text-white/30 text-xs">{projSelected.length} futures resonated</p>
+                    <p className="text-[var(--color-text-tertiary)] text-xs">{projSelected.length} futures resonated</p>
                   )}
                 </button>
               )
@@ -236,7 +236,7 @@ export default function Step07({
             className={`w-full py-3 rounded-2xl border text-sm transition-all ${
               chosenLean === 'undecided'
                 ? 'border-purple-500/40 bg-purple-900/15 text-purple-300'
-                : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'
+                : 'border-white/10 text-[var(--color-text-tertiary)] hover:border-white/20 hover:text-white/60'
             }`}
           >
             Still undecided — and that&apos;s okay
@@ -244,13 +244,13 @@ export default function Step07({
 
           {/* One-line reflection */}
           <div className="space-y-2">
-            <p className="text-white/50 text-xs text-center">In one sentence — what feels true right now? <span className="text-white/25">(optional)</span></p>
+            <p className="text-white/50 text-xs text-center">In one sentence — what feels true right now? <span className="text-[var(--color-text-tertiary)]">(optional)</span></p>
             <textarea
               value={reflectionNote}
               onChange={e => setReflectionNote(e.target.value.slice(0, 200))}
               placeholder="Something in me knows..."
               rows={2}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-white/25 text-sm resize-none focus:outline-none focus:border-purple-500/50 transition-colors"
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/50 transition-colors"
             />
           </div>
 

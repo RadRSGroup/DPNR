@@ -5,7 +5,7 @@ export default function StatTile({ label, value }: { label: string; value: strin
   return (
     <Card className="text-center">
       <p className="text-lg lg:text-xl text-white font-medium">{value}</p>
-      <p className="text-[11px] text-white/40 mt-1">{label}</p>
+      <p className="text-[11px] text-[var(--color-text-tertiary)] mt-1">{label}</p>
     </Card>
   )
 }

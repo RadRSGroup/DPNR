@@ -83,7 +83,10 @@ export default function MirrorRoomLanding({ userName, onStart, sourceTopicTitle 
       <Sidebar />
       <main className="flex-1 pb-20 lg:pb-0">
         <div className="relative min-h-screen">
-          <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-canvas-from)] via-[var(--color-bg-canvas-via)] to-[var(--color-bg-canvas-to)] -z-10" />
+          <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/mirror-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
           <div className="max-w-[393px] lg:max-w-none mx-auto px-5 lg:px-8 pb-10 lg:pb-12">
             <div className="pt-14 lg:pt-8 pb-6">
@@ -117,7 +120,7 @@ export default function MirrorRoomLanding({ userName, onStart, sourceTopicTitle 
                     </p>
                     <div className="mt-4 flex items-center gap-3">
                       <PrimaryButton label="Start Mirror" onClick={onStart} className="lg:w-auto lg:px-6" />
-                      <span className="text-white/30 text-xs">
+                      <span className="text-[var(--color-text-tertiary)] text-xs">
                         {ROOM_REFINE_COST} credit{ROOM_REFINE_COST === 1 ? '' : 's'} per refine
                       </span>
                     </div>
@@ -140,7 +143,7 @@ export default function MirrorRoomLanding({ userName, onStart, sourceTopicTitle 
                     <p className="text-sm text-white">
                       You&apos;ve shown up {weeklySessionCount} time{weeklySessionCount === 1 ? '' : 's'} this week
                     </p>
-                    <p className="text-xs text-white/40 mt-1">Just for you to notice — no pressure, no streak to break.</p>
+                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Just for you to notice — no pressure, no streak to break.</p>
                   </Card>
                 )}
 
@@ -150,13 +153,13 @@ export default function MirrorRoomLanding({ userName, onStart, sourceTopicTitle 
                       <LotusIcon className="w-4 h-4 text-[var(--color-violet-400)]" />
                       <p className="text-sm text-white">Your Patterns</p>
                     </div>
-                    <p className="text-xs text-white/40 mb-4">What DPNR has noticed, by confidence</p>
+                    <p className="text-xs text-[var(--color-text-tertiary)] mb-4">What DPNR has noticed, by confidence</p>
                     <div className="space-y-3">
                       {confirmedPatterns.slice(0, 4).map((signal) => (
                         <div key={signal.signalId}>
                           <div className="flex items-center justify-between mb-1">
                             <p className="text-sm text-white/80 line-clamp-1 pr-2">{signal.description}</p>
-                            <span className="text-xs text-white/40 shrink-0">{Math.round(signal.confidence * 100)}%</span>
+                            <span className="text-xs text-[var(--color-text-tertiary)] shrink-0">{Math.round(signal.confidence * 100)}%</span>
                           </div>
                           <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
                             <div
@@ -172,7 +175,7 @@ export default function MirrorRoomLanding({ userName, onStart, sourceTopicTitle 
 
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="w-full text-center text-white/40 hover:text-white/60 text-xs underline"
+                  className="w-full text-center text-[var(--color-text-tertiary)] hover:text-white/60 text-xs underline"
                 >
                   Back to InnerOS
                 </button>

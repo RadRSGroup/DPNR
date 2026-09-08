@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 
@@ -49,7 +50,10 @@ export default function CompletionScreen({
       <Sidebar />
       <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
     <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] max-w-[393px] mx-auto flex flex-col overflow-hidden lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
-      <div className="absolute inset-0 bg-[#1a0826] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/decision-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.5)_0%,_rgba(80,20,140,0.3)_45%,_transparent_75%)] -z-10" />
 
       {/* Scrollable content */}
@@ -94,10 +98,10 @@ export default function CompletionScreen({
           {/* Lean */}
           {leanLabel && (
             <div className="flex items-center gap-2 pt-1">
-              <span className="text-white/30 text-xs">Leaning:</span>
+              <span className="text-[var(--color-text-tertiary)] text-xs">Leaning:</span>
               <span className={`text-xs border rounded-full px-2.5 py-0.5 ${
                 chosenLean === 'undecided'
-                  ? 'border-white/15 text-white/40'
+                  ? 'border-white/15 text-[var(--color-text-tertiary)]'
                   : 'border-purple-700/40 bg-purple-900/20 text-purple-300'
               }`}>{leanLabel}</span>
             </div>
@@ -115,7 +119,7 @@ export default function CompletionScreen({
         {/* Commitment */}
         {commitment && (
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-1">
-            <p className="text-white/30 text-xs uppercase tracking-wide">Your commitment</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">Your commitment</p>
             <p className="text-white/70 text-sm leading-relaxed">{commitment}</p>
           </div>
         )}

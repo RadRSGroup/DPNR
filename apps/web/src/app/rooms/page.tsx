@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { getCurrentSession } from '@/lib/cognito/client'
@@ -26,7 +27,7 @@ const ROOMS = [
     title: 'Start a Mirror Room session',
     subtitle: '~12 minutes · 6 guided steps',
     style: 'bg-white/5 border border-white/10 hover:border-white/20 text-white',
-    subtitleClass: 'text-white/40',
+    subtitleClass: 'text-[var(--color-text-tertiary)]',
   },
 ]
 
@@ -44,7 +45,10 @@ export default function RoomsPage() {
 
   return (
     <div className="relative min-h-screen max-w-[393px] mx-auto px-5 pb-10">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
       <div className="pt-14 pb-6 flex items-center justify-between">
         <div>
@@ -65,7 +69,7 @@ export default function RoomsPage() {
         </div>
       </div>
 
-      <p className="text-white/40 text-sm leading-relaxed mb-6">
+      <p className="text-[var(--color-text-tertiary)] text-sm leading-relaxed mb-6">
         Guided sessions to think something through, out loud, with structure.
       </p>
 

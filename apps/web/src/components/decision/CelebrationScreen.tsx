@@ -89,7 +89,7 @@ export default function CelebrationScreen({ userName, decisionTitle, onContinue 
 
         <button
           onClick={onContinue}
-          className="text-white/30 text-xs hover:text-white/50 transition-colors"
+          className="text-[var(--color-text-tertiary)] text-xs hover:text-white/50 transition-colors"
         >
           Skip
         </button>

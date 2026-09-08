@@ -47,7 +47,15 @@
 
   --color-text-primary: #ffffff;
   --color-text-secondary: rgba(255, 255, 255, 0.6);
-  --color-text-tertiary: rgba(255, 255, 255, 0.4);
+  /*
+   * Was 0.4 (3.8:1 against --color-bg-base — fails WCAG 1.4.3's 4.5:1 normal-
+   * text minimum). 0.5 measures 5.3:1. This is also now the one low-emphasis
+   * text color for placeholders and fine print — those previously used
+   * text-white/30 and text-white/25 as raw, untokenized utilities (2.6:1 and
+   * 2.1:1, both badly failing) instead of this token. Don't reintroduce a
+   * separate placeholder/fine-print opacity below this value.
+   */
+  --color-text-tertiary: rgba(255, 255, 255, 0.5);
 
   --color-accent: var(--color-violet-500);
   --color-accent-strong: var(--color-violet-600);

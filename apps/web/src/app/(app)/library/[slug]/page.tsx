@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
@@ -48,15 +49,18 @@ export default function LibraryTopicPage() {
 
   return (
     <div className="relative min-h-screen">
-      <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-canvas-from)] via-[var(--color-bg-canvas-via)] to-[var(--color-bg-canvas-to)] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/library-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
       <div className="max-w-[393px] lg:max-w-2xl mx-auto px-5 lg:px-8 pb-10 pt-14 lg:pt-8">
-        <Link href="/library" className="inline-flex items-center gap-1.5 text-white/40 hover:text-white/60 text-xs mb-6">
+        <Link href="/library" className="inline-flex items-center gap-1.5 text-[var(--color-text-tertiary)] hover:text-white/60 text-xs mb-6">
           <ArrowLeft className="w-3.5 h-3.5" /> Content & Learning
         </Link>
 
-        {loading && <p className="text-white/30 text-sm text-center pt-8">Loading…</p>}
-        {!loading && error && <p className="text-white/30 text-sm text-center pt-8">Couldn&apos;t load this topic.</p>}
+        {loading && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">Loading…</p>}
+        {!loading && error && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">Couldn&apos;t load this topic.</p>}
 
         {!loading && topic && (
           <div className="space-y-4">
@@ -81,7 +85,7 @@ export default function LibraryTopicPage() {
             {topic.possibleRoots && topic.possibleRoots.length > 0 && (
               <div>
                 <p className="text-white/50 text-xs uppercase tracking-wide mb-1">Possible roots — what may be underneath</p>
-                <p className="text-white/40 text-xs mb-2">Possibilities to consider, not a diagnosis — only one might fit, or none.</p>
+                <p className="text-[var(--color-text-tertiary)] text-xs mb-2">Possibilities to consider, not a diagnosis — only one might fit, or none.</p>
                 <BulletList items={topic.possibleRoots} />
               </div>
             )}

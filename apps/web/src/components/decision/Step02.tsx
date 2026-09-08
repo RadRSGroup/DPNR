@@ -63,12 +63,12 @@ export default function Step02({ decisionTitle, tier = 'free', initialNarrative 
               value={narrative}
               onChange={e => setNarrative(e.target.value.slice(0, charLimit))}
               placeholder="Write your story here..."
-              className="flex-1 min-h-[200px] bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              className="flex-1 min-h-[200px] bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
             />
             <div className="flex justify-between items-center">
               <span className="text-white/20 text-xs">{narrative.length}/{charLimit} chars</span>
               {tier === 'free' && (
-                <span className="text-white/30 text-xs">Upgrade for longer narratives</span>
+                <span className="text-[var(--color-text-tertiary)] text-xs">Upgrade for longer narratives</span>
               )}
             </div>
             {error && error !== 'token_cap_reached' && (
@@ -105,7 +105,7 @@ export default function Step02({ decisionTitle, tier = 'free', initialNarrative 
             {/* Re-parse */}
             <button
               onClick={() => setParsed(false)}
-              className="text-white/30 hover:text-white/50 text-xs text-center transition-colors"
+              className="text-[var(--color-text-tertiary)] hover:text-white/50 text-xs text-center transition-colors"
             >
               ↺ Rewrite narrative
             </button>
@@ -151,7 +151,7 @@ function OptionCard({
         disabled={option.approved}
         rows={3}
         placeholder="Describe this option in your own words..."
-        className="w-full bg-transparent text-white/80 text-sm resize-none focus:outline-none placeholder-white/30 disabled:opacity-70"
+        className="w-full bg-transparent text-white/80 text-sm resize-none focus:outline-none placeholder-[var(--color-text-tertiary)] disabled:opacity-70"
       />
       <div className="flex items-center gap-2">
         <button

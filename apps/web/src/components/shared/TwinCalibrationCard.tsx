@@ -63,7 +63,7 @@ export default function TwinCalibrationCard({
   return (
     <Card>
       <p className="text-sm text-white mb-1">What I&apos;m Noticing</p>
-      <p className="text-xs text-white/40 mb-4">Confirm what&apos;s right, correct what isn&apos;t</p>
+      <p className="text-xs text-[var(--color-text-tertiary)] mb-4">Confirm what&apos;s right, correct what isn&apos;t</p>
       <div className="space-y-4">
         {candidates.map((signal) => (
           <div key={signal.signalId}>

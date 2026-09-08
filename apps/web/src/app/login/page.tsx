@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -36,12 +37,15 @@ function LoginForm() {
 
   return (
     <div className="relative min-h-screen max-w-[393px] mx-auto px-5 flex flex-col justify-center">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a0826] via-[#0d0818] to-[#0a0a0f] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
       <div className="mb-10 text-center">
         <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR</p>
         <h1 className="text-white text-2xl font-light">InnerOS</h1>
-        <p className="text-white/40 text-sm mt-2">Sign in to continue</p>
+        <p className="text-[var(--color-text-tertiary)] text-sm mt-2">Sign in to continue</p>
       </div>
 
       {error && (
@@ -52,26 +56,34 @@ function LoginForm() {
 
       <form onSubmit={handleEmailLogin} className="space-y-4">
         <div>
+          <label htmlFor="login-email" className="block text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide mb-1.5">
+            Email
+          </label>
           <input
+            id="login-email"
             type="email"
-            placeholder="Email"
+            placeholder="you@example.com"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-white/30 text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
           />
         </div>
         <div>
+          <label htmlFor="login-password" className="block text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide mb-1.5">
+            Password
+          </label>
           <input
+            id="login-password"
             type="password"
-            placeholder="Password"
+            placeholder="••••••••"
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-white/30 text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
           />
           <div className="text-right mt-2">
-            <Link href="/forgot-password" className="text-white/30 text-xs hover:text-white/50 transition-colors">
+            <Link href="/forgot-password" className="text-[var(--color-text-tertiary)] text-xs hover:text-white/50 transition-colors">
               Forgot password?
             </Link>
           </div>
@@ -85,7 +97,7 @@ function LoginForm() {
         </button>
       </form>
 
-      <p className="text-center text-white/30 text-sm mt-8">
+      <p className="text-center text-[var(--color-text-tertiary)] text-sm mt-8">
         Don&apos;t have an account?{' '}
         <Link href="/signup" className="text-purple-400 hover:text-purple-300">Sign up</Link>
       </p>

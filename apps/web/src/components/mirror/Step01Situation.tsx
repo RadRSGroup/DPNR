@@ -31,9 +31,9 @@ export default function Step01Situation({ initialSituation = '', initialTrigger 
               onChange={e => setSituation(e.target.value.slice(0, 800))}
               placeholder="Describe the moment, as plainly as you can..."
               rows={4}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
             />
-            <p className="text-white/30 text-xs text-right">{situation.length}/800</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs text-right">{situation.length}/800</p>
           </div>
 
           <div className="space-y-2">
@@ -43,9 +43,9 @@ export default function Step01Situation({ initialSituation = '', initialTrigger 
               onChange={e => setTrigger(e.target.value.slice(0, 500))}
               placeholder="What was it, specifically, that set this off?"
               rows={3}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
             />
-            <p className="text-white/30 text-xs text-right">{trigger.length}/500</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs text-right">{trigger.length}/500</p>
           </div>
         </div>
 

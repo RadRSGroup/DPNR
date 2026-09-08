@@ -38,7 +38,7 @@ export default function Step04LifeImpact({
               onChange={e => setEnergyMoodEffect(e.target.value.slice(0, 500))}
               placeholder="Drained, on edge, foggy for the rest of the day..."
               rows={3}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
             />
           </div>
 
@@ -49,7 +49,7 @@ export default function Step04LifeImpact({
               onChange={e => setLifeDomain(e.target.value.slice(0, 300))}
               placeholder="Work, a relationship, how you see yourself..."
               rows={2}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
             />
           </div>
         </div>

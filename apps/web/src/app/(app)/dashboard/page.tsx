@@ -131,7 +131,10 @@ function DashboardContent() {
 
   return (
     <div className="relative min-h-screen">
-      <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg-canvas-from)] via-[var(--color-bg-canvas-via)] to-[var(--color-bg-canvas-to)] -z-10" />
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/dashboard-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
 
       <div className="max-w-[393px] lg:max-w-none mx-auto px-5 lg:px-8 pb-10 lg:pb-12">
         <div className="pt-14 lg:pt-8 pb-6 flex items-center justify-between">
@@ -173,7 +176,7 @@ function DashboardContent() {
                     a fabricated or premature number. */}
                 <div className="p-5 lg:p-6 sm:w-56 shrink-0 flex flex-col">
                   <p className="text-sm text-white/70">My InnerSelf</p>
-                  <p className="text-xs text-white/40">Your Digital Twin</p>
+                  <p className="text-xs text-[var(--color-text-tertiary)]">Your Digital Twin</p>
                   <div className="mt-4">
                     {dashboard?.alignmentScoreState === 'eligible' && dashboard.alignmentScore != null ? (
                       <ProgressRing percent={dashboard.alignmentScore} size={84} colorClassName="stroke-[var(--color-violet-500)]">
@@ -181,13 +184,13 @@ function DashboardContent() {
                       </ProgressRing>
                     ) : (
                       <div className="w-[84px] h-[84px] rounded-full border-2 border-dashed border-white/15 flex items-center justify-center">
-                        <span className="text-[10px] text-white/30 text-center px-2">
+                        <span className="text-[10px] text-[var(--color-text-tertiary)] text-center px-2">
                           {dashboard?.alignmentScoreState === 'developing' ? 'Picture forming…' : 'Still learning this part of you'}
                         </span>
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-white/40 mt-2">Alignment Score</p>
+                  <p className="text-xs text-[var(--color-text-tertiary)] mt-2">Alignment Score</p>
                 </div>
 
                 <div className="relative h-40 sm:h-auto sm:flex-1">
@@ -223,13 +226,13 @@ function DashboardContent() {
                 not a full lifecycle-management UI. */}
             {dashboard?.roadmap && (
               <div className="flex items-center justify-between px-1">
-                <span className="text-xs text-white/40 capitalize">Roadmap: {dashboard.roadmap.lifecycleState}</span>
+                <span className="text-xs text-[var(--color-text-tertiary)] capitalize">Roadmap: {dashboard.roadmap.lifecycleState}</span>
                 <div className="flex gap-2">
                   {(dashboard.roadmap.lifecycleState === 'active' || dashboard.roadmap.lifecycleState === 'evolving') && (
                     <button
                       onClick={() => handleLifecycleAction('pause')}
                       disabled={lifecyclePending}
-                      className="text-xs text-white/40 hover:text-white/70 transition-colors disabled:opacity-50"
+                      className="text-xs text-[var(--color-text-tertiary)] hover:text-white/70 transition-colors disabled:opacity-50"
                     >
                       Pause
                     </button>
@@ -238,7 +241,7 @@ function DashboardContent() {
                     <button
                       onClick={() => handleLifecycleAction('resume')}
                       disabled={lifecyclePending}
-                      className="text-xs text-white/40 hover:text-white/70 transition-colors disabled:opacity-50"
+                      className="text-xs text-[var(--color-text-tertiary)] hover:text-white/70 transition-colors disabled:opacity-50"
                     >
                       Resume
                     </button>
@@ -247,7 +250,7 @@ function DashboardContent() {
                     <button
                       onClick={() => handleLifecycleAction('archive')}
                       disabled={lifecyclePending}
-                      className="text-xs text-white/40 hover:text-white/70 transition-colors disabled:opacity-50"
+                      className="text-xs text-[var(--color-text-tertiary)] hover:text-white/70 transition-colors disabled:opacity-50"
                     >
                       Archive
                     </button>
@@ -264,7 +267,7 @@ function DashboardContent() {
             {!loading && (dashboard?.lifeDomains?.length ?? 0) > 0 && (
               <Card>
                 <p className="text-sm text-white mb-1">Life Domains</p>
-                <p className="text-xs text-white/40 mb-4">What you&apos;ve been exploring</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">What you&apos;ve been exploring</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {dashboard!.lifeDomains.map((d) => (
                     <div key={d.domain} className="bg-white/5 rounded-xl px-3 py-2.5">
@@ -276,7 +279,7 @@ function DashboardContent() {
                             style={{ width: `${d.percent}%` }}
                           />
                         </div>
-                        <span className="text-xs text-white/40 shrink-0">{d.percent}%</span>
+                        <span className="text-xs text-[var(--color-text-tertiary)] shrink-0">{d.percent}%</span>
                       </div>
                     </div>
                   ))}
@@ -327,7 +330,7 @@ function DashboardContent() {
             <Card>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-white/40">Credits</p>
+                  <p className="text-xs text-[var(--color-text-tertiary)]">Credits</p>
                   <p className="text-white text-lg font-light mt-0.5">{loading ? '…' : (dashboard?.creditsBalance ?? 0)}</p>
                 </div>
                 {!loading && dashboard?.creditsLow && (
@@ -346,13 +349,13 @@ function DashboardContent() {
             {!loading && confirmedPatterns.length > 0 && (
               <Card>
                 <p className="text-sm text-white mb-1">Patterns Track</p>
-                <p className="text-xs text-white/40 mb-4">What DPNR has noticed, by confidence</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">What DPNR has noticed, by confidence</p>
                 <div className="space-y-3">
                   {confirmedPatterns.slice(0, 4).map((signal) => (
                     <div key={signal.signalId}>
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-sm text-white/80 line-clamp-1 pr-2">{signal.description}</p>
-                        <span className="text-xs text-white/40 shrink-0">{Math.round(signal.confidence * 100)}%</span>
+                        <span className="text-xs text-[var(--color-text-tertiary)] shrink-0">{Math.round(signal.confidence * 100)}%</span>
                       </div>
                       <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
                         <div
@@ -373,7 +376,7 @@ function DashboardContent() {
             {!loading && (dashboard?.archetypes?.length ?? 0) > 0 && (
               <Card>
                 <p className="text-sm text-white mb-1">Leading Archetypes</p>
-                <p className="text-xs text-white/40 mb-4">The energies that show up for you</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">The energies that show up for you</p>
                 <div className="grid grid-cols-2 gap-3">
                   {dashboard!.archetypes.map((a) => (
                     <ArchetypeBadge key={a.archetype} archetype={a.archetype} percent={a.percent} />
@@ -390,7 +393,7 @@ function DashboardContent() {
               <Card>
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-sm text-white">My Evolution</p>
-                  <span className="text-xs text-white/40">Last {dashboard!.alignmentHistory.length} days</span>
+                  <span className="text-xs text-[var(--color-text-tertiary)]">Last {dashboard!.alignmentHistory.length} days</span>
                 </div>
                 <AlignmentSparkline points={dashboard!.alignmentHistory} />
               </Card>
@@ -433,9 +436,9 @@ function DashboardContent() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm text-white">{ROOM_LINK[suggestedSpace].label}</p>
-                    <p className="text-xs text-white/40">{dashboard?.roadmap?.direction}</p>
+                    <p className="text-xs text-[var(--color-text-tertiary)]">{dashboard?.roadmap?.direction}</p>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-white/30" />
+                  <ArrowRight className="w-4 h-4 text-[var(--color-text-tertiary)]" />
                 </Link>
               </Card>
             )}
@@ -476,7 +479,7 @@ function ExploreTile({ href, title, subtitle }: { href: string; title: string; s
       className="bg-white/5 border border-[var(--color-border-glass)] hover:border-white/20 active:scale-[0.98] rounded-[var(--radius-card)] p-4 transition-all block"
     >
       <p className="text-white text-sm font-medium">{title}</p>
-      <p className="text-white/40 text-xs mt-0.5">{subtitle}</p>
+      <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">{subtitle}</p>
     </Link>
   )
 }
