@@ -56,6 +56,14 @@ export const SessionItemSchema = z.object({
   // (AGENT_LOG.md flagged this as a real gap from Session 10 through Phase
   // 6 Stage 4b, fixed after Stage 4b's own deploy).
   lastResponse: EncryptedBlobSchema.optional(),
+  // Companion only (Rooms leave both undefined) — discrete conversations.
+  // `title` may contain real personal-content fragments (derived from the
+  // conversation's own first message), so it's encrypted like message
+  // content itself, never plaintext. `lastMessageAt` drives the Recent
+  // Conversations list's sort order — separate from `startedAt`, which
+  // never changes.
+  title: EncryptedBlobSchema.optional(), // wraps { title: string }
+  lastMessageAt: z.string().datetime().optional(),
 })
 export type SessionItem = z.infer<typeof SessionItemSchema>
 

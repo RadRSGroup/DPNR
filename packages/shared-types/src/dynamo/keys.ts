@@ -56,4 +56,5 @@ export const GlobalKeys = {
   sessionTicketSk: (sessionId: string): string => `TICKET#${sessionId}`,
   libraryTopicPk: (slug: string): string => `LIBRARY#TOPIC#${slug}`,
   planPk: (planId: string): string => `PLAN#${planId}`,
+  guidanceCardPk: (cardId: string): string => `GUIDANCE_CARD#${cardId}`,
 } as const

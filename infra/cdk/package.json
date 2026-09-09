@@ -11,7 +11,8 @@
     "deploy": "cdk deploy",
     "seed:prompt-registry": "ts-node --prefer-ts-exts scripts/seed-prompt-registry.ts",
     "seed:library-catalog": "ts-node --prefer-ts-exts scripts/seed-library-catalog.ts",
-    "seed:plans-catalog": "ts-node --prefer-ts-exts scripts/seed-plans-catalog.ts"
+    "seed:plans-catalog": "ts-node --prefer-ts-exts scripts/seed-plans-catalog.ts",
+    "seed:guidance-cards": "ts-node --prefer-ts-exts scripts/seed-guidance-cards.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.658.0",

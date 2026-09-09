@@ -96,6 +96,27 @@ export const LibraryTopicAliasItemSchema = z.object({
 })
 export type LibraryTopicAliasItem = z.infer<typeof LibraryTopicAliasItemSchema>
 
+/**
+ * Companion's "Pull a Card" library — same config-like, low-write-volume
+ * profile as Plans/Library (authored content, not personal user data).
+ * Deliberately flat (no version/alias split like Library topics): a card
+ * has no draft-review lifecycle, just active/inactive. `source` future-proofs
+ * an eventual auto-generate-from-template pipeline without a storage-shape
+ * change; every card seeded today is 'manual'. `imageRef` points at the
+ * existing companion/pull-a-card.webp placeholder for every card until real
+ * per-card art exists — flagged, not faked.
+ */
+export const GuidanceCardItemSchema = z.object({
+  pk: z.string(), // GlobalKeys.guidanceCardPk(cardId)
+  sk: z.literal('CONFIG'),
+  text: z.string(),
+  imageRef: z.string(),
+  source: z.enum(['manual', 'generated']),
+  active: z.boolean(),
+  createdAt: z.string().datetime(),
+})
+export type GuidanceCardItem = z.infer<typeof GuidanceCardItemSchema>
+
 /** Plans/Packages catalog — kept configurable per spec §Beta Trial, not hard-coded into product logic. */
 export const PlanItemSchema = z.object({
   pk: z.string(), // GlobalKeys.planPk(planId)

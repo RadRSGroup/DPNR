@@ -25,7 +25,8 @@ export default function Sidebar() {
         <RingLogo className="w-8 h-8" />
         <div>
           <div className="text-sm font-semibold leading-tight">DPNR</div>
-          <div className="text-xs text-[var(--color-text-tertiary)] leading-tight">innerOS</div>
+          <div className="text-[10px] text-[var(--color-text-tertiary)] leading-tight">Human Operating System</div>
+          <div className="text-xs text-[var(--color-violet-400)] leading-tight">innerOS</div>
         </div>
       </Link>
 

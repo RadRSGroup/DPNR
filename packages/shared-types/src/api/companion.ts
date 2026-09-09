@@ -11,6 +11,10 @@ import { DailyCardFeedbackSchema } from '../dynamo/continuity'
 export const CompanionMessageRequestSchema = z.object({
   text: z.string().min(1),
   clientMessageId: z.string(), // idempotency key — same role as the room command contract's
+  // Discrete conversations — targets a specific conversation instead of
+  // whatever the caller's pointer currently points at. Omitted = today's
+  // pointer-based behavior (back-compat).
+  sessionId: z.string().optional(),
 })
 export type CompanionMessageRequest = z.infer<typeof CompanionMessageRequestSchema>
 
@@ -56,3 +60,33 @@ export const CompanionContextResponseSchema = z.object({
     .nullable(),
 })
 export type CompanionContextResponse = z.infer<typeof CompanionContextResponseSchema>
+
+/** GET /v1/companion/conversations — Recent Conversations, newest first. */
+export const CompanionConversationsListResponseSchema = z.object({
+  conversations: z.array(
+    z.object({
+      sessionId: z.string(),
+      // Null only for the rare edge case where a session has zero messages
+      // yet (a just-created, never-sent-to conversation) — the frontend
+      // shows a placeholder label ("New conversation") in that case.
+      title: z.string().nullable(),
+      lastMessageAt: z.string().datetime(),
+      createdAt: z.string().datetime(),
+    })
+  ),
+})
+export type CompanionConversationsListResponse = z.infer<typeof CompanionConversationsListResponseSchema>
+
+/** POST /v1/companion/conversations — starts a new, empty conversation. */
+export const CompanionCreateConversationResponseSchema = z.object({
+  sessionId: z.string(),
+})
+export type CompanionCreateConversationResponse = z.infer<typeof CompanionCreateConversationResponseSchema>
+
+/** POST /v1/companion/pull-card — one random active card from the Pull-a-Card library. */
+export const PullCardResponseSchema = z.object({
+  cardId: z.string(),
+  text: z.string(),
+  imageRef: z.string(),
+})
+export type PullCardResponse = z.infer<typeof PullCardResponseSchema>

@@ -28,7 +28,12 @@ import { gatherContinuityContext } from '../continuity/gather-context'
 import { roadmapExists } from '../lib/roadmap'
 import { classifySafety, generateSafetyResponse } from '../lib/safety'
 import { classifyInteractionMode } from '../lib/interaction-mode'
-import { getOrCreateActiveCompanionSession, updateSessionInteractionMode } from './session'
+import {
+  resolveOrCreateSession,
+  updateSessionInteractionMode,
+  touchSessionLastMessage,
+  maybeSetConversationTitle,
+} from './session'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
@@ -86,8 +91,15 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
 
     await requireConsent(ddb, TABLE_NAME, userId)
 
-    const sessionId = await getOrCreateActiveCompanionSession(ddb, TABLE_NAME, pk)
+    const sessionId = await resolveOrCreateSession(ddb, TABLE_NAME, pk, body.sessionId)
     const recentMessages = await queryRecentMessages(pk, sessionId, MODEL_CONTEXT_MESSAGES)
+    // Discrete conversations: this is the conversation's first turn — derive
+    // and persist its title from it. Fires once per conversation (the
+    // ConditionExpression inside makes every later call a no-op), so this
+    // check doesn't need to be exact, just cheap.
+    if (recentMessages.length === 0) {
+      await maybeSetConversationTitle(ddb, TABLE_NAME, pk, sessionId, crypto, body.text)
+    }
 
     const duplicate = recentMessages
       .slice(-IDEMPOTENCY_LOOKBACK)
@@ -213,6 +225,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       createdAt: replyAt,
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: assistantMessage }))
+    await touchSessionLastMessage(ddb, TABLE_NAME, pk, sessionId)
 
     const response: CompanionMessageResponse = { sessionId, reply, directive }
     return jsonResponse(200, response)

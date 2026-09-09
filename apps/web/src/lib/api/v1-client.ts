@@ -10,6 +10,9 @@ import type {
   CompanionMessageRequest,
   CompanionMessageResponse,
   CompanionContextResponse,
+  CompanionConversationsListResponse,
+  CompanionCreateConversationResponse,
+  PullCardResponse,
   LibraryTopicDetailResponse,
   TwinListResponse,
   TwinSignalActionResponse,
@@ -172,10 +175,28 @@ export async function sendCompanionMessage(request: CompanionMessageRequest): Pr
   return parseOrThrow<CompanionMessageResponse>(res)
 }
 
-/** GET /v1/companion/context — recent turns, used by /companion to resume the active chat on load. */
-export async function getCompanionContext(): Promise<CompanionContextResponse> {
-  const res = await authedFetch('/v1/companion/context')
+/** GET /v1/companion/context — recent turns, used by /companion to resume the active chat on load. `sessionId` targets a specific conversation instead of the pointer's active one. */
+export async function getCompanionContext(sessionId?: string): Promise<CompanionContextResponse> {
+  const res = await authedFetch(sessionId ? `/v1/companion/context?sessionId=${encodeURIComponent(sessionId)}` : '/v1/companion/context')
   return parseOrThrow<CompanionContextResponse>(res)
+}
+
+/** GET /v1/companion/conversations — Recent Conversations, newest first. */
+export async function getCompanionConversations(): Promise<CompanionConversationsListResponse> {
+  const res = await authedFetch('/v1/companion/conversations')
+  return parseOrThrow<CompanionConversationsListResponse>(res)
+}
+
+/** POST /v1/companion/conversations — starts a new, empty conversation. */
+export async function createCompanionConversation(): Promise<CompanionCreateConversationResponse> {
+  const res = await authedFetch('/v1/companion/conversations', { method: 'POST' })
+  return parseOrThrow<CompanionCreateConversationResponse>(res)
+}
+
+/** POST /v1/companion/pull-card — one random active card from the Pull-a-Card library. */
+export async function pullCompanionCard(): Promise<PullCardResponse> {
+  const res = await authedFetch('/v1/companion/pull-card', { method: 'POST' })
+  return parseOrThrow<PullCardResponse>(res)
 }
 
 /** GET /v1/library/topics/{slug} — used by /companion to render an `open_library_topic` directive inline, and by /library/[slug]. */

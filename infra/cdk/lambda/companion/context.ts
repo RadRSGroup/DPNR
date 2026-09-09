@@ -15,7 +15,7 @@ import { resolvePromptVersion } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
 import { gatherContinuityContext } from '../continuity/gather-context'
 import { roadmapExists } from '../lib/roadmap'
-import { getOrCreateActiveCompanionSession } from './session'
+import { getOrCreateActiveCompanionSession, resolveOrCreateSession } from './session'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
@@ -65,6 +65,32 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const pk = userPk(userId)
     const crypto = await getSessionCrypto(userId)
 
+    // Discrete conversations: an explicit ?sessionId= targets that specific
+    // conversation (ownership+type-checked inside resolveOrCreateSession,
+    // 404 if it's not the caller's own companion session) instead of
+    // whatever the pointer currently points at. Deliberately skips the
+    // "brand-new user" onboarding-opener branch below — a specific
+    // conversation the frontend already knows about (just switched to, or
+    // just created) should show its real messages (often empty), not a
+    // synthesized onboarding question meant only for a truly first-ever
+    // open. Continuation-gap synthesis still applies, same as the
+    // pointer-based path — reopening an old conversation after a real gap
+    // deserves the same "welcome back" treatment.
+    const requestedSessionId = event.queryStringParameters?.sessionId
+    if (requestedSessionId) {
+      const sessionId = await resolveOrCreateSession(ddb, TABLE_NAME, pk, requestedSessionId)
+      const messages = await loadRecentMessages(crypto, pk, sessionId)
+      const continuation = await maybeSynthesizeContinuation(crypto, userId, pk, sessionId, messages)
+      if (continuation) messages.push(continuation)
+
+      const body: CompanionContextResponse = {
+        sessionId,
+        messages,
+        dailyCard: await getUndismissedDailyCard(crypto, pk),
+      }
+      return jsonResponse(200, body)
+    }
+
     const pointerResult = await ddb.send(
       new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.companionActiveSession() } })
     )
@@ -93,27 +119,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       return jsonResponse(200, body)
     }
 
-    const result = await ddb.send(
-      new QueryCommand({
-        TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
-        ExpressionAttributeValues: { ':pk': pk, ':prefix': Sk.sessionMessage(pointer.sessionId, '') },
-        // Fetch the most recent CONTEXT_MESSAGE_LIMIT (not the oldest) — a
-        // resume view needs the tail of a long session, not its start.
-        ScanIndexForward: false,
-        Limit: CONTEXT_MESSAGE_LIMIT,
-      })
-    )
-    const items = ((result.Items ?? []) as SessionMessageItem[]).reverse() // back to chronological order
-
-    const messages = await Promise.all(
-      items.map(async (m) => ({
-        role: m.role,
-        text: (await crypto.decryptField<MessageContent>(m.content)).text,
-        createdAt: m.createdAt,
-      }))
-    )
-
+    const messages = await loadRecentMessages(crypto, pk, pointer.sessionId)
     const continuation = await maybeSynthesizeContinuation(crypto, userId, pk, pointer.sessionId, messages)
     if (continuation) messages.push(continuation)
 
@@ -126,6 +132,34 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   } catch (err) {
     return errorResponse(err)
   }
+}
+
+/** Most recent CONTEXT_MESSAGE_LIMIT messages for a given conversation, decrypted, chronological. */
+async function loadRecentMessages(
+  crypto: SessionCrypto,
+  pk: string,
+  sessionId: string
+): Promise<{ role: 'user' | 'assistant'; text: string; createdAt: string }[]> {
+  const result = await ddb.send(
+    new QueryCommand({
+      TableName: TABLE_NAME,
+      KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+      ExpressionAttributeValues: { ':pk': pk, ':prefix': Sk.sessionMessage(sessionId, '') },
+      // Fetch the most recent CONTEXT_MESSAGE_LIMIT (not the oldest) — a
+      // resume view needs the tail of a long session, not its start.
+      ScanIndexForward: false,
+      Limit: CONTEXT_MESSAGE_LIMIT,
+    })
+  )
+  const items = ((result.Items ?? []) as SessionMessageItem[]).reverse() // back to chronological order
+
+  return Promise.all(
+    items.map(async (m) => ({
+      role: m.role,
+      text: (await crypto.decryptField<MessageContent>(m.content)).text,
+      createdAt: m.createdAt,
+    }))
+  )
 }
 
 /**

@@ -9,8 +9,9 @@ import { getCompanionContext, sendCompanionMessage, ApiError } from '@/lib/api/v
 import type { CompanionDirective, CompanionContextResponse } from '@dpnr/shared-types'
 import DirectiveCard from '@/components/companion/DirectiveCard'
 import DailyGuidanceCard from '@/components/companion/DailyGuidanceCard'
+import PullACard from '@/components/companion/PullACard'
+import RecentConversations from '@/components/companion/RecentConversations'
 import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
-import Card from '@/components/ui/Card'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -44,12 +45,20 @@ function timeGreeting() {
  *
  * UI redesign (Session 20, Phase 2 of docs/AGENT_LOG.md's plan): reskinned
  * against the "Main Chat" reference screen — real time-of-day greeting,
- * quick-prompt starter chips (just fill the input, never auto-send), and
- * the Daily Card moved into a "Pull a Card" widget that lives in a desktop
- * right column and inline above the thread on mobile. The reference's own
- * "Recent Conversations" list has no real backend equivalent — Companion is
- * one continuous thread, not discrete named conversations — so it's
- * deliberately not built rather than faked; see AGENT_LOG.md.
+ * quick-prompt starter chips (just fill the input, never auto-send). The
+ * mobile inline widget above the thread still shows the scheduled Daily
+ * Card via `DailyGuidanceCard` (untouched this pass).
+ *
+ * Session 42: the reference's other two desktop-right-column pieces are now
+ * real. **"Pull a Card"** (`PullACard`) is a genuinely different mechanic
+ * from the scheduled Daily Card above — an on-demand pull from a stored
+ * card library, confirmed scoped to Companion only — and replaces this
+ * page's own previous dailyCard-driven right-column widget. **"Recent
+ * Conversations"** (`RecentConversations`) is real too: Companion used to
+ * be one continuous thread forever; `sessionId` now identifies a specific
+ * conversation, switching/creating one calls `getCompanionContext`/
+ * `createCompanionConversation` and swaps `messages`/`sessionId` client-side
+ * with no page reload.
  */
 export default function CompanionPage() {
   const router = useRouter()
@@ -93,6 +102,27 @@ export default function CompanionPage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, sending])
 
+  /** Discrete conversations — switch to an existing one from Recent Conversations. */
+  async function handleSelectConversation(targetSessionId: string) {
+    if (targetSessionId === sessionId || loading) return
+    setLoading(true)
+    try {
+      const context = await getCompanionContext(targetSessionId)
+      setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt })))
+      setSessionId(context.sessionId)
+    } catch {
+      // Leave the currently-open conversation showing — same tolerance as the initial load.
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /** Discrete conversations — "New conversation" already created the empty session server-side; just reset local state to it. */
+  function handleNewConversation(newSessionId: string) {
+    setMessages([])
+    setSessionId(newSessionId)
+  }
+
   async function handleSend() {
     const text = input.trim()
     if (!text || sending) return
@@ -103,7 +133,7 @@ export default function CompanionPage() {
 
     try {
       const clientMessageId = crypto.randomUUID()
-      const res = await sendCompanionMessage({ text, clientMessageId })
+      const res = await sendCompanionMessage({ text, clientMessageId, sessionId: sessionId ?? undefined })
       setSessionId(res.sessionId)
       setMessages((prev) => [
         ...prev,
@@ -326,14 +356,12 @@ export default function CompanionPage() {
 
         {/* Right column — desktop only */}
         <div className="hidden lg:flex lg:flex-col lg:gap-4 lg:pb-6 lg:overflow-y-auto">
-          {dailyCard ? (
-            <DailyGuidanceCard dailyCard={dailyCard} />
-          ) : (
-            <Card>
-              <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">Today&apos;s Guidance</p>
-              <p className="text-[var(--color-text-tertiary)] text-sm mt-2">Nothing new right now — check back tomorrow.</p>
-            </Card>
-          )}
+          <PullACard />
+          <RecentConversations
+            activeSessionId={sessionId}
+            onSelect={handleSelectConversation}
+            onCreated={handleNewConversation}
+          />
         </div>
       </div>
     </div>

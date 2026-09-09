@@ -391,6 +391,47 @@ export class ApiStack extends Stack {
     props.sessionTicketsKmsKey.grantDecrypt(companionContextFn)
     props.sessionTicketsTable.grantReadData(companionContextFn)
 
+    // Discrete conversations (Session 42) — Recent Conversations list + the
+    // explicit "New conversation" action. list-conversations.ts decrypts
+    // each conversation's title (or lazily derives+persists one from its
+    // first message), same crypto/IAM shape as companionContextFn above.
+    const companionListConversationsFn = new lambda.NodejsFunction(this, 'CompanionListConversationsFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/companion/list-conversations.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
+      description: 'GET /v1/companion/conversations — Recent Conversations, newest first.',
+    })
+    props.applicationTable.grantReadWriteData(companionListConversationsFn)
+    props.sessionTicketsKmsKey.grantDecrypt(companionListConversationsFn)
+    props.sessionTicketsTable.grantReadData(companionListConversationsFn)
+
+    const companionCreateConversationFn = new lambda.NodejsFunction(this, 'CompanionCreateConversationFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/companion/create-conversation.ts'),
+      description: 'POST /v1/companion/conversations — starts a new, empty conversation.',
+    })
+    props.applicationTable.grantReadWriteData(companionCreateConversationFn)
+
+    // Pull a Card (Session 42) — a stored, reusable card library, a
+    // genuinely different mechanic from the scheduled Daily Card and
+    // scoped to Companion only (confirmed with the user). Public-catalog
+    // read, same profile as get-plans.ts — no crypto/session-ticket grant
+    // needed, card text is authored content, not personal data.
+    const companionPullCardFn = new lambda.NodejsFunction(this, 'CompanionPullCardFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/companion/pull-card.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        LIBRARY_CATALOG_TABLE_NAME: props.libraryCatalogTable.tableName,
+      },
+      description: 'POST /v1/companion/pull-card — one random active card from the Pull-a-Card library.',
+    })
+    props.libraryCatalogTable.grantReadData(companionPullCardFn)
+
     const userConsentFn = new lambda.NodejsFunction(this, 'UserConsentFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/account/consent.ts'),
@@ -733,6 +774,27 @@ export class ApiStack extends Stack {
       path: '/v1/companion/context',
       methods: [apigwv2.HttpMethod.GET],
       integration: new integrations.HttpLambdaIntegration('CompanionContextIntegration', companionContextFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/companion/conversations',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('CompanionListConversationsIntegration', companionListConversationsFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/companion/conversations',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('CompanionCreateConversationIntegration', companionCreateConversationFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/companion/pull-card',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('CompanionPullCardIntegration', companionPullCardFn),
       authorizer: this.cognitoAuthorizer,
     })
 
