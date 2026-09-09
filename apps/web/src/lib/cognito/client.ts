@@ -159,6 +159,32 @@ export function confirmForgotPassword(email: string, code: string, newPassword: 
   })
 }
 
+/**
+ * Direct signed-in password change — distinct from forgotPassword()/
+ * confirmForgotPassword() (which the user reaches without knowing their
+ * current password at all). Requires the current password both because the
+ * SDK's own changePassword call needs it and because
+ * lib/auth/keyBootstrap.ts's changePasswordAndRewrapDek() needs it to
+ * re-derive the encryption KEK — callers should run that first (see its own
+ * doc comment for why crypto-then-Cognito, not the other order).
+ */
+export function changePassword(oldPassword: string, newPassword: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const user = userPool.getCurrentUser()
+    if (!user) {
+      reject(new Error('No active session.'))
+      return
+    }
+    user.getSession((sessionErr: Error | null) => {
+      if (sessionErr) {
+        reject(sessionErr)
+        return
+      }
+      user.changePassword(oldPassword, newPassword, (err) => (err ? reject(err) : resolve()))
+    })
+  })
+}
+
 export function signOut(): void {
   userPool.getCurrentUser()?.signOut()
   clearSessionCookie()

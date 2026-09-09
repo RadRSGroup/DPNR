@@ -8,16 +8,16 @@ const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
 
 /**
- * PUT /v1/keys — updates an existing key bundle's DEK envelope after a
- * recovery-code-based account recovery (ADR 0014). Unlike POST /v1/keys
- * (one-time bootstrap), this requires an existing item — a "recovery" for a
- * user with no key bundle yet is a real inconsistency, not something to
- * paper over by creating one here. `salt`/`publicKey`/`wrappedPrivateKey`
- * never change (the DEK itself doesn't change on recovery — only which KEKs
- * wrap it), so only `wrappedDek`/`wrappedDekRecovery` are ever written here,
- * always together (the project's recovery-rotation decision: recovering via
- * the code always rotates it). The server never validates either
- * ciphertext's correctness, same trust model as every other write here.
+ * PUT /v1/keys — updates an existing key bundle's DEK envelope after either
+ * a recovery-code-based account recovery or a direct signed-in password
+ * change (see `UpdateWrappedDekRequestSchema`'s own doc comment for both
+ * callers). Unlike POST /v1/keys (one-time bootstrap), this requires an
+ * existing item — a caller with no key bundle yet is a real inconsistency,
+ * not something to paper over by creating one here. `salt`/`publicKey`/
+ * `wrappedPrivateKey` never change (the DEK itself doesn't change on either
+ * path — only which KEK(s) wrap it), so only `wrappedDek`/`wrappedDekRecovery`
+ * are ever written here. The server never validates either ciphertext's
+ * correctness, same trust model as every other write here.
  */
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {

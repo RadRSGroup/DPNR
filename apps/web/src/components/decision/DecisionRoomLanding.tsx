@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Search, Telescope, Heart, Target, CheckCircle2, ArrowRightCircle, Clock } from 'lucide-react'
+import { Search, Telescope, Heart, Target, CheckCircle2, ArrowRightCircle, Clock, PieChart } from 'lucide-react'
 import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
 import Card from '@/components/ui/Card'
@@ -41,17 +41,21 @@ interface Props {
  * Recent Decisions reuses `GET /v1/rooms/decisions` (the same summary list
  * Growth Tracker's own "Recent Decisions" card already consumes) — this used
  * to render a hardcoded empty state under a since-corrected claim that no
- * list endpoint existed. Options Overview (choices-made / choices-explored
- * percentages) still has no real backend to draw from, so it stays omitted
- * rather than shown with invented numbers. "Today's Guidance" reuses the
- * real Daily Card (`GET /v1/companion/context`) — same data Companion's own
- * widget shows.
+ * list endpoint existed. Options Overview now has a real backend
+ * (`DecisionsListResponse.optionsOverview`, same response as Recent
+ * Decisions — see list-decisions.ts's own doc comment) — reframed honestly
+ * rather than reproducing the reference's illustrative 60/40 split verbatim,
+ * since the underlying signal is an AI-inferred lean, not a firm commitment;
+ * see `DecisionOptionsOverviewSchema`'s doc comment for the full reasoning.
+ * "Today's Guidance" reuses the real Daily Card (`GET /v1/companion/context`)
+ * — same data Companion's own widget shows.
  */
 export default function DecisionRoomLanding({ userName, onStart, sourceTopicTitle }: Props) {
   const router = useRouter()
   const firstName = userName.includes('@') ? userName.split('@')[0] : userName.split(' ')[0] || userName
   const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
   const [decisions, setDecisions] = useState<DecisionsListResponse['decisions']>([])
+  const [optionsOverview, setOptionsOverview] = useState<DecisionsListResponse['optionsOverview']>(null)
   const [decisionsLoading, setDecisionsLoading] = useState(true)
 
   useEffect(() => {
@@ -59,7 +63,10 @@ export default function DecisionRoomLanding({ userName, onStart, sourceTopicTitl
       // Honest degrade — the guidance card just doesn't render.
     })
     getDecisionsList()
-      .then((r) => setDecisions(r.decisions))
+      .then((r) => {
+        setDecisions(r.decisions)
+        setOptionsOverview(r.optionsOverview)
+      })
       .catch(() => {
         // Honest degrade — falls through to the same empty-state copy a genuinely-empty list shows.
       })
@@ -192,6 +199,38 @@ export default function DecisionRoomLanding({ userName, onStart, sourceTopicTitl
                     </div>
                   )}
                 </Card>
+
+                {!decisionsLoading && optionsOverview && (
+                  <Card>
+                    <div className="flex items-center gap-2 mb-1">
+                      <PieChart className="w-4 h-4 text-[var(--color-violet-400)]" />
+                      <p className="text-sm text-white">Options Overview</p>
+                    </div>
+                    <p className="text-[var(--color-text-tertiary)] text-xs mb-4">
+                      Across {optionsOverview.totalWithLean} decision{optionsOverview.totalWithLean === 1 ? '' : 's'} that reached Future Projection
+                    </p>
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex items-center justify-between text-xs mb-1.5">
+                          <span className="text-white/80">Leaning toward an option</span>
+                          <span className="text-white/80">{optionsOverview.leaningTowardChoicePct}%</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                          <div className="h-full rounded-full bg-[var(--color-violet-500)]" style={{ width: `${optionsOverview.leaningTowardChoicePct}%` }} />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between text-xs mb-1.5">
+                          <span className="text-white/80">Still weighing both</span>
+                          <span className="text-white/80">{100 - optionsOverview.leaningTowardChoicePct}%</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                          <div className="h-full rounded-full bg-white/30" style={{ width: `${100 - optionsOverview.leaningTowardChoicePct}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                )}
 
                 {dailyCard && <DailyGuidanceCard dailyCard={dailyCard} />}
 

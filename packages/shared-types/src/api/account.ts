@@ -118,12 +118,17 @@ export const UserKeysRequestSchema = UserKeysResponseSchema
 export type UserKeysRequest = z.infer<typeof UserKeysRequestSchema>
 
 /**
- * PUT /v1/keys — updates an existing key bundle's DEK envelope after a
- * recovery-code-based account recovery (ADR 0014). Only `wrappedDek`/
- * `wrappedDekRecovery` ever change here: a password reset re-wraps the DEK
- * under the new password's KEK, and per the project's recovery-rotation
- * decision the recovery code is rotated at the same time, so both fields are
- * always written together. `salt`/`publicKey`/`wrappedPrivateKey` are
+ * PUT /v1/keys — updates an existing key bundle's DEK envelope after either
+ * a recovery-code-based account recovery (ADR 0014) or a direct signed-in
+ * password change (`lib/auth/keyBootstrap.ts`'s `recoverAndRewrapDek`/
+ * `changePasswordAndRewrapDek` respectively — same endpoint, same request
+ * shape, different caller). Only `wrappedDek`/`wrappedDekRecovery` ever
+ * change here. Recovery re-wraps the DEK under the new password's KEK *and*
+ * rotates the recovery code (the project's recovery-rotation decision); a
+ * plain password change also re-wraps the DEK but leaves the recovery code
+ * itself untouched — `wrappedDekRecovery` is sent back unchanged in that
+ * case, not omitted, since both fields are always required here regardless
+ * of which caller it is. `salt`/`publicKey`/`wrappedPrivateKey` are
  * immutable for the life of the account (the DEK itself never changes, so
  * wrappedPrivateKey — wrapped under the DEK, not a KEK — never needs
  * rewriting). The server never validates either ciphertext's correctness;

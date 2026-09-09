@@ -3,9 +3,9 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { getCurrentSession, deleteCognitoUser, signOut } from '@/lib/cognito/client'
-import { revokeCurrentSessionTicket } from '@/lib/auth/keyBootstrap'
-import { exportUserData, deleteAccountData, getCredits } from '@/lib/api/v1-client'
+import { getCurrentSession, deleteCognitoUser, signOut, changePassword } from '@/lib/cognito/client'
+import { revokeCurrentSessionTicket, changePasswordAndRewrapDek } from '@/lib/auth/keyBootstrap'
+import { exportUserData, deleteAccountData, getCredits, ApiError } from '@/lib/api/v1-client'
 import type { CreditsResponse } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 
@@ -26,6 +26,12 @@ export default function AccountPage() {
   const [downloading, setDownloading] = useState(false)
   const [deleteStep, setDeleteStep] = useState<'idle' | 'confirm' | 'deleting'>('idle')
   const [deleteConfirm, setDeleteConfirm] = useState('')
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmNewPassword, setConfirmNewPassword] = useState('')
+  const [passwordChanging, setPasswordChanging] = useState(false)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [passwordChanged, setPasswordChanged] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -58,6 +64,41 @@ export default function AccountPage() {
       alert('Export failed. Please try again.')
     } finally {
       setDownloading(false)
+    }
+  }
+
+  async function handlePasswordChange(e: React.FormEvent) {
+    e.preventDefault()
+    setPasswordError(null)
+    setPasswordChanged(false)
+    if (newPassword.length < 8) {
+      setPasswordError('New password must be at least 8 characters.')
+      return
+    }
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError('New passwords do not match.')
+      return
+    }
+    setPasswordChanging(true)
+    try {
+      // Crypto re-wrap first, Cognito change second — see
+      // changePasswordAndRewrapDek's own doc comment for why that order.
+      // 'keys_not_found' means this account predates Phase 6 key bootstrap;
+      // nothing to re-wrap, so the Cognito change alone is the whole story.
+      try {
+        await changePasswordAndRewrapDek(currentPassword, newPassword)
+      } catch (err) {
+        if (!(err instanceof ApiError && err.code === 'keys_not_found')) throw err
+      }
+      await changePassword(currentPassword, newPassword)
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmNewPassword('')
+      setPasswordChanged(true)
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : 'Could not change password.')
+    } finally {
+      setPasswordChanging(false)
     }
   }
 
@@ -136,6 +177,54 @@ export default function AccountPage() {
                 <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">Paid plans are coming soon</p>
               </div>
             </div>
+          </Card>
+
+          {/* Security — direct signed-in password change (`PUT /v1/keys` +
+              Cognito's own changePassword), distinct from the separate
+              forgot-password flow reachable from /login. Flagged open in
+              docs/AGENT_LOG.md since Session 33, since the forgot-password
+              build only ever covered the "don't know current password"
+              path. */}
+          <Card className="space-y-3">
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">Security</p>
+            <form onSubmit={handlePasswordChange} className="space-y-3">
+              <input
+                type="password"
+                placeholder="Current password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+              />
+              <input
+                type="password"
+                placeholder="New password (min. 8 characters)"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+              />
+              <input
+                type="password"
+                placeholder="Confirm new password"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+              />
+              {passwordError && <p className="text-red-400 text-xs">{passwordError}</p>}
+              {passwordChanged && <p className="text-green-400/80 text-xs">Password changed.</p>}
+              <button
+                type="submit"
+                disabled={passwordChanging}
+                className="w-full py-3 rounded-2xl border border-[var(--color-violet-800)]/60 bg-[var(--color-violet-900)]/30 text-[var(--color-violet-300)] hover:bg-[var(--color-violet-900)]/50 disabled:opacity-40 text-sm font-medium transition-all"
+              >
+                {passwordChanging ? 'Changing…' : 'Change password'}
+              </button>
+            </form>
           </Card>
 
           {/* Legal */}

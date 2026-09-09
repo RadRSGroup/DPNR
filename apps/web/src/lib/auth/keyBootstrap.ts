@@ -155,6 +155,43 @@ export async function revokeCurrentSessionTicket(): Promise<void> {
  * for this account at all — callers should treat that as "nothing to
  * recover" rather than a bad-code error.
  */
+/**
+ * Re-wraps the DEK under a new password's KEK, for a direct signed-in
+ * password change (`PUT /v1/keys`, same endpoint `recoverAndRewrapDek` uses)
+ * — distinct from that function's forgot-password path, which needs the
+ * recovery code instead since the old password isn't known there. Here the
+ * caller already knows `oldPassword` (it's how the user proves they're
+ * allowed to change it), so unwrapping with it is both the real DEK-recovery
+ * step and an implicit correctness check — a wrong old password fails here
+ * with the same GCM-tag rejection `unwrapKey` always throws, cleanly and
+ * before anything is written. `wrappedDekRecovery` is sent back unchanged:
+ * the recovery code itself doesn't rotate on a plain password change, only
+ * on an actual recovery-code-based recovery (the project's existing
+ * recovery-rotation decision only ever applied to that path).
+ *
+ * Callers must run this **before** calling `changePassword()` on the Cognito
+ * side, not after — if this throws (wrong old password, or a network
+ * failure), nothing has changed yet and the whole operation can be retried
+ * cleanly. Running Cognito's change first would risk the same residual
+ * inconsistency window `forgot-password/page.tsx`'s own multi-step flow
+ * already has if a call fails partway through (a real password/DEK
+ * mismatch, only fixable via the recovery-code flow) — putting the KEK
+ * re-wrap first at least means the *common* failure (wrong old password)
+ * can never reach that state.
+ */
+export async function changePasswordAndRewrapDek(oldPassword: string, newPassword: string): Promise<void> {
+  const keys = await getUserKeys()
+  const salt = base64ToBytes(keys.salt)
+
+  const oldKek = await deriveKekFromPassword(oldPassword, salt)
+  const dek = await unwrapKey(keys.wrappedDek, oldKek)
+
+  const newKek = await deriveKekFromPassword(newPassword, salt)
+  const newWrappedDek = await wrapKey(dek, newKek)
+
+  await updateWrappedDek({ wrappedDek: newWrappedDek, wrappedDekRecovery: keys.wrappedDekRecovery })
+}
+
 export async function recoverAndRewrapDek(recoveryCodeInput: string, newPassword: string): Promise<RecoveryCode> {
   const keys = await getUserKeys()
   const salt = base64ToBytes(keys.salt)

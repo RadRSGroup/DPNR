@@ -116,142 +116,149 @@ export default function ForgotPasswordPage() {
         />
       )
     }
+    // Same full-bleed-background/narrow-column split as login/page.tsx and
+    // signup/page.tsx — see login/page.tsx's doc comment for why.
     return (
-      <div className="relative min-h-screen max-w-[393px] mx-auto px-5 flex flex-col justify-center">
+      <div className="relative min-h-screen">
         <div className="absolute inset-0 -z-10">
-        <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
-      </div>
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-3xl mx-auto">✓</div>
-          <h2 className="text-white text-xl font-light">Password reset</h2>
-          {noKeysMessage && (
-            <p className="text-white/50 text-sm px-4">Your password has been changed. You can sign in now.</p>
-          )}
-          <button
-            onClick={handleDone}
-            disabled={continuing}
-            className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98] mt-4"
-          >
-            {continuing ? 'Continuing…' : 'Continue'}
-          </button>
+          <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+        </div>
+
+        <div className="max-w-[393px] mx-auto px-5 min-h-screen flex flex-col justify-center">
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-3xl mx-auto">✓</div>
+            <h2 className="text-white text-xl font-light">Password reset</h2>
+            {noKeysMessage && (
+              <p className="text-white/50 text-sm px-4">Your password has been changed. You can sign in now.</p>
+            )}
+            <button
+              onClick={handleDone}
+              disabled={continuing}
+              className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98] mt-4"
+            >
+              {continuing ? 'Continuing…' : 'Continue'}
+            </button>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="relative min-h-screen max-w-[393px] mx-auto px-5 flex flex-col justify-center">
+    <div className="relative min-h-screen">
       <div className="absolute inset-0 -z-10">
         <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
       </div>
 
-      <div className="mb-10 text-center">
-        <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR</p>
-        <h1 className="text-white text-2xl font-light">
-          {stage === 'request' && 'Reset your password'}
-          {stage === 'reset' && 'Check your email'}
-          {stage === 'recover' && 'Enter your recovery code'}
-        </h1>
-        <p className="text-[var(--color-text-tertiary)] text-sm mt-2">
-          {stage === 'request' && "We'll send a code to your email."}
-          {stage === 'reset' && (
-            <>
-              Enter the code sent to <span className="text-white/80">{email}</span> and choose a new password.
-            </>
-          )}
-          {stage === 'recover' &&
-            "Your password is changed. Now enter your recovery code so we can restore access to your encrypted data."}
+      <div className="max-w-[393px] mx-auto px-5 min-h-screen flex flex-col justify-center">
+        <div className="mb-10 text-center">
+          <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR</p>
+          <h1 className="text-white text-2xl font-light">
+            {stage === 'request' && 'Reset your password'}
+            {stage === 'reset' && 'Check your email'}
+            {stage === 'recover' && 'Enter your recovery code'}
+          </h1>
+          <p className="text-[var(--color-text-tertiary)] text-sm mt-2">
+            {stage === 'request' && "We'll send a code to your email."}
+            {stage === 'reset' && (
+              <>
+                Enter the code sent to <span className="text-white/80">{email}</span> and choose a new password.
+              </>
+            )}
+            {stage === 'recover' &&
+              "Your password is changed. Now enter your recovery code so we can restore access to your encrypted data."}
+          </p>
+        </div>
+
+        {error && (
+          <div className="mb-5 bg-red-900/30 border border-red-700/40 rounded-2xl px-4 py-3">
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
+
+        {stage === 'request' && (
+          <form onSubmit={handleRequest} className="space-y-4">
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98]"
+            >
+              {loading ? 'Sending…' : 'Send reset code'}
+            </button>
+          </form>
+        )}
+
+        {stage === 'reset' && (
+          <form onSubmit={handleReset} className="space-y-4">
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="Confirmation code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              required
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm text-center tracking-[0.3em] focus:outline-none focus:border-purple-500/60 transition-colors"
+            />
+            <input
+              type="password"
+              placeholder="New password (min. 8 characters)"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+            />
+            <input
+              type="password"
+              placeholder="Confirm new password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98]"
+            >
+              {loading ? 'Resetting…' : 'Reset password'}
+            </button>
+          </form>
+        )}
+
+        {stage === 'recover' && (
+          <form onSubmit={handleRecover} className="space-y-4">
+            <input
+              type="text"
+              placeholder="ABCD-EFGH-JKMN-..."
+              value={recoveryCodeInput}
+              onChange={(e) => setRecoveryCodeInput(e.target.value)}
+              required
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm text-center tracking-widest font-mono focus:outline-none focus:border-purple-500/60 transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98]"
+            >
+              {loading ? 'Verifying…' : 'Verify code'}
+            </button>
+          </form>
+        )}
+
+        <p className="text-center text-[var(--color-text-tertiary)] text-sm mt-8">
+          <Link href="/login" className="text-purple-400 hover:text-purple-300">Back to sign in</Link>
         </p>
       </div>
-
-      {error && (
-        <div className="mb-5 bg-red-900/30 border border-red-700/40 rounded-2xl px-4 py-3">
-          <p className="text-red-400 text-sm">{error}</p>
-        </div>
-      )}
-
-      {stage === 'request' && (
-        <form onSubmit={handleRequest} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98]"
-          >
-            {loading ? 'Sending…' : 'Send reset code'}
-          </button>
-        </form>
-      )}
-
-      {stage === 'reset' && (
-        <form onSubmit={handleReset} className="space-y-4">
-          <input
-            type="text"
-            inputMode="numeric"
-            placeholder="Confirmation code"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            required
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm text-center tracking-[0.3em] focus:outline-none focus:border-purple-500/60 transition-colors"
-          />
-          <input
-            type="password"
-            placeholder="New password (min. 8 characters)"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
-          />
-          <input
-            type="password"
-            placeholder="Confirm new password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98]"
-          >
-            {loading ? 'Resetting…' : 'Reset password'}
-          </button>
-        </form>
-      )}
-
-      {stage === 'recover' && (
-        <form onSubmit={handleRecover} className="space-y-4">
-          <input
-            type="text"
-            placeholder="ABCD-EFGH-JKMN-..."
-            value={recoveryCodeInput}
-            onChange={(e) => setRecoveryCodeInput(e.target.value)}
-            required
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm text-center tracking-widest font-mono focus:outline-none focus:border-purple-500/60 transition-colors"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98]"
-          >
-            {loading ? 'Verifying…' : 'Verify code'}
-          </button>
-        </form>
-      )}
-
-      <p className="text-center text-[var(--color-text-tertiary)] text-sm mt-8">
-        <Link href="/login" className="text-purple-400 hover:text-purple-300">Back to sign in</Link>
-      </p>
     </div>
   )
 }

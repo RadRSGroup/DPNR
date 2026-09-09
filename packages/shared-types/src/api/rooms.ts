@@ -127,8 +127,27 @@ export const DecisionSummaryViewSchema = z.object({
 })
 export type DecisionSummaryView = z.infer<typeof DecisionSummaryViewSchema>
 
+/**
+ * Reference screen's "Options Overview" widget (docs/reference-screens/
+ * 04-decision-room.png) — a real, honestly-derived aggregate, not the
+ * mockup's own illustrative 60/40 split reproduced verbatim. `chosenOptionLabel`
+ * (`DecisionOutcomeItemSchema`) is set once per decision at FUTURE_PROJECTION,
+ * the last structural step, from the AI's read of which option the person's
+ * own kept future-projection statements lean toward — it can be `null`
+ * ("undecided"), so this deliberately isn't framed as "choices you made"
+ * (that would overclaim a firm commitment from what's actually a model-
+ * inferred lean). `null` (not zero percentages) when no decision has reached
+ * FUTURE_PROJECTION yet — nothing honest to show before that.
+ */
+export const DecisionOptionsOverviewSchema = z.object({
+  totalWithLean: z.number().int().min(1), // decisions that reached FUTURE_PROJECTION
+  leaningTowardChoicePct: z.number().int().min(0).max(100), // remainder is "still weighing both"
+})
+export type DecisionOptionsOverview = z.infer<typeof DecisionOptionsOverviewSchema>
+
 export const DecisionsListResponseSchema = z.object({
   decisions: z.array(DecisionSummaryViewSchema),
+  optionsOverview: DecisionOptionsOverviewSchema.nullable(),
 })
 export type DecisionsListResponse = z.infer<typeof DecisionsListResponseSchema>
 

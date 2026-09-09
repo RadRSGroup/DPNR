@@ -103,16 +103,73 @@ export default function SignupPage() {
   }
 
   if (stage === 'confirm') {
+    // Same full-bleed-background/narrow-column split as the 'form' stage
+    // below and login/page.tsx — see that file's doc comment for why.
     return (
-      <div className="relative min-h-screen max-w-[393px] mx-auto px-5 flex flex-col justify-center">
+      <div className="relative min-h-screen">
         <div className="absolute inset-0 -z-10">
+          <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+        </div>
+
+        <div className="max-w-[393px] mx-auto px-5 min-h-screen flex flex-col justify-center">
+          <div className="text-center space-y-4 mb-6">
+            <div className="w-16 h-16 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-3xl mx-auto">✦</div>
+            <h2 className="text-white text-xl font-light">Check your email</h2>
+            <p className="text-white/50 text-sm">We sent a 6-digit code to <span className="text-white/80">{email}</span>.</p>
+          </div>
+
+          {error && (
+            <div className="mb-5 bg-red-900/30 border border-red-700/40 rounded-2xl px-4 py-3">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleConfirm} className="space-y-4">
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="Confirmation code"
+              value={code}
+              onChange={e => setCode(e.target.value)}
+              required
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm text-center tracking-[0.3em] focus:outline-none focus:border-purple-500/60 transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98]"
+            >
+              {loading ? 'Confirming…' : 'Confirm & continue'}
+            </button>
+          </form>
+
+          <button onClick={handleResend} disabled={resent} className="text-purple-400 text-sm hover:text-purple-300 mt-6 disabled:opacity-50">
+            {resent ? 'Code resent — check your email' : "Didn't get a code? Resend"}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    // Full-bleed background wrapper + narrow content column, same split as
+    // the 'confirm' stage above and login/page.tsx — see that file's doc
+    // comment for why this can't just be an `lg:` class on one div.
+    <div className="relative min-h-screen">
+      <div className="absolute inset-0 -z-10">
         <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
       </div>
-        <div className="text-center space-y-4 mb-6">
-          <div className="w-16 h-16 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-3xl mx-auto">✦</div>
-          <h2 className="text-white text-xl font-light">Check your email</h2>
-          <p className="text-white/50 text-sm">We sent a 6-digit code to <span className="text-white/80">{email}</span>.</p>
+
+      <div className="max-w-[393px] mx-auto px-5 min-h-screen flex flex-col justify-center">
+        <div className="mb-10 text-center">
+          <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR</p>
+          <div className="relative inline-block">
+            <h1 className="text-white text-2xl font-light">InnerOS</h1>
+            <span className="absolute top-1/2 left-full -translate-y-1/2 ml-2 text-[10px] font-semibold tracking-widest uppercase text-yellow-400 border border-yellow-400/40 rounded-full px-2 py-0.5 whitespace-nowrap">Beta</span>
+          </div>
+          <p className="text-[var(--color-text-tertiary)] text-sm mt-2">Create your free account</p>
         </div>
 
         {error && (
@@ -121,115 +178,68 @@ export default function SignupPage() {
           </div>
         )}
 
-        <form onSubmit={handleConfirm} className="space-y-4">
-          <input
-            type="text"
-            inputMode="numeric"
-            placeholder="Confirmation code"
-            value={code}
-            onChange={e => setCode(e.target.value)}
-            required
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm text-center tracking-[0.3em] focus:outline-none focus:border-purple-500/60 transition-colors"
-          />
+        <form onSubmit={handleSignup} className="space-y-4">
+          <div>
+            <label htmlFor="signup-email" className="block text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide mb-1.5">
+              Email
+            </label>
+            <input
+              id="signup-email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+            />
+          </div>
+          <div>
+            <label htmlFor="signup-password" className="block text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide mb-1.5">
+              Password <span className="normal-case">(min. 8 characters)</span>
+            </label>
+            <input
+              id="signup-password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+            />
+          </div>
+          {/* Consent */}
+          <label className="flex items-start gap-3 cursor-pointer group">
+            <div
+              onClick={() => setConsented(v => !v)}
+              className={`mt-0.5 w-5 h-5 flex-shrink-0 rounded border-2 flex items-center justify-center transition-all ${
+                consented ? 'bg-purple-600 border-purple-500' : 'border-white/20 group-hover:border-white/40'
+              }`}
+            >
+              {consented && <span className="text-white text-xs leading-none">✓</span>}
+            </div>
+            <span className="text-white/50 text-xs leading-relaxed">
+              I agree to the{' '}
+              <Link href="/terms" target="_blank" className="text-purple-400 hover:text-purple-300 underline">Terms of Use</Link>
+              {' '}and{' '}
+              <Link href="/privacy" target="_blank" className="text-purple-400 hover:text-purple-300 underline">Privacy & Data Policy</Link>
+              , including the use of my anonymised data to improve the service.
+            </span>
+          </label>
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !consented}
             className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98]"
           >
-            {loading ? 'Confirming…' : 'Confirm & continue'}
+            {loading ? 'Creating account…' : 'Create account'}
           </button>
         </form>
 
-        <button onClick={handleResend} disabled={resent} className="text-purple-400 text-sm hover:text-purple-300 mt-6 disabled:opacity-50">
-          {resent ? 'Code resent — check your email' : "Didn't get a code? Resend"}
-        </button>
+        <p className="text-center text-[var(--color-text-tertiary)] text-sm mt-8">
+          Already have an account?{' '}
+          <Link href="/login" className="text-purple-400 hover:text-purple-300">Sign in</Link>
+        </p>
       </div>
-    )
-  }
-
-  return (
-    <div className="relative min-h-screen max-w-[393px] mx-auto px-5 flex flex-col justify-center">
-      <div className="absolute inset-0 -z-10">
-        <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
-      </div>
-
-      <div className="mb-10 text-center">
-        <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR</p>
-        <div className="relative inline-block">
-          <h1 className="text-white text-2xl font-light">InnerOS</h1>
-          <span className="absolute top-1/2 left-full -translate-y-1/2 ml-2 text-[10px] font-semibold tracking-widest uppercase text-yellow-400 border border-yellow-400/40 rounded-full px-2 py-0.5 whitespace-nowrap">Beta</span>
-        </div>
-        <p className="text-[var(--color-text-tertiary)] text-sm mt-2">Create your free account</p>
-      </div>
-
-      {error && (
-        <div className="mb-5 bg-red-900/30 border border-red-700/40 rounded-2xl px-4 py-3">
-          <p className="text-red-400 text-sm">{error}</p>
-        </div>
-      )}
-
-      <form onSubmit={handleSignup} className="space-y-4">
-        <div>
-          <label htmlFor="signup-email" className="block text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide mb-1.5">
-            Email
-          </label>
-          <input
-            id="signup-email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
-          />
-        </div>
-        <div>
-          <label htmlFor="signup-password" className="block text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide mb-1.5">
-            Password <span className="normal-case">(min. 8 characters)</span>
-          </label>
-          <input
-            id="signup-password"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
-          />
-        </div>
-        {/* Consent */}
-        <label className="flex items-start gap-3 cursor-pointer group">
-          <div
-            onClick={() => setConsented(v => !v)}
-            className={`mt-0.5 w-5 h-5 flex-shrink-0 rounded border-2 flex items-center justify-center transition-all ${
-              consented ? 'bg-purple-600 border-purple-500' : 'border-white/20 group-hover:border-white/40'
-            }`}
-          >
-            {consented && <span className="text-white text-xs leading-none">✓</span>}
-          </div>
-          <span className="text-white/50 text-xs leading-relaxed">
-            I agree to the{' '}
-            <Link href="/terms" target="_blank" className="text-purple-400 hover:text-purple-300 underline">Terms of Use</Link>
-            {' '}and{' '}
-            <Link href="/privacy" target="_blank" className="text-purple-400 hover:text-purple-300 underline">Privacy & Data Policy</Link>
-            , including the use of my anonymised data to improve the service.
-          </span>
-        </label>
-
-        <button
-          type="submit"
-          disabled={loading || !consented}
-          className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98]"
-        >
-          {loading ? 'Creating account…' : 'Create account'}
-        </button>
-      </form>
-
-      <p className="text-center text-[var(--color-text-tertiary)] text-sm mt-8">
-        Already have an account?{' '}
-        <Link href="/login" className="text-purple-400 hover:text-purple-300">Sign in</Link>
-      </p>
     </div>
   )
 }
