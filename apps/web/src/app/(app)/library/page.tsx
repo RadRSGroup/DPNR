@@ -153,14 +153,27 @@ export default function LibraryPage() {
           <div className="mb-6">
             <p className="text-white text-sm mb-3">Recommended for You</p>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {recommendations.map(({ topic, reason }) => (
-                <Link key={topic.slug} href={`/library/${topic.slug}`}>
-                  <Card className="h-full hover:border-white/20 transition-colors">
-                    <p className="text-white text-sm">{topic.title}</p>
-                    <p className="text-[var(--color-text-tertiary)] text-xs mt-1">{reason}</p>
-                  </Card>
-                </Link>
-              ))}
+              {recommendations.map(({ topic, reason }) => {
+                const style = CATEGORY_STYLE[topic.taxonomyCategory] ?? DEFAULT_STYLE
+                const Icon = style.icon
+                return (
+                  <Link key={topic.slug} href={`/library/${topic.slug}`}>
+                    <Card className="h-full hover:border-white/20 transition-colors">
+                      {style.image ? (
+                        <div className="relative w-9 h-9 rounded-full overflow-hidden mb-3">
+                          <Image src={style.image} alt="" fill sizes="36px" className="object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center mb-3 bg-[var(--color-violet-900)]">
+                          <Icon className="w-4 h-4 text-white/80" />
+                        </div>
+                      )}
+                      <p className="text-white text-sm">{topic.title}</p>
+                      <p className="text-[var(--color-text-tertiary)] text-xs mt-1">{reason}</p>
+                    </Card>
+                  </Link>
+                )
+              })}
             </div>
           </div>
         )}
