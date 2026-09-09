@@ -418,7 +418,15 @@ function DashboardContent() {
 
             {!loading && dashboard?.continuityCue && dashboard.continuityCue.kind !== 'daily_card' && (
               <Card className="relative overflow-hidden">
-                <p className="text-sm text-white mb-3">{CUE_LABEL[dashboard.continuityCue.kind]}</p>
+                <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-3">{CUE_LABEL[dashboard.continuityCue.kind]}</p>
+                {/* Same art the 'daily_card' variant of this exact widget slot
+                    already uses (DailyGuidanceCard) — reused rather than a new
+                    crop, so "Today's Insight" always shows art regardless of
+                    which continuityCue kind actually rendered, matching the
+                    reference (Scenery Parity Pass Phase 2). */}
+                <div className="relative rounded-xl overflow-hidden h-40 mb-3">
+                  <Image src="/images/companion/pull-a-card.webp" alt="" fill sizes="320px" className="object-cover" />
+                </div>
                 <p className="text-white/70 text-sm leading-relaxed italic">&ldquo;{dashboard.continuityCue.text}&rdquo;</p>
                 <Heart className="w-4 h-4 text-[var(--color-amber-400)] mt-3" />
               </Card>

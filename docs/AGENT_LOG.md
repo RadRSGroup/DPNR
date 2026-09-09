@@ -333,14 +333,14 @@ This project has **no human development team**. It is built entirely by Claude C
 
 **Scenery Parity Pass progress (user approved building all 6 phases, one at a time, pausing to document each)**:
 - ✅ **Phase 1 done, committed, live-verified**: Mirror Room + Decision Room full-bleed scenery. See this session's own "Session History" entry below for full detail before touching either room again.
-- ⬜ Phase 2: Dashboard lower-card art check (verify a possible gap first, not confirmed live yet)
+- ✅ **Phase 2 done, committed, live-verified**: Dashboard's non-`daily_card` continuity-cue card now shows art too. See Session History below.
 - ⬜ Phase 3: Content & Learning subsection thumbnails (Getting Unstuck / Gentle Healing / Understanding Your Reactions)
 - ⬜ Phase 4: My Evolution Map life-domain icons
 - ⬜ Phase 5: Growth Tracker Emotional Landscape / Values card art (flagged lower-priority — may not need art at all)
 - ⬜ Phase 6: Utility screens (Login/Signup/Terms/Consent) — still an open product question, don't build until it's actually answered
 
 **Immediate next steps, in priority order**:
-1. Continue the Scenery Parity Pass at Phase 2 (see above and the published Artifact for full phase detail).
+1. Continue the Scenery Parity Pass at Phase 3 (Content & Learning subsection thumbnails — see above and the published Artifact for full phase detail).
 2. **OAuth has no real return/callback URL wired up** (Session 42 finding — see "Status" above for the full 5-piece checklist). Needs a Google Cloud OAuth client from the user before any of it can be built; `apps/web/src/app/auth/callback/route.ts` exists but is stale pre-Cognito Supabase code, not reusable as-is.
 3. **The sign-in email case-sensitivity bug is still not fixed** (`apps/web/src/lib/cognito/client.ts`'s `signIn()` — no `.toLowerCase()` before calling Cognito). Found live in Sessions 40 and 41, still open.
 4. **Login/Signup's missing desktop treatment is still not fixed** — and now that the root landing page has the correct full-bleed-background-as-a-sibling pattern working, Login/Signup can copy that exact structure rather than rediscovering it. Their current bug is worse than a missing `lg:` class: their background `<Image>` is nested *inside* the narrow `max-w-[393px]` div, so the background is clipped too, not just the text.
@@ -500,6 +500,14 @@ From there, wrote and got approval for a 6-slice plan, `C:\Users\rekkawi\.claude
 ---
 
 ## Session History
+
+### 2026-09-09 — Session 42, part 3: Scenery Parity Pass Phase 2 (Dashboard's non-daily_card continuity cue now shows art)
+- Read `dashboard/page.tsx` and `DailyGuidanceCard.tsx` in full before assuming the artifact's own "not scrolled to, verify first" caveat either way. Real finding: the reference's "Today's Insight" widget always shows a photographic image; the live Dashboard's equivalent slot (`DashboardResponse.continuityCue`) only shows art when `continuityCue.kind === 'daily_card'` (via the shared `DailyGuidanceCard`, which already uses `companion/pull-a-card.webp`) — the other three cue kinds (`continuation`/`commitment`/`roadmap_cue`/`recommended_space`, rendered inline in `dashboard/page.tsx` itself) showed plain text and a small icon, no image at all.
+- **Fix**: the inline non-`daily_card` cue `Card` now reuses the exact same `pull-a-card.webp` crop `DailyGuidanceCard` already uses — same widget slot, same art, regardless of which cue kind the backend picked. No new asset generated; reused what already existed for the sibling case.
+- **Live-verified against the real signed-in account**: the account's actual current cue was `recommended_space` ("Consider exploring: Mirror Room") — confirmed via the rendered `CUE_LABEL['recommended_space']` text ("Worth Exploring") next to the new image, both via `get_page_text` and a screenshot. No console errors from the change; the same pre-existing, unrelated `400` noted in Phase 1 is still present.
+- **Committed**: `apps/web/src/app/(app)/dashboard/page.tsx`.
+- No ADR — reusing an existing asset in a sibling code path, not a new decision.
+- Did not touch: Phases 3–6, or anything else on Dashboard.
 
 ### 2026-09-09 — Session 42, part 2: Scenery Parity Pass Phase 1 (Mirror Room + Decision Room full-bleed backdrop)
 - Direct continuation, same session: user approved implementing the published Scenery Parity Pass plan's all 6 phases, one at a time, pausing to document each, and to be ready to hand off to a fresh agent if the session runs long.
