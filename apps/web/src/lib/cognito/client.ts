@@ -103,11 +103,12 @@ export function markConsentedLocally(): void {
 }
 
 export function signUp(email: string, password: string): Promise<void> {
+  const normalizedEmail = email.toLowerCase()
   return new Promise((resolve, reject) => {
     userPool.signUp(
-      email,
+      normalizedEmail,
       password,
-      [new CognitoUserAttribute({ Name: 'email', Value: email })],
+      [new CognitoUserAttribute({ Name: 'email', Value: normalizedEmail })],
       [],
       (err) => (err ? reject(err) : resolve())
     )
@@ -117,22 +118,24 @@ export function signUp(email: string, password: string): Promise<void> {
 /** Cognito's `autoVerify: { email: true }` (auth-stack.ts) requires a code, not a magic link. */
 export function confirmSignUp(email: string, code: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const user = new CognitoUser({ Username: email, Pool: userPool })
+    const user = new CognitoUser({ Username: email.toLowerCase(), Pool: userPool })
     user.confirmRegistration(code, true, (err) => (err ? reject(err) : resolve()))
   })
 }
 
 export function resendConfirmationCode(email: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const user = new CognitoUser({ Username: email, Pool: userPool })
+    const user = new CognitoUser({ Username: email.toLowerCase(), Pool: userPool })
     user.resendConfirmationCode((err) => (err ? reject(err) : resolve()))
   })
 }
 
+/** Emails are normalized to lowercase before hitting Cognito — the account is created with a lowercased username (see `signUp()`), so a sign-in typed with different casing must match it or Cognito reports "User does not exist." */
 export function signIn(email: string, password: string): Promise<CognitoUserSession> {
+  const normalizedEmail = email.toLowerCase()
   return new Promise((resolve, reject) => {
-    const user = new CognitoUser({ Username: email, Pool: userPool })
-    const authDetails = new AuthenticationDetails({ Username: email, Password: password })
+    const user = new CognitoUser({ Username: normalizedEmail, Pool: userPool })
+    const authDetails = new AuthenticationDetails({ Username: normalizedEmail, Password: password })
     user.authenticateUser(authDetails, {
       onSuccess: (session) => {
         setSessionCookie(session)
@@ -146,7 +149,7 @@ export function signIn(email: string, password: string): Promise<CognitoUserSess
 /** Triggers Cognito's own forgot-password email/code flow. Sends `email` a verification code (or, if not confirmed, resends the signup one — CognitoUser's own behavior, not something this wrapper controls). */
 export function forgotPassword(email: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const user = new CognitoUser({ Username: email, Pool: userPool })
+    const user = new CognitoUser({ Username: email.toLowerCase(), Pool: userPool })
     user.forgotPassword({ onSuccess: () => resolve(), onFailure: (err) => reject(err) })
   })
 }
@@ -154,7 +157,7 @@ export function forgotPassword(email: string): Promise<void> {
 /** Completes `forgotPassword()` with the emailed code and a new password. Does not sign the user in — call `signIn()` with the new password afterward. */
 export function confirmForgotPassword(email: string, code: string, newPassword: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const user = new CognitoUser({ Username: email, Pool: userPool })
+    const user = new CognitoUser({ Username: email.toLowerCase(), Pool: userPool })
     user.confirmPassword(code, newPassword, { onSuccess: () => resolve(), onFailure: (err) => reject(err) })
   })
 }

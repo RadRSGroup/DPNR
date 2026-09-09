@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import StepShell from './StepShell'
 import { useAI, RefineFn } from '@/lib/useAI'
+import Card from '@/components/ui/Card'
 
 interface SessionSummaryScreenProps {
   decisionTitle: string
@@ -85,10 +86,10 @@ export default function SessionSummaryScreen({
             <div className="space-y-3">
               {SECTIONS.map(({ key, label }) => (
                 summaries[key] ? (
-                  <div key={key} className="bg-white/5 border border-white/8 rounded-2xl px-4 py-3 space-y-1">
+                  <Card key={key} className="space-y-1">
                     <p className="text-white text-xs font-medium">{label}</p>
                     <p className="text-white/55 text-xs leading-relaxed">{summaries[key]}</p>
-                  </div>
+                  </Card>
                 ) : null
               ))}
             </div>

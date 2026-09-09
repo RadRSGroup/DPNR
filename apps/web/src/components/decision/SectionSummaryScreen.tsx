@@ -6,6 +6,7 @@ import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { TOTAL_STEPS } from '@/lib/types'
 import Sidebar from '@/components/layout/Sidebar'
+import Card from '@/components/ui/Card'
 
 export type SummaryType = 'pros_cons' | 'fears_desires' | 'values_needs' | 'values' | 'needs' | 'projections'
 
@@ -196,7 +197,7 @@ export default function SectionSummaryScreen({
             {(['A', 'B'] as const).map(label => {
               const projs = (label === 'A' ? tagsA : tagsB).projections ?? []
               return (
-                <div key={label} className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
+                <Card key={label} className="!p-3 space-y-2">
                   <p className="text-purple-300 text-xs font-semibold mb-1">Option {label}</p>
                   {projs.length > 0 ? (
                     <div className="space-y-1.5">
@@ -207,7 +208,7 @@ export default function SectionSummaryScreen({
                   ) : (
                     <p className="text-white/20 text-[10px] italic">None selected</p>
                   )}
-                </div>
+                </Card>
               )
             })}
           </div>

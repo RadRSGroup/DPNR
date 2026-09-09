@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import InvertedButton from '@/components/ui/InvertedButton'
+import Card from '@/components/ui/Card'
 
 const AFFIRMATIONS = [
   'You showed up for yourself today. That takes real courage.',
@@ -74,7 +75,7 @@ export default function CompletionScreen({
         </div>
 
         {/* Decision recap */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-4">
+        <Card className="space-y-4">
           <p className="text-purple-400 text-xs uppercase tracking-wide font-medium">Your decision</p>
           <p className="text-white text-base font-light">&quot;{decisionTitle}&quot;</p>
 
@@ -107,7 +108,7 @@ export default function CompletionScreen({
               }`}>{leanLabel}</span>
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Reflection note */}
         {reflectionNote && (
@@ -119,10 +120,10 @@ export default function CompletionScreen({
 
         {/* Commitment */}
         {commitment && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-1">
+          <Card className="space-y-1">
             <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">Your commitment</p>
             <p className="text-white/70 text-sm leading-relaxed">{commitment}</p>
-          </div>
+          </Card>
         )}
       </div>
 

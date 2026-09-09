@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import StepShell from './StepShell'
 import { useAI, RefineFn } from '@/lib/useAI'
 import InvertedButton from '@/components/ui/InvertedButton'
+import Card from '@/components/ui/Card'
 
 interface ClarityToActionScreenProps {
   decisionTitle: string
@@ -57,7 +58,7 @@ export default function ClarityToActionScreen({
         </div>
 
         {/* Next step section */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-4 space-y-3">
+        <Card className="space-y-3">
           <div className="space-y-1">
             <p className="text-white text-sm font-medium">Your Next Small Step</p>
             <p className="text-[var(--color-text-tertiary)] text-xs">What is one small step that moves you slightly toward this direction?</p>
@@ -84,7 +85,7 @@ export default function ClarityToActionScreen({
               />
             )}
           </div>
-        </div>
+        </Card>
 
         {/* Body feelings */}
         <div className="space-y-2">

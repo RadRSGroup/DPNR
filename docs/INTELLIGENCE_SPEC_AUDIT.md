@@ -36,10 +36,23 @@ prior scope decision in this project has been handled.
 
 **Update, 2026-09-01, same-day follow-up session:** the user chose for #2 and #3 (both the audit's own
 recommended options), and both are now **built, live-verified, and resolved** — see ADR 0010 and ADR 0011.
-#1 (safety/crisis system) remains open and is the natural next priority — it's real design + engineering
-work, not a quick decision the way #2/#3 were.
 
-### 1. No safety/crisis system exists at all (spec §30, §33's safety acceptance tests)
+**Update, 2026-09-09 (staleness fix, no new build — see AGENT_LOG Session 43):** #1 (safety/crisis system)
+was flagged as still open above and in "What this means for the next session" below, but that was already
+stale by Session 30 (2026-09-02) and this document was never updated to say so. **All 4 stages are code-
+complete, deployed, and live-verified** — see ADR 0012, `docs/SAFETY_SYSTEM_DESIGN.md` §7, and AGENT_LOG
+Sessions 29-30 for full detail. `safety_state` classification (Stage 1), Bedrock Guardrails defense-in-depth
+plus a dedicated Haiku classifier (Stage 4), and human alerting on `immediate_danger` via the
+`dpnr-safety-alerts` SNS topic (Session 43 independently confirmed the `lital@be-dpnr.com` subscription is
+confirmed, not pending) are all real and running. **Not yet done** — flagged honestly, not swept under this
+correction: real threshold calibration against genuine usage data (no such data exists yet, only founder-test
+traffic — ADR 0012/design doc's own admitted gap), and ADR 0012 decision 1's crisis-support content is still
+the explicitly time-boxed generic/locale-agnostic placeholder, not real locale-aware crisis-line content — both
+must be addressed before any non-founder user is ever invited to a live personal-content route, per that ADR's
+own trigger condition. All three critical findings in this section are therefore resolved or time-boxed-accepted,
+none is a live "doesn't exist" gap.
+
+### 1. No safety/crisis system exists at all (spec §30, §33's safety acceptance tests) — **RESOLVED, see ADR 0012 and the 2026-09-09 update above**
 Grepped the entire codebase for `safety_state`, `crisis`, `immediate_danger`, `SAFETY_CONCERN` — zero
 matches anywhere in `infra/cdk/lambda` or `apps/web/src`. The spec is explicit that safety is "a product-level
 contract, not a conversational style choice" and sits **above this spec itself** in the precedence table (priority
@@ -141,7 +154,7 @@ it open, e.g. Appendix D).
 | 27 | Claude Roles & Structured Output Contracts | ✅ | "Hard authority boundaries" already hold structurally: Claude/the model never directly sets Wallet balance (deterministic `grantCredits`/`consumeCredits` functions own that), never directly mutates `RoadmapItem` (goes through the propose→confirm flow), and Prompt Registry outputs are schema-validated (forced tool-use, ADR 0005) rather than free prose parsed as fact. |
 | 28 | Privacy, Provenance & Traceability | ⚠️ (traceability gap resolved 2026-09-04) | Compact encrypted summaries over raw transcripts: true (Phase 6 crypto is now fully complete, not just in progress — see ADR 0007's Resolution; "no raw payloads in logs" guardrail already exists in this file's own standing rules). Traceability: `TwinSignalItem.promptRef`/`modelRef` now record which prompt/model version produced each signal (Session 35, ADR 0015, ties to §7's finding) — "what prompt version generated this signal" is now answerable for every signal created since. |
 | 29 | MVP vs Later Intelligence Scope | ✅ | This section's own framing ("real where possible, honest empty state elsewhere... do not fabricate precision") is already this project's working default, independent of this spec — good news, since it means most of the *culture* here is already right; the gaps above are specific unimplemented mechanisms, not a wrong instinct. |
-| 30 | Safety, Crisis, Boundaries | ❌ | See Critical Finding #1. |
+| 30 | Safety, Crisis, Boundaries | ✅ (resolved 2026-09-02, Session 30; staleness-corrected in this doc 2026-09-09) | See Critical Finding #1 and ADR 0012 — all 4 stages built, deployed, live-verified. Real calibration and locale-aware crisis content remain time-boxed-open per ADR 0012, not a "doesn't exist" gap. |
 | 31 | Claude Product-Decision & Escalation Protocol | — | Procedural, not code — adopted as this project's own working process starting this session (see "What this means for the next session" below). No prior session had a formal escalation-vs-decide-yourself framework this explicit; `AGENT_LOG.md`'s existing "ADR for irreversible decisions" convention already does something similar in spirit and stays fully compatible with this. |
 | 32 | Failure States & Recovery | ✅ | "Loading skeleton, never fake prior data," "no data → explain what will populate," honest empty states throughout — already this project's convention in every slice built since Session 21's mockup-parity work, predating this spec. |
 | 33 | Acceptance Tests | 🔶 | A genuinely useful checklist for any future session closing gaps above — most items map directly onto one of the findings/gaps in this table (e.g. "A new user with two interactions never sees a fabricated... score" directly indicts the Alignment Score finding). Worth running literally, item by item, once the safety system (Finding #1) exists, since ~9 of the ~40 acceptance-test lines are safety/healthy-use specific and can't be truthfully checked off before that's built. |
@@ -154,6 +167,13 @@ it open, e.g. Appendix D).
 
 ## What this means for the next session
 
+**Update, 2026-09-09 (staleness fix, no new build):** the "suggested order" below was written before Session
+30 (2026-09-02) finished the safety system, and this document was never corrected afterward — AGENT_LOG
+Session 43 caught the mismatch. Item 1 (safety/crisis system) has been done since Session 30; treat the
+ordering below as historical, not current. Only real remaining items, as of this correction: §33's acceptance
+tests can now genuinely be run item-by-item (safety no longer blocks the ~9 safety-specific lines), the
+subdimension/reason_code/goal_id signal-model gaps from item 2, and "everything else in the table" (item 4).
+
 **Update, 2026-09-03 (Session 34):** Item 3 below (Living System behaviors — §17) is now done, deployed, and
 live-verified — see the table row above and `docs/AGENT_LOG.md` Session 34 for full detail. The safety/crisis
 system (item 1) was already done in an earlier session. **Remaining, in the order below**: item 2 (signal
@@ -165,25 +185,21 @@ followed by a same-session build, not deferred work. **Do not re-litigate either
 
 **Do not attempt to close everything else in the table above in one pass.** Per this project's own standing
 protocol ("prefer finishing one vertical slice cleanly over starting two") and the spec's own §31 instruction
-to build "one complete vertical slice... before expanding," the right next move is Finding #1 — the
-safety/crisis system — since the spec places safety above itself in precedence and several other gaps (§2
-methodology lenses, §17A relational voice) are naturally designed *around* whatever safety-state contract
-gets built, not before it.
+to build "one complete vertical slice... before expanding."
 
-**Suggested order, pending the user's actual priorities:**
-1. **Safety/crisis system (§30) — the one remaining critical finding.** Design + build. Highest priority by
-   the spec's own stated precedence; touches Companion, Mirror Room and Decision Room's shared model-call
-   path. This is real design work (what detection mechanism, what thresholds, how it plugs into the existing
-   Bedrock call path), not a quick prompt tweak — scope it as its own session before starting.
+**Suggested order, pending the user's actual priorities (historical — item 1 done, see 2026-09-09 update above):**
+1. ~~Safety/crisis system (§30)~~ — **done, see ADR 0012 and the 2026-09-09 update above.**
 2. ~~Signal model enrichment~~ — **partially resolved 2026-09-04, Session 35, ADR 0015.** `signal_type` and
    `prompt_ref`/`model_ref` traceability are done; `direction`/`strength` are done via a new confirm-time
    comparison against up to 5 prior confirmed signals in the same domain (live-verified: a second, similar
    signal correctly came back `recurring`, not `emerging`). **Still open**: `subdimension`, `reason_code`,
    `goal_id` (deferred by explicit scope choice — see ADR 0015's Context for why each one specifically).
-3. Living System behaviors (§17: Open Threads, full Roadmap lifecycle states, interaction-mode inference) —
-   the biggest net-new build in the spec, and the one with the least overlap against anything already built.
+3. ~~Living System behaviors (§17)~~ — **done, deployed, live-verified, Session 34.**
 4. Everything else in the table above, roughly in the order it's listed, once 1–3 establish the underlying
-   primitives (safety state, enriched signals) the rest depend on.
+   primitives (safety state, enriched signals) the rest depend on. Real remaining candidates: §4 Life Domains
+   taxonomy (7 vs. 8 domains, flagged mechanical-but-cheap-now-expensive-later), §22 Decision Room's step count
+   vs. the spec's 6-phase UX (a mapping/labeling pass, not a rebuild), §25 reward-taxonomy reconciliation
+   (Critical Finding #3's second half), and §33's acceptance-test checklist (now fully runnable).
 
 Per this project's own protocol, write an ADR for any of the above that becomes an irreversible or hard-to-
 reverse call, and update this document's own findings to "resolved" inline rather than leaving them to
