@@ -53,8 +53,14 @@ export default function DailyGuidanceCard({ dailyCard: initial, title = "Today's
         </button>
       </div>
       {showImage && (
-        <div className="relative rounded-xl overflow-hidden h-40 mb-3">
-          <Image src="/images/companion/pull-a-card.webp" alt="" fill sizes="320px" className="object-cover" />
+        // pull-a-card.webp is a real tall/portrait card-back crop (335×580),
+        // not a landscape banner — same asset PullACard.tsx renders. A fixed
+        // h-40 landscape box was the wrong container there for the identical
+        // reason it's wrong here: object-cover scales to fill the width and
+        // crops most of the card's height away. Sized to the image's own
+        // aspect ratio instead, matching PullACard's already-fixed convention.
+        <div className="relative mx-auto mb-3 w-32 aspect-[335/580] rounded-xl overflow-hidden">
+          <Image src="/images/companion/pull-a-card.webp" alt="" fill sizes="128px" className="object-cover" />
         </div>
       )}
       <p className="text-white/80 text-sm leading-relaxed italic">&ldquo;{dailyCard.text}&rdquo;</p>

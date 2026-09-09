@@ -133,17 +133,24 @@ export default function LibraryPage() {
 
         {!loading && featured && !query && (
           <Link href={`/library/${featured.slug}`} className="block mb-6">
-            <Card className="!p-0 overflow-hidden lg:flex lg:items-center">
-              <div className="relative h-32 lg:h-40 lg:w-56 lg:shrink-0">
-                <Image src="/images/library/library-hero.webp" alt="" fill sizes="(min-width: 1024px) 224px, 100vw" className="object-cover" />
-              </div>
-              <div className="p-5 flex-1 flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-1">Featured Today</p>
-                  <p className="text-white text-base font-medium">{featured.title}</p>
-                  <p className="text-[var(--color-text-tertiary)] text-xs mt-1">{featured.taxonomyCategory}</p>
+            {/* Full-bleed hero banner, same idiom as the Evolution Map/Dashboard
+                heroes — the reference's own "Featured Today" is a dominant,
+                full-width band, not a side-by-side thumbnail. A prior version
+                of this card wired the hero art in as a small 224px corner
+                thumbnail instead (the exact anti-pattern
+                .claude/skills/mockup-to-code/SKILL.md warns about), which also
+                cropped the portrait almost entirely out of frame at that
+                aspect ratio. */}
+            <Card className="relative overflow-hidden !p-0 h-40 lg:h-48">
+              <Image src="/images/library/library-hero.webp" alt="" fill sizes="100vw" className="object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-base)] via-[var(--color-bg-base)]/40 to-transparent" />
+              <div className="absolute inset-0 flex flex-col items-start justify-end p-5 lg:p-8">
+                <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-1">Featured Today</p>
+                <h2 className="font-display text-xl lg:text-2xl text-white">{featured.title}</h2>
+                <div className="flex items-center gap-1.5 mt-1 text-[var(--color-text-tertiary)] text-xs">
+                  <span>{featured.taxonomyCategory}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </div>
-                <ArrowRight className="w-4 h-4 text-[var(--color-text-tertiary)] shrink-0" />
               </div>
             </Card>
           </Link>

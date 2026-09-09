@@ -260,15 +260,29 @@ export default function CompanionPage() {
           {/* pt-14 replaces the greeting block's own safe-area top padding
               once the conversation is active and the greeting is hidden —
               this page has no other fixed header providing that space. */}
-          <div ref={scrollRef} className={`flex-1 overflow-y-auto px-5 lg:px-0 space-y-3 pb-2 ${isLanding ? 'pt-2' : 'pt-14 lg:pt-2'}`}>
+          <div
+            ref={scrollRef}
+            className={`flex-1 overflow-y-auto px-5 lg:px-0 pb-2 flex flex-col ${isLanding ? 'pt-2' : 'pt-14 lg:pt-2'} ${
+              !loading && messages.length === 0 ? 'justify-center' : 'space-y-3'
+            }`}
+          >
             {loading && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">Loading…</p>}
 
+            {/* Same bubble treatment as a real assistant message (no fabricated
+                first turn — this is UI chrome, not a message DPNR sent) rather
+                than the plain floating text this replaced, so the empty state
+                has the same visual weight the reference's own opening line
+                does. Vertically centered in the thread area via the parent's
+                justify-center above, instead of top-aligned with a large dead
+                gap above the input bar. */}
             {!loading && messages.length === 0 && (
-              <div className="pt-4 text-center space-y-2">
-                <p className="text-white/50 text-sm leading-relaxed">Hi — what&apos;s on your mind?</p>
-                <p className="text-[var(--color-text-tertiary)] text-xs">
-                  I can help you think something through, or point you to a Room or a Library topic.
-                </p>
+              <div className="flex justify-start">
+                <div className="max-w-[90%] lg:max-w-[480px] bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] text-white/85 rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed">
+                  <p>Hi — what&apos;s on your mind?</p>
+                  <p className="text-[var(--color-text-tertiary)] text-xs mt-1.5">
+                    I can help you think something through, or point you to a Room or a Library topic.
+                  </p>
+                </div>
               </div>
             )}
 
@@ -352,6 +366,11 @@ export default function CompanionPage() {
               </svg>
             </button>
           </div>
+          {isLanding && (
+            <p className="px-5 lg:px-0 pb-3 text-center text-[var(--color-text-tertiary)] text-xs">
+              Everything you share is private and encrypted.
+            </p>
+          )}
         </div>
 
         {/* Right column — desktop only */}

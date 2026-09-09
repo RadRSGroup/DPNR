@@ -38,17 +38,20 @@ export default function PullACard() {
     <Card className="relative overflow-hidden">
       <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-3">Pull a Card</p>
 
-      {card && (
+      {
         // pull-a-card.webp is a real tall/portrait card-back crop (335×580 —
         // an actual card shape, not a landscape banner). A full-width h-40
         // landscape box was the wrong container: object-cover would scale to
         // fill the width and crop most of the card's own height away,
         // leaving a stretched, off-center sliver. Sized to the image's own
         // aspect ratio instead, centered and no wider than it needs to be.
-        <div className="relative mx-auto mb-3 w-32 aspect-[335/580] rounded-xl overflow-hidden">
-          <Image src={card.imageRef} alt="" fill sizes="128px" className="object-cover" />
-        </div>
-      )}
+        // Shown even before a pull (matching the reference's own always-visible
+        // card art) — every card shares this one placeholder image today, so
+        // rendering it pre-pull shows nothing that isn't already true.
+      }
+      <div className="relative mx-auto mb-3 w-32 aspect-[335/580] rounded-xl overflow-hidden">
+        <Image src={card?.imageRef ?? '/images/companion/pull-a-card.webp'} alt="" fill sizes="128px" className="object-cover" />
+      </div>
 
       {card ? (
         <p className="text-white/80 text-sm leading-relaxed italic">&ldquo;{card.text}&rdquo;</p>
