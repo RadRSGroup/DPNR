@@ -103,26 +103,28 @@ export default function MirrorRoomLanding({ userName, onStart, sourceTopicTitle 
             <div className="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
               {/* Main column */}
               <div className="lg:col-span-2 space-y-4 lg:space-y-6">
-                <Card className="lg:flex lg:items-center lg:gap-8 !p-0 lg:!p-6 overflow-hidden">
-                  <div className="relative h-64 lg:h-56 lg:w-56 lg:shrink-0 lg:rounded-[var(--radius-card)] overflow-hidden">
+                <Card className="relative overflow-hidden !p-0">
+                  <div className="relative h-64 lg:h-80">
                     <Image
                       src="/images/mirror/mirror-room-hero.webp"
                       alt=""
                       fill
-                      sizes="(min-width: 1024px) 224px, 100vw"
+                      sizes="(min-width: 1024px) 66vw, 100vw"
                       className="object-cover"
+                      priority
                     />
-                  </div>
-                  <div className="p-5 lg:p-0">
-                    <h2 className="font-display text-xl lg:text-2xl text-white">Welcome to Mirror Room</h2>
-                    <p className="text-white/50 text-sm mt-2 leading-relaxed max-w-sm">
-                      This is your space to pause, observe, and explore your inner patterns. The more you see, the more you&apos;re free to choose.
-                    </p>
-                    <div className="mt-4 flex items-center gap-3">
-                      <PrimaryButton label="Start Mirror" onClick={onStart} className="lg:w-auto lg:px-6" />
-                      <span className="text-[var(--color-text-tertiary)] text-xs">
-                        {ROOM_REFINE_COST} credit{ROOM_REFINE_COST === 1 ? '' : 's'} per refine
-                      </span>
+                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-base)] via-transparent to-transparent" />
+                    <div className="absolute inset-0 flex flex-col items-start justify-end p-5 lg:p-8">
+                      <h2 className="font-display text-xl lg:text-2xl text-white">Welcome to Mirror Room</h2>
+                      <p className="text-white/60 text-sm mt-1 max-w-sm">
+                        This is your space to pause, observe, and explore your inner patterns. The more you see, the more you&apos;re free to choose.
+                      </p>
+                      <div className="mt-4 flex items-center gap-3">
+                        <PrimaryButton label="Start Mirror" onClick={onStart} className="lg:w-auto lg:px-6" />
+                        <span className="text-[var(--color-text-tertiary)] text-xs">
+                          {ROOM_REFINE_COST} credit{ROOM_REFINE_COST === 1 ? '' : 's'} per refine
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </Card>

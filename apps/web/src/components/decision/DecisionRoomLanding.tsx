@@ -102,7 +102,7 @@ export default function DecisionRoomLanding({ userName, onStart, sourceTopicTitl
               {/* Main column */}
               <div className="lg:col-span-2 space-y-4 lg:space-y-6">
                 <Card className="relative overflow-hidden !p-0">
-                  <div className="relative h-56 lg:h-72">
+                  <div className="relative h-64 lg:h-80">
                     <Image
                       src="/images/decision/decision-room-hero.webp"
                       alt=""
