@@ -6,9 +6,8 @@ import { useRouter } from 'next/navigation'
 import { Heart, Cloud, Shuffle, Sparkles } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getCompanionContext, sendCompanionMessage, ApiError } from '@/lib/api/v1-client'
-import type { CompanionDirective, CompanionContextResponse } from '@dpnr/shared-types'
+import type { CompanionDirective } from '@dpnr/shared-types'
 import DirectiveCard from '@/components/companion/DirectiveCard'
-import DailyGuidanceCard from '@/components/companion/DailyGuidanceCard'
 import PullACard from '@/components/companion/PullACard'
 import RecentConversations from '@/components/companion/RecentConversations'
 import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
@@ -45,15 +44,15 @@ function timeGreeting() {
  *
  * UI redesign (Session 20, Phase 2 of docs/AGENT_LOG.md's plan): reskinned
  * against the "Main Chat" reference screen — real time-of-day greeting,
- * quick-prompt starter chips (just fill the input, never auto-send). The
- * mobile inline widget above the thread still shows the scheduled Daily
- * Card via `DailyGuidanceCard` (untouched this pass).
+ * quick-prompt starter chips (just fill the input, never auto-send).
  *
  * Session 42: the reference's other two desktop-right-column pieces are now
  * real. **"Pull a Card"** (`PullACard`) is a genuinely different mechanic
- * from the scheduled Daily Card above — an on-demand pull from a stored
- * card library, confirmed scoped to Companion only — and replaces this
- * page's own previous dailyCard-driven right-column widget. **"Recent
+ * from the scheduled Daily Card the other three rooms still use — an
+ * on-demand pull from a stored card library, confirmed scoped to Companion
+ * only — and replaces this page's own previous dailyCard-driven widget
+ * (Session 43 finished the swap on mobile too — see the inline `PullACard`
+ * placement below — Session 42 only did desktop's right column). **"Recent
  * Conversations"** (`RecentConversations`) is real too: Companion used to
  * be one continuous thread forever; `sessionId` now identifies a specific
  * conversation, switching/creating one calls `getCompanionContext`/
@@ -71,7 +70,6 @@ export default function CompanionPage() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [firstName, setFirstName] = useState('')
-  const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
   const [creditsExhausted, setCreditsExhausted] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -87,7 +85,6 @@ export default function CompanionPage() {
 
         const context = await getCompanionContext()
         setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt })))
-        setDailyCard(context.dailyCard)
         setSessionId(context.sessionId)
       } catch {
         // Degrades to an empty chat — same tolerance the Dashboard page uses.
@@ -229,12 +226,19 @@ export default function CompanionPage() {
             </div>
           )}
 
-          {/* Daily Card — mobile position, inline above the thread. Desktop
-              shows the same widget in the right column instead (below).
-              Landing-only now — see isLanding's doc comment above. */}
-          {dailyCard && isLanding && (
+          {/* Pull a Card — mobile position, inline above the thread. Desktop
+              shows the same widget in the always-visible right column
+              instead (below); mobile has no persistent sidebar, so it's
+              landing-only here, same tradeoff as the quick prompts and
+              Explore row just below. This used to show the old scheduled
+              Daily Card via DailyGuidanceCard — Session 42 replaced that
+              widget slot with Pull a Card on desktop ("replaces this exact
+              widget slot rather than stacking alongside the untouched Daily
+              Card elsewhere") but missed mobile, leaving it as the only way
+              left to reach Pull a Card being desktop-only. */}
+          {isLanding && (
             <div className="lg:hidden px-5 pt-2">
-              <DailyGuidanceCard dailyCard={dailyCard} showImage={false} />
+              <PullACard />
             </div>
           )}
 
