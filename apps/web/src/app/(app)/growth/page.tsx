@@ -243,26 +243,45 @@ function GrowthTrackerContent() {
             )}
 
             {/* Core Pillars / Emotional Landscape — deliberate honest empty
-                states, see this file's own doc comment above. Not built
-                as real widgets because nothing in this codebase computes
-                either concept yet. */}
+                states, see this file's own doc comment above. Not built as
+                real widgets because nothing in this codebase computes
+                either concept yet. Scenery Parity Pass Phase 5 (per the
+                user's direct choice, AskUserQuestion): each card gets one
+                giant, very-low-opacity outline of its own already-present
+                icon as a background watermark — decorative only, deliberately
+                too abstract to be mistaken for a real chart/score, unlike
+                photographic or data-shaped art would be. A "Coming soon"
+                badge makes the placeholder status explicit at a glance too,
+                not just in the paragraph text. */}
             <div className="grid sm:grid-cols-2 gap-4 lg:gap-6">
-              <Card className="opacity-80">
-                <div className="flex items-center gap-2 mb-2">
-                  <Layers className="w-4 h-4 text-[var(--color-text-tertiary)]" />
-                  <p className="text-sm text-white">Core Pillars</p>
+              <Card className="relative overflow-hidden opacity-80">
+                <Layers className="absolute -right-4 -bottom-4 w-28 h-28 text-white/[0.04] pointer-events-none" />
+                <div className="relative flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-[var(--color-text-tertiary)]" />
+                    <p className="text-sm text-white">Core Pillars</p>
+                  </div>
+                  <span className="text-[10px] uppercase tracking-wide text-[var(--color-text-tertiary)] border border-[var(--color-border-glass)] rounded-full px-2 py-0.5 shrink-0">
+                    Coming soon
+                  </span>
                 </div>
-                <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed">
+                <p className="relative text-xs text-[var(--color-text-tertiary)] leading-relaxed">
                   Needs more real usage data before DPNR can compute a meaningful pillar-alignment
                   score. Not built yet — this is an honest gap, not a bug.
                 </p>
               </Card>
-              <Card className="opacity-80">
-                <div className="flex items-center gap-2 mb-2">
-                  <Waves className="w-4 h-4 text-[var(--color-text-tertiary)]" />
-                  <p className="text-sm text-white">Emotional Landscape</p>
+              <Card className="relative overflow-hidden opacity-80">
+                <Waves className="absolute -right-4 -bottom-4 w-28 h-28 text-white/[0.04] pointer-events-none" />
+                <div className="relative flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    <Waves className="w-4 h-4 text-[var(--color-text-tertiary)]" />
+                    <p className="text-sm text-white">Emotional Landscape</p>
+                  </div>
+                  <span className="text-[10px] uppercase tracking-wide text-[var(--color-text-tertiary)] border border-[var(--color-border-glass)] rounded-full px-2 py-0.5 shrink-0">
+                    Coming soon
+                  </span>
                 </div>
-                <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed">
+                <p className="relative text-xs text-[var(--color-text-tertiary)] leading-relaxed">
                   Needs a real emotion/sentiment-tracking model behind it, which doesn&apos;t exist
                   yet. Not built yet — this is an honest gap, not a bug.
                 </p>
