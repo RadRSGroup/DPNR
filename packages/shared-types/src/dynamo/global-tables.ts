@@ -130,6 +130,62 @@ export const LibraryTopicAliasItemSchema = z.object({
 export type LibraryTopicAliasItem = z.infer<typeof LibraryTopicAliasItemSchema>
 
 /**
+ * Pull a Card's own metadata taxonomy (`docs/DPNR_Pull_A_Card_300_Question_Bank_v2.pdf`
+ * p.2 "Recommended metadata per card") — six axes, each a fixed enum the
+ * source doc names explicitly. Deliberately kept as its own namespace, not
+ * reconciled with Library's `ExploreTheme`/`lifeDomains` (global-tables.ts
+ * above) or the pre-existing `LifeDomainCategorySchema` (dynamo/twin.ts) —
+ * three "life domain"-shaped taxonomies now exist in this codebase for three
+ * different features, each authored from its own source document at a
+ * different time. Unifying them is a real product decision already flagged
+ * as open tech debt (AGENT_LOG.md Session 45 / INTELLIGENCE_SPEC_AUDIT.md §4)
+ * and out of scope here — this follows that same precedent rather than
+ * inventing a fourth resolution unilaterally.
+ */
+export const GUIDANCE_CARD_TOPICS = [
+  'SELF', 'FEEL', 'PATTERNS', 'NEEDS', 'LOVE', 'COURAGE', 'BODY', 'NEXT', 'CREATE', 'LIFE',
+] as const
+export type GuidanceCardTopic = (typeof GUIDANCE_CARD_TOPICS)[number]
+
+export const GUIDANCE_CARD_LIFE_DOMAINS = [
+  'Relationships', 'Family', 'Work-Career', 'Finance', 'Health', 'Personal Growth', 'Leisure',
+  'Spirituality', 'Emotional Well-being',
+] as const
+export type GuidanceCardLifeDomain = (typeof GUIDANCE_CARD_LIFE_DOMAINS)[number]
+
+export const GUIDANCE_CARD_CORES = [
+  'Emotion', 'Need', 'Value', 'Boundary', 'Belief', 'Behavior', 'Pattern', 'Goal', 'Identity',
+] as const
+export type GuidanceCardCore = (typeof GUIDANCE_CARD_CORES)[number]
+
+export const GUIDANCE_CARD_DEPTHS = ['Light', 'Everyday', 'Reflect', 'Deep'] as const
+export type GuidanceCardDepth = (typeof GUIDANCE_CARD_DEPTHS)[number]
+
+export const GUIDANCE_CARD_MODES = ['Notice', 'Ask', 'Choose', 'Remember', 'Act'] as const
+export type GuidanceCardMode = (typeof GUIDANCE_CARD_MODES)[number]
+
+export const GUIDANCE_CARD_STATES = [
+  'Grounding', 'Curiosity', 'Clarity', 'Challenge', 'Expansion', 'Connection',
+] as const
+export type GuidanceCardState = (typeof GUIDANCE_CARD_STATES)[number]
+
+/**
+ * Source doc names this axis "Stay on Card / Journal / Main Chat / Mirror
+ * Room / Decision Room" — stored here as the literal snake_case route key,
+ * display labels live in the frontend. `journal` is a real, faithfully-kept
+ * value (not dropped from the enum) even though no Journal destination
+ * exists anywhere in this codebase yet (AGENT_LOG.md Session 45 flagged this
+ * gap explicitly) — companion/pull-card.ts resolves it to no directive
+ * (same honest-gap treatment as every other not-yet-buildable route below),
+ * so a future Journal feature only needs to add one resolver case, not a
+ * data migration.
+ */
+export const GUIDANCE_CARD_ROUTES = [
+  'stay_on_card', 'journal', 'main_chat', 'mirror_room', 'decision_room',
+] as const
+export type GuidanceCardRoute = (typeof GUIDANCE_CARD_ROUTES)[number]
+
+/**
  * Companion's "Pull a Card" library — same config-like, low-write-volume
  * profile as Plans/Library (authored content, not personal user data).
  * Deliberately flat (no version/alias split like Library topics): a card
@@ -138,11 +194,25 @@ export type LibraryTopicAliasItem = z.infer<typeof LibraryTopicAliasItemSchema>
  * change; every card seeded today is 'manual'. `imageRef` points at the
  * existing companion/pull-a-card.webp placeholder for every card until real
  * per-card art exists — flagged, not faked.
+ *
+ * `topic` is guaranteed (the source doc's own 10x30 chapter structure gives
+ * every card exactly one). `lifeDomain` is optional — a meaningful number of
+ * the 300 cards (see guidance-cards.seed.ts's own doc comment) genuinely
+ * don't land cleanly on one of the source's 9 life domains, and forcing a
+ * best-guess domain onto a card like "What are you grateful for today?"
+ * would be inventing a signal the card doesn't actually carry.
  */
 export const GuidanceCardItemSchema = z.object({
   pk: z.string(), // GlobalKeys.guidanceCardPk(cardId)
   sk: z.literal('CONFIG'),
   text: z.string(),
+  topic: z.enum(GUIDANCE_CARD_TOPICS),
+  lifeDomain: z.enum(GUIDANCE_CARD_LIFE_DOMAINS).optional(),
+  core: z.enum(GUIDANCE_CARD_CORES),
+  depth: z.enum(GUIDANCE_CARD_DEPTHS),
+  mode: z.enum(GUIDANCE_CARD_MODES),
+  state: z.enum(GUIDANCE_CARD_STATES),
+  suggestedRoute: z.enum(GUIDANCE_CARD_ROUTES),
   imageRef: z.string(),
   source: z.enum(['manual', 'generated']),
   active: z.boolean(),

@@ -3,18 +3,25 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { Sparkles } from 'lucide-react'
 import Card from '@/components/ui/Card'
+import DirectiveCard from './DirectiveCard'
 import { pullCompanionCard } from '@/lib/api/v1-client'
 import type { PullCardResponse } from '@dpnr/shared-types'
 
 /**
- * Companion's "Pull a Card" (Session 42) — an on-demand pull from a stored,
- * reusable card library (`GET .../pull-card`), a genuinely different
- * mechanic from the scheduled once-daily Daily Card the other three rooms
- * still use. Confirmed with the user: Companion-only, replaces this exact
- * widget slot rather than stacking alongside the untouched Daily Card
- * elsewhere. Every card currently shares one placeholder image
+ * Companion's "Pull a Card" (Session 42, context-aware selection + Suggested
+ * Route added in the 300-question-bank session) — an on-demand pull from a
+ * stored, reusable card library (`POST .../pull-card`), a genuinely
+ * different mechanic from the scheduled once-daily Daily Card the other
+ * three rooms still use. Confirmed with the user: Companion-only, replaces
+ * this exact widget slot rather than stacking alongside the untouched Daily
+ * Card elsewhere. Every card currently shares one placeholder image
  * (companion/pull-a-card.webp) until real per-card art exists — flagged in
  * the seed data, not faked here.
+ *
+ * `directive` reuses `DirectiveCard` (companion/message.ts's own routing
+ * card) rather than a second navigation UI — it only ever arrives as
+ * `open_room` or `null` for this endpoint (companion/pull-card.ts's own
+ * resolver), which `DirectiveCard` already renders correctly.
  */
 export default function PullACard() {
   const [card, setCard] = useState<PullCardResponse | null>(null)
@@ -54,7 +61,10 @@ export default function PullACard() {
       </div>
 
       {card ? (
-        <p className="text-white/80 text-sm leading-relaxed italic">&ldquo;{card.text}&rdquo;</p>
+        <>
+          <p className="text-white/80 text-sm leading-relaxed italic">&ldquo;{card.text}&rdquo;</p>
+          {card.directive && <DirectiveCard directive={card.directive} />}
+        </>
       ) : (
         <p className="text-[var(--color-text-tertiary)] text-sm">
           {error ? "Couldn't pull a card — try again." : 'Pull a card for something to sit with today.'}

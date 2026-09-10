@@ -427,10 +427,13 @@ export class ApiStack extends Stack {
       environment: {
         ...sharedProductLambdaProps.environment,
         LIBRARY_CATALOG_TABLE_NAME: props.libraryCatalogTable.tableName,
+        APPLICATION_TABLE_NAME: props.applicationTable.tableName,
       },
-      description: 'POST /v1/companion/pull-card — one random active card from the Pull-a-Card library.',
+      description:
+        'POST /v1/companion/pull-card — context-aware pull from the Pull-a-Card library, weighted by confirmed Twin signals.',
     })
     props.libraryCatalogTable.grantReadData(companionPullCardFn)
+    props.applicationTable.grantReadData(companionPullCardFn)
 
     const userConsentFn = new lambda.NodejsFunction(this, 'UserConsentFn', {
       ...sharedProductLambdaProps,

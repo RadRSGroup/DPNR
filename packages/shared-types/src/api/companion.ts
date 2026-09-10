@@ -1,5 +1,14 @@
 import { z } from 'zod'
 import { DailyCardFeedbackSchema } from '../dynamo/continuity'
+import {
+  GUIDANCE_CARD_TOPICS,
+  GUIDANCE_CARD_LIFE_DOMAINS,
+  GUIDANCE_CARD_CORES,
+  GUIDANCE_CARD_DEPTHS,
+  GUIDANCE_CARD_MODES,
+  GUIDANCE_CARD_STATES,
+  GUIDANCE_CARD_ROUTES,
+} from '../dynamo/global-tables'
 
 /**
  * Companion — chat-first router (MVP_ARCHITECTURE.md §5.1). A Bedrock
@@ -83,10 +92,29 @@ export const CompanionCreateConversationResponseSchema = z.object({
 })
 export type CompanionCreateConversationResponse = z.infer<typeof CompanionCreateConversationResponseSchema>
 
-/** POST /v1/companion/pull-card — one random active card from the Pull-a-Card library. */
+/**
+ * POST /v1/companion/pull-card — context-aware pull from the 300-card
+ * library (`docs/DPNR_Pull_A_Card_300_Question_Bank_v2.pdf`). Metadata axes
+ * mirror the source doc's own "Recommended metadata per card" (see
+ * dynamo/global-tables.ts's `GuidanceCardItemSchema` doc comment for the
+ * full reasoning). `directive` reuses `CompanionDirectiveSchema` rather than
+ * inventing a parallel navigation contract — it's the server's resolution of
+ * `suggestedRoute` into something the client can actually act on; `null`
+ * covers `stay_on_card`/`main_chat` (no navigation needed, the card already
+ * lives in Companion) and `journal` (no Journal destination exists yet,
+ * flagged in the route enum's own doc comment) alike.
+ */
 export const PullCardResponseSchema = z.object({
   cardId: z.string(),
   text: z.string(),
   imageRef: z.string(),
+  topic: z.enum(GUIDANCE_CARD_TOPICS),
+  lifeDomain: z.enum(GUIDANCE_CARD_LIFE_DOMAINS).optional(),
+  core: z.enum(GUIDANCE_CARD_CORES),
+  depth: z.enum(GUIDANCE_CARD_DEPTHS),
+  mode: z.enum(GUIDANCE_CARD_MODES),
+  state: z.enum(GUIDANCE_CARD_STATES),
+  suggestedRoute: z.enum(GUIDANCE_CARD_ROUTES),
+  directive: CompanionDirectiveSchema.nullable(),
 })
 export type PullCardResponse = z.infer<typeof PullCardResponseSchema>
