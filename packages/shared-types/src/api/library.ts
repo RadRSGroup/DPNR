@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { EXPLORE_THEMES } from '../dynamo/global-tables'
 
 /**
  * Content Library (MVP_ARCHITECTURE.md §5.5). Catalog itself is config-like,
@@ -10,7 +11,9 @@ import { z } from 'zod'
 export const LibraryTopicSummarySchema = z.object({
   slug: z.string(),
   title: z.string(),
-  taxonomyCategory: z.string(),
+  exploreTheme: z.enum(EXPLORE_THEMES),
+  lifeDomains: z.array(z.string()),
+  level: z.enum(['Foundation', 'Intermediate', 'Deep Dive']).optional(),
 })
 export type LibraryTopicSummary = z.infer<typeof LibraryTopicSummarySchema>
 
@@ -29,8 +32,17 @@ export type LibraryTopicsResponse = z.infer<typeof LibraryTopicsResponseSchema>
 export const LibraryTopicDetailResponseSchema = z.object({
   slug: z.string(),
   title: z.string(),
-  taxonomyCategory: z.string(),
+  exploreTheme: z.enum(EXPLORE_THEMES),
+  lifeDomains: z.array(z.string()),
+  level: z.enum(['Foundation', 'Intermediate', 'Deep Dive']).optional(),
+  contentType: z.array(z.string()).optional(),
+  // Resolved to {slug, title} pairs (not bare slugs) so a consumer can render
+  // a link without also needing the full topic list loaded — the detail
+  // response is meant to be sufficient on its own, same reasoning
+  // LibraryTopicSummary's own fields already follow.
+  relatedTopics: z.array(z.object({ slug: z.string(), title: z.string() })).optional(),
   body: z.string(), // authored content — "Understand" section
+  expandTheLens: z.string().optional(),
   personalizedExplanation: z.string().nullable(), // null if no confirmed signals to personalize from yet
   promptRef: z.string().optional(), // present only when personalizedExplanation is non-null
   // Intelligence Spec §18/§20 — see dynamo/global-tables.ts's
@@ -42,7 +54,8 @@ export const LibraryTopicDetailResponseSchema = z.object({
   possibleRoots: z.array(z.string()).optional(),
   reflectionQuestions: z.array(z.string()).optional(),
   waysToWorkWithIt: z.array(z.string()).optional(),
-  recommendedRooms: z.array(z.enum(['mirror', 'decision'])).optional(),
+  goDeeperGuidance: z.array(z.string()).optional(),
+  recommendedRooms: z.array(z.enum(['mirror', 'decision', 'companion'])).optional(),
 })
 export type LibraryTopicDetailResponse = z.infer<typeof LibraryTopicDetailResponseSchema>
 

@@ -56,11 +56,33 @@ export const SessionTicketItemSchema = z.object({
 })
 export type SessionTicketItem = z.infer<typeof SessionTicketItemSchema>
 
+/**
+ * The Library's primary browse axis (`DPNR_Content_Library_Master_Architecture_and_Complete_Content_v2.pdf`
+ * Part I §3A "Explore by Theme") — one of 10 fixed themes every topic is
+ * tagged with exactly one of, distinct from `lifeDomains` below (many-to-many).
+ */
+export const EXPLORE_THEMES = [
+  'ME', 'FEEL', 'PATTERNS', 'NEED', 'RELATE', 'REPAIR', 'BODY', 'CHOOSE', 'CREATE', 'LIFE',
+] as const
+export type ExploreTheme = (typeof EXPLORE_THEMES)[number]
+
 /** Content Library catalog — config-like, same profile as Prompt Registry. */
 export const LibraryTopicVersionItemSchema = z.object({
   pk: z.string(), // GlobalKeys.libraryTopicPk(slug)
   sk: z.string(), // GlobalKeys.promptVersion(n) — reuse the same VERSION# convention
-  taxonomyCategory: z.string(), // e.g. "Inner World", "Values & Needs" (MVP spec §Content Library taxonomy)
+  // Redesigned this session (Content Library Master Architecture v2, superseding
+  // the single-string `taxonomyCategory` this field replaces): the master doc's
+  // own "Key Architecture Decision" is explicit — "do not organize the library as
+  // one rigid tree... the same topic can belong to several life domains... at the
+  // same time." `exploreTheme` is the one fixed primary axis (Part I §3A);
+  // `lifeDomains` is the many-to-many secondary axis (Part I §3B) — a topic tagged
+  // "All domains" in the source doc is stored as a real list of all 11 domain
+  // names, not a sentinel, so callers never need to special-case that string.
+  exploreTheme: z.enum(EXPLORE_THEMES),
+  lifeDomains: z.array(z.string()),
+  level: z.enum(['Foundation', 'Intermediate', 'Deep Dive']).optional(), // Part I §4 "Level"
+  contentType: z.array(z.string()).optional(), // Part I §4 "Content Type" — e.g. ["Concept", "Distinction"], source combines with "/"
+  relatedTopics: z.array(z.string()).optional(), // slugs — Part I §4 "Related Topics", resolved at seed time against the real catalog (an unresolved title in the source is dropped, not guessed)
   title: z.string(),
   // Authored content. Plaintext — this is DPNR's own taxonomy content, not
   // personal user data (same reasoning as this table's own top-of-section
@@ -71,18 +93,29 @@ export const LibraryTopicVersionItemSchema = z.object({
   body: z.string(),
   // Intelligence Spec §18/§20 "Canonical Learning Topic Structure" —
   // KnowledgeTopic{}'s 5 authorable content sections, added for the
-  // Contextual Learning & Side-Panel build (see library-topics.seed.ts's
-  // doc comment for content provenance). All optional and additive: `body`
+  // Contextual Learning & Side-Panel build (see library-topics-v2.seed.ts's
+  // doc comment for current content provenance — the original
+  // library-topics.seed.ts this comment once pointed at is retired). All
+  // optional and additive: `body`
   // stays the authoritative "Understand" content, and a topic missing any
   // of these degrades honestly (the Side Panel shows "not yet written" for
   // that section) rather than fabricating or hiding it — this is what keeps
   // a future unauthored topic safe, not just today's 6.
   quickDefinition: z.string().optional(), // Quick Learn — 1-2 sentences, shown inline without leaving chat
-  howItMayShowUp: z.array(z.string()).optional(), // Recognize
-  possibleRoots: z.array(z.string()).optional(), // Possible Roots — tentative, never asserts one cause
-  reflectionQuestions: z.array(z.string()).optional(), // Personal Reflection
-  waysToWorkWithIt: z.array(z.string()).optional(), // Work With It — small practices, not "fix yourself"
-  recommendedRooms: z.array(z.enum(['mirror', 'decision'])).optional(), // Go Deeper routing
+  // Content Library Master Architecture v2's own Standard Learning Unit —
+  // "EXPAND THE LENS" (a map of types/categories/distinctions) has no
+  // equivalent in the older Intelligence Spec §20 shape this schema
+  // originally followed, so it's a genuinely new field, not a rename.
+  expandTheLens: z.string().optional(),
+  howItMayShowUp: z.array(z.string()).optional(), // Recognize / "How It May Look In Real Life"
+  possibleRoots: z.array(z.string()).optional(), // Possible Roots — tentative, never asserts one cause. Not part of the new content doc's own Learning Unit shape — stays undefined on every topic seeded from it, same honest-gap handling as any other unauthored section.
+  reflectionQuestions: z.array(z.string()).optional(), // Personal Reflection / "Check In" — the new content doc gives exactly one check-in question per topic; still stored as an array (single-element) to avoid a second, narrower field next to this one.
+  waysToWorkWithIt: z.array(z.string()).optional(), // Work With It / "Practice" — same single-element convention as reflectionQuestions above when sourced from the new content doc.
+  // "GO DEEPER WITH DPNR" guidance text (free prose or a short list of
+  // prompts, per the source) for personalizing further — distinct from
+  // `recommendedRooms` below, which is a fixed routing enum, not guidance.
+  goDeeperGuidance: z.array(z.string()).optional(),
+  recommendedRooms: z.array(z.enum(['mirror', 'decision', 'companion'])).optional(), // Go Deeper routing — 'companion' added per the operating-spec's §20 Go Deeper list (Mirror Room, Decision Room, Companion, Evolution Map, or a related topic); Evolution Map isn't a live nav destination for this yet, left off rather than added as a dead link
   status: z.enum(['draft', 'active', 'retired']),
   createdAt: z.string().datetime(),
 })

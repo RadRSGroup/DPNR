@@ -1,7 +1,7 @@
 import type { APIGatewayProxyHandlerV2WithJWTAuthorizer } from 'aws-lambda'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb'
-import { userPk, type TwinSignalItem, type LibraryRecommendationsResponse } from '@dpnr/shared-types'
+import { userPk, type TwinSignalItem, type LibraryRecommendationsResponse, type ExploreTheme } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
 import { listActiveTopics } from '../lib/library-catalog'
 
@@ -10,24 +10,28 @@ const CATALOG_TABLE_NAME = process.env.LIBRARY_CATALOG_TABLE_NAME as string
 const APPLICATION_TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
 
 /**
- * Maps a Twin signal's `domain` (always present) to the Library catalog's
- * `taxonomyCategory` (a free string authored per-topic, currently 4 values
- * in use — infra/cdk/scripts/library-topics.seed.ts). `domain`, not the
+ * Maps a Twin signal's `domain` (always present) to the Library's real
+ * `exploreTheme` axis (dynamo/global-tables.ts, redesigned this session per
+ * the Content Library Master Architecture v2 — replaces the old
+ * `DOMAIN_TO_TAXONOMY_CATEGORY` map, which pointed at the now-retired
+ * single-string `taxonomyCategory` field). `domain`, not the
  * optional/Bedrock-classified `lifeDomain`, is the join key: it's the one
  * field guaranteed to exist on every confirmed signal regardless of when
  * it was created (see TwinSignalItemSchema's own comment on `lifeDomain`'s
  * gaps). This mapping is this session's own authored decision, not derived
  * from an existing spec — the two taxonomies were never designed to line
- * up 1:1, so `current_focus`/`direction`/`commitment` all land on
- * "Direction & Creation" since all three concern where someone is headed.
+ * up 1:1, so `current_focus`/`direction`/`commitment` all land on CHOOSE
+ * since all three concern where someone is headed, matching that theme's
+ * own real topics (Decision-Making, Fear vs. Desire in Decisions, Future
+ * Self).
  */
-const DOMAIN_TO_TAXONOMY_CATEGORY: Record<string, string> = {
-  pattern: 'Patterns & Beliefs',
-  trigger: 'Inner World',
-  value: 'Values & Needs',
-  current_focus: 'Direction & Creation',
-  direction: 'Direction & Creation',
-  commitment: 'Direction & Creation',
+const DOMAIN_TO_EXPLORE_THEME: Record<string, ExploreTheme> = {
+  pattern: 'PATTERNS',
+  trigger: 'FEEL',
+  value: 'NEED',
+  current_focus: 'CHOOSE',
+  direction: 'CHOOSE',
+  commitment: 'CHOOSE',
 }
 
 /**
@@ -82,15 +86,15 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       (s) => s.status === 'confirmed'
     )
 
-    const categoryScores = new Map<string, number>()
+    const themeScores = new Map<ExploreTheme, number>()
     for (const signal of confirmedSignals) {
-      const category = DOMAIN_TO_TAXONOMY_CATEGORY[signal.domain]
-      if (!category) continue // every current domain value maps to something, but stay defensive against a future enum addition
-      categoryScores.set(category, (categoryScores.get(category) ?? 0) + 1)
+      const theme = DOMAIN_TO_EXPLORE_THEME[signal.domain]
+      if (!theme) continue // every current domain value maps to something, but stay defensive against a future enum addition
+      themeScores.set(theme, (themeScores.get(theme) ?? 0) + 1)
     }
 
     const ranked = topics
-      .map((topic) => ({ topic, score: categoryScores.get(topic.taxonomyCategory) ?? 0 }))
+      .map((topic) => ({ topic, score: themeScores.get(topic.exploreTheme) ?? 0 }))
       .filter((r) => r.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 4)
@@ -98,8 +102,8 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         topic: r.topic,
         reason:
           r.score === 1
-            ? `Related to a confirmed ${r.topic.taxonomyCategory.toLowerCase()} signal`
-            : `Related to ${r.score} confirmed ${r.topic.taxonomyCategory.toLowerCase()} signals`,
+            ? `Related to a confirmed ${r.topic.exploreTheme.toLowerCase()} signal`
+            : `Related to ${r.score} confirmed ${r.topic.exploreTheme.toLowerCase()} signals`,
       }))
 
     const body: LibraryRecommendationsResponse =

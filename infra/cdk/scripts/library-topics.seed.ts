@@ -1,4 +1,14 @@
 /**
+ * RETIRED — kept for history only, no longer imported by
+ * `seed-library-catalog.ts`. Superseded by `library-topics-v2.seed.ts`'s 54
+ * founder-authored topics (Content Library Master Architecture v2); several
+ * of the 6 topics below overlapped conceptually with a more precise
+ * equivalent in that set (see that file's own doc comment). Their DynamoDB
+ * items are flipped to `status: 'retired'` by `seed-library-catalog.ts`,
+ * not deleted.
+ */
+
+/**
  * Content Library catalog seed data (MVP_ARCHITECTURE.md §5.5, §3.2). No
  * spec docx section for authored topic content was available when these
  * were first written (same access gap Session 5 had for Mirror Room's

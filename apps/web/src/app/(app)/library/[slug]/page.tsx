@@ -9,9 +9,10 @@ import { getLibraryTopic } from '@/lib/api/v1-client'
 import type { LibraryTopicDetailResponse } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 
-const ROOM_LABEL: Record<'mirror' | 'decision', string> = {
+const ROOM_LABEL: Record<'mirror' | 'decision' | 'companion', string> = {
   mirror: 'Explore in Mirror Room',
   decision: 'Explore in Decision Room',
+  companion: 'Talk it through in Main Chat',
 }
 
 /**
@@ -65,11 +66,17 @@ export default function LibraryTopicPage() {
         {!loading && topic && (
           <div className="space-y-4">
             <div>
-              <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-1">{topic.taxonomyCategory}</p>
+              <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-1">
+                {topic.exploreTheme}{topic.level ? ` · ${topic.level}` : ''}
+              </p>
               <h1 className="font-display text-xl lg:text-2xl text-white">{topic.title}</h1>
             </div>
 
             <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{topic.body}</p>
+
+            {topic.expandTheLens && (
+              <p className="text-white/60 text-sm leading-relaxed whitespace-pre-wrap">{topic.expandTheLens}</p>
+            )}
 
             {topic.personalizedExplanation && (
               <Card className="bg-[var(--color-violet-900)]/20 border-[var(--color-violet-600)]/30">
@@ -98,12 +105,37 @@ export default function LibraryTopicPage() {
               <TopicSection title="Work with it" items={topic.waysToWorkWithIt} />
             )}
 
+            {topic.relatedTopics && topic.relatedTopics.length > 0 && (
+              <div>
+                <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Related topics</p>
+                <div className="flex flex-wrap gap-2">
+                  {topic.relatedTopics.map((related) => (
+                    <Link
+                      key={related.slug}
+                      href={`/library/${related.slug}`}
+                      className="text-xs text-[var(--color-violet-300)] bg-[var(--color-violet-900)]/30 border border-[var(--color-violet-700)]/40 hover:bg-[var(--color-violet-900)]/50 rounded-full px-3 py-1.5 transition-colors"
+                    >
+                      {related.title}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {topic.recommendedRooms && topic.recommendedRooms.length > 0 && (
               <div className="pt-2 space-y-2">
                 {topic.recommendedRooms.map((room) => (
                   <button
                     key={room}
-                    onClick={() => router.push(`/${room}/new?topic=${encodeURIComponent(params.slug)}&topicTitle=${encodeURIComponent(topic.title)}`)}
+                    onClick={() => router.push(
+                      // Companion has no deep-link/prefill query params to
+                      // consume yet (checked before wiring this) — routes
+                      // there plain rather than to a `/companion/new` path
+                      // that doesn't exist for this non-session-based room.
+                      room === 'companion'
+                        ? '/companion'
+                        : `/${room}/new?topic=${encodeURIComponent(params.slug)}&topicTitle=${encodeURIComponent(topic.title)}`
+                    )}
                     className="w-full text-left bg-[var(--color-violet-600)]/20 border border-[var(--color-violet-500)]/40 hover:bg-[var(--color-violet-600)]/30 rounded-2xl px-4 py-3 transition-colors"
                   >
                     <p className="text-[var(--color-violet-200)] text-sm font-medium">{ROOM_LABEL[room]}</p>

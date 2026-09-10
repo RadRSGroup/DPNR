@@ -5,7 +5,9 @@ import { GlobalKeys, type LibraryTopicAliasItem, type LibraryTopicVersionItem } 
 export interface ActiveLibraryTopic {
   slug: string
   title: string
-  taxonomyCategory: string
+  exploreTheme: LibraryTopicVersionItem['exploreTheme']
+  lifeDomains: string[]
+  level?: LibraryTopicVersionItem['level']
 }
 
 /**
@@ -45,6 +47,8 @@ export async function listActiveTopics(
     .map((item) => ({
       slug: item.pk.replace('LIBRARY#TOPIC#', ''),
       title: item.title,
-      taxonomyCategory: item.taxonomyCategory,
+      exploreTheme: item.exploreTheme,
+      lifeDomains: item.lifeDomains,
+      level: item.level,
     }))
 }

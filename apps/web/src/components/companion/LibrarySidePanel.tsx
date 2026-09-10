@@ -11,9 +11,10 @@ interface Props {
   onClose: () => void
 }
 
-const ROOM_LABEL: Record<'mirror' | 'decision', string> = {
+const ROOM_LABEL: Record<'mirror' | 'decision' | 'companion', string> = {
   mirror: 'Explore in Mirror Room',
   decision: 'Explore in Decision Room',
+  companion: 'Talk it through in Main Chat',
 }
 
 /**
@@ -53,7 +54,13 @@ export default function LibrarySidePanel({ slug, sourceSessionId, onClose }: Pro
     return () => { ignore = true }
   }, [slug])
 
-  function exploreInRoom(room: 'mirror' | 'decision') {
+  function exploreInRoom(room: 'mirror' | 'decision' | 'companion') {
+    // Companion has no deep-link/prefill query params to consume yet — same
+    // reasoning as library/[slug]/page.tsx's identical routing branch.
+    if (room === 'companion') {
+      onClose()
+      return
+    }
     const params = new URLSearchParams({ topic: slug })
     if (topic?.title) params.set('topicTitle', topic.title)
     if (sourceSessionId) params.set('sourceSessionId', sourceSessionId)

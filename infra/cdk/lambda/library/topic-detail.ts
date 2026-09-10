@@ -110,11 +110,47 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       }
     }
 
+    // Related topics are stored as slugs (dynamo/global-tables.ts) but the
+    // response resolves them to {slug, title} — a consumer shouldn't need
+    // the full topic list loaded just to render a link's label. A related
+    // slug pointing at a retired/missing topic (shouldn't happen post-seed,
+    // but stay defensive) is dropped rather than rendered with no title.
+    let relatedTopics: { slug: string; title: string }[] | undefined
+    if (versionItem.relatedTopics && versionItem.relatedTopics.length > 0) {
+      const relatedResults = await Promise.all(
+        versionItem.relatedTopics.map(async (relatedSlug) => {
+          const aliasR = await ddb.send(
+            new GetCommand({
+              TableName: CATALOG_TABLE_NAME,
+              Key: { pk: GlobalKeys.libraryTopicPk(relatedSlug), sk: GlobalKeys.promptAlias('prod') },
+            })
+          )
+          const relatedAlias = aliasR.Item as LibraryTopicAliasItem | undefined
+          if (!relatedAlias) return null
+          const versionR = await ddb.send(
+            new GetCommand({
+              TableName: CATALOG_TABLE_NAME,
+              Key: { pk: GlobalKeys.libraryTopicPk(relatedSlug), sk: GlobalKeys.promptVersion(relatedAlias.version) },
+            })
+          )
+          const relatedVersion = versionR.Item as LibraryTopicVersionItem | undefined
+          if (!relatedVersion || relatedVersion.status !== 'active') return null
+          return { slug: relatedSlug, title: relatedVersion.title }
+        })
+      )
+      relatedTopics = relatedResults.filter((r): r is { slug: string; title: string } => r !== null)
+    }
+
     const body: LibraryTopicDetailResponse = {
       slug,
       title: versionItem.title,
-      taxonomyCategory: versionItem.taxonomyCategory,
+      exploreTheme: versionItem.exploreTheme,
+      lifeDomains: versionItem.lifeDomains,
+      level: versionItem.level,
+      contentType: versionItem.contentType,
+      relatedTopics,
       body: versionItem.body,
+      expandTheLens: versionItem.expandTheLens,
       personalizedExplanation,
       promptRef: usedPromptRef,
       // Intelligence Spec §18/§20 structured sections — passthrough only,
@@ -124,6 +160,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       possibleRoots: versionItem.possibleRoots,
       reflectionQuestions: versionItem.reflectionQuestions,
       waysToWorkWithIt: versionItem.waysToWorkWithIt,
+      goDeeperGuidance: versionItem.goDeeperGuidance,
       recommendedRooms: versionItem.recommendedRooms,
     }
     return jsonResponse(200, body)

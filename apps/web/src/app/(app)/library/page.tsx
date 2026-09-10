@@ -3,48 +3,110 @@ import Image from 'next/image'
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Search, Layers, Heart, Target, Compass, BookOpen, ArrowRight } from 'lucide-react'
+import {
+  Search, ArrowRight, User, Heart, RefreshCw, Target, Users,
+  HeartHandshake, Activity, GitBranch, Briefcase, Compass,
+} from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getLibraryTopics, getLibraryRecommendations } from '@/lib/api/v1-client'
-import type { LibraryTopicSummary, LibraryRecommendationsResponse } from '@dpnr/shared-types'
+import type { LibraryTopicSummary, LibraryRecommendationsResponse, ExploreTheme } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 
-// Badge art per real taxonomy category — cropped from the reference PDF's
-// "Understanding Patterns" mandala row (docs/UI reference for platform.pdf,
-// page 5). Purely an aesthetic/energetic pairing, not a literal match: the
-// reference's 6 icons are named emotions (Pleasure, Avoidance, Anger, Fear,
-// Sadness, Disgust), not this app's real 4 categories, so each mapping below
-// is a judgment call, not a semantic one. `icon` stays as the lucide-react
-// fallback for a category with no reference-derived art.
-const CATEGORY_STYLE: Record<string, { icon: typeof BookOpen; image: string | null }> = {
-  'Patterns & Beliefs': { icon: Layers, image: '/images/categories/patterns-beliefs.webp' },
-  'Inner World': { icon: Heart, image: '/images/categories/inner-world.webp' },
-  'Values & Needs': { icon: Target, image: '/images/categories/values-needs.webp' },
-  'Direction & Creation': { icon: Compass, image: '/images/categories/direction-creation.webp' },
+/**
+ * Every Explore Theme (dynamo/global-tables.ts `EXPLORE_THEMES`), with a
+ * lucide icon and human label. No per-theme photography — the 4 crops the
+ * old 6-topic build had were paired against the *old* 4-category taxonomy
+ * this redesign replaces, and none of them map cleanly onto the new 10
+ * themes (see Content Library Master Architecture v2's own catalog) without
+ * repeating the exact "aesthetic pairing, not a semantic one" compromise
+ * this codebase's own convention (Session 41) already treats as a last
+ * resort, not a default — an icon is honest, a mismatched crop isn't.
+ */
+const THEME_META: Record<ExploreTheme, { label: string; icon: typeof User }> = {
+  ME: { label: 'Identity & Self', icon: User },
+  FEEL: { label: 'Emotions & Regulation', icon: Heart },
+  PATTERNS: { label: 'Patterns & Loops', icon: RefreshCw },
+  NEED: { label: 'Needs & Values', icon: Target },
+  RELATE: { label: 'Attachment & Closeness', icon: Users },
+  REPAIR: { label: 'Repair & Self-Compassion', icon: HeartHandshake },
+  BODY: { label: 'Body & Nervous System', icon: Activity },
+  CHOOSE: { label: 'Decisions & Direction', icon: GitBranch },
+  CREATE: { label: 'Work, Money & Creation', icon: Briefcase },
+  LIFE: { label: 'Meaning & Life', icon: Compass },
 }
-const DEFAULT_STYLE = { icon: BookOpen, image: null as string | null }
+const THEME_ORDER: ExploreTheme[] = ['ME', 'FEEL', 'PATTERNS', 'NEED', 'RELATE', 'REPAIR', 'BODY', 'CHOOSE', 'CREATE', 'LIFE']
 
 /**
- * Content & Learning's hub — reskinned against the reference screen (Session
- * 20/21, Phase 3), but only using the real catalog (`GET /v1/library/topics`
- * — title/slug/category, no body excerpt, no format/duration metadata, no
- * cover art per topic) plus a real client-side title search over it. The
- * reference's own hero carousel and "Recommended for You" copy imply content
- * and personalization that don't exist: there are only 6 real seeded topics
- * total (no "Audio/7 min"-style metadata was ever authored for any of
- * them — infra/cdk/scripts/library-topics.seed.ts), and `GET
- * /v1/library/recommendations` (Slice 3) now returns a real ranking derived
- * from the caller's confirmed Twin signals — see that Lambda's own doc
- * comment for the domain-to-taxonomyCategory mapping it uses. This page
- * already called that endpoint and rendered the section only when
- * non-empty, so no frontend change was needed to pick up real results. The
- * hero card rotates through the real catalog by day-of-year (Slice 3 — was
- * pinned to whatever `topics[0]` happened to be, i.e. arbitrary Scan
- * order, not a real "featured" choice) instead of invented carousel copy;
- * the four category
- * groups below are real topics/categories; card art is a per-category
- * gradient + icon (decorative, not per-topic fabrication) rather than
- * invented photography.
+ * Named homepage shelves (Content Library Master Architecture v2, Part I §2)
+ * mapped onto the one Explore Theme each is closest to. Doc names 11 shelves
+ * total; FOR YOU and START HERE are built separately below (personalized /
+ * fixed-list, not theme-filtered), and CONTINUE EXPLORING + WHAT YOU'RE
+ * NAVIGATING NOW are deliberately not built this pass — both need real
+ * interaction-history tracking ("Track opened, completed, saved, discussed,
+ * and revisited topics", Part I §11) that doesn't exist anywhere in this
+ * codebase yet; a shelf that always renders empty would be a worse honest-
+ * empty-state violation than simply not showing it. NEED/CHOOSE/REPAIR don't
+ * get a dedicated named shelf (the doc's own 11 don't name one for them
+ * either) but stay fully reachable via the Explore by Theme row below, so
+ * nothing in the catalog is stranded.
+ */
+const NAMED_SHELVES: { title: string; theme: ExploreTheme }[] = [
+  { title: 'Know Yourself', theme: 'ME' },
+  { title: 'Patterns Worth Noticing', theme: 'PATTERNS' },
+  { title: 'Relationships', theme: 'RELATE' },
+  { title: 'Emotional World', theme: 'FEEL' },
+  { title: 'Work & Money', theme: 'CREATE' },
+  { title: 'Body & Energy', theme: 'BODY' },
+  { title: 'Meaning & Life', theme: 'LIFE' },
+]
+
+/**
+ * Part I §2's own "Start Here" line: "Foundational topics that give new
+ * users useful language quickly: Needs, Values, Boundaries, Emotions,
+ * Patterns, Self-Trust, Attachment, Regulation." None of those 8 words are
+ * exact topic titles, so each is resolved to the closest real Foundation-
+ * level topic below — a judgment call, not a literal lookup (flagged here
+ * rather than silently guessed).
+ */
+const START_HERE_TITLES = [
+  'Needs vs. Neediness', 'Values', 'Boundaries', 'Emotion vs. Reaction',
+  'Avoidance', 'Self-Trust', 'Attachment Styles - Overview', 'Emotional Regulation',
+]
+
+function TopicCard({ topic, subtitle }: { topic: LibraryTopicSummary; subtitle?: string }) {
+  const Icon = THEME_META[topic.exploreTheme].icon
+  return (
+    <Link href={`/library/${topic.slug}`} className="shrink-0 w-40 lg:w-48">
+      <Card className="h-full hover:border-white/20 active:scale-[0.98] transition-all">
+        <div className="w-9 h-9 rounded-full flex items-center justify-center mb-3 bg-[var(--color-violet-900)]">
+          <Icon className="w-4 h-4 text-white/80" />
+        </div>
+        <p className="text-white text-sm leading-snug">{topic.title}</p>
+        {subtitle && <p className="text-[var(--color-text-tertiary)] text-xs mt-1">{subtitle}</p>}
+      </Card>
+    </Link>
+  )
+}
+
+function Shelf({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-6">
+      <p className="text-white text-sm mb-3">{title}</p>
+      <div className="flex gap-3 overflow-x-auto pb-1 -mx-5 px-5 lg:mx-0 lg:px-0">{children}</div>
+    </div>
+  )
+}
+
+/**
+ * Content & Learning's hub — redesigned this session against the Content
+ * Library Master Architecture v2 (superseding the earlier reskin against the
+ * mockup reference alone). That doc's own "Key Architecture Decision" is
+ * explicit: "Do not organize the library as one rigid tree... the same topic
+ * can belong to several life domains... at the same time" — replaces the
+ * old single-`taxonomyCategory` grid with real Netflix-style horizontal
+ * shelves keyed off the new many-to-many `exploreTheme`/`lifeDomains` axes
+ * (dynamo/global-tables.ts). See NAMED_SHELVES' own doc comment for which of
+ * the source doc's 11 named shelves are and aren't built this pass.
  */
 export default function LibraryPage() {
   const router = useRouter()
@@ -52,6 +114,7 @@ export default function LibraryPage() {
   const [recommendations, setRecommendations] = useState<LibraryRecommendationsResponse['recommendations']>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
+  const [activeTheme, setActiveTheme] = useState<ExploreTheme | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -77,16 +140,27 @@ export default function LibraryPage() {
     return q ? topics.filter((t) => t.title.toLowerCase().includes(q)) : topics
   }, [topics, query])
 
-  const byCategory = filtered?.reduce<Record<string, LibraryTopicSummary[]>>((acc, t) => {
-    ;(acc[t.taxonomyCategory] ??= []).push(t)
-    return acc
-  }, {})
+  const byTheme = useMemo(() => {
+    const map = new Map<ExploreTheme, LibraryTopicSummary[]>()
+    for (const t of topics ?? []) {
+      const list = map.get(t.exploreTheme)
+      if (list) list.push(t)
+      else map.set(t.exploreTheme, [t])
+    }
+    return map
+  }, [topics])
+
+  const startHere = useMemo(() => {
+    if (!topics) return []
+    return START_HERE_TITLES.map((title) => topics.find((t) => t.title === title)).filter(
+      (t): t is LibraryTopicSummary => t !== undefined
+    )
+  }, [topics])
 
   // Rotate through the real catalog by day-of-year rather than pinning to
-  // topics[0] (arbitrary Scan order — see the file doc comment above) or
-  // inventing curated "featured" metadata that doesn't exist. Sort by slug
-  // first for a stable order, so the rotation is deterministic day to day
-  // rather than shuffling on every Scan.
+  // topics[0] (arbitrary Scan order) or inventing curated "featured"
+  // metadata that doesn't exist. Sort by slug first for a stable order, so
+  // the rotation is deterministic day to day rather than shuffling on every Scan.
   function pickFeatured(list: LibraryTopicSummary[] | null): LibraryTopicSummary | undefined {
     if (!list || list.length === 0) return undefined
     const sorted = [...list].sort((a, b) => a.slug.localeCompare(b.slug))
@@ -96,6 +170,7 @@ export default function LibraryPage() {
     return sorted[dayOfYear % sorted.length]
   }
   const featured = pickFeatured(topics)
+  const searching = query.trim().length > 0
 
   return (
     <div className="relative min-h-screen">
@@ -116,7 +191,7 @@ export default function LibraryPage() {
             <Search className="w-4 h-4 text-[var(--color-text-tertiary)] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => { setQuery(e.target.value); setActiveTheme(null) }}
               placeholder="Search topics..."
               className="w-full bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] rounded-full pl-10 pr-4 py-2.5 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors"
             />
@@ -131,16 +206,8 @@ export default function LibraryPage() {
           </Card>
         )}
 
-        {!loading && featured && !query && (
+        {!loading && featured && !searching && (
           <Link href={`/library/${featured.slug}`} className="block mb-6">
-            {/* Full-bleed hero banner, same idiom as the Evolution Map/Dashboard
-                heroes — the reference's own "Featured Today" is a dominant,
-                full-width band, not a side-by-side thumbnail. A prior version
-                of this card wired the hero art in as a small 224px corner
-                thumbnail instead (the exact anti-pattern
-                .claude/skills/mockup-to-code/SKILL.md warns about), which also
-                cropped the portrait almost entirely out of frame at that
-                aspect ratio. */}
             <Card className="relative overflow-hidden !p-0 h-40 lg:h-48">
               <Image src="/images/library/library-hero.webp" alt="" fill sizes="100vw" className="object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-base)] via-[var(--color-bg-base)]/40 to-transparent" />
@@ -148,7 +215,7 @@ export default function LibraryPage() {
                 <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-1">Featured Today</p>
                 <h2 className="font-display text-xl lg:text-2xl text-white">{featured.title}</h2>
                 <div className="flex items-center gap-1.5 mt-1 text-[var(--color-text-tertiary)] text-xs">
-                  <span>{featured.taxonomyCategory}</span>
+                  <span>{THEME_META[featured.exploreTheme].label}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </div>
               </div>
@@ -156,68 +223,74 @@ export default function LibraryPage() {
           </Link>
         )}
 
-        {!loading && recommendations.length > 0 && (
-          <div className="mb-6">
-            <p className="text-white text-sm mb-3">Recommended for You</p>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {recommendations.map(({ topic, reason }) => {
-                const style = CATEGORY_STYLE[topic.taxonomyCategory] ?? DEFAULT_STYLE
-                const Icon = style.icon
-                return (
-                  <Link key={topic.slug} href={`/library/${topic.slug}`}>
-                    <Card className="h-full hover:border-white/20 transition-colors">
-                      {style.image ? (
-                        <div className="relative w-9 h-9 rounded-full overflow-hidden mb-3">
-                          <Image src={style.image} alt="" fill sizes="36px" className="object-cover" />
-                        </div>
-                      ) : (
-                        <div className="w-9 h-9 rounded-full flex items-center justify-center mb-3 bg-[var(--color-violet-900)]">
-                          <Icon className="w-4 h-4 text-white/80" />
-                        </div>
-                      )}
-                      <p className="text-white text-sm">{topic.title}</p>
-                      <p className="text-[var(--color-text-tertiary)] text-xs mt-1">{reason}</p>
-                    </Card>
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {!loading && byCategory && Object.entries(byCategory).map(([category, items]) => {
-          const style = CATEGORY_STYLE[category] ?? DEFAULT_STYLE
-          const Icon = style.icon
-          return (
-            <div key={category} className="mb-6">
-              <p className="text-white text-sm mb-3 flex items-center gap-2">
-                <Icon className="w-4 h-4 text-[var(--color-violet-400)]" />
-                {category}
-              </p>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {items.map((topic) => (
-                  <Link key={topic.slug} href={`/library/${topic.slug}`}>
-                    <Card className="h-full hover:border-white/20 active:scale-[0.98] transition-all">
-                      {style.image ? (
-                        <div className="relative w-9 h-9 rounded-full overflow-hidden mb-3">
-                          <Image src={style.image} alt="" fill sizes="36px" className="object-cover" />
-                        </div>
-                      ) : (
-                        <div className="w-9 h-9 rounded-full flex items-center justify-center mb-3 bg-[var(--color-violet-900)]">
-                          <Icon className="w-4 h-4 text-white/80" />
-                        </div>
-                      )}
-                      <p className="text-white text-sm leading-snug">{topic.title}</p>
-                    </Card>
-                  </Link>
-                ))}
+        {searching ? (
+          <>
+            {filtered && filtered.length > 0 && (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                {filtered.map((topic) => <TopicCard key={topic.slug} topic={topic} />)}
               </div>
-            </div>
-          )
-        })}
+            )}
+            {filtered?.length === 0 && (
+              <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">No topics match &ldquo;{query}&rdquo;.</p>
+            )}
+          </>
+        ) : (
+          <>
+            {!loading && recommendations.length > 0 && (
+              <Shelf title="For You">
+                {recommendations.map(({ topic, reason }) => (
+                  <TopicCard key={topic.slug} topic={topic} subtitle={reason} />
+                ))}
+              </Shelf>
+            )}
 
-        {!loading && filtered?.length === 0 && topics && topics.length > 0 && (
-          <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">No topics match &ldquo;{query}&rdquo;.</p>
+            {!loading && startHere.length > 0 && (
+              <Shelf title="Start Here">
+                {startHere.map((topic) => <TopicCard key={topic.slug} topic={topic} />)}
+              </Shelf>
+            )}
+
+            {!loading && topics && topics.length > 0 && (
+              <div className="mb-6">
+                <p className="text-white text-sm mb-3">Explore by Theme</p>
+                <div className="flex gap-2 overflow-x-auto pb-1 -mx-5 px-5 lg:mx-0 lg:px-0">
+                  {THEME_ORDER.filter((theme) => byTheme.has(theme)).map((theme) => {
+                    const Icon = THEME_META[theme].icon
+                    const active = activeTheme === theme
+                    return (
+                      <button
+                        key={theme}
+                        onClick={() => setActiveTheme(active ? null : theme)}
+                        className={`shrink-0 flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs transition-colors border ${
+                          active
+                            ? 'bg-[var(--color-violet-600)] border-[var(--color-violet-500)] text-white'
+                            : 'bg-[var(--color-surface-glass)] border-[var(--color-border-glass)] text-white/70 hover:border-white/20'
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5" /> {THEME_META[theme].label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {activeTheme ? (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                {(byTheme.get(activeTheme) ?? []).map((topic) => <TopicCard key={topic.slug} topic={topic} />)}
+              </div>
+            ) : (
+              NAMED_SHELVES.map(({ title, theme }) => {
+                const items = byTheme.get(theme)
+                if (!items || items.length === 0) return null
+                return (
+                  <Shelf key={theme} title={title}>
+                    {items.map((topic) => <TopicCard key={topic.slug} topic={topic} />)}
+                  </Shelf>
+                )
+              })
+            )}
+          </>
         )}
       </div>
     </div>
