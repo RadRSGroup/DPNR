@@ -242,31 +242,12 @@ export default function CompanionPage() {
             </div>
           )}
 
-          {showPrompts && (
-            <div className="px-5 lg:px-0 pt-3 pb-1">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
-                {QUICK_PROMPTS.map((p) => (
-                  <button
-                    key={p.text}
-                    onClick={() => fillPrompt(p.text)}
-                    className="text-left bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] hover:border-white/20 active:scale-[0.98] rounded-[var(--radius-card)] p-3 transition-all"
-                  >
-                    <p.icon className="w-4 h-4 text-[var(--color-violet-400)] mb-2" />
-                    <p className="text-white/80 text-xs leading-snug">
-                      {p.lead} <span className="text-[var(--color-violet-300)]">{p.rest}</span>
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* pt-14 replaces the greeting block's own safe-area top padding
               once the conversation is active and the greeting is hidden —
               this page has no other fixed header providing that space. */}
           <div
             ref={scrollRef}
-            className={`flex-1 overflow-y-auto px-5 lg:px-0 pb-2 flex flex-col ${isLanding ? 'pt-2' : 'pt-14 lg:pt-2'} ${
+            className={`scrollbar-glass flex-1 overflow-y-auto px-5 lg:px-0 pb-2 flex flex-col ${isLanding ? 'pt-2' : 'pt-14 lg:pt-2'} ${
               !loading && messages.length === 0 ? 'justify-center' : 'space-y-3'
             }`}
           >
@@ -348,6 +329,31 @@ export default function CompanionPage() {
           </div>
           )}
 
+          {/* Quick-prompt chips — moved below the chat thread, directly above
+              the input bar (was between the hero and the thread), per direct
+              user feedback: sitting right where composing happens reads more
+              like "here's a way to start typing" than chrome squeezed above
+              the conversation. Still landing-only (showPrompts === isLanding),
+              same gating as before. */}
+          {showPrompts && (
+            <div className="px-5 lg:px-0 pt-1 pb-2">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
+                {QUICK_PROMPTS.map((p) => (
+                  <button
+                    key={p.text}
+                    onClick={() => fillPrompt(p.text)}
+                    className="liquid-glass text-left rounded-[var(--radius-card)] p-3 active:scale-[0.98]"
+                  >
+                    <p.icon className="w-4 h-4 text-[var(--color-violet-400)] mb-2" />
+                    <p className="text-white/80 text-xs leading-snug">
+                      {p.lead} <span className="text-[var(--color-violet-300)]">{p.rest}</span>
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="px-5 lg:px-0 pb-4 pt-3 flex items-end gap-2">
             <textarea
               ref={textareaRef}
@@ -378,7 +384,7 @@ export default function CompanionPage() {
         </div>
 
         {/* Right column — desktop only */}
-        <div className="hidden lg:flex lg:flex-col lg:gap-4 lg:pb-6 lg:overflow-y-auto">
+        <div className="scrollbar-glass hidden lg:flex lg:flex-col lg:gap-4 lg:pb-6 lg:overflow-y-auto">
           <PullACard />
           <RecentConversations
             activeSessionId={sessionId}

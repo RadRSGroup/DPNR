@@ -112,10 +112,11 @@ export class ApiStack extends Stack {
       // origin), which needs a real CORS preflight response — found the
       // hard way during Session 7's alignment-work verification (the
       // consent endpoint 100% worked server-side but every browser call
-      // was silently blocked pre-flight). localhost:3000 is dev-only;
-      // add the real deployed frontend origin here once one exists.
+      // was silently blocked pre-flight). https://dpnr-mvp.onrender.com
+      // is the real deployed alpha-testing frontend (added Session 47);
+      // localhost:3000 stays for local dev.
       corsPreflight: {
-        allowOrigins: ['http://localhost:3000'],
+        allowOrigins: ['http://localhost:3000', 'https://dpnr-mvp.onrender.com'],
         allowMethods: [
           apigwv2.CorsHttpMethod.GET,
           apigwv2.CorsHttpMethod.POST,
