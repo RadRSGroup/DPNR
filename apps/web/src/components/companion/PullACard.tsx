@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Image from 'next/image'
-import { Sparkles } from 'lucide-react'
+import { Layers } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import DirectiveCard from './DirectiveCard'
 import { pullCompanionCard } from '@/lib/api/v1-client'
@@ -76,7 +76,7 @@ export default function PullACard() {
         disabled={loading}
         className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] disabled:opacity-50 px-4 py-2.5 text-sm font-medium text-white transition-colors"
       >
-        <Sparkles className="w-4 h-4" /> {loading ? 'Pulling…' : card ? 'Pull a New Card' : 'Pull a Card'}
+        <Layers className="w-4 h-4" /> {loading ? 'Pulling…' : card ? 'Pull a New Card' : 'Pull a Card'}
       </button>
     </Card>
   )

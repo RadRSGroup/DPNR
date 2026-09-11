@@ -8,6 +8,7 @@ import { getCurrentSession } from '@/lib/cognito/client'
 import { getLibraryTopic } from '@/lib/api/v1-client'
 import type { LibraryTopicDetailResponse } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
+import { THEME_META } from '@/lib/library/theme-meta'
 
 const ROOM_LABEL: Record<'mirror' | 'decision' | 'companion', string> = {
   mirror: 'Explore in Mirror Room',
@@ -65,11 +66,16 @@ export default function LibraryTopicPage() {
 
         {!loading && topic && (
           <div className="space-y-4">
-            <div>
-              <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-1">
-                {topic.exploreTheme}{topic.level ? ` · ${topic.level}` : ''}
-              </p>
-              <h1 className="font-display text-xl lg:text-2xl text-white">{topic.title}</h1>
+            <div className="flex items-center gap-3">
+              <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 ring-1 ring-white/15">
+                <Image src={THEME_META[topic.exploreTheme].image} alt="" fill sizes="48px" className="object-cover" />
+              </div>
+              <div>
+                <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-1">
+                  {THEME_META[topic.exploreTheme].label}{topic.level ? ` · ${topic.level}` : ''}
+                </p>
+                <h1 className="font-display text-xl lg:text-2xl text-white">{topic.title}</h1>
+              </div>
             </div>
 
             <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{topic.body}</p>

@@ -39,7 +39,7 @@ export default function MomentScreen({ onNext, onBack }: Props) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-6 pb-8 fade-up">
+      <div className="scrollbar-glass flex-1 overflow-y-auto flex flex-col items-center justify-center px-6 pb-8 fade-up">
         <div className="w-full text-center space-y-6">
           <h1 className="text-white text-2xl font-light leading-snug">
             A moment before<br />We Begin

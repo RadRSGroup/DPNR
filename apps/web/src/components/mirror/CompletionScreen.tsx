@@ -40,7 +40,7 @@ export default function CompletionScreen({ userName, situation, trigger, synthes
       </div>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.5)_0%,_rgba(80,20,140,0.3)_45%,_transparent_75%)] -z-10" />
 
-      <div className="flex-1 overflow-y-auto px-6 pt-16 pb-32 space-y-6">
+      <div className="scrollbar-glass flex-1 overflow-y-auto px-6 pt-16 pb-32 space-y-6">
         <div className="text-center space-y-3">
           <div className="w-16 h-16 rounded-full bg-yellow-400/20 border border-yellow-400/40 flex items-center justify-center text-3xl mx-auto">
             ✦

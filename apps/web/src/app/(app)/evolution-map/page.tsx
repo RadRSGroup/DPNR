@@ -2,7 +2,7 @@
 import Image from 'next/image'
 import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, Eye, HeartHandshake, Repeat, Plus, Target } from 'lucide-react'
+import { Infinity as InfinityIcon, Eye, HeartHandshake, Repeat, Plus, Target } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getDashboard, getTwin, getCommitments, createCommitment, completeCommitment } from '@/lib/api/v1-client'
 import type { DashboardResponse, TwinListResponse, CommitmentsResponse, LifeDomainCategory } from '@dpnr/shared-types'
@@ -40,7 +40,7 @@ const STAGES = [
   { label: 'Awareness', icon: Eye, copy: 'Understand your patterns and where you are today.' },
   { label: 'Healing', icon: HeartHandshake, copy: 'Release what has been holding you back.' },
   { label: 'Practice', icon: Repeat, copy: 'Build new habits and ways of relating.' },
-  { label: 'Integration', icon: Sparkles, copy: 'Live your values as your natural way of being.' },
+  { label: 'Integration', icon: InfinityIcon, copy: 'Live your values as your natural way of being.' },
 ]
 
 function EvolutionMapContent() {
@@ -151,8 +151,8 @@ function EvolutionMapContent() {
 
       <div className="max-w-[393px] lg:max-w-none mx-auto px-5 lg:px-8 pb-10 lg:pb-12">
         <div className="pt-14 lg:pt-8 pb-6">
-          <h1 className="font-display text-2xl lg:text-3xl text-white flex items-center gap-2">
-            My Evolution Map <Sparkles className="w-5 h-5 text-[var(--color-violet-400)]" />
+          <h1 className="font-display text-2xl lg:text-3xl text-white">
+            My Evolution Map
           </h1>
           <p className="text-sm text-[var(--color-text-secondary)] mt-1">
             Your personal roadmap to growth, alignment, and the life you&apos;re here to create.

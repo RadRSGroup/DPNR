@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Heart, Cloud, Shuffle, Sparkles } from 'lucide-react'
+import { Heart, Cloud, Shuffle, UserCircle } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getCompanionContext, sendCompanionMessage, ApiError } from '@/lib/api/v1-client'
 import type { CompanionDirective } from '@dpnr/shared-types'
@@ -24,7 +24,7 @@ const QUICK_PROMPTS = [
   { icon: Heart, lead: 'Help me understand', rest: "what I'm feeling", text: "Help me understand what I'm feeling right now." },
   { icon: Cloud, lead: 'Help me see', rest: 'the pattern', text: 'Help me see the pattern in what I keep going through.' },
   { icon: Shuffle, lead: 'Help me make', rest: 'a decision', text: "I'm stuck on a decision — help me make it." },
-  { icon: Sparkles, lead: 'Guide me based on', rest: 'what you know about me', text: 'Guide me based on what you know about me so far.' },
+  { icon: UserCircle, lead: 'Guide me based on', rest: 'what you know about me', text: 'Guide me based on what you know about me so far.' },
 ]
 
 function timeGreeting() {
@@ -191,8 +191,8 @@ export default function CompanionPage() {
               the true landing state — see isLanding's doc comment above. */}
           {isLanding && (
             <div className="px-5 pt-14 pb-1 lg:hidden">
-              <h1 className="font-display text-2xl text-white flex items-center gap-2">
-                {timeGreeting()}{firstName ? `, ${firstName}` : ''} <Sparkles className="w-5 h-5 text-[var(--color-amber-400)]" />
+              <h1 className="font-display text-2xl text-white">
+                {timeGreeting()}{firstName ? `, ${firstName}` : ''}
               </h1>
             </div>
           )}
@@ -216,8 +216,8 @@ export default function CompanionPage() {
                 />
               </div>
               <div className="relative z-10 h-full flex flex-col justify-center px-8 max-w-[55%]">
-                <h1 className="font-display text-3xl text-white flex items-center gap-2">
-                  {timeGreeting()}{firstName ? `, ${firstName}` : ''} <Sparkles className="w-5 h-5 text-[var(--color-amber-400)]" />
+                <h1 className="font-display text-3xl text-white">
+                  {timeGreeting()}{firstName ? `, ${firstName}` : ''}
                 </h1>
                 <p className="text-sm text-[var(--color-text-secondary)] mt-1">
                   I&apos;m here with you. Let&apos;s continue where you are.
@@ -313,16 +313,16 @@ export default function CompanionPage() {
           <div className="px-5 pt-2 lg:hidden">
             <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-2">Explore</p>
             <div className="grid grid-cols-4 gap-2">
-              <Link href="/dashboard" className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all">
+              <Link href="/dashboard" className="liquid-glass active:scale-[0.98] rounded-2xl p-2.5 text-center">
                 <p className="text-white text-xs font-medium">InnerOS</p>
               </Link>
-              <Link href="/rooms" className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all">
+              <Link href="/rooms" className="liquid-glass active:scale-[0.98] rounded-2xl p-2.5 text-center">
                 <p className="text-white text-xs font-medium">Work Rooms</p>
               </Link>
-              <Link href="/growth" className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all">
+              <Link href="/growth" className="liquid-glass active:scale-[0.98] rounded-2xl p-2.5 text-center">
                 <p className="text-white text-xs font-medium">Growth</p>
               </Link>
-              <Link href="/library" className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] hover:border-white/20 active:scale-[0.98] rounded-2xl p-2.5 text-center transition-all">
+              <Link href="/library" className="liquid-glass active:scale-[0.98] rounded-2xl p-2.5 text-center">
                 <p className="text-white text-xs font-medium">Library</p>
               </Link>
             </div>

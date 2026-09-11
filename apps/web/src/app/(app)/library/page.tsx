@@ -3,38 +3,12 @@ import Image from 'next/image'
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import {
-  Search, ArrowRight, User, Heart, RefreshCw, Target, Users,
-  HeartHandshake, Activity, GitBranch, Briefcase, Compass,
-} from 'lucide-react'
+import { Search, ArrowRight } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getLibraryTopics, getLibraryRecommendations } from '@/lib/api/v1-client'
 import type { LibraryTopicSummary, LibraryRecommendationsResponse, ExploreTheme } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
-
-/**
- * Every Explore Theme (dynamo/global-tables.ts `EXPLORE_THEMES`), with a
- * lucide icon and human label. No per-theme photography — the 4 crops the
- * old 6-topic build had were paired against the *old* 4-category taxonomy
- * this redesign replaces, and none of them map cleanly onto the new 10
- * themes (see Content Library Master Architecture v2's own catalog) without
- * repeating the exact "aesthetic pairing, not a semantic one" compromise
- * this codebase's own convention (Session 41) already treats as a last
- * resort, not a default — an icon is honest, a mismatched crop isn't.
- */
-const THEME_META: Record<ExploreTheme, { label: string; icon: typeof User }> = {
-  ME: { label: 'Identity & Self', icon: User },
-  FEEL: { label: 'Emotions & Regulation', icon: Heart },
-  PATTERNS: { label: 'Patterns & Loops', icon: RefreshCw },
-  NEED: { label: 'Needs & Values', icon: Target },
-  RELATE: { label: 'Attachment & Closeness', icon: Users },
-  REPAIR: { label: 'Repair & Self-Compassion', icon: HeartHandshake },
-  BODY: { label: 'Body & Nervous System', icon: Activity },
-  CHOOSE: { label: 'Decisions & Direction', icon: GitBranch },
-  CREATE: { label: 'Work, Money & Creation', icon: Briefcase },
-  LIFE: { label: 'Meaning & Life', icon: Compass },
-}
-const THEME_ORDER: ExploreTheme[] = ['ME', 'FEEL', 'PATTERNS', 'NEED', 'RELATE', 'REPAIR', 'BODY', 'CHOOSE', 'CREATE', 'LIFE']
+import { THEME_META, THEME_ORDER } from '@/lib/library/theme-meta'
 
 /**
  * Named homepage shelves (Content Library Master Architecture v2, Part I §2)
@@ -74,12 +48,12 @@ const START_HERE_TITLES = [
 ]
 
 function TopicCard({ topic, subtitle }: { topic: LibraryTopicSummary; subtitle?: string }) {
-  const Icon = THEME_META[topic.exploreTheme].icon
+  const { image, label } = THEME_META[topic.exploreTheme]
   return (
     <Link href={`/library/${topic.slug}`} className="shrink-0 w-40 lg:w-48">
       <Card className="h-full hover:border-white/20 active:scale-[0.98] transition-all">
-        <div className="w-9 h-9 rounded-full flex items-center justify-center mb-3 bg-[var(--color-violet-900)]">
-          <Icon className="w-4 h-4 text-white/80" />
+        <div className="relative w-9 h-9 rounded-full overflow-hidden mb-3 ring-1 ring-white/15">
+          <Image src={image} alt={label} fill sizes="36px" className="object-cover" />
         </div>
         <p className="text-white text-sm leading-snug">{topic.title}</p>
         {subtitle && <p className="text-[var(--color-text-tertiary)] text-xs mt-1">{subtitle}</p>}
@@ -92,7 +66,7 @@ function Shelf({ title, children }: { title: string; children: React.ReactNode }
   return (
     <div className="mb-6">
       <p className="text-white text-sm mb-3">{title}</p>
-      <div className="flex gap-3 overflow-x-auto pb-1 -mx-5 px-5 lg:mx-0 lg:px-0">{children}</div>
+      <div className="scrollbar-glass flex gap-3 overflow-x-auto pb-1 -mx-5 px-5 lg:mx-0 lg:px-0">{children}</div>
     </div>
   )
 }
@@ -253,21 +227,23 @@ export default function LibraryPage() {
             {!loading && topics && topics.length > 0 && (
               <div className="mb-6">
                 <p className="text-white text-sm mb-3">Explore by Theme</p>
-                <div className="flex gap-2 overflow-x-auto pb-1 -mx-5 px-5 lg:mx-0 lg:px-0">
+                <div className="flex flex-wrap gap-2">
                   {THEME_ORDER.filter((theme) => byTheme.has(theme)).map((theme) => {
-                    const Icon = THEME_META[theme].icon
                     const active = activeTheme === theme
                     return (
                       <button
                         key={theme}
                         onClick={() => setActiveTheme(active ? null : theme)}
-                        className={`shrink-0 flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs transition-colors border ${
+                        className={`flex items-center gap-2 rounded-full pl-1.5 pr-3.5 py-1.5 text-xs transition-colors ${
                           active
-                            ? 'bg-[var(--color-violet-600)] border-[var(--color-violet-500)] text-white'
-                            : 'bg-[var(--color-surface-glass)] border-[var(--color-border-glass)] text-white/70 hover:border-white/20'
+                            ? 'bg-[var(--color-violet-600)] border border-[var(--color-violet-500)] text-white'
+                            : 'liquid-glass text-white/70'
                         }`}
                       >
-                        <Icon className="w-3.5 h-3.5" /> {THEME_META[theme].label}
+                        <span className="relative w-6 h-6 rounded-full overflow-hidden shrink-0 ring-1 ring-white/15">
+                          <Image src={THEME_META[theme].image} alt="" fill sizes="24px" className="object-cover" />
+                        </span>
+                        {THEME_META[theme].label}
                       </button>
                     )
                   })}

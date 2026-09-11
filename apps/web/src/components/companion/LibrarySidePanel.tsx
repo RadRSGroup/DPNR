@@ -2,8 +2,10 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import type { LibraryTopicDetailResponse } from '@dpnr/shared-types'
 import { getLibraryTopic } from '@/lib/api/v1-client'
+import { THEME_META } from '@/lib/library/theme-meta'
 
 interface Props {
   slug: string
@@ -70,7 +72,7 @@ export default function LibrarySidePanel({ slug, sourceSessionId, onClose }: Pro
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-stretch sm:justify-end">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full sm:w-[420px] sm:h-full max-h-[85vh] sm:max-h-none bg-[#130d1f] border-t sm:border-t-0 sm:border-l border-purple-700/40 rounded-t-3xl sm:rounded-none overflow-y-auto">
+      <div className="scrollbar-glass relative w-full sm:w-[420px] sm:h-full max-h-[85vh] sm:max-h-none bg-[#130d1f] border-t sm:border-t-0 sm:border-l border-purple-700/40 rounded-t-3xl sm:rounded-none overflow-y-auto">
         <div className="sticky top-0 bg-[#130d1f]/95 backdrop-blur-sm border-b border-white/10 px-5 py-4 flex items-center justify-between">
           <p className="text-purple-300/70 text-xs uppercase tracking-wide">From the Library</p>
           <button onClick={onClose} className="text-[var(--color-text-tertiary)] hover:text-white/70 text-sm" aria-label="Close">✕</button>
@@ -82,7 +84,15 @@ export default function LibrarySidePanel({ slug, sourceSessionId, onClose }: Pro
 
           {topic && (
             <>
-              <h2 className="font-display text-xl text-white">{topic.title}</h2>
+              <div className="flex items-center gap-3">
+                <div className="relative w-10 h-10 rounded-full overflow-hidden shrink-0 ring-1 ring-white/15">
+                  <Image src={THEME_META[topic.exploreTheme].image} alt="" fill sizes="40px" className="object-cover" />
+                </div>
+                <div>
+                  <p className="text-purple-300/70 text-xs uppercase tracking-wide">{THEME_META[topic.exploreTheme].label}</p>
+                  <h2 className="font-display text-xl text-white">{topic.title}</h2>
+                </div>
+              </div>
 
               <Section title="Understand">
                 <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{topic.body}</p>

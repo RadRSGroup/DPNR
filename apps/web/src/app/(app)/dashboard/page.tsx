@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
-import { ArrowRight, Heart, Sparkles } from 'lucide-react'
+import { ArrowRight, Heart, Compass } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import {
   getDashboard,
@@ -139,14 +139,14 @@ function DashboardContent() {
       <div className="max-w-[393px] lg:max-w-none mx-auto px-5 lg:px-8 pb-10 lg:pb-12">
         <div className="pt-14 lg:pt-8 pb-6 flex items-center justify-between">
           <div>
-            <h1 className="font-display text-2xl lg:text-3xl text-white flex items-center gap-2">
-              Good morning{firstName ? `, ${firstName}` : ''} <Sparkles className="w-5 h-5 text-[var(--color-amber-400)]" />
+            <h1 className="font-display text-2xl lg:text-3xl text-white">
+              Good morning{firstName ? `, ${firstName}` : ''}
             </h1>
             <p className="text-sm text-[var(--color-text-secondary)] mt-1">Your journey. Your awareness. Your evolution.</p>
           </div>
           <Link
             href="/companion"
-            className="hidden lg:inline-flex items-center gap-2 rounded-full border border-[var(--color-border-glass)] px-4 py-2 text-sm text-white/80 hover:bg-white/5 transition-colors"
+            className="liquid-glass hidden lg:inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-white/80"
           >
             Check in
           </Link>
@@ -440,7 +440,7 @@ function DashboardContent() {
                   className="flex items-center gap-3 rounded-xl bg-white/5 border border-[var(--color-border-glass)] px-3 py-3 hover:bg-white/10 transition-colors"
                 >
                   <div className="w-8 h-8 rounded-full border border-[var(--color-violet-500)]/50 flex items-center justify-center shrink-0">
-                    <Sparkles className="w-4 h-4 text-[var(--color-violet-400)]" />
+                    <Compass className="w-4 h-4 text-[var(--color-violet-400)]" />
                   </div>
                   <div className="flex-1">
                     <p className="text-sm text-white">{ROOM_LINK[suggestedSpace].label}</p>

@@ -140,7 +140,7 @@ export default function MirrorStepShell({
       </div>
 
       {/* Step content */}
-      <div className="flex-1 overflow-y-auto flex flex-col px-5 pb-4 fade-up">
+      <div className="scrollbar-glass flex-1 overflow-y-auto flex flex-col px-5 pb-4 fade-up">
         {children}
       </div>
 

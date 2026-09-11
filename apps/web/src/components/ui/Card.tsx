@@ -8,8 +8,7 @@ export default function Card({ glow = false, className = '', children, ...rest }
   return (
     <div
       className={`
-        rounded-[var(--radius-card)] border border-[var(--color-border-glass)]
-        bg-[var(--color-surface-glass)] p-4
+        liquid-glass rounded-[var(--radius-card)] p-4
         ${glow ? 'shadow-[var(--shadow-glow-violet)]' : ''}
         ${className}
       `}

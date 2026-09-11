@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { TrendingUp, Sparkles, Layers, Waves } from 'lucide-react'
+import { TrendingUp, Wind, Layers, Waves } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getDashboard, getDecisionsList, getCompanionContext, getGrowthValuesNeeds } from '@/lib/api/v1-client'
 import type { DashboardResponse, DecisionsListResponse, CompanionContextResponse, GrowthValuesNeedsResponse } from '@dpnr/shared-types'
@@ -94,9 +94,9 @@ function GrowthTrackerContent() {
           </div>
           <Link
             href="/mirror/new"
-            className="hidden lg:inline-flex items-center gap-2 rounded-full border border-[var(--color-border-glass)] px-4 py-2 text-sm text-white/80 hover:bg-white/5 transition-colors"
+            className="liquid-glass hidden lg:inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-white/80"
           >
-            <Sparkles className="w-4 h-4 text-[var(--color-amber-400)]" /> Breathe &amp; Check In
+            <Wind className="w-4 h-4 text-[var(--color-amber-400)]" /> Breathe &amp; Check In
           </Link>
         </div>
 
