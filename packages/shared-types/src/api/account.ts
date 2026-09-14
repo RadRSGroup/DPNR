@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { SessionTicketPurposeSchema } from '../dynamo/global-tables'
+import { GenderIdentitySchema } from '../dynamo/account'
 
 /**
  * Auth/account endpoints (MVP_ARCHITECTURE.md §4, ported from the migration
@@ -162,3 +163,33 @@ export const ConsentResponseSchema = z.object({
   consentVersion: z.string(),
 })
 export type ConsentResponse = z.infer<typeof ConsentResponseSchema>
+
+/**
+ * PUT /v1/user/preferences — the write path `preferredLanguage`/
+ * `genderIdentity` never had (docs/HEBREW_LOCALIZATION_PLAN.md Slice B).
+ * Neither Cognito custom attribute is an option here: they can't be added
+ * to an already-live User Pool without recreating it, so both fields live
+ * on the DynamoDB `PROFILE` item and are only ever written through this
+ * endpoint. Both fields optional and independently settable — the
+ * language selector calls this with only `preferredLanguage`, the
+ * signup/account gender question calls it with only `genderIdentity`, and
+ * a future combined settings form could send both at once. At least one
+ * must be present (an empty-object call is a client bug, not a valid
+ * no-op request).
+ */
+export const UpdatePreferencesRequestSchema = z
+  .object({
+    preferredLanguage: z.enum(['en', 'he']).optional(),
+    genderIdentity: GenderIdentitySchema.optional(),
+  })
+  .refine((v) => v.preferredLanguage !== undefined || v.genderIdentity !== undefined, {
+    message: 'At least one of preferredLanguage or genderIdentity is required.',
+  })
+export type UpdatePreferencesRequest = z.infer<typeof UpdatePreferencesRequestSchema>
+
+/** Shared by both the PUT (write) and GET (read) `/v1/user/preferences` handlers — same two fields either way. */
+export const PreferencesResponseSchema = z.object({
+  preferredLanguage: z.enum(['en', 'he']),
+  genderIdentity: GenderIdentitySchema,
+})
+export type PreferencesResponse = z.infer<typeof PreferencesResponseSchema>

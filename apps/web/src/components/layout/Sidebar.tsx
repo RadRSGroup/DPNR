@@ -7,6 +7,7 @@ import { User, Wallet, Headphones, ChevronRight } from 'lucide-react'
 import RingLogo from '@/components/icons/RingLogo'
 import { getCredits } from '@/lib/api/v1-client'
 import { PRIMARY_NAV } from './nav-items'
+import LanguageSelector from '@/components/shared/LanguageSelector'
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -70,6 +71,10 @@ export default function Sidebar() {
           <div>Need help?</div>
           <div className="text-xs text-[var(--color-text-tertiary)]">We&apos;re here for you</div>
         </div>
+      </div>
+
+      <div className="px-3 pt-3">
+        <LanguageSelector className="w-full justify-center" />
       </div>
     </aside>
   )

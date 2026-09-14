@@ -78,26 +78,36 @@ export async function proxy(request: NextRequest) {
   const isLoginPage = pathname.startsWith('/login')
   const isConsentPage = pathname.startsWith('/consent')
 
-  // Unauthenticated → login
+  // Unauthenticated → login. `next` is stored UNPREFIXED — login/page.tsx
+  // and consent/page.tsx both consume it via the locale-aware
+  // `router.push(next)` (from `@/i18n/navigation`), which adds the current
+  // locale prefix itself. Storing an already-prefixed value here would
+  // get double-prefixed there (`/he/he/companion`) — a real bug this
+  // session hit and fixed live, not a hypothetical.
   if (isProtected && !hasSession) {
     const url = request.nextUrl.clone()
     url.pathname = withLocale('/login', locale)
-    url.searchParams.set('next', withLocale(pathname, locale))
+    url.searchParams.set('next', pathname)
     return NextResponse.redirect(url)
   }
 
-  // Authenticated but no consent → consent gate
+  // Authenticated but no consent → consent gate. Same unprefixed-`next`
+  // rule as above.
   if (isProtected && hasSession && !hasConsent) {
     const url = request.nextUrl.clone()
     url.pathname = withLocale('/consent', locale)
-    url.searchParams.set('next', withLocale(pathname, locale))
+    url.searchParams.set('next', pathname)
     return NextResponse.redirect(url)
   }
 
-  // Already consented — skip consent page
+  // Already consented — skip consent page. This branch redirects directly
+  // via `NextResponse.redirect`, not the client-side locale-aware router,
+  // so — unlike login/consent's own `router.push(next)` — `next` DOES need
+  // prefixing here, at the point of use, not when it was stored above.
   if (isConsentPage && hasConsent) {
     const url = request.nextUrl.clone()
-    url.pathname = request.nextUrl.searchParams.get('next') ?? withLocale('/companion', locale)
+    const next = request.nextUrl.searchParams.get('next')
+    url.pathname = next ? withLocale(next, locale) : withLocale('/companion', locale)
     url.searchParams.delete('next')
     return NextResponse.redirect(url)
   }

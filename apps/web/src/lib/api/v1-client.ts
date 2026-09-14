@@ -43,6 +43,8 @@ import type {
   SessionTicketResponse,
   SessionTicketPublicKeyResponse,
   RevokeSessionResponse,
+  UpdatePreferencesRequest,
+  PreferencesResponse,
 } from '@dpnr/shared-types'
 import { getIdToken } from '../cognito/client'
 
@@ -117,6 +119,22 @@ export async function getMirrorsList(): Promise<MirrorsListResponse> {
 export async function grantConsent(): Promise<ConsentResponse> {
   const res = await authedFetch('/v1/user/consent', { method: 'POST' })
   return parseOrThrow<ConsentResponse>(res)
+}
+
+/** GET /v1/user/preferences — the caller's actual stored preferredLanguage/genderIdentity, used by /account to show real state, not a guessed default. */
+export async function getPreferences(): Promise<PreferencesResponse> {
+  const res = await authedFetch('/v1/user/preferences')
+  return parseOrThrow<PreferencesResponse>(res)
+}
+
+/**
+ * PUT /v1/user/preferences — updates `preferredLanguage`/`genderIdentity`
+ * on the PROFILE item (docs/HEBREW_LOCALIZATION_PLAN.md Slice B). Pass
+ * only the field(s) actually changing; the server leaves the other alone.
+ */
+export async function updatePreferences(request: UpdatePreferencesRequest): Promise<PreferencesResponse> {
+  const res = await authedFetch('/v1/user/preferences', { method: 'PUT', body: JSON.stringify(request) })
+  return parseOrThrow<PreferencesResponse>(res)
 }
 
 /** GET /v1/user/export — GDPR data export, used by /account's "Download my data." */

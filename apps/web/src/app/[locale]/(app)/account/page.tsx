@@ -5,10 +5,12 @@ import { useRouter } from '@/i18n/navigation'
 import { Link } from '@/i18n/navigation'
 import { getCurrentSession, deleteCognitoUser, signOut, changePassword } from '@/lib/cognito/client'
 import { revokeCurrentSessionTicket, changePasswordAndRewrapDek } from '@/lib/auth/keyBootstrap'
-import { exportUserData, deleteAccountData, getCredits, ApiError } from '@/lib/api/v1-client'
-import type { CreditsResponse } from '@dpnr/shared-types'
+import { exportUserData, deleteAccountData, getCredits, getPreferences, updatePreferences, ApiError } from '@/lib/api/v1-client'
+import type { CreditsResponse, GenderIdentity } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 import PasswordCreationField, { passwordsReadyToSubmit } from '@/components/auth/PasswordCreationField'
+import LanguageSelector from '@/components/shared/LanguageSelector'
+import GenderSelector from '@/components/shared/GenderSelector'
 
 /**
  * Reskinned onto the shared Sidebar/MobileNav shell + design tokens in
@@ -24,6 +26,8 @@ export default function AccountPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(true)
   const [credits, setCredits] = useState<CreditsResponse | null>(null)
+  const [gender, setGender] = useState<GenderIdentity | null>(null)
+  const [genderSaving, setGenderSaving] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [deleteStep, setDeleteStep] = useState<'idle' | 'confirm' | 'deleting'>('idle')
   const [deleteConfirm, setDeleteConfirm] = useState('')
@@ -46,9 +50,27 @@ export default function AccountPage() {
       } catch {
         // Degrades to no Credits card — same tolerance every other page here uses.
       }
+      try {
+        setGender((await getPreferences()).genderIdentity)
+      } catch {
+        // Degrades to the selector showing nothing pre-selected rather than
+        // guessing — same "don't fabricate state" rule as the Credits card.
+      }
     }
     load()
   }, [router])
+
+  async function handleGenderChange(next: GenderIdentity) {
+    setGender(next) // optimistic — this is a low-stakes preference, not a destructive action
+    setGenderSaving(true)
+    try {
+      await updatePreferences({ genderIdentity: next })
+    } catch {
+      alert('Could not save — please try again.')
+    } finally {
+      setGenderSaving(false)
+    }
+  }
 
   async function handleDownload() {
     setDownloading(true)
@@ -174,6 +196,30 @@ export default function AccountPage() {
                 <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">Paid plans are coming soon</p>
               </div>
             </div>
+          </Card>
+
+          {/* Preferences — docs/HEBREW_LOCALIZATION_PLAN.md Slice B. Language
+              switches immediately (LanguageSelector re-routes the whole page);
+              gender is used only to pick correct Hebrew grammatical gender in
+              future AI-generated responses (Slice E) and does nothing while
+              English is selected. `gender === null` means the read hasn't
+              resolved yet (or failed) — the selector is hidden rather than
+              shown pre-selected to a guessed value. */}
+          <Card className="space-y-3">
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">Preferences</p>
+            <div className="flex items-center justify-between">
+              <span className="text-white/80 text-sm">Language</span>
+              <LanguageSelector />
+            </div>
+            {gender !== null && (
+              <div>
+                <p className="text-white/80 text-sm mb-2">Gender</p>
+                <p className="text-[var(--color-text-tertiary)] text-xs mb-3">
+                  Used only to address you correctly in Hebrew — has no effect in English.
+                </p>
+                <GenderSelector value={gender} onChange={handleGenderChange} className={genderSaving ? 'opacity-60 pointer-events-none' : ''} />
+              </div>
+            )}
           </Card>
 
           {/* Security — direct signed-in password change (`PUT /v1/keys` +

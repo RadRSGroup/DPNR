@@ -1,7 +1,8 @@
 # DPNR — Hebrew Localization + Language Selector: Plan
 
-**Status: Slice A (i18n infra) built and locally verified, Session 50
-(2026-09-14) — not deployed.** Written Session 48 (2026-09-11) after a full
+**Status: Slices A and B built, deployed to real AWS, and fully
+live-verified, Session 50 (2026-09-14).** Written Session 48 (2026-09-11)
+after a full
 codebase survey. Scope, per the user's explicit choice: **both** static UI
 translation **and** localization of the AI-generated conversational content
 (Companion, Decision Room, Mirror Room, Twin, Roadmap, Library, Continuity,
@@ -483,6 +484,116 @@ infrastructure or shared git history.
   translated content exists yet — Hebrew pages currently show English
   strings laid out right-to-left, which is expected and correct for this
   slice, not a bug).
-- **Not done**: `apps/web/package.json`'s own `npm audit` note aside, no
-  CDK deploy happened this session — Slice A is frontend-only and doesn't
-  need one. Nothing was committed or pushed; ask the user before either.
+- **Not done at the time this section was written**: no CDK deploy — Slice
+  A is frontend-only and didn't need one. Committed as `51bf9f3`/`c01181e`
+  immediately after, at the user's request; still not pushed to `origin`.
+
+## 12. Slice B — built, deployed to real AWS, and live-verified, Session 50 (2026-09-14)
+
+Language selector + persistence, plus the gender-onboarding field from §10.
+Built directly after Slice A in the same session, at the user's request
+("complete slice b").
+
+**Backend** (`packages/shared-types/src/api/account.ts`,
+`infra/cdk/lambda/account/preferences.ts` + `preferences-get.ts`,
+`infra/cdk/lib/api-stack.ts`, `infra/cdk/lambda/auth/pre-token-generation.ts`):
+- `PUT /v1/user/preferences` and `GET /v1/user/preferences` — the write/read
+  pair `preferredLanguage`/`genderIdentity` never had. Same shape as the
+  existing `consent.ts` write-path pattern (requires an existing `PROFILE`
+  item, never creates one); PUT accepts either or both fields via a Zod
+  `.refine()` that rejects an empty body. `UserPreferencesFn` gets
+  `grantReadWriteData`, `UserPreferencesGetFn` gets the narrower
+  `grantReadData` — confirmed exactly this via `cdk diff` before deploying,
+  each Lambda's API Gateway invoke permission scoped to just this one route
+  ARN, not a wildcard.
+- `pre-token-generation.ts` now also injects `custom:locale` (mirroring the
+  existing `custom:consent` claim exactly, same fast-path/staleness caveat
+  extended rather than re-litigated) — added but not yet consumed by
+  anything; Slice E is what will actually read it for Bedrock prompts.
+- Deployed for real: `cdk diff` reviewed first (confirmed AWS identity via
+  `sts get-caller-identity` — account `346866989957`, matches; every
+  Lambda in `Dpnr-Api` rebundled from the `shared-types` version bump, same
+  precedent as prior shared-types-triggered deploys; only genuinely new
+  resources were the two `UserPreferencesFn`/`UserPreferencesGetFn`
+  Lambdas + their two routes + IAM), then `cdk deploy Dpnr-Auth Dpnr-Api
+  --require-approval never`. Both stacks reached `UPDATE_COMPLETE` cleanly.
+
+**Frontend**:
+- `components/shared/LanguageSelector.tsx` — native-name toggle
+  ("English"/"עברית"), switches via next-intl's own `router.replace(pathname,
+  {locale})` (also sets `NEXT_LOCALE` for guests, no manual cookie code
+  needed) and, for a signed-in user, fires a best-effort
+  `PUT /v1/user/preferences` — a failed persist is swallowed, matching this
+  project's existing degrade-gracefully convention for non-critical writes
+  (e.g. the Sidebar's Credits fetch). Placed in `Sidebar.tsx` (desktop) and
+  the Account page (both platforms, since Account is one tap away from
+  `MobileNav`) — not `MobileNav.tsx` itself, which has no room for it in
+  its 5-icon bottom bar.
+- `components/shared/GenderSelector.tsx` — a controlled 3-option
+  (`Male`/`Female`/`Prefer not to say`) radiogroup, reused by both the
+  signup form (local state only, written once the account exists) and the
+  Account page (persists on click immediately via the same PUT).
+- **Account page's "Preferences" card only renders the Gender control once
+  `GET /v1/user/preferences` actually returns a value** — matches this
+  project's own "honest state, never fabricate a default the user hasn't
+  chosen" convention (the same rule Dashboard's empty-state cards already
+  follow). A failed/pending read hides the control rather than guessing.
+- `signup/page.tsx`: gender question added to the form; right after
+  `signIn()` succeeds (before the recovery-code/session-ticket branching,
+  so it fires exactly once regardless of which path is taken), a
+  best-effort `updatePreferences({ preferredLanguage: locale, genderIdentity
+  })` call writes the real selected values over the post-confirmation
+  trigger's `en`/`unspecified` defaults.
+
+**A real bug found live and fixed, not caught by review**: `proxy.ts`'s
+`next` query param was being stored locale-prefixed
+(`withLocale(pathname, locale)`), but `login/page.tsx` and
+`consent/page.tsx` both consume it via the locale-aware `router.push(next)`
+(from `@/i18n/navigation`), which prefixes the current locale itself —
+double-prefixing produced a real `/he/he/companion` 404, hit live while
+signing a throwaway test account through the actual consent flow under
+`/he`. Fixed by storing `next` unprefixed and instead prefixing it only in
+the one proxy-internal branch that consumes it via a raw
+`NextResponse.redirect` (the "already consented, skip consent page"
+branch) rather than the client router. Re-verified live after the fix:
+`/he/consent?next=%2Fcompanion` now correctly lands on `/he/companion`,
+not `/he/he/companion`.
+
+**Live-verified end to end against a real throwaway Cognito test account**
+(created via `sign-up` + `admin-confirm-sign-up`, per this project's own
+documented lesson that `admin-create-user` skips the post-confirmation
+trigger; signed in via a throwaway SRP script using
+`amazon-cognito-identity-js` directly, since this app client only allows
+the SRP auth flow, not `USER_PASSWORD_AUTH`):
+- Post-confirmation correctly created the profile with
+  `genderIdentity: "unspecified"`.
+- A fresh sign-in's real ID token carried `"custom:locale":"en"` matching
+  the profile; after a `PUT` changed `preferredLanguage` to `"he"`, a
+  second fresh sign-in's token correctly carried `"custom:locale":"he"` —
+  confirms the claim tracks the DB value at token-issuance time, as
+  designed.
+- `GET`/`PUT /v1/user/preferences` round-tripped correctly against real
+  DynamoDB; an invalid enum value and an empty body were both correctly
+  rejected with `400` and the exact validation messages the schema defines;
+  an unauthenticated call correctly got `401` from the JWT authorizer
+  before reaching the Lambda at all.
+- Signed all the way through the real UI (login → consent → Companion) as
+  this test account, confirmed the Sidebar's real desktop layout mirrors
+  correctly under `he` (RTL), and — the actual point of the exercise —
+  clicking the Sidebar's "English" button live changed the URL, the
+  `NEXT_LOCALE` cookie, `<html lang>`, **and** wrote `preferredLanguage:
+  "en"` to the real DynamoDB row; separately, clicking "Male" on the
+  Account page's Gender control wrote `genderIdentity: "male"` to the same
+  row. Both confirmed by a direct `aws dynamodb get-item` immediately
+  after each click, not inferred from the UI alone.
+- Full cleanup independently re-confirmed after the fact: Cognito test
+  user deleted (`admin-delete-user`), all 3 DynamoDB rows under its
+  partition deleted and re-queried to confirm zero remain (`PROFILE`,
+  `CREDITS`, one `CREDITS#TXN#...` row from the beta-trial starter grant).
+
+**Not done**: the `custom:locale` claim has no consumer yet (Slice E's
+job); no static UI translation exists yet (Slice D); auto-navigating a
+returning user to their *saved* `preferredLanguage` on login isn't
+built — Slice B only built manual switching plus best-effort persistence,
+matching the plan's original scope. Committed at the user's request;
+pushing to `origin` and any further deploys are separate asks.

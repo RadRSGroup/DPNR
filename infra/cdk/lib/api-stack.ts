@@ -443,6 +443,24 @@ export class ApiStack extends Stack {
     })
     props.applicationTable.grantReadWriteData(userConsentFn)
 
+    // docs/HEBREW_LOCALIZATION_PLAN.md Slice B — the write path
+    // preferredLanguage/genderIdentity never had; same profile as
+    // userConsentFn above (plain PROFILE-item update, no crypto/session-
+    // ticket grant needed, neither field is [ENCRYPTED] content).
+    const userPreferencesFn = new lambda.NodejsFunction(this, 'UserPreferencesFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/account/preferences.ts'),
+      description: 'PUT /v1/user/preferences — updates preferredLanguage/genderIdentity on the PROFILE item.',
+    })
+    props.applicationTable.grantReadWriteData(userPreferencesFn)
+
+    const userPreferencesGetFn = new lambda.NodejsFunction(this, 'UserPreferencesGetFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/account/preferences-get.ts'),
+      description: 'GET /v1/user/preferences — the caller\'s actual stored preferredLanguage/genderIdentity.',
+    })
+    props.applicationTable.grantReadData(userPreferencesGetFn)
+
     const userExportFn = new lambda.NodejsFunction(this, 'UserExportFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/account/export.ts'),
@@ -642,6 +660,20 @@ export class ApiStack extends Stack {
       path: '/v1/user/consent',
       methods: [apigwv2.HttpMethod.POST],
       integration: new integrations.HttpLambdaIntegration('UserConsentIntegration', userConsentFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/user/preferences',
+      methods: [apigwv2.HttpMethod.PUT],
+      integration: new integrations.HttpLambdaIntegration('UserPreferencesIntegration', userPreferencesFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/user/preferences',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('UserPreferencesGetIntegration', userPreferencesGetFn),
       authorizer: this.cognitoAuthorizer,
     })
 
