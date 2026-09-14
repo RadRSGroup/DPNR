@@ -111,6 +111,15 @@
  * flag for product review before treating the extraction *judgment* (when
  * the model chooses to surface one) as final, same "draft, not locked"
  * status Mirror Room's original design had.
+ *
+ * **Hebrew Localization Slice E addition** (docs/HEBREW_LOCALIZATION_PLAN.md
+ * §4.3): `respond`/`continuation`/`onboard` each gained a `{{languageInstruction}}`
+ * variable (near the top of the system prompt) — a full instruction sentence,
+ * not a bare "English"/"Hebrew" word, since it also carries the resolved
+ * grammatical-gender form for Hebrew responses (see
+ * `infra/cdk/lambda/lib/locale.ts`'s `toLanguageInstruction()`, the single
+ * place that composes this string). `classify_interaction_mode` deliberately
+ * did NOT get this var — it returns a structured enum, no user-facing prose.
  */
 import type { PromptSeed } from './decision-room-prompts.seed'
 
@@ -118,6 +127,8 @@ export const COMPANION_PROMPT_SEEDS: PromptSeed[] = [
   {
     name: 'respond',
     systemTemplate: `You are DPNR's Companion — the persistent conversational home base and router for the whole DPNR system, not a single-purpose chatbot. The person can simply say what's on their mind; you understand it, respond usefully, and route them onward only when that genuinely helps.
+
+{{languageInstruction}}
 
 How to respond:
 - Restore relevant context from the conversation so far — never ask the person to repeat something you can already see below.
@@ -161,6 +172,7 @@ The person's latest message:
       'libraryTopics',
       'currentInteractionMode',
       'currentMessage',
+      'languageInstruction',
     ],
     outputSchema: {
       type: 'object',
@@ -210,6 +222,8 @@ The person's latest message:
     name: 'continuation',
     systemTemplate: `You write a single short "welcome back" opening line for DPNR's Companion, spoken directly to the person as if picking a real conversation back up — not a generic greeting.
 
+{{languageInstruction}}
+
 Rules:
 - Ground everything you say in the specific material given below (the recent conversation, confirmed signals, session summaries). Never invent a detail, event, or feeling that isn't actually present in it.
 - If the material below gives you genuinely nothing specific to reference, write a brief, warm, generic welcome-back line instead — do not stretch a vague thread into a false specific.
@@ -226,7 +240,7 @@ Summaries of their recent guided-room sessions, most recent first (may be empty)
 {{recentSessionSummaries}}
 
 Write the opening line now.`,
-    variables: ['recentConversation', 'confirmedSignalsList', 'recentSessionSummaries'],
+    variables: ['recentConversation', 'confirmedSignalsList', 'recentSessionSummaries', 'languageInstruction'],
     notes:
       'Called by companion/context.ts only when the gap since the last stored message meets CONTINUATION_GAP_HOURS ' +
       '— never on every page load. recentConversation = the last few turns as "User: ..."/"Companion: ..." lines, or ' +
@@ -237,6 +251,8 @@ Write the opening line now.`,
   {
     name: 'onboard',
     systemTemplate: `You are DPNR's Companion, meeting someone for the very first time. This is their onboarding — not a form, not a questionnaire, a real conversation. Your only goal right now is to understand enough about what's genuinely going on for them to set an honest first orientation.
+
+{{languageInstruction}}
 
 How to conduct this:
 - Ask exactly one open, genuinely curious question at a time. Never present a list, never stack multiple questions in one message.
@@ -265,7 +281,13 @@ The person's current need right now (an estimate, may be wrong — see system in
 
 The person's latest message:
 "{{currentMessage}}"`,
-    variables: ['conversationHistory', 'currentInteractionMode', 'currentMessage', 'conclusionInstruction'],
+    variables: [
+      'conversationHistory',
+      'currentInteractionMode',
+      'currentMessage',
+      'conclusionInstruction',
+      'languageInstruction',
+    ],
     outputSchema: {
       type: 'object',
       required: ['reply', 'readyForRoadmap'],

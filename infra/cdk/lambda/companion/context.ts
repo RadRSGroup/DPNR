@@ -10,6 +10,7 @@ import {
   type DailyCardItem,
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
+import { getProfileForLanguage, toLanguageInstruction } from '../lib/locale'
 import { getSessionCrypto, type SessionCrypto } from '../lib/session-crypto'
 import { resolvePromptVersion } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
@@ -215,6 +216,12 @@ async function maybeSynthesizeContinuation(
   try {
     const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'companion', 'continuation')
     const { confirmedSignals, sessionSummaries } = await gatherContinuityContext(userId)
+    // Hebrew Localization Slice E — this pure-GET handler never calls
+    // requireConsent(), so there's no profile already in hand the way
+    // message.ts has; a small targeted read here, not on every context
+    // fetch (see getProfileForLanguage's own doc comment).
+    const profile = await getProfileForLanguage(ddb, TABLE_NAME, pk)
+    const languageInstruction = toLanguageInstruction(profile.preferredLanguage, profile.genderIdentity)
 
     const recentConversation = messages
       .slice(-CONTINUATION_MODEL_HISTORY_TURNS)
@@ -239,6 +246,7 @@ async function maybeSynthesizeContinuation(
       recentConversation,
       confirmedSignalsList,
       recentSessionSummaries,
+      languageInstruction,
     })
     const text = typeof result === 'string' ? result.trim() : ''
     if (!text) return null
@@ -286,6 +294,11 @@ async function synthesizeOnboardingOpener(
 ): Promise<{ role: 'assistant'; text: string; createdAt: string } | null> {
   try {
     const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'companion', 'onboard')
+    // Hebrew Localization Slice E — same targeted read as
+    // maybeSynthesizeContinuation above, see getProfileForLanguage's own
+    // doc comment for why this endpoint has no profile already in hand.
+    const profile = await getProfileForLanguage(ddb, TABLE_NAME, pk)
+    const languageInstruction = toLanguageInstruction(profile.preferredLanguage, profile.genderIdentity)
     const result = await callPromptModel(version, {
       conversationHistory: '(no prior messages — this is the start of the conversation)',
       // Intelligence Spec §17 — there's no real user turn to classify yet
@@ -295,6 +308,7 @@ async function synthesizeOnboardingOpener(
       currentMessage:
         "(the person has just opened Companion for the very first time and hasn't said anything yet — introduce yourself briefly and ask your first orienting question)",
       conclusionInstruction: '',
+      languageInstruction,
     })
     const text = typeof result === 'string' ? '' : typeof result.reply === 'string' ? result.reply.trim() : ''
     if (!text) return null

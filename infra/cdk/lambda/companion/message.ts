@@ -19,6 +19,7 @@ import {
 } from '@dpnr/shared-types'
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { requireConsent } from '../lib/consent'
+import { getLocaleClaim, resolveLocale, toLanguageInstruction } from '../lib/locale'
 import { consumeCredits, COMPANION_MESSAGE_COST } from '../lib/credits'
 import { getSessionCrypto, type SessionCrypto } from '../lib/session-crypto'
 import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
@@ -89,7 +90,16 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const body = parseBody(event, CompanionMessageRequestSchema)
     const crypto = await getSessionCrypto(userId)
 
-    await requireConsent(ddb, TABLE_NAME, userId)
+    const profile = await requireConsent(ddb, TABLE_NAME, userId)
+    // Hebrew Localization Slice E (docs/HEBREW_LOCALIZATION_PLAN.md §4.2) —
+    // the profile read above already gives the authoritative
+    // preferredLanguage for free; the JWT claim is only a fallback for the
+    // (here, unreachable) case of no profile read. Safety-response
+    // generation is deliberately NOT localized yet — see Slice F.
+    const languageInstruction = toLanguageInstruction(
+      resolveLocale(profile, getLocaleClaim(event)),
+      profile.genderIdentity
+    )
 
     const sessionId = await resolveOrCreateSession(ddb, TABLE_NAME, pk, body.sessionId)
     const recentMessages = await queryRecentMessages(pk, sessionId, MODEL_CONTEXT_MESSAGES)
@@ -210,8 +220,8 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         await consumeCredits(ddb, TABLE_NAME, pk, COMPANION_MESSAGE_COST, 'companion_message')
       }
       const result = hasRoadmap
-        ? await callCompanionModel(userId, pk, sessionId, crypto, history, body.text, currentInteractionMode)
-        : await runOnboardingTurn(crypto, pk, sessionId, history, body.text, currentInteractionMode)
+        ? await callCompanionModel(userId, pk, sessionId, crypto, history, body.text, currentInteractionMode, languageInstruction)
+        : await runOnboardingTurn(crypto, pk, sessionId, history, body.text, currentInteractionMode, languageInstruction)
       reply = result.reply
       directive = result.directive
     }
@@ -284,7 +294,8 @@ async function callCompanionModel(
   crypto: SessionCrypto,
   history: CompanionTurn[],
   userText: string,
-  currentInteractionMode: InteractionMode
+  currentInteractionMode: InteractionMode,
+  languageInstruction: string
 ): Promise<{ reply: string; directive: CompanionDirective | null }> {
   const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'companion', 'respond')
   const topics = await listActiveTopics(ddb, LIBRARY_CATALOG_TABLE_NAME)
@@ -318,6 +329,7 @@ async function callCompanionModel(
     libraryTopics,
     currentInteractionMode,
     currentMessage: userText,
+    languageInstruction,
   })
   if (typeof result === 'string') {
     throw new HttpError(502, 'model_call_failed', 'Companion prompt did not return forced tool-use output.')
@@ -423,7 +435,8 @@ async function runOnboardingTurn(
   sessionId: string,
   history: CompanionTurn[],
   userText: string,
-  currentInteractionMode: InteractionMode
+  currentInteractionMode: InteractionMode,
+  languageInstruction: string
 ): Promise<{ reply: string; directive: CompanionDirective | null }> {
   const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'companion', 'onboard')
 
@@ -442,6 +455,7 @@ async function runOnboardingTurn(
     currentInteractionMode,
     currentMessage: userText,
     conclusionInstruction,
+    languageInstruction,
   })
   if (typeof result === 'string') {
     throw new HttpError(502, 'model_call_failed', 'Onboarding prompt did not return forced tool-use output.')
