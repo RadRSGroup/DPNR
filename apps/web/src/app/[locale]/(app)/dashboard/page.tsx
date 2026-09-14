@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
+import { useTranslations } from 'next-intl'
 import { ArrowRight, Heart, Compass } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import {
@@ -35,17 +36,19 @@ import ArchetypeBadge from '@/components/shared/ArchetypeBadge'
  * comment), so this is never a second, different concept — it's the same
  * item continuityCue was already describing, just shown once, correctly.
  */
-const CUE_LABEL: Record<Exclude<NonNullable<DashboardResponse['continuityCue']>['kind'], 'daily_card'>, string> = {
-  continuation: 'Continuing on',
-  commitment: 'Upcoming commitment',
-  roadmap_cue: 'Worth exploring',
-  recommended_space: 'Worth exploring',
+// Values are keys into Dashboard.cueLabels, resolved via t() at render
+// time — module scope has no hook access.
+const CUE_LABEL_KEY: Record<Exclude<NonNullable<DashboardResponse['continuityCue']>['kind'], 'daily_card'>, string> = {
+  continuation: 'continuation',
+  commitment: 'commitment',
+  roadmap_cue: 'worthExploring',
+  recommended_space: 'worthExploring',
 }
 
-const ROOM_LINK: Record<'decision' | 'mirror' | 'library', { href: string; label: string }> = {
-  decision: { href: '/decision/new', label: 'Decision Room' },
-  mirror: { href: '/mirror/new', label: 'Mirror Room' },
-  library: { href: '/library', label: 'Content & Learning' },
+const ROOM_LINK: Record<'decision' | 'mirror' | 'library', { href: string; labelKey: string }> = {
+  decision: { href: '/decision/new', labelKey: 'decision' },
+  mirror: { href: '/mirror/new', labelKey: 'mirror' },
+  library: { href: '/library', labelKey: 'library' },
 }
 
 // This page previously listed every past decision via the old Supabase
@@ -56,6 +59,7 @@ const ROOM_LINK: Record<'decision' | 'mirror' | 'library', { href: string; label
 // restore this rather than reinventing it from Dashboard's own aggregate.
 
 function DashboardContent() {
+  const t = useTranslations('Dashboard')
   const router = useRouter()
   const params = useSearchParams()
   const justCompleted = params.get('completed') === 'true'
@@ -141,21 +145,21 @@ function DashboardContent() {
         <div className="pt-14 lg:pt-8 pb-6 flex items-center justify-between">
           <div>
             <h1 className="font-display text-2xl lg:text-3xl text-white">
-              Good morning{firstName ? `, ${firstName}` : ''}
+              {t('greeting', { name: firstName ? `, ${firstName}` : '' })}
             </h1>
-            <p className="text-sm text-[var(--color-text-secondary)] mt-1">Your journey. Your awareness. Your evolution.</p>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('subtitle')}</p>
           </div>
           <Link
             href="/companion"
             className="liquid-glass hidden lg:inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-white/80"
           >
-            Check in
+            {t('checkIn')}
           </Link>
         </div>
 
         {justCompleted && (
           <div className="mb-4 bg-[var(--color-violet-900)]/40 border border-[var(--color-violet-600)]/40 rounded-2xl px-4 py-3">
-            <p className="text-[var(--color-violet-400)] text-sm">✦ Decision mapped. Your reflection is saved.</p>
+            <p className="text-[var(--color-violet-400)] text-sm">✦ {t('justCompleted')}</p>
           </div>
         )}
 
@@ -176,8 +180,8 @@ function DashboardContent() {
                     'developing' get an honest qualitative state instead of
                     a fabricated or premature number. */}
                 <div className="p-5 lg:p-6 sm:w-56 shrink-0 flex flex-col">
-                  <p className="text-sm text-white/70">My InnerSelf</p>
-                  <p className="text-xs text-[var(--color-text-tertiary)]">Your Digital Twin</p>
+                  <p className="text-sm text-white/70">{t('innerSelf.title')}</p>
+                  <p className="text-xs text-[var(--color-text-tertiary)]">{t('innerSelf.subtitle')}</p>
                   <div className="mt-4">
                     {dashboard?.alignmentScoreState === 'eligible' && dashboard.alignmentScore != null ? (
                       <ProgressRing percent={dashboard.alignmentScore} size={84} colorClassName="stroke-[var(--color-violet-500)]">
@@ -186,12 +190,12 @@ function DashboardContent() {
                     ) : (
                       <div className="w-[84px] h-[84px] rounded-full border-2 border-dashed border-white/15 flex items-center justify-center">
                         <span className="text-[10px] text-[var(--color-text-tertiary)] text-center px-2">
-                          {dashboard?.alignmentScoreState === 'developing' ? 'Picture forming…' : 'Still learning this part of you'}
+                          {dashboard?.alignmentScoreState === 'developing' ? t('innerSelf.pictureForming') : t('innerSelf.stillLearning')}
                         </span>
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-[var(--color-text-tertiary)] mt-2">Alignment Score</p>
+                  <p className="text-xs text-[var(--color-text-tertiary)] mt-2">{t('innerSelf.alignmentScore')}</p>
                 </div>
 
                 <div className="relative h-40 sm:h-auto sm:flex-1">
@@ -206,8 +210,8 @@ function DashboardContent() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[var(--color-bg-base)]" />
                   {dashboard?.roadmap && (
-                    <div className="absolute inset-0 flex flex-col items-end justify-center text-right px-6 lg:px-10">
-                      <p className="text-white/60 text-sm">You&apos;re in a phase of</p>
+                    <div className="absolute inset-0 flex flex-col items-end justify-center text-end px-6 lg:px-10">
+                      <p className="text-white/60 text-sm">{t('innerSelf.phaseOf')}</p>
                       <p className="font-display text-xl lg:text-2xl text-[var(--color-amber-300)]">{dashboard.roadmap.theme}</p>
                     </div>
                   )}
@@ -227,7 +231,7 @@ function DashboardContent() {
                 not a full lifecycle-management UI. */}
             {dashboard?.roadmap && (
               <div className="flex items-center justify-between px-1">
-                <span className="text-xs text-[var(--color-text-tertiary)] capitalize">Roadmap: {dashboard.roadmap.lifecycleState}</span>
+                <span className="text-xs text-[var(--color-text-tertiary)]">{t('roadmap.label', { state: t(`roadmap.states.${dashboard.roadmap.lifecycleState}`) })}</span>
                 <div className="flex gap-2">
                   {(dashboard.roadmap.lifecycleState === 'active' || dashboard.roadmap.lifecycleState === 'evolving') && (
                     <button
@@ -235,7 +239,7 @@ function DashboardContent() {
                       disabled={lifecyclePending}
                       className="text-xs text-[var(--color-text-tertiary)] hover:text-white/70 transition-colors disabled:opacity-50"
                     >
-                      Pause
+                      {t('roadmap.pause')}
                     </button>
                   )}
                   {(dashboard.roadmap.lifecycleState === 'paused' || dashboard.roadmap.lifecycleState === 'archived') && (
@@ -244,7 +248,7 @@ function DashboardContent() {
                       disabled={lifecyclePending}
                       className="text-xs text-[var(--color-text-tertiary)] hover:text-white/70 transition-colors disabled:opacity-50"
                     >
-                      Resume
+                      {t('roadmap.resume')}
                     </button>
                   )}
                   {dashboard.roadmap.lifecycleState !== 'archived' && (
@@ -253,7 +257,7 @@ function DashboardContent() {
                       disabled={lifecyclePending}
                       className="text-xs text-[var(--color-text-tertiary)] hover:text-white/70 transition-colors disabled:opacity-50"
                     >
-                      Archive
+                      {t('roadmap.archive')}
                     </button>
                   )}
                 </div>
@@ -267,8 +271,8 @@ function DashboardContent() {
                 padded to a fixed 7. */}
             {!loading && (dashboard?.lifeDomains?.length ?? 0) > 0 && (
               <Card>
-                <p className="text-sm text-white mb-1">Life Domains</p>
-                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">What you&apos;ve been exploring</p>
+                <p className="text-sm text-white mb-1">{t('lifeDomains.title')}</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">{t('lifeDomains.subtitle')}</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {dashboard!.lifeDomains.map((d) => (
                     <div key={d.domain} className="bg-white/5 rounded-xl px-3 py-2.5">
@@ -290,7 +294,7 @@ function DashboardContent() {
 
             {!loading && dashboard?.roadmapProposal && (
               <Card className="border-[var(--color-violet-600)]/40 bg-[var(--color-violet-900)]/20">
-                <p className="text-[var(--color-violet-400)]/70 text-xs uppercase tracking-wide mb-2">A shift worth naming?</p>
+                <p className="text-[var(--color-violet-400)]/70 text-xs uppercase tracking-wide mb-2">{t('proposal.title')}</p>
                 <p className="text-white/70 text-sm leading-relaxed mb-3">{dashboard.roadmapProposal.rationale}</p>
                 <div className="space-y-1 mb-3">
                   <p className="text-white text-sm">{dashboard.roadmapProposal.currentFocus}</p>
@@ -302,14 +306,14 @@ function DashboardContent() {
                     disabled={proposalPending}
                     className="flex-1 rounded-xl px-3 py-2 text-xs font-medium bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] text-white transition-colors disabled:opacity-50"
                   >
-                    Update my Roadmap
+                    {t('proposal.updateRoadmap')}
                   </button>
                   <button
                     onClick={() => handleProposalAction('reject')}
                     disabled={proposalPending}
                     className="flex-1 rounded-xl px-3 py-2 text-xs font-medium bg-white/5 border border-white/15 text-white/60 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
                   >
-                    Not now
+                    {t('proposal.notNow')}
                   </button>
                 </div>
               </Card>
@@ -331,12 +335,12 @@ function DashboardContent() {
             <Card>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-[var(--color-text-tertiary)]">Credits</p>
+                  <p className="text-xs text-[var(--color-text-tertiary)]">{t('credits.label')}</p>
                   <p className="text-white text-lg font-light mt-0.5">{loading ? '…' : (dashboard?.creditsBalance ?? 0)}</p>
                 </div>
                 {!loading && dashboard?.creditsLow && (
                   <Link href="/pricing" className="text-[var(--color-violet-400)] hover:text-[var(--color-violet-300)] text-xs underline">
-                    Running low · Upgrade
+                    {t('credits.runningLowUpgrade')}
                   </Link>
                 )}
               </div>
@@ -349,13 +353,13 @@ function DashboardContent() {
                 shows the person's own actual confirmed patterns instead. */}
             {!loading && confirmedPatterns.length > 0 && (
               <Card>
-                <p className="text-sm text-white mb-1">Patterns Track</p>
-                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">What DPNR has noticed, by confidence</p>
+                <p className="text-sm text-white mb-1">{t('patterns.title')}</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">{t('patterns.subtitle')}</p>
                 <div className="space-y-3">
                   {confirmedPatterns.slice(0, 4).map((signal) => (
                     <div key={signal.signalId}>
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm text-white/80 line-clamp-1 pr-2">{signal.description}</p>
+                        <p className="text-sm text-white/80 line-clamp-1 pe-2">{signal.description}</p>
                         <span className="text-xs text-[var(--color-text-tertiary)] shrink-0">{Math.round(signal.confidence * 100)}%</span>
                       </div>
                       <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
@@ -376,8 +380,8 @@ function DashboardContent() {
                 appear. */}
             {!loading && (dashboard?.archetypes?.length ?? 0) > 0 && (
               <Card>
-                <p className="text-sm text-white mb-1">Leading Archetypes</p>
-                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">The energies that show up for you</p>
+                <p className="text-sm text-white mb-1">{t('archetypes.title')}</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">{t('archetypes.subtitle')}</p>
                 <div className="grid grid-cols-2 gap-3">
                   {dashboard!.archetypes.map((a) => (
                     <ArchetypeBadge key={a.archetype} archetype={a.archetype} percent={a.percent} />
@@ -393,8 +397,8 @@ function DashboardContent() {
             {!loading && (dashboard?.alignmentHistory?.length ?? 0) >= 2 && (
               <Card>
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm text-white">My Evolution</p>
-                  <span className="text-xs text-[var(--color-text-tertiary)]">Last {dashboard!.alignmentHistory.length} days</span>
+                  <p className="text-sm text-white">{t('evolution.title')}</p>
+                  <span className="text-xs text-[var(--color-text-tertiary)]">{t('evolution.lastDays', { count: dashboard!.alignmentHistory.length })}</span>
                 </div>
                 <AlignmentSparkline points={dashboard!.alignmentHistory} />
               </Card>
@@ -406,8 +410,8 @@ function DashboardContent() {
                 bottom nav only has 5 slots, so Library + InnerSelf still
                 need a way in. */}
             <div className="grid grid-cols-2 gap-3 lg:hidden">
-              <ExploreTile href="/library" title="Library" subtitle="Read something" />
-              <ExploreTile href="/growth" title="Growth Tracker" subtitle="What's changing" />
+              <ExploreTile href="/library" title={t('explore.library.title')} subtitle={t('explore.library.subtitle')} />
+              <ExploreTile href="/growth" title={t('explore.growth.title')} subtitle={t('explore.growth.subtitle')} />
             </div>
           </div>
 
@@ -419,7 +423,7 @@ function DashboardContent() {
 
             {!loading && dashboard?.continuityCue && dashboard.continuityCue.kind !== 'daily_card' && (
               <Card className="relative overflow-hidden">
-                <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-3">{CUE_LABEL[dashboard.continuityCue.kind]}</p>
+                <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-3">{t(`cueLabels.${CUE_LABEL_KEY[dashboard.continuityCue.kind]}`)}</p>
                 {/* Same art the 'daily_card' variant of this exact widget slot
                     already uses (DailyGuidanceCard) — reused rather than a new
                     crop, so "Today's Insight" always shows art regardless of
@@ -435,7 +439,7 @@ function DashboardContent() {
 
             {suggestedSpace && ROOM_LINK[suggestedSpace] && (
               <Card>
-                <p className="text-sm text-white mb-3">Suggested Next Step</p>
+                <p className="text-sm text-white mb-3">{t('suggestedNextStep')}</p>
                 <Link
                   href={ROOM_LINK[suggestedSpace].href}
                   className="flex items-center gap-3 rounded-xl bg-white/5 border border-[var(--color-border-glass)] px-3 py-3 hover:bg-white/10 transition-colors"
@@ -444,16 +448,16 @@ function DashboardContent() {
                     <Compass className="w-4 h-4 text-[var(--color-violet-400)]" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm text-white">{ROOM_LINK[suggestedSpace].label}</p>
+                    <p className="text-sm text-white">{t(`roomLink.${ROOM_LINK[suggestedSpace].labelKey}`)}</p>
                     <p className="text-xs text-[var(--color-text-tertiary)]">{dashboard?.roadmap?.direction}</p>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-[var(--color-text-tertiary)]" />
+                  <ArrowRight className="w-4 h-4 text-[var(--color-text-tertiary)] rtl:-scale-x-100" />
                 </Link>
               </Card>
             )}
 
             <div className="hidden lg:grid gap-3">
-              <ExploreTile href="/rooms" title="Work Rooms" subtitle="Decision · Mirror" />
+              <ExploreTile href="/rooms" title={t('explore.workRooms.title')} subtitle={t('explore.workRooms.subtitle')} />
             </div>
           </div>
         </div>

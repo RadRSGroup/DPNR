@@ -1,9 +1,16 @@
 # DPNR — Hebrew Localization + Language Selector: Plan
 
-**Status: Slices A, B, C, and a first increment of D built and live-verified,
-Session 50 (2026-09-14). A and B are deployed to real AWS; C and D are
-frontend-only, nothing to deploy. D is partial — see §14 for exactly what's
-covered and what's deliberately deferred.**
+**Status: Slices A, B, C, and D (partial, two increments) built and
+live-verified, Session 50 (2026-09-14). A and B are deployed to real AWS; C
+and D are frontend-only, nothing to deploy. D now covers the pre-auth
+funnel, legal pages, and every "shell" authenticated screen (Dashboard,
+Account, Wallet, Growth Tracker, Evolution Map, Library, Rooms hub) — see
+§14/§15 for exactly what's covered and what's deliberately still deferred
+(Companion, Decision Room, Mirror Room — sequenced with Slice E). The user
+has also supplied Hebrew-translated, native-speaker-reviewed Content
+Library (54 topics) and Pull-a-Card (300 questions) source material locally
+— see §15's own note — which unblocks Slice G whenever a session picks it
+up; not yet ingested into the app.**
 Written Session 48 (2026-09-11)
 after a full
 codebase survey. Scope, per the user's explicit choice: **both** static UI
@@ -333,7 +340,7 @@ starts, `AGENT_LOG.md` updated per slice.
 | **A** | i18n infra: install `next-intl`, `[locale]` routing (`en` unprefixed / `he` prefixed), merge into `proxy.ts` (§4.1), `<html lang dir>` wiring, extract existing hardcoded UI strings into `en.json`. No visible behavior change beyond a working (empty) `/he` route. | — |
 | **B** | Language selector UI (header nav + account/settings) + persistence: write `preferredLanguage` via the account API, set a guest cookie, add `custom:locale` claim injection (§4.2, mirroring `custom:consent`) — gets its own `security-review` pass per the standing guardrail. | A |
 | **C** | RTL shell + Hebrew typography: `dir` switching verified across the app shell, logical-property migration for nav/shared components, Hebrew-capable font(s) (§5's font decision resolved first), directional-icon audit, CI lint for new physical-direction classes. | A |
-| **D** (partial — see §14) | Static UI content: translate the extracted `en.json` → `he.json` (auth, nav, forms, settings, pricing, legal/marketing, empty/error states), fix the 4 hardcoded-locale date/format sites, add the CI key-parity check (§7). **Done**: auth funnel (login/signup/forgot-password/consent), nav shell, legal (terms/privacy), pricing, root metadata, error boundary, all 6 hardcoded-locale sites, the CI check. **Not done**: Dashboard/Companion/Decision Room/Mirror Room/Library/Growth Tracker/Evolution Map/Wallet/Account screen content (~900+ strings) — deferred, likely sequenced with Slice E per §14's reasoning. | A, C |
+| **D** (partial — see §14/§15) | Static UI content: translate the extracted `en.json` → `he.json` (auth, nav, forms, settings, pricing, legal/marketing, empty/error states), fix the 4 hardcoded-locale date/format sites, add the CI key-parity check (§7). **Done**: auth funnel (login/signup/forgot-password/consent), nav shell, legal (terms/privacy), pricing, root metadata, error boundary, all 6 hardcoded-locale sites, the CI check (§14) — **plus** every "shell" authenticated screen: Dashboard, Account, Wallet, Growth Tracker, Evolution Map, Library (+ topic detail), Rooms hub (§15). **Not done**: Companion, Decision Room's 14-step flow, Mirror Room's 6-step flow (~700 of the original ~900 remaining strings) — deferred, sequenced with Slice E per §14's reasoning (still applies — these are exactly the screens that interleave static chrome with AI-generated content). | A, C |
 | **E** | AI-content localization infra: `{{language}}` var threaded through the 8 seed files + ~20 call sites (§4.3), re-seed, live-verify one real Hebrew-language session per room type (Companion, Decision Room, Mirror Room, Twin, Roadmap, Library, Continuity) for fluency and no code-switching. | A, B |
 | **F** | Safety/crisis localization (§4.4/§4.5) — highest care, its own live-verification pass reproducing Session 30's "does the model stay on-script" test in Hebrew, plus the hand-translated `FALLBACK_SAFETY_MESSAGE` twin. | E |
 | **G** | Content Library + Pull-a-Card translation (§6) — content-ops workstream, sequenced once A-F are proven; needs a named human reviewer. | D |
@@ -871,3 +878,133 @@ try/catch rather than silently left unmentioned.
 
 Committed as `c1c2600` on `mvp` at the user's request ("continue with d") — not pushed,
 nothing to deploy (frontend-only, no CDK change).
+
+## 15. Slice D — second increment (the authenticated "shell" screens) built and verified, same session (2026-09-14)
+
+Continued in the same session at the user's request ("whatever is
+recommended, continue") — picked up exactly where §14 left off, per its own
+recommendation: translate the rest of Slice D that does **not** carry the
+AI-content coherence problem, and leave Companion/Decision Room/Mirror Room
+for Slice E as already reasoned there.
+
+**Built**: `Dashboard`, `Account`, `Wallet`, `Growth` (Tracker),
+`EvolutionMap`, `Library` (list + `/library/[slug]` topic detail), `Rooms`
+(the Work Rooms hub) — 8 files, ~145 new translation keys (`Account`:45,
+`Wallet`:32, `Dashboard`:33, `Growth`:31, `EvolutionMap`:34, `Library`:47
+incl. the 10-entry `themes` map, `Rooms`:9 — some overlap between files'
+raw t() counts and unique keys since a few namespaces share small vocab).
+`messages/en.json`/`messages/he.json` now hold 460 matching keys (up from
+214 after §14).
+
+- **Content vs. chrome boundary respected explicitly**: `Library`'s actual
+  topic content (`topic.body`, `expandTheLens`, `personalizedExplanation`,
+  `howItMayShowUp`, `possibleRoots`, `reflectionQuestions`,
+  `waysToWorkWithIt`, topic/related-topic titles) is **not** translated —
+  that's the 54-topic Content Library itself, Slice G's job, not Slice D's.
+  Only the surrounding section headers, empty/error states, and room-CTA
+  labels on `/library/[slug]` were translated. Similarly, `START_HERE_TITLES`
+  in `library/page.tsx` (a hardcoded array of exact English topic titles
+  used to look up real Library topics by title match) was deliberately
+  **not** translated — translating it would silently break the lookup
+  against real (still-English) topic data.
+- **Module-level data constants converted to translation-key maps**, same
+  pattern as Slice C's `nav-items.ts`: `Dashboard`'s `CUE_LABEL`/`ROOM_LINK`,
+  `Wallet`'s `REASON_LABELS`, `EvolutionMap`'s `STAGES`, `Library`'s
+  `NAMED_SHELVES`, `Rooms`'s `ROOMS` — all had their hardcoded English
+  values replaced with lookup keys, resolved via `t()` inside the component
+  that renders them (module scope has no hook access). `Library`'s
+  `THEME_META` (`lib/library/theme-meta.ts`, shared by 4 files including
+  the untouched `LibrarySidePanel.tsx`) was left alone — its `.label` field
+  stays English for `LibrarySidePanel`'s sake (deliberately untouched this
+  round, part of the deferred Companion chrome); the two Library files
+  touched this round resolve theme labels via a new `Library.themes.*`
+  map keyed on the same `ExploreTheme` enum values instead, so no shared
+  file needed editing.
+- **Enum-valued display fixed to actually translate, not just relabel**:
+  `Dashboard`'s roadmap `lifecycleState` (active/paused/archived/evolving)
+  and `Growth`'s decision `status` (active/completed/archived) were
+  previously rendered as raw enum strings with a `capitalize` CSS class —
+  a real remaining English leak in an otherwise-Hebrew page. Both now
+  resolve through a small `{enum}.states`/`decisionStatus` translation map
+  instead, and the now-unnecessary `capitalize` class was removed (it would
+  incorrectly apply to Hebrew, which has no case).
+- **`lib/format.ts`'s `timeAgo(iso, locale)`** (already locale-aware since
+  §14) needed no further change — `growth/page.tsx` and
+  `DecisionRoomLanding.tsx`'s own call sites already pass `locale`; only
+  `growth/page.tsx` itself got full translation this round,
+  `DecisionRoomLanding.tsx` stays deferred with the rest of Decision Room.
+- **A few more physical-direction classes fixed while in these files**
+  (opportunistic, same discipline as §14): `Account`'s delete-warning list
+  `pl-4`→`ps-4` and the Legal card's `›` chevron-style characters got
+  `rtl:-scale-x-100`; `Wallet`'s `ml-2`→`ms-2`; `Dashboard`'s hero
+  `text-right`→`text-end`, patterns-track `pr-2`→`pe-2`, and the suggested-
+  next-step `ArrowRight` icon got `rtl:-scale-x-100`; `EvolutionMap`'s
+  domain-picker `text-left`→`text-start` and mark-complete button
+  `ml-2`→`ms-2`; `Growth`'s Core-Pillars/Emotional-Landscape decorative
+  watermark icons `-right-4`→`-end-4`; `Library`'s search-icon
+  `left-3.5`→`start-3.5`, search-input `pl-10 pr-4`→`ps-10 pe-4`, theme-chip
+  `pl-1.5 pr-3.5`→`ps-1.5 pe-3.5`, and both the list page's and detail
+  page's `ArrowLeft`/`ArrowRight` icons got `rtl:-scale-x-100`. RTL debt-
+  ratchet baseline (`apps/web/scripts/rtl-baseline.json`) re-tightened
+  after: down to 10 files, all of them inside `components/companion/*`,
+  `components/decision/*`, `components/mirror/*` — i.e. exactly the
+  deferred-for-Slice-E scope, nothing left over from this increment.
+- **"Tap to open →"-style directional arrows embedded directly in
+  translated text** (not a separate icon component) — e.g. Library topic's
+  room-CTA subtext, Terms/Privacy's cross-links from §14 — get the
+  correct-for-locale arrow character baked into each locale's own string
+  (`→` in `en.json`, `←` in `he.json`) rather than a CSS mirror, since
+  there's no wrapping element to apply `rtl:-scale-x-100` to.
+
+**Verified**: `npm run lint` (eslint + both check scripts — RTL baseline
+tightened to 10 files/companion-decision-mirror only, i18n parity 460/460),
+`tsc --noEmit`, full monorepo `npm run build` (26 routes unchanged) all
+clean. **Live verification used a different, more reliable technique than
+prior slices**: this session's long-lived browser tab had accumulated
+enough state (several dev-server restarts across Slices C/D, a stale/
+expired Cognito session) that real client-side navigation to several
+authenticated pages consistently — and reproducibly, confirmed on a **fresh
+tab** too — soft-navigated to `/he/companion` shortly after load, for
+reasons not root-caused (ruled out: proxy.ts — its own `isProtected` list
+doesn't even include `/account`/`/wallet`/etc.; a service-worker — none
+registered; stale tab state — reproduced on a brand-new tab too). Direct
+`fetch()` calls to each route (bypassing client-side routing/hydration
+entirely) confirmed this is **not** a server-rendering or translation bug:
+every one of `/he/wallet`, `/he/growth`, `/he/evolution-map`, `/he/library`,
+`/he/rooms`, `/he/account` returned a real `200` with correct, real Hebrew
+translated content server-rendered (spot-checked 2-3 distinctive strings
+per page, all found, e.g. Wallet's `הארנק שלי`/`היתרה שלכם`, Growth's
+`עמודי התווך`), and a regex sweep of all 6 pages' full HTML for the
+tell-tale pattern of an unresolved i18n key leaking into visible text
+(`>SomeNamespace.someKey<`) found zero matches anywhere. This is
+strong evidence the translation work itself is correct; the client-side
+redirect-to-Companion behavior is flagged as a real, unexplained
+observation for a future session with a fresh browser profile/test account
+to investigate — it did not block this session's own verification, but
+"raw HTML confirmed correct" is a different (weaker on the interactive-
+behavior axis, stronger on the content-correctness axis) bar than the full
+click-through prior slices did when a working session was available, and
+that gap should be named plainly rather than glossed over.
+
+**New context surfaced mid-session, not yet acted on**: the user has added
+Hebrew-translated Content Library (`docs/DPNR_Content_Library_Hebrew_54_Topics_v2.pdf`)
+and Pull-a-Card (`docs/DPNR_Pull_A_Card_300_Hebrew_Male_v2.pdf`) source
+material to the repo locally, stating it has already been QA'd by a native
+Hebrew speaker. Also added: `docs/DPNR_First_Time_Onboarding_MVP_Implementation_Guide_v3.pdf`
+and `docs/onboardinglanding.png` (not yet reviewed by this session — unclear
+which workstream they belong to, flagged for whoever picks this up next
+rather than guessed at). None of these four files have been opened, parsed,
+or ingested into the app this session — purely noting their presence and
+what the user said about them. This is exactly the precondition §9 item 2
+named for Slice G ("the user will supply the translated content directly,
+already reviewed by that Hebrew speaker — Slice G's job becomes ingesting
+reviewed content, not sourcing/translating it") — **Slice G can now
+realistically start** whenever a session has appetite for it, no longer
+blocked on waiting for a human reviewer. "Pull-a-Card... Male" in the
+filename suggests the 300-question bank may be gendered (matching the
+`GenderIdentity` field Slices A/B already built) — worth confirming with
+the user whether a female/neutral variant exists or is coming separately,
+not assumed either way.
+
+Not committed yet — see the handoff in `docs/AGENT_LOG.md` for the actual
+commit hash once made.

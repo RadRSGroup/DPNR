@@ -2,6 +2,300 @@
   "Common": {
     "appName": "InnerOS"
   },
+  "Account": {
+    "title": "חשבון",
+    "credits": {
+      "label": "קרדיטים",
+      "outOfCredits": "אין לכם קרדיטים",
+      "runningLow": "היתרה נמוכה",
+      "upgrade": "שדרוג",
+      "viewWallet": "צפייה בארנק"
+    },
+    "subscription": {
+      "label": "מנוי",
+      "freeBeta": "חינמי — בטא",
+      "comingSoon": "מסלולים בתשלום יגיעו בקרוב"
+    },
+    "preferences": {
+      "label": "העדפות",
+      "language": "שפה",
+      "gender": "מגדר",
+      "genderHint": "משמש רק כדי לפנות אליכם בצורה נכונה בעברית — אין לו השפעה באנגלית."
+    },
+    "security": {
+      "label": "אבטחה",
+      "currentPasswordPlaceholder": "סיסמה נוכחית",
+      "newPasswordPlaceholder": "סיסמה חדשה",
+      "confirmNewPasswordPlaceholder": "אימות סיסמה חדשה",
+      "errorPasswordRequirements": "יש לעמוד בכל דרישות הסיסמה ולוודא ששני השדות תואמים.",
+      "passwordChanged": "הסיסמה שונתה.",
+      "changing": "משנים…",
+      "changePassword": "שינוי סיסמה",
+      "errorGeneric": "לא ניתן היה לשנות את הסיסמה."
+    },
+    "legal": {
+      "label": "משפטי",
+      "terms": "תנאי שימוש",
+      "privacy": "מדיניות הפרטיות והנתונים"
+    },
+    "data": {
+      "label": "הנתונים שלכם",
+      "download": {
+        "title": "הורדת הנתונים שלי",
+        "description": "ייצוא כל ההחלטות, ההרהורים ונתוני החשבון שלכם כקובץ JSON.",
+        "preparing": "מכינים ייצוא…",
+        "button": "הורדת הנתונים שלי",
+        "error": "הייצוא נכשל. נסו שוב."
+      },
+      "delete": {
+        "title": "מחיקת החשבון שלי",
+        "description": "מוחק לצמיתות את החשבון שלכם ואת כל ההחלטות, ההרהורים והנתונים האישיים. לא ניתן לבטל פעולה זו.",
+        "warningTitle": "פעולה זו תמחק לצמיתות:",
+        "items": {
+          "decisions": "את כל ההחלטות וההרהורים שלכם",
+          "account": "את החשבון ופרטי ההתחברות שלכם",
+          "subscription": "את המנוי שלכם (מתבטל מיידית)"
+        },
+        "confirmPhrase": "מחיקת החשבון שלי",
+        "confirmPrompt": "הקלידו <phrase></phrase> כדי לאשר:",
+        "deleting": "מוחקים…",
+        "permanentlyDelete": "מחיקה לצמיתות",
+        "cancel": "ביטול",
+        "error": "המחיקה נכשלה. אנא צרו קשר עם התמיכה."
+      }
+    },
+    "genderSaveError": "לא ניתן היה לשמור — נסו שוב.",
+    "signOut": "התנתקות"
+  },
+  "Wallet": {
+    "title": "הארנק שלי",
+    "subtitle": "הקרדיטים, המסלולים וההטבות שלכם — הכול במקום אחד.",
+    "hero": {
+      "title": "מתנות קטנות. השפעה גדולה.",
+      "subtitle": "כל קרדיט הוא השקעה בצמיחה שלכם."
+    },
+    "balance": {
+      "label": "היתרה שלכם",
+      "creditsUnit": "קרדיטים",
+      "outOfCredits": "אין לכם קרדיטים",
+      "runningLow": "היתרה נמוכה",
+      "buyCredits": "רכישת קרדיטים"
+    },
+    "earn": {
+      "title": "הרוויחו עוד קרדיטים",
+      "subtitle": "הגדילו את הארנק שלכם על ידי פעולה והשקעה בעצמכם.",
+      "weeklyGoal": { "title": "יעד שבועי הושג", "description": "השלימו יעד שהצבתם לעצמכם." },
+      "reflection": { "title": "השלימו הרהור", "description": "סיימו תרגיל בחדר המראה." },
+      "creditsEarned": "{count, plural, one {+# קרדיט} other {+# קרדיטים}}"
+    },
+    "plans": {
+      "choosePlan": { "title": "בחרו את המסלול שלכם", "subtitle": "עוד קרדיטים. עוד תובנות. עוד אתם." },
+      "buyPackages": { "title": "רכישת חבילות קרדיטים", "subtitle": "חבילות קרדיטים חד-פעמיות. השתמשו בהן מתי שתרצו." },
+      "loading": "טוען…",
+      "subscriptionsComingSoon": "מסלולים יגיעו בקרוב — התמחור עדיין לא סופי.",
+      "packsComingSoon": "חבילות קרדיטים יגיעו בקרוב — התמחור עדיין לא סופי.",
+      "perMonth": "/ לחודש",
+      "creditsCount": "{count, plural, one {# קרדיט} other {# קרדיטים}}",
+      "comingSoonButton": "בקרוב",
+      "purchaseUnavailableTitle": "הרכישה עדיין לא זמינה — פרטי תשלום אמיתיים טרם הוגדרו."
+    },
+    "transactions": {
+      "title": "העסקאות האחרונות שלכם",
+      "subtitle": "היומן האמיתי מאחורי היתרה שלכם.",
+      "loading": "טוען…",
+      "empty": "אין עדיין עסקאות.",
+      "reasons": {
+        "betaTrialSignup": "בונוס ברוכים הבאים",
+        "roomRefine": "חידוד בחדר",
+        "companionMessage": "הודעת Companion",
+        "commitmentCompleted": "יעד שבועי הושג",
+        "reflectionCompleted": "השלמת הרהור"
+      }
+    }
+  },
+  "Growth": {
+    "title": "מעקב צמיחה",
+    "subtitle": "תמונת מצב של המסע שלכם בכל תחומי החיים.",
+    "breatheCheckIn": "נשימה וצ'ק-אין",
+    "hero": { "title": "אתם צומחים. אתם הופכים למי שאתם.", "subtitle": "זה המרחב שלכם לראות את עצמכם בבהירות, מתוך חמלה ואמת." },
+    "stats": {
+      "alignmentScore": "ציון ההתאמה",
+      "areasGrowing": "תחומים בצמיחה",
+      "patternsShifting": "דפוסים שמשתנים",
+      "insightsGained": "תובנות שהושגו"
+    },
+    "domains": { "title": "תחומי חיים", "subtitle": "ההתאמה שלכם בתחומי החיים המרכזיים" },
+    "alignmentOverTime": { "title": "ההתאמה לאורך זמן", "subtitle": "מגמת ההתאמה הכוללת שלכם" },
+    "archetypes": { "title": "הארכיטיפים שלכם", "subtitle": "האנרגיות שבאות לידי ביטוי אצלכם" },
+    "valuesNeeds": {
+      "title": "תמונת מצב של ערכים וצרכים",
+      "subtitle": "מה מניע אתכם וממה אתם זקוקים ליותר",
+      "topValues": "הערכים המובילים",
+      "topNeeds": "הצרכים המובילים",
+      "nothingYet": "עדיין אין נתונים"
+    },
+    "comingSoon": "בקרוב",
+    "corePillars": {
+      "title": "עמודי התווך",
+      "description": "נדרשים עוד נתוני שימוש אמיתיים לפני ש-DPNR יוכל לחשב ציון התאמה משמעותי לעמודי התווך. עדיין לא נבנה — זהו פער כן, לא באג."
+    },
+    "emotionalLandscape": {
+      "title": "הנוף הרגשי",
+      "description": "נדרש מודל אמיתי למעקב רגשות/סנטימנט, שעדיין לא קיים. עדיין לא נבנה — זהו פער כן, לא באג."
+    },
+    "recentDecisions": {
+      "title": "החלטות אחרונות",
+      "subtitle": "מתוך ההחלטות הקודמות שלכם",
+      "loading": "טוען…",
+      "empty": "אין עדיין החלטות.",
+      "startOne": "התחילו אחת"
+    },
+    "decisionStatus": { "active": "פעילה", "completed": "הושלמה", "archived": "בארכיון" },
+    "weeklyReflection": {
+      "title": "ההרהור השבועי שלכם",
+      "empty": "עדיין אין כלום השבוע — הכרטיס היומי הבא שלכם יופיע כאן."
+    }
+  },
+  "EvolutionMap": {
+    "title": "מפת ההתפתחות שלי",
+    "subtitle": "מפת הדרכים האישית שלכם לצמיחה, התאמה, ולחיים שאתם כאן כדי ליצור.",
+    "hero": { "title": "אתם קובעים את היעדים. אנחנו מנחים את הדרך.", "subtitle": "עקבו אחר ההתקדמות שלכם, חגגו הצלחות, והתפתחו בכוונה." },
+    "glance": {
+      "lifeDomains": "תחומי חיים",
+      "averageProgress": "התקדמות ממוצעת",
+      "activeGoals": "יעדים פעילים",
+      "milestonesAchieved": "אבני דרך שהושגו"
+    },
+    "lifeDomains": {
+      "title": "תחומי חיים",
+      "empty": "עדיין אין כאן כלום — השלימו סשן בחדר ההחלטות או בחדר המראה ואשרו כמה סיגנלים ב-InnerSelf כדי להתחיל לבנות את תמונת תחומי החיים שלכם.",
+      "subtitle": "חקרו וצמחו בכל תחום בחייכם"
+    },
+    "focusAreas": {
+      "title": "תחומי מיקוד — {domain}",
+      "subtitle": "מה ש-DPNR אישר איתכם כאן",
+      "empty": "עדיין לא אושר כלום בתחום הזה."
+    },
+    "shapeOfWork": {
+      "title": "הצורה של העבודה הזו",
+      "subtitle": "מסגרת כללית לסוג הזה של עבודת צמיחה — לא מעקב מדויק של היכן בדיוק אתם נמצאים."
+    },
+    "stages": {
+      "awareness": { "label": "מודעות", "copy": "הבינו את הדפוסים שלכם והיכן אתם נמצאים היום." },
+      "healing": { "label": "ריפוי", "copy": "שחררו את מה שעצר אתכם עד כה." },
+      "practice": { "label": "תרגול", "copy": "בנו הרגלים חדשים ודרכים חדשות להתייחס." },
+      "integration": { "label": "אינטגרציה", "copy": "חיו את הערכים שלכם כדרך הטבעית שלכם להיות." }
+    },
+    "goals": {
+      "title": "יעדים וחלומות",
+      "addGoal": "הוספת יעד",
+      "subtitle": "מה שאתם באמת רוצים ליצור",
+      "placeholder": "מה אתם רוצים ליצור?",
+      "noDomain": "ללא תחום",
+      "leaveBlankOngoing": "השאירו ריק עבור מתמשך",
+      "saving": "שומרים…",
+      "saveGoal": "שמירת יעד",
+      "cancel": "ביטול",
+      "loading": "טוען…",
+      "empty": "אין עדיין יעדים כאן.",
+      "target": "יעד: {date}",
+      "ongoing": "מתמשך",
+      "marking": "מסמנים…",
+      "markComplete": "סימון כהושלם"
+    }
+  },
+  "Library": {
+    "title": "תוכן ולמידה",
+    "subtitle": "נבחר בקפידה עבור המסע שלכם. למדו, הרהרו וצמחו בקצב שלכם.",
+    "searchPlaceholder": "חיפוש נושאים...",
+    "loading": "טוען…",
+    "empty": "אין עדיין כלום בספרייה.",
+    "featuredToday": "מומלץ היום",
+    "noResults": "אין נושאים התואמים ל־\"{query}\".",
+    "forYou": "בשבילכם",
+    "startHere": "התחילו כאן",
+    "exploreByTheme": "חקרו לפי נושא",
+    "shelves": {
+      "knowYourself": "הכירו את עצמכם",
+      "patternsWorthNoticing": "דפוסים ששווה לשים לב אליהם",
+      "relationships": "מערכות יחסים",
+      "emotionalWorld": "העולם הרגשי",
+      "workMoney": "עבודה וכסף",
+      "bodyEnergy": "גוף ואנרגיה",
+      "meaningLife": "משמעות וחיים"
+    },
+    "themes": {
+      "ME": "זהות ועצמי",
+      "FEEL": "רגשות וויסות",
+      "PATTERNS": "דפוסים ומעגלים",
+      "NEED": "צרכים וערכים",
+      "RELATE": "התקשרות וקרבה",
+      "REPAIR": "תיקון וחמלה עצמית",
+      "BODY": "גוף ומערכת עצבים",
+      "CHOOSE": "החלטות וכיוון",
+      "CREATE": "עבודה, כסף ויצירה",
+      "LIFE": "משמעות וחיים"
+    },
+    "topic": {
+      "loadError": "לא הצלחנו לטעון את הנושא הזה.",
+      "forYou": "בשבילכם",
+      "recognize": "זיהוי — איך זה יכול להתבטא",
+      "possibleRootsTitle": "שורשים אפשריים — מה עשוי להיות מתחת לפני השטח",
+      "possibleRootsHint": "אפשרויות לשקול, לא אבחנה — אולי רק אחת מתאימה, או אף אחת.",
+      "personalReflection": "הרהור אישי",
+      "workWithIt": "עבודה עם זה",
+      "relatedTopics": "נושאים קשורים",
+      "tapToOpen": "הקישו לפתיחה ←",
+      "rooms": {
+        "mirror": "חקרו בחדר המראה",
+        "decision": "חקרו בחדר ההחלטות",
+        "companion": "שוחחו על זה בצ'אט הראשי"
+      }
+    }
+  },
+  "Rooms": {
+    "title": "חדרי עבודה",
+    "innerOS": "InnerOS",
+    "accountSettingsTitle": "הגדרות חשבון",
+    "subtitle": "סשנים מונחים לחשוב על משהו, בקול, עם מבנה.",
+    "decision": { "title": "התחילו החלטה", "subtitle": "כ-25 דקות · 7 שלבים מונחים" },
+    "mirror": { "title": "התחילו סשן בחדר המראה", "subtitle": "כ-12 דקות · 6 שלבים מונחים" }
+  },
+  "Dashboard": {
+    "greeting": "בוקר טוב{name}",
+    "subtitle": "המסע שלכם. המודעות שלכם. ההתפתחות שלכם.",
+    "checkIn": "צ'ק-אין",
+    "justCompleted": "מיפוי ההחלטה הושלם. ההרהור שלכם נשמר.",
+    "innerSelf": {
+      "title": "האני הפנימי שלי",
+      "subtitle": "התאום הדיגיטלי שלכם",
+      "pictureForming": "התמונה מתגבשת…",
+      "stillLearning": "עדיין לומדים את החלק הזה בכם",
+      "alignmentScore": "ציון ההתאמה",
+      "phaseOf": "אתם נמצאים בשלב של"
+    },
+    "roadmap": {
+      "label": "מפת דרכים: {state}",
+      "states": { "active": "פעילה", "evolving": "מתפתחת", "paused": "מושהית", "archived": "בארכיון" },
+      "pause": "השהיה",
+      "resume": "המשך",
+      "archive": "העברה לארכיון"
+    },
+    "lifeDomains": { "title": "תחומי חיים", "subtitle": "מה חקרתם לאחרונה" },
+    "proposal": { "title": "שינוי ששווה לתת לו שם?", "updateRoadmap": "עדכון מפת הדרכים שלי", "notNow": "לא עכשיו" },
+    "credits": { "label": "קרדיטים", "runningLowUpgrade": "היתרה נמוכה · שדרוג" },
+    "patterns": { "title": "מסלול הדפוסים", "subtitle": "מה ש-DPNR הבחין בו, לפי רמת ביטחון" },
+    "archetypes": { "title": "הארכיטיפים המובילים", "subtitle": "האנרגיות שבאות לידי ביטוי אצלכם" },
+    "evolution": { "title": "ההתפתחות שלי", "lastDays": "{count, plural, one {היום האחרון} other {# הימים האחרונים}}" },
+    "explore": {
+      "library": { "title": "ספרייה", "subtitle": "קראו משהו" },
+      "growth": { "title": "מעקב צמיחה", "subtitle": "מה משתנה" },
+      "workRooms": { "title": "חדרי עבודה", "subtitle": "החלטה · מראה" }
+    },
+    "suggestedNextStep": "הצעד הבא המומלץ",
+    "cueLabels": { "continuation": "בהמשך ל...", "commitment": "התחייבות קרובה", "worthExploring": "שווה לבדוק" },
+    "roomLink": { "decision": "חדר ההחלטות", "mirror": "חדר המראה", "library": "תוכן ולמידה" }
+  },
   "Metadata": {
     "title": "InnerOS — DPNR",
     "description": "מערכת ההפעלה האנושית האישית שלך — להרהר, להחליט ולצמוח עם DPNR."

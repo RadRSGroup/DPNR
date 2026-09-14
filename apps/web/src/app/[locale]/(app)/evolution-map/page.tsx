@@ -2,6 +2,7 @@
 import Image from 'next/image'
 import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useRouter } from '@/i18n/navigation'
+import { useTranslations } from 'next-intl'
 import { Infinity as InfinityIcon, Eye, HeartHandshake, Repeat, Plus, Target } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getDashboard, getTwin, getCommitments, createCommitment, completeCommitment } from '@/lib/api/v1-client'
@@ -36,14 +37,17 @@ import { DOMAIN_META } from '@/components/shared/domain-meta'
  * it rather than fused into fake per-stage checkmarks.
  */
 
+// label/copy are keys into EvolutionMap.stages, resolved via t() at render
+// time — module scope has no hook access.
 const STAGES = [
-  { label: 'Awareness', icon: Eye, copy: 'Understand your patterns and where you are today.' },
-  { label: 'Healing', icon: HeartHandshake, copy: 'Release what has been holding you back.' },
-  { label: 'Practice', icon: Repeat, copy: 'Build new habits and ways of relating.' },
-  { label: 'Integration', icon: InfinityIcon, copy: 'Live your values as your natural way of being.' },
+  { id: 'awareness', icon: Eye },
+  { id: 'healing', icon: HeartHandshake },
+  { id: 'practice', icon: Repeat },
+  { id: 'integration', icon: InfinityIcon },
 ]
 
 function EvolutionMapContent() {
+  const t = useTranslations('EvolutionMap')
   const router = useRouter()
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null)
   const [twin, setTwin] = useState<TwinListResponse | null>(null)
@@ -152,10 +156,10 @@ function EvolutionMapContent() {
       <div className="max-w-[393px] lg:max-w-none mx-auto px-5 lg:px-8 pb-10 lg:pb-12">
         <div className="pt-14 lg:pt-8 pb-6">
           <h1 className="font-display text-2xl lg:text-3xl text-white">
-            My Evolution Map
+            {t('title')}
           </h1>
           <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-            Your personal roadmap to growth, alignment, and the life you&apos;re here to create.
+            {t('subtitle')}
           </p>
         </div>
 
@@ -170,8 +174,8 @@ function EvolutionMapContent() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-base)] via-transparent to-transparent" />
             <div className="absolute inset-0 flex flex-col items-start justify-end p-5 lg:p-8">
-              <h2 className="font-display text-xl lg:text-2xl text-white">You set the goals. We guide the way.</h2>
-              <p className="text-white/60 text-sm mt-1 max-w-sm">Track your progress, celebrate wins, and evolve intentionally.</p>
+              <h2 className="font-display text-xl lg:text-2xl text-white">{t('hero.title')}</h2>
+              <p className="text-white/60 text-sm mt-1 max-w-sm">{t('hero.subtitle')}</p>
             </div>
           </div>
         </Card>
@@ -181,26 +185,25 @@ function EvolutionMapContent() {
           <div className="lg:col-span-2 space-y-4 lg:space-y-6">
             {/* Your Map at a Glance */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatTile label="Life Domains" value={loading ? '…' : String(lifeDomainsCount)} />
-              <StatTile label="Average Progress" value={loading ? '…' : `${averageProgress}%`} />
-              <StatTile label="Active Goals" value={loading ? '…' : String(activeGoalsCount)} />
-              <StatTile label="Milestones Achieved" value={loading ? '…' : String(milestonesAchievedCount)} />
+              <StatTile label={t('glance.lifeDomains')} value={loading ? '…' : String(lifeDomainsCount)} />
+              <StatTile label={t('glance.averageProgress')} value={loading ? '…' : `${averageProgress}%`} />
+              <StatTile label={t('glance.activeGoals')} value={loading ? '…' : String(activeGoalsCount)} />
+              <StatTile label={t('glance.milestonesAchieved')} value={loading ? '…' : String(milestonesAchievedCount)} />
             </div>
 
             {!loading && !hasDomains && (
               <Card>
-                <p className="text-sm text-white mb-2">Life Domains</p>
+                <p className="text-sm text-white mb-2">{t('lifeDomains.title')}</p>
                 <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed">
-                  Nothing here yet — complete a Decision Room or Mirror Room session and confirm a few
-                  signals in InnerSelf to start building your Life Domains picture.
+                  {t('lifeDomains.empty')}
                 </p>
               </Card>
             )}
 
             {hasDomains && (
               <Card>
-                <p className="text-sm text-white mb-1">Life Domains</p>
-                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">Explore and grow in every area of your life</p>
+                <p className="text-sm text-white mb-1">{t('lifeDomains.title')}</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">{t('lifeDomains.subtitle')}</p>
                 <div className="space-y-2">
                   {dashboard!.lifeDomains.map((d) => {
                     const meta = DOMAIN_META[d.domain]
@@ -210,7 +213,7 @@ function EvolutionMapContent() {
                       <button
                         key={d.domain}
                         onClick={() => setSelectedDomain(d.domain)}
-                        className={`w-full flex items-center gap-3 rounded-xl px-2 py-2 text-left transition-colors ${
+                        className={`w-full flex items-center gap-3 rounded-xl px-2 py-2 text-start transition-colors ${
                           selected ? 'bg-white/10 border border-[var(--color-violet-500)]/50' : 'border border-transparent hover:bg-white/5'
                         }`}
                       >
@@ -228,10 +231,10 @@ function EvolutionMapContent() {
 
             {hasDomains && selectedDomain && (
               <Card>
-                <p className="text-sm text-white mb-1">Focus Areas — {LIFE_DOMAIN_LABELS[selectedDomain]}</p>
-                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">What DPNR has confirmed with you here</p>
+                <p className="text-sm text-white mb-1">{t('focusAreas.title', { domain: LIFE_DOMAIN_LABELS[selectedDomain] })}</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">{t('focusAreas.subtitle')}</p>
                 {focusAreas.length === 0 ? (
-                  <p className="text-xs text-[var(--color-text-tertiary)]">Nothing confirmed in this domain yet.</p>
+                  <p className="text-xs text-[var(--color-text-tertiary)]">{t('focusAreas.empty')}</p>
                 ) : (
                   <ul className="space-y-2">
                     {focusAreas.map((s) => (
@@ -248,18 +251,18 @@ function EvolutionMapContent() {
             {/* A fixed conceptual band, not a per-user progress tracker — see
                 this file's own doc comment above. */}
             <Card>
-              <p className="text-sm text-white mb-1">The Shape of This Work</p>
+              <p className="text-sm text-white mb-1">{t('shapeOfWork.title')}</p>
               <p className="text-xs text-[var(--color-text-tertiary)] mb-4">
-                A general framework for this kind of growth work — not a tracker of exactly where you are.
+                {t('shapeOfWork.subtitle')}
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {STAGES.map((stage) => (
-                  <div key={stage.label} className="text-center">
+                  <div key={stage.id} className="text-center">
                     <div className="w-9 h-9 mx-auto rounded-full border border-white/15 flex items-center justify-center mb-2">
                       <stage.icon className="w-4 h-4 text-white/50" />
                     </div>
-                    <p className="text-white text-xs font-medium">{stage.label}</p>
-                    <p className="text-[var(--color-text-tertiary)] text-[10px] mt-0.5 leading-snug hidden sm:block">{stage.copy}</p>
+                    <p className="text-white text-xs font-medium">{t(`stages.${stage.id}.label`)}</p>
+                    <p className="text-[var(--color-text-tertiary)] text-[10px] mt-0.5 leading-snug hidden sm:block">{t(`stages.${stage.id}.copy`)}</p>
                   </div>
                 ))}
               </div>
@@ -273,23 +276,23 @@ function EvolutionMapContent() {
             <Card>
               <div className="flex items-center justify-between mb-1">
                 <p className="text-sm text-white">
-                  Goals &amp; Dreams{selectedDomain ? ` — ${LIFE_DOMAIN_LABELS[selectedDomain]}` : ''}
+                  {t('goals.title')}{selectedDomain ? ` — ${LIFE_DOMAIN_LABELS[selectedDomain]}` : ''}
                 </p>
                 <button
                   onClick={openAddGoal}
                   className="inline-flex items-center gap-1 text-xs text-[var(--color-violet-300)] hover:text-[var(--color-violet-200)]"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Add Goal
+                  <Plus className="w-3.5 h-3.5" /> {t('goals.addGoal')}
                 </button>
               </div>
-              <p className="text-xs text-[var(--color-text-tertiary)] mb-4">What you truly want to create</p>
+              <p className="text-xs text-[var(--color-text-tertiary)] mb-4">{t('goals.subtitle')}</p>
 
               {showAddGoal && (
                 <form onSubmit={submitGoal} className="mb-4 space-y-2 rounded-xl bg-white/5 border border-[var(--color-border-glass)] p-3">
                   <textarea
                     value={goalDescription}
                     onChange={(e) => setGoalDescription(e.target.value)}
-                    placeholder="What do you want to create?"
+                    placeholder={t('goals.placeholder')}
                     required
                     rows={2}
                     className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-2 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60"
@@ -300,7 +303,7 @@ function EvolutionMapContent() {
                       onChange={(e) => setGoalDomain(e.target.value as LifeDomainCategory | '')}
                       className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white/80 focus:outline-none focus:border-[var(--color-violet-500)]/60"
                     >
-                      <option value="">No domain</option>
+                      <option value="">{t('goals.noDomain')}</option>
                       {Object.entries(LIFE_DOMAIN_LABELS).map(([value, label]) => (
                         <option key={value} value={value}>{label}</option>
                       ))}
@@ -309,7 +312,7 @@ function EvolutionMapContent() {
                       type="date"
                       value={goalReviewDate}
                       onChange={(e) => setGoalReviewDate(e.target.value)}
-                      title="Leave blank for Ongoing"
+                      title={t('goals.leaveBlankOngoing')}
                       className="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white/80 focus:outline-none focus:border-[var(--color-violet-500)]/60"
                     />
                   </div>
@@ -319,23 +322,23 @@ function EvolutionMapContent() {
                       disabled={savingGoal || !goalDescription.trim()}
                       className="flex-1 rounded-lg px-3 py-1.5 text-xs font-medium bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] text-white transition-colors disabled:opacity-50"
                     >
-                      {savingGoal ? 'Saving…' : 'Save goal'}
+                      {savingGoal ? t('goals.saving') : t('goals.saveGoal')}
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowAddGoal(false)}
                       className="rounded-lg px-3 py-1.5 text-xs text-white/50 hover:text-white/80 transition-colors"
                     >
-                      Cancel
+                      {t('goals.cancel')}
                     </button>
                   </div>
                 </form>
               )}
 
               {loading ? (
-                <p className="text-xs text-[var(--color-text-tertiary)]">Loading…</p>
+                <p className="text-xs text-[var(--color-text-tertiary)]">{t('goals.loading')}</p>
               ) : openGoals.length === 0 ? (
-                <p className="text-xs text-[var(--color-text-tertiary)]">No goals here yet.</p>
+                <p className="text-xs text-[var(--color-text-tertiary)]">{t('goals.empty')}</p>
               ) : (
                 <div className="space-y-2">
                   {openGoals.map((g) => (
@@ -343,15 +346,15 @@ function EvolutionMapContent() {
                       <p className="text-sm text-white/80">{g.description}</p>
                       <div className="flex items-center justify-between mt-1">
                         <p className="text-xs text-[var(--color-text-tertiary)]">
-                          Target: {g.reviewDate ?? 'Ongoing'}
+                          {t('goals.target', { date: g.reviewDate ?? t('goals.ongoing') })}
                           {!selectedDomain && g.lifeDomain && ` · ${LIFE_DOMAIN_LABELS[g.lifeDomain]}`}
                         </p>
                         <button
                           onClick={() => markGoalComplete(g.commitmentId)}
                           disabled={completingId === g.commitmentId}
-                          className="text-xs text-[var(--color-violet-300)] hover:text-[var(--color-violet-200)] disabled:opacity-40 shrink-0 ml-2"
+                          className="text-xs text-[var(--color-violet-300)] hover:text-[var(--color-violet-200)] disabled:opacity-40 shrink-0 ms-2"
                         >
-                          {completingId === g.commitmentId ? 'Marking…' : 'Mark complete'}
+                          {completingId === g.commitmentId ? t('goals.marking') : t('goals.markComplete')}
                         </button>
                       </div>
                     </div>

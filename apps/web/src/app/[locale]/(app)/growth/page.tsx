@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { Link } from '@/i18n/navigation'
 import { useRouter } from '@/i18n/navigation'
 import { TrendingUp, Wind, Layers, Waves } from 'lucide-react'
-import { useLocale } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getDashboard, getDecisionsList, getCompanionContext, getGrowthValuesNeeds } from '@/lib/api/v1-client'
 import type { DashboardResponse, DecisionsListResponse, CompanionContextResponse, GrowthValuesNeedsResponse } from '@dpnr/shared-types'
@@ -48,6 +48,7 @@ import { timeAgo } from '@/lib/format'
  */
 
 function GrowthTrackerContent() {
+  const t = useTranslations('Growth')
   const locale = useLocale()
   const router = useRouter()
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null)
@@ -90,15 +91,15 @@ function GrowthTrackerContent() {
         <div className="pt-14 lg:pt-8 pb-6 flex items-center justify-between">
           <div>
             <h1 className="font-display text-2xl lg:text-3xl text-white flex items-center gap-2">
-              Growth Tracker <TrendingUp className="w-5 h-5 text-[var(--color-violet-400)]" />
+              {t('title')} <TrendingUp className="w-5 h-5 text-[var(--color-violet-400)]" />
             </h1>
-            <p className="text-sm text-[var(--color-text-secondary)] mt-1">A snapshot of your journey across all areas of life.</p>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('subtitle')}</p>
           </div>
           <Link
             href="/mirror/new"
             className="liquid-glass hidden lg:inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-white/80"
           >
-            <Wind className="w-4 h-4 text-[var(--color-amber-400)]" /> Breathe &amp; Check In
+            <Wind className="w-4 h-4 text-[var(--color-amber-400)]" /> {t('breatheCheckIn')}
           </Link>
         </div>
 
@@ -113,8 +114,8 @@ function GrowthTrackerContent() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-base)] via-transparent to-transparent" />
             <div className="absolute inset-0 flex flex-col items-start justify-end p-5 lg:p-8">
-              <h2 className="font-display text-xl lg:text-2xl text-white">You&apos;re growing. You&apos;re becoming.</h2>
-              <p className="text-white/60 text-sm mt-1 max-w-sm">This is your space to see yourself clearly, with compassion and truth.</p>
+              <h2 className="font-display text-xl lg:text-2xl text-white">{t('hero.title')}</h2>
+              <p className="text-white/60 text-sm mt-1 max-w-sm">{t('hero.subtitle')}</p>
             </div>
           </div>
         </Card>
@@ -124,10 +125,10 @@ function GrowthTrackerContent() {
           <div className="lg:col-span-2 space-y-4 lg:space-y-6">
             {/* Alignment Score + this slice's real monthly counts. */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatTile label="Alignment Score" value={loading ? '…' : dashboard?.alignmentScore != null ? `${dashboard.alignmentScore}%` : '—'} />
-              <StatTile label="Areas Growing" value={loading ? '…' : String(dashboard?.areasGrowing ?? 0)} />
-              <StatTile label="Patterns Shifting" value={loading ? '…' : String(dashboard?.patternsShifting ?? 0)} />
-              <StatTile label="Insights Gained" value={loading ? '…' : String(dashboard?.insightsGained ?? 0)} />
+              <StatTile label={t('stats.alignmentScore')} value={loading ? '…' : dashboard?.alignmentScore != null ? `${dashboard.alignmentScore}%` : '—'} />
+              <StatTile label={t('stats.areasGrowing')} value={loading ? '…' : String(dashboard?.areasGrowing ?? 0)} />
+              <StatTile label={t('stats.patternsShifting')} value={loading ? '…' : String(dashboard?.patternsShifting ?? 0)} />
+              <StatTile label={t('stats.insightsGained')} value={loading ? '…' : String(dashboard?.insightsGained ?? 0)} />
             </div>
 
             {/* Domains of Life — same real aggregate Dashboard's "Life
@@ -136,8 +137,8 @@ function GrowthTrackerContent() {
                 actually explored appear — never padded to a fixed 7. */}
             {!loading && (dashboard?.lifeDomains?.length ?? 0) > 0 && (
               <Card>
-                <p className="text-sm text-white mb-1">Domains of Life</p>
-                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">Your alignment across key life areas</p>
+                <p className="text-sm text-white mb-1">{t('domains.title')}</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">{t('domains.subtitle')}</p>
                 {/* A single-column list, not a multi-column grid: a grid's
                     column count is keyed to viewport width, but this card's
                     own rendered width is a fraction of the viewport (it
@@ -174,8 +175,8 @@ function GrowthTrackerContent() {
                 honesty gate — a single point can't show a trend. */}
             {!loading && (dashboard?.alignmentHistory?.length ?? 0) >= 2 && (
               <Card>
-                <p className="text-sm text-white mb-1">Alignment Over Time</p>
-                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">Your overall alignment trend</p>
+                <p className="text-sm text-white mb-1">{t('alignmentOverTime.title')}</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">{t('alignmentOverTime.subtitle')}</p>
                 <AlignmentHistoryChart points={dashboard!.alignmentHistory} />
               </Card>
             )}
@@ -193,8 +194,8 @@ function GrowthTrackerContent() {
                 has no real asset behind it. */}
             {!loading && (dashboard?.archetypes?.length ?? 0) > 0 && (
               <Card>
-                <p className="text-sm text-white mb-1">Your Archetypes</p>
-                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">The energies that show up for you</p>
+                <p className="text-sm text-white mb-1">{t('archetypes.title')}</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">{t('archetypes.subtitle')}</p>
                 <div className="grid grid-cols-2 gap-3">
                   {dashboard!.archetypes.map((a) => (
                     <ArchetypeBadge key={a.archetype} archetype={a.archetype} percent={a.percent} />
@@ -209,13 +210,13 @@ function GrowthTrackerContent() {
                 Decision Room's VALUES_NEEDS step in any decision yet. */}
             {!loading && ((valuesNeeds?.topValues.length ?? 0) > 0 || (valuesNeeds?.topNeeds.length ?? 0) > 0) && (
               <Card>
-                <p className="text-sm text-white mb-1">Values &amp; Needs Snapshot</p>
-                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">What drives you and what you need more of</p>
+                <p className="text-sm text-white mb-1">{t('valuesNeeds.title')}</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">{t('valuesNeeds.subtitle')}</p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-[11px] text-[var(--color-text-tertiary)] uppercase tracking-wide mb-2">Top Values</p>
+                    <p className="text-[11px] text-[var(--color-text-tertiary)] uppercase tracking-wide mb-2">{t('valuesNeeds.topValues')}</p>
                     {valuesNeeds!.topValues.length === 0 ? (
-                      <p className="text-xs text-[var(--color-text-tertiary)]">Nothing yet</p>
+                      <p className="text-xs text-[var(--color-text-tertiary)]">{t('valuesNeeds.nothingYet')}</p>
                     ) : (
                       <div className="flex flex-wrap gap-1.5">
                         {valuesNeeds!.topValues.map((v) => (
@@ -227,9 +228,9 @@ function GrowthTrackerContent() {
                     )}
                   </div>
                   <div>
-                    <p className="text-[11px] text-[var(--color-text-tertiary)] uppercase tracking-wide mb-2">Top Needs</p>
+                    <p className="text-[11px] text-[var(--color-text-tertiary)] uppercase tracking-wide mb-2">{t('valuesNeeds.topNeeds')}</p>
                     {valuesNeeds!.topNeeds.length === 0 ? (
-                      <p className="text-xs text-[var(--color-text-tertiary)]">Nothing yet</p>
+                      <p className="text-xs text-[var(--color-text-tertiary)]">{t('valuesNeeds.nothingYet')}</p>
                     ) : (
                       <div className="flex flex-wrap gap-1.5">
                         {valuesNeeds!.topNeeds.map((n) => (
@@ -257,35 +258,33 @@ function GrowthTrackerContent() {
                 not just in the paragraph text. */}
             <div className="grid sm:grid-cols-2 gap-4 lg:gap-6">
               <Card className="relative overflow-hidden opacity-80">
-                <Layers className="absolute -right-4 -bottom-4 w-28 h-28 text-white/[0.04] pointer-events-none" />
+                <Layers className="absolute -end-4 -bottom-4 w-28 h-28 text-white/[0.04] pointer-events-none" />
                 <div className="relative flex items-center justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2">
                     <Layers className="w-4 h-4 text-[var(--color-text-tertiary)]" />
-                    <p className="text-sm text-white">Core Pillars</p>
+                    <p className="text-sm text-white">{t('corePillars.title')}</p>
                   </div>
                   <span className="text-[10px] uppercase tracking-wide text-[var(--color-text-tertiary)] border border-[var(--color-border-glass)] rounded-full px-2 py-0.5 shrink-0">
-                    Coming soon
+                    {t('comingSoon')}
                   </span>
                 </div>
                 <p className="relative text-xs text-[var(--color-text-tertiary)] leading-relaxed">
-                  Needs more real usage data before DPNR can compute a meaningful pillar-alignment
-                  score. Not built yet — this is an honest gap, not a bug.
+                  {t('corePillars.description')}
                 </p>
               </Card>
               <Card className="relative overflow-hidden opacity-80">
-                <Waves className="absolute -right-4 -bottom-4 w-28 h-28 text-white/[0.04] pointer-events-none" />
+                <Waves className="absolute -end-4 -bottom-4 w-28 h-28 text-white/[0.04] pointer-events-none" />
                 <div className="relative flex items-center justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2">
                     <Waves className="w-4 h-4 text-[var(--color-text-tertiary)]" />
-                    <p className="text-sm text-white">Emotional Landscape</p>
+                    <p className="text-sm text-white">{t('emotionalLandscape.title')}</p>
                   </div>
                   <span className="text-[10px] uppercase tracking-wide text-[var(--color-text-tertiary)] border border-[var(--color-border-glass)] rounded-full px-2 py-0.5 shrink-0">
-                    Coming soon
+                    {t('comingSoon')}
                   </span>
                 </div>
                 <p className="relative text-xs text-[var(--color-text-tertiary)] leading-relaxed">
-                  Needs a real emotion/sentiment-tracking model behind it, which doesn&apos;t exist
-                  yet. Not built yet — this is an honest gap, not a bug.
+                  {t('emotionalLandscape.description')}
                 </p>
               </Card>
             </div>
@@ -294,15 +293,15 @@ function GrowthTrackerContent() {
           {/* Side column */}
           <div className="space-y-4 lg:space-y-6 mt-4 lg:mt-0">
             <Card>
-              <p className="text-sm text-white mb-1">Recent Decisions</p>
-              <p className="text-xs text-[var(--color-text-tertiary)] mb-4">From your past decisions</p>
+              <p className="text-sm text-white mb-1">{t('recentDecisions.title')}</p>
+              <p className="text-xs text-[var(--color-text-tertiary)] mb-4">{t('recentDecisions.subtitle')}</p>
               {loading ? (
-                <p className="text-xs text-[var(--color-text-tertiary)]">Loading…</p>
+                <p className="text-xs text-[var(--color-text-tertiary)]">{t('recentDecisions.loading')}</p>
               ) : recentDecisions.length === 0 ? (
                 <p className="text-xs text-[var(--color-text-tertiary)]">
-                  No decisions yet.{' '}
+                  {t('recentDecisions.empty')}{' '}
                   <Link href="/decision/new" className="text-[var(--color-violet-300)] hover:underline">
-                    Start one
+                    {t('recentDecisions.startOne')}
                   </Link>
                   .
                 </p>
@@ -318,7 +317,7 @@ function GrowthTrackerContent() {
                         <p className="text-sm text-white/80 line-clamp-1">{d.title}</p>
                         <p className="text-xs text-[var(--color-text-tertiary)]">{timeAgo(d.createdAt, locale)}</p>
                       </div>
-                      <span className="text-xs text-[var(--color-text-tertiary)] capitalize shrink-0">{d.status}</span>
+                      <span className="text-xs text-[var(--color-text-tertiary)] shrink-0">{t(`decisionStatus.${d.status}`)}</span>
                     </Link>
                   ))}
                 </div>
@@ -326,13 +325,13 @@ function GrowthTrackerContent() {
             </Card>
 
             {!loading && dailyCard ? (
-              <DailyGuidanceCard dailyCard={dailyCard} title="This Week's Reflection" showImage={false} />
+              <DailyGuidanceCard dailyCard={dailyCard} title={t('weeklyReflection.title')} showImage={false} />
             ) : (
               !loading && (
                 <Card>
-                  <p className="text-sm text-white mb-2">This Week&apos;s Reflection</p>
+                  <p className="text-sm text-white mb-2">{t('weeklyReflection.title')}</p>
                   <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed">
-                    Nothing yet this week — your next Daily Card will show up here.
+                    {t('weeklyReflection.empty')}
                   </p>
                 </Card>
               )

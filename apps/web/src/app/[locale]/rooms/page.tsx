@@ -2,6 +2,7 @@
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { Link } from '@/i18n/navigation'
+import { useTranslations } from 'next-intl'
 import { getCurrentSession } from '@/lib/cognito/client'
 
 /**
@@ -14,24 +15,25 @@ import { getCurrentSession } from '@/lib/cognito/client'
  * specifically, not the product's top-level branding.
  */
 
+// titleKey/subtitleKey index Rooms.decision/Rooms.mirror, resolved via t()
+// at render time — module scope has no hook access.
 const ROOMS = [
   {
     href: '/decision/new',
-    title: 'Start a Decision',
-    subtitle: '~25 minutes · 7 guided steps',
+    key: 'decision',
     style: 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/30',
     subtitleClass: 'text-purple-200/60',
   },
   {
     href: '/mirror/new',
-    title: 'Start a Mirror Room session',
-    subtitle: '~12 minutes · 6 guided steps',
+    key: 'mirror',
     style: 'bg-white/5 border border-white/10 hover:border-white/20 text-white',
     subtitleClass: 'text-[var(--color-text-tertiary)]',
   },
-]
+] as const
 
 export default function RoomsPage() {
+  const t = useTranslations('Rooms')
   const [userInitial, setUserInitial] = useState('?')
 
   useEffect(() => {
@@ -53,16 +55,16 @@ export default function RoomsPage() {
       <div className="pt-14 pb-6 flex items-center justify-between">
         <div>
           <p className="text-purple-400 text-xs tracking-widest uppercase">DPNR</p>
-          <h1 className="text-white text-xl font-light">Workshop Rooms</h1>
+          <h1 className="text-white text-xl font-light">{t('title')}</h1>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/dashboard" className="text-purple-400 hover:text-purple-300 text-xs underline">
-            InnerOS
+            {t('innerOS')}
           </Link>
           <Link
             href="/account"
             className="w-9 h-9 rounded-full bg-purple-600/30 border border-purple-700/40 flex items-center justify-center text-purple-300 text-sm hover:bg-purple-600/50 transition-colors"
-            title="Account settings"
+            title={t('accountSettingsTitle')}
           >
             {userInitial}
           </Link>
@@ -70,7 +72,7 @@ export default function RoomsPage() {
       </div>
 
       <p className="text-[var(--color-text-tertiary)] text-sm leading-relaxed mb-6">
-        Guided sessions to think something through, out loud, with structure.
+        {t('subtitle')}
       </p>
 
       <div className="space-y-3">
@@ -81,8 +83,8 @@ export default function RoomsPage() {
             className={`flex items-center justify-between w-full rounded-2xl px-5 py-4 active:scale-[0.98] transition-all ${room.style}`}
           >
             <div>
-              <p className="font-medium text-base">{room.title}</p>
-              <p className={`text-xs mt-0.5 ${room.subtitleClass}`}>{room.subtitle}</p>
+              <p className="font-medium text-base">{t(`${room.key}.title`)}</p>
+              <p className={`text-xs mt-0.5 ${room.subtitleClass}`}>{t(`${room.key}.subtitle`)}</p>
             </div>
             <span className="text-2xl">+</span>
           </Link>

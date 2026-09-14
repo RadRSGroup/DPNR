@@ -5,16 +5,19 @@ import { Link } from '@/i18n/navigation'
 import { useRouter } from '@/i18n/navigation'
 import { useParams } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getLibraryTopic } from '@/lib/api/v1-client'
 import type { LibraryTopicDetailResponse } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 import { THEME_META } from '@/lib/library/theme-meta'
 
-const ROOM_LABEL: Record<'mirror' | 'decision' | 'companion', string> = {
-  mirror: 'Explore in Mirror Room',
-  decision: 'Explore in Decision Room',
-  companion: 'Talk it through in Main Chat',
+// Values are keys into Library.topic.rooms, resolved via t() at render
+// time — module scope has no hook access.
+const ROOM_LABEL_KEY: Record<'mirror' | 'decision' | 'companion', string> = {
+  mirror: 'mirror',
+  decision: 'decision',
+  companion: 'companion',
 }
 
 /**
@@ -27,6 +30,7 @@ const ROOM_LABEL: Record<'mirror' | 'decision' | 'companion', string> = {
  * simply omits that section rather than fabricating or hiding it.
  */
 export default function LibraryTopicPage() {
+  const t = useTranslations('Library')
   const router = useRouter()
   const params = useParams<{ slug: string }>()
   const [topic, setTopic] = useState<LibraryTopicDetailResponse | null>(null)
@@ -59,11 +63,11 @@ export default function LibraryTopicPage() {
 
       <div className="max-w-[393px] lg:max-w-2xl mx-auto px-5 lg:px-8 pb-10 pt-14 lg:pt-8">
         <Link href="/library" className="inline-flex items-center gap-1.5 text-[var(--color-text-tertiary)] hover:text-white/60 text-xs mb-6">
-          <ArrowLeft className="w-3.5 h-3.5" /> Content & Learning
+          <ArrowLeft className="w-3.5 h-3.5 rtl:-scale-x-100" /> {t('title')}
         </Link>
 
-        {loading && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">Loading…</p>}
-        {!loading && error && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">Couldn&apos;t load this topic.</p>}
+        {loading && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">{t('loading')}</p>}
+        {!loading && error && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">{t('topic.loadError')}</p>}
 
         {!loading && topic && (
           <div className="space-y-4">
@@ -73,7 +77,7 @@ export default function LibraryTopicPage() {
               </div>
               <div>
                 <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-1">
-                  {THEME_META[topic.exploreTheme].label}{topic.level ? ` · ${topic.level}` : ''}
+                  {t(`themes.${topic.exploreTheme}`)}{topic.level ? ` · ${topic.level}` : ''}
                 </p>
                 <h1 className="font-display text-xl lg:text-2xl text-white">{topic.title}</h1>
               </div>
@@ -87,34 +91,34 @@ export default function LibraryTopicPage() {
 
             {topic.personalizedExplanation && (
               <Card className="bg-[var(--color-violet-900)]/20 border-[var(--color-violet-600)]/30">
-                <p className="text-[var(--color-violet-300)] text-xs uppercase tracking-wide mb-1">For you</p>
+                <p className="text-[var(--color-violet-300)] text-xs uppercase tracking-wide mb-1">{t('topic.forYou')}</p>
                 <p className="text-white/70 text-sm leading-relaxed">{topic.personalizedExplanation}</p>
               </Card>
             )}
 
             {topic.howItMayShowUp && topic.howItMayShowUp.length > 0 && (
-              <TopicSection title="Recognize — how it may show up" items={topic.howItMayShowUp} />
+              <TopicSection title={t('topic.recognize')} items={topic.howItMayShowUp} />
             )}
 
             {topic.possibleRoots && topic.possibleRoots.length > 0 && (
               <div>
-                <p className="text-white/50 text-xs uppercase tracking-wide mb-1">Possible roots — what may be underneath</p>
-                <p className="text-[var(--color-text-tertiary)] text-xs mb-2">Possibilities to consider, not a diagnosis — only one might fit, or none.</p>
+                <p className="text-white/50 text-xs uppercase tracking-wide mb-1">{t('topic.possibleRootsTitle')}</p>
+                <p className="text-[var(--color-text-tertiary)] text-xs mb-2">{t('topic.possibleRootsHint')}</p>
                 <BulletList items={topic.possibleRoots} />
               </div>
             )}
 
             {topic.reflectionQuestions && topic.reflectionQuestions.length > 0 && (
-              <TopicSection title="Personal reflection" items={topic.reflectionQuestions} />
+              <TopicSection title={t('topic.personalReflection')} items={topic.reflectionQuestions} />
             )}
 
             {topic.waysToWorkWithIt && topic.waysToWorkWithIt.length > 0 && (
-              <TopicSection title="Work with it" items={topic.waysToWorkWithIt} />
+              <TopicSection title={t('topic.workWithIt')} items={topic.waysToWorkWithIt} />
             )}
 
             {topic.relatedTopics && topic.relatedTopics.length > 0 && (
               <div>
-                <p className="text-white/50 text-xs uppercase tracking-wide mb-2">Related topics</p>
+                <p className="text-white/50 text-xs uppercase tracking-wide mb-2">{t('topic.relatedTopics')}</p>
                 <div className="flex flex-wrap gap-2">
                   {topic.relatedTopics.map((related) => (
                     <Link
@@ -143,10 +147,10 @@ export default function LibraryTopicPage() {
                         ? '/companion'
                         : `/${room}/new?topic=${encodeURIComponent(params.slug)}&topicTitle=${encodeURIComponent(topic.title)}`
                     )}
-                    className="w-full text-left bg-[var(--color-violet-600)]/20 border border-[var(--color-violet-500)]/40 hover:bg-[var(--color-violet-600)]/30 rounded-2xl px-4 py-3 transition-colors"
+                    className="w-full text-start bg-[var(--color-violet-600)]/20 border border-[var(--color-violet-500)]/40 hover:bg-[var(--color-violet-600)]/30 rounded-2xl px-4 py-3 transition-colors"
                   >
-                    <p className="text-[var(--color-violet-200)] text-sm font-medium">{ROOM_LABEL[room]}</p>
-                    <p className="text-[var(--color-violet-300)]/60 text-xs mt-0.5">Tap to open →</p>
+                    <p className="text-[var(--color-violet-200)] text-sm font-medium">{t(`topic.rooms.${ROOM_LABEL_KEY[room]}`)}</p>
+                    <p className="text-[var(--color-violet-300)]/60 text-xs mt-0.5">{t('topic.tapToOpen')}</p>
                   </button>
                 ))}
               </div>

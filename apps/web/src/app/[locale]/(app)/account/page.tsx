@@ -1,6 +1,7 @@
 'use client'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { Link } from '@/i18n/navigation'
 import { getCurrentSession, deleteCognitoUser, signOut, changePassword } from '@/lib/cognito/client'
@@ -22,6 +23,7 @@ import GenderSelector from '@/components/shared/GenderSelector'
  * same slice) instead of the old marketing /pricing page.
  */
 export default function AccountPage() {
+  const t = useTranslations('Account')
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(true)
@@ -66,7 +68,7 @@ export default function AccountPage() {
     try {
       await updatePreferences({ genderIdentity: next })
     } catch {
-      alert('Could not save — please try again.')
+      alert(t('genderSaveError'))
     } finally {
       setGenderSaving(false)
     }
@@ -84,7 +86,7 @@ export default function AccountPage() {
       a.click()
       URL.revokeObjectURL(url)
     } catch {
-      alert('Export failed. Please try again.')
+      alert(t('data.download.error'))
     } finally {
       setDownloading(false)
     }
@@ -95,7 +97,7 @@ export default function AccountPage() {
     setPasswordError(null)
     setPasswordChanged(false)
     if (!passwordsReadyToSubmit(newPassword, confirmNewPassword)) {
-      setPasswordError('Please meet all password requirements and make sure both entries match.')
+      setPasswordError(t('security.errorPasswordRequirements'))
       return
     }
     setPasswordChanging(true)
@@ -115,14 +117,16 @@ export default function AccountPage() {
       setConfirmNewPassword('')
       setPasswordChanged(true)
     } catch (err) {
-      setPasswordError(err instanceof Error ? err.message : 'Could not change password.')
+      setPasswordError(err instanceof Error ? err.message : t('security.errorGeneric'))
     } finally {
       setPasswordChanging(false)
     }
   }
 
+  const deleteConfirmPhrase = t('data.delete.confirmPhrase')
+
   async function handleDelete() {
-    if (deleteConfirm.toLowerCase() !== 'delete my account') return
+    if (deleteConfirm.toLowerCase() !== deleteConfirmPhrase.toLowerCase()) return
     setDeleteStep('deleting')
     try {
       // Delete the DynamoDB partition first — a signed-out/deleted Cognito
@@ -133,7 +137,7 @@ export default function AccountPage() {
       signOut()
       router.push('/?deleted=true')
     } catch {
-      alert('Deletion failed. Please contact support.')
+      alert(t('data.delete.error'))
       setDeleteStep('confirm')
     }
   }
@@ -157,7 +161,7 @@ export default function AccountPage() {
 
       <div className="max-w-[393px] lg:max-w-2xl mx-auto px-5 lg:px-8 pb-16 lg:pb-12">
         <div className="pt-14 lg:pt-8 pb-6">
-          <h1 className="font-display text-2xl lg:text-3xl text-white">Account</h1>
+          <h1 className="font-display text-2xl lg:text-3xl text-white">{t('title')}</h1>
           <p className="text-sm text-[var(--color-text-secondary)] mt-1">{email}</p>
         </div>
 
@@ -169,19 +173,19 @@ export default function AccountPage() {
               real Grow integration (see docs/PHASE_AUDIT.md's Session 10 update) — so
               "Upgrade" links to /wallet, it doesn't complete a purchase. */}
           <Card>
-            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-3">Credits</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-3">{t('credits.label')}</p>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-white text-lg font-light">{credits ? credits.balance : '…'}</p>
                 {credits?.isExhausted && (
-                  <p className="text-red-400/80 text-xs mt-0.5">Out of credits</p>
+                  <p className="text-red-400/80 text-xs mt-0.5">{t('credits.outOfCredits')}</p>
                 )}
                 {credits && !credits.isExhausted && credits.isLow && (
-                  <p className="text-yellow-400/80 text-xs mt-0.5">Running low</p>
+                  <p className="text-yellow-400/80 text-xs mt-0.5">{t('credits.runningLow')}</p>
                 )}
               </div>
               <Link href="/wallet" className="text-[var(--color-violet-400)] hover:text-[var(--color-violet-300)] text-xs underline">
-                {credits && (credits.isLow || credits.isExhausted) ? 'Upgrade' : 'View Wallet'}
+                {credits && (credits.isLow || credits.isExhausted) ? t('credits.upgrade') : t('credits.viewWallet')}
               </Link>
             </div>
           </Card>
@@ -189,11 +193,11 @@ export default function AccountPage() {
           {/* Plan — every account is honestly on the free Beta tier today, not a stored,
               per-user value; paid plans/packages aren't purchasable yet (see above). */}
           <Card>
-            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-3">Subscription</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-3">{t('subscription.label')}</p>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-white text-sm font-medium">Free — Beta</p>
-                <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">Paid plans are coming soon</p>
+                <p className="text-white text-sm font-medium">{t('subscription.freeBeta')}</p>
+                <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">{t('subscription.comingSoon')}</p>
               </div>
             </div>
           </Card>
@@ -206,16 +210,16 @@ export default function AccountPage() {
               resolved yet (or failed) — the selector is hidden rather than
               shown pre-selected to a guessed value. */}
           <Card className="space-y-3">
-            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">Preferences</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">{t('preferences.label')}</p>
             <div className="flex items-center justify-between">
-              <span className="text-white/80 text-sm">Language</span>
+              <span className="text-white/80 text-sm">{t('preferences.language')}</span>
               <LanguageSelector />
             </div>
             {gender !== null && (
               <div>
-                <p className="text-white/80 text-sm mb-2">Gender</p>
+                <p className="text-white/80 text-sm mb-2">{t('preferences.gender')}</p>
                 <p className="text-[var(--color-text-tertiary)] text-xs mb-3">
-                  Used only to address you correctly in Hebrew — has no effect in English.
+                  {t('preferences.genderHint')}
                 </p>
                 <GenderSelector value={gender} onChange={handleGenderChange} className={genderSaving ? 'opacity-60 pointer-events-none' : ''} />
               </div>
@@ -229,11 +233,11 @@ export default function AccountPage() {
               build only ever covered the "don't know current password"
               path. */}
           <Card className="space-y-3">
-            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">Security</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">{t('security.label')}</p>
             <form onSubmit={handlePasswordChange} className="space-y-3">
               <input
                 type="password"
-                placeholder="Current password"
+                placeholder={t('security.currentPasswordPlaceholder')}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 required
@@ -245,55 +249,55 @@ export default function AccountPage() {
                 onPasswordChange={setNewPassword}
                 confirmPassword={confirmNewPassword}
                 onConfirmPasswordChange={setConfirmNewPassword}
-                passwordPlaceholder="New password"
-                confirmPlaceholder="Confirm new password"
+                passwordPlaceholder={t('security.newPasswordPlaceholder')}
+                confirmPlaceholder={t('security.confirmNewPasswordPlaceholder')}
               />
               {passwordError && <p className="text-red-400 text-xs">{passwordError}</p>}
-              {passwordChanged && <p className="text-green-400/80 text-xs">Password changed.</p>}
+              {passwordChanged && <p className="text-green-400/80 text-xs">{t('security.passwordChanged')}</p>}
               <button
                 type="submit"
                 disabled={passwordChanging || !passwordsReadyToSubmit(newPassword, confirmNewPassword)}
                 className="w-full py-3 rounded-2xl border border-[var(--color-violet-800)]/60 bg-[var(--color-violet-900)]/30 text-[var(--color-violet-300)] hover:bg-[var(--color-violet-900)]/50 disabled:opacity-40 text-sm font-medium transition-all"
               >
-                {passwordChanging ? 'Changing…' : 'Change password'}
+                {passwordChanging ? t('security.changing') : t('security.changePassword')}
               </button>
             </form>
           </Card>
 
           {/* Legal */}
           <Card className="space-y-3">
-            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">Legal</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">{t('legal.label')}</p>
             <Link href="/terms" className="flex items-center justify-between text-white/60 hover:text-white text-sm transition-colors">
-              Terms of Use <span className="text-white/20">›</span>
+              {t('legal.terms')} <span className="text-white/20 rtl:-scale-x-100">›</span>
             </Link>
             <div className="border-t border-white/8" />
             <Link href="/privacy" className="flex items-center justify-between text-white/60 hover:text-white text-sm transition-colors">
-              Privacy & Data Policy <span className="text-white/20">›</span>
+              {t('legal.privacy')} <span className="text-white/20 rtl:-scale-x-100">›</span>
             </Link>
           </Card>
 
           {/* Data */}
           <Card className="space-y-4">
-            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">Your Data</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">{t('data.label')}</p>
 
             <div>
-              <p className="text-white/80 text-sm font-medium">Download my data</p>
+              <p className="text-white/80 text-sm font-medium">{t('data.download.title')}</p>
               <p className="text-[var(--color-text-tertiary)] text-xs mt-1 mb-3">
-                Export all your decisions, reflections, and account data as a JSON file.
+                {t('data.download.description')}
               </p>
               <button
                 onClick={handleDownload}
                 disabled={downloading}
                 className="w-full py-3 rounded-2xl border border-[var(--color-violet-800)]/60 bg-[var(--color-violet-900)]/30 text-[var(--color-violet-300)] hover:bg-[var(--color-violet-900)]/50 disabled:opacity-40 text-sm font-medium transition-all"
               >
-                {downloading ? 'Preparing export…' : 'Download my data'}
+                {downloading ? t('data.download.preparing') : t('data.download.button')}
               </button>
             </div>
 
             <div className="border-t border-white/8 pt-4">
-              <p className="text-white/80 text-sm font-medium">Delete my account</p>
+              <p className="text-white/80 text-sm font-medium">{t('data.delete.title')}</p>
               <p className="text-[var(--color-text-tertiary)] text-xs mt-1 mb-3">
-                Permanently deletes your account and all decisions, reflections, and personal data. This cannot be undone.
+                {t('data.delete.description')}
               </p>
 
               {deleteStep === 'idle' && (
@@ -301,41 +305,43 @@ export default function AccountPage() {
                   onClick={() => setDeleteStep('confirm')}
                   className="w-full py-3 rounded-2xl border border-red-900/40 text-red-400/70 hover:border-red-700/50 hover:text-red-400 text-sm transition-all"
                 >
-                  Delete my account
+                  {t('data.delete.title')}
                 </button>
               )}
 
               {(deleteStep === 'confirm' || deleteStep === 'deleting') && (
                 <div className="space-y-3 bg-red-950/20 border border-red-900/30 rounded-2xl p-4">
-                  <p className="text-red-400 text-xs font-medium">This will permanently delete:</p>
-                  <ul className="text-white/50 text-xs space-y-1 list-disc pl-4">
-                    <li>All your decisions and reflections</li>
-                    <li>Your account and login credentials</li>
-                    <li>Your subscription (cancels immediately)</li>
+                  <p className="text-red-400 text-xs font-medium">{t('data.delete.warningTitle')}</p>
+                  <ul className="text-white/50 text-xs space-y-1 list-disc ps-4">
+                    <li>{t('data.delete.items.decisions')}</li>
+                    <li>{t('data.delete.items.account')}</li>
+                    <li>{t('data.delete.items.subscription')}</li>
                   </ul>
                   <p className="text-white/50 text-xs">
-                    Type <span className="text-white/80 font-mono">delete my account</span> to confirm:
+                    {t.rich('data.delete.confirmPrompt', {
+                      phrase: () => <span className="text-white/80 font-mono">{deleteConfirmPhrase}</span>,
+                    })}
                   </p>
                   <input
                     type="text"
                     value={deleteConfirm}
                     onChange={e => setDeleteConfirm(e.target.value)}
-                    placeholder="delete my account"
+                    placeholder={deleteConfirmPhrase}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-500/50 transition-colors"
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={handleDelete}
-                      disabled={deleteConfirm.toLowerCase() !== 'delete my account' || deleteStep === 'deleting'}
+                      disabled={deleteConfirm.toLowerCase() !== deleteConfirmPhrase.toLowerCase() || deleteStep === 'deleting'}
                       className="flex-1 py-2.5 rounded-xl bg-red-700 hover:bg-red-600 disabled:opacity-30 text-white text-sm font-medium transition-all"
                     >
-                      {deleteStep === 'deleting' ? 'Deleting…' : 'Permanently delete'}
+                      {deleteStep === 'deleting' ? t('data.delete.deleting') : t('data.delete.permanentlyDelete')}
                     </button>
                     <button
                       onClick={() => { setDeleteStep('idle'); setDeleteConfirm('') }}
                       className="px-4 text-[var(--color-text-tertiary)] text-sm hover:text-white/50 transition-colors"
                     >
-                      Cancel
+                      {t('data.delete.cancel')}
                     </button>
                   </div>
                 </div>
@@ -352,7 +358,7 @@ export default function AccountPage() {
             }}
             className="w-full py-3.5 rounded-2xl border border-white/10 text-[var(--color-text-tertiary)] hover:text-white/60 hover:border-white/20 text-sm transition-all"
           >
-            Sign out
+            {t('signOut')}
           </button>
 
         </div>

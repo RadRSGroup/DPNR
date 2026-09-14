@@ -2,6 +2,300 @@
   "Common": {
     "appName": "InnerOS"
   },
+  "Account": {
+    "title": "Account",
+    "credits": {
+      "label": "Credits",
+      "outOfCredits": "Out of credits",
+      "runningLow": "Running low",
+      "upgrade": "Upgrade",
+      "viewWallet": "View Wallet"
+    },
+    "subscription": {
+      "label": "Subscription",
+      "freeBeta": "Free — Beta",
+      "comingSoon": "Paid plans are coming soon"
+    },
+    "preferences": {
+      "label": "Preferences",
+      "language": "Language",
+      "gender": "Gender",
+      "genderHint": "Used only to address you correctly in Hebrew — has no effect in English."
+    },
+    "security": {
+      "label": "Security",
+      "currentPasswordPlaceholder": "Current password",
+      "newPasswordPlaceholder": "New password",
+      "confirmNewPasswordPlaceholder": "Confirm new password",
+      "errorPasswordRequirements": "Please meet all password requirements and make sure both entries match.",
+      "passwordChanged": "Password changed.",
+      "changing": "Changing…",
+      "changePassword": "Change password",
+      "errorGeneric": "Could not change password."
+    },
+    "legal": {
+      "label": "Legal",
+      "terms": "Terms of Use",
+      "privacy": "Privacy & Data Policy"
+    },
+    "data": {
+      "label": "Your Data",
+      "download": {
+        "title": "Download my data",
+        "description": "Export all your decisions, reflections, and account data as a JSON file.",
+        "preparing": "Preparing export…",
+        "button": "Download my data",
+        "error": "Export failed. Please try again."
+      },
+      "delete": {
+        "title": "Delete my account",
+        "description": "Permanently deletes your account and all decisions, reflections, and personal data. This cannot be undone.",
+        "warningTitle": "This will permanently delete:",
+        "items": {
+          "decisions": "All your decisions and reflections",
+          "account": "Your account and login credentials",
+          "subscription": "Your subscription (cancels immediately)"
+        },
+        "confirmPhrase": "delete my account",
+        "confirmPrompt": "Type <phrase></phrase> to confirm:",
+        "deleting": "Deleting…",
+        "permanentlyDelete": "Permanently delete",
+        "cancel": "Cancel",
+        "error": "Deletion failed. Please contact support."
+      }
+    },
+    "genderSaveError": "Could not save — please try again.",
+    "signOut": "Sign out"
+  },
+  "Wallet": {
+    "title": "My Wallet",
+    "subtitle": "Your credits, plans, and rewards — all in one place.",
+    "hero": {
+      "title": "Small gifts. Big impact.",
+      "subtitle": "Every credit is an investment in your own growth."
+    },
+    "balance": {
+      "label": "Your Balance",
+      "creditsUnit": "Credits",
+      "outOfCredits": "Out of credits",
+      "runningLow": "Running low",
+      "buyCredits": "Buy Credits"
+    },
+    "earn": {
+      "title": "Earn More Credits",
+      "subtitle": "Grow your wallet by taking action and investing in yourself.",
+      "weeklyGoal": { "title": "Weekly Goal Achieved", "description": "Complete a goal you set for yourself." },
+      "reflection": { "title": "Complete a Reflection", "description": "Finish a Mirror Room exercise." },
+      "creditsEarned": "{count, plural, one {+# Credit} other {+# Credits}}"
+    },
+    "plans": {
+      "choosePlan": { "title": "Choose Your Plan", "subtitle": "More credits. More insights. More you." },
+      "buyPackages": { "title": "Buy Credit Packages", "subtitle": "One-time credit packs. Use whenever you need." },
+      "loading": "Loading…",
+      "subscriptionsComingSoon": "Plans are coming soon — pricing hasn't been finalized yet.",
+      "packsComingSoon": "Credit packs are coming soon — pricing hasn't been finalized yet.",
+      "perMonth": "/ month",
+      "creditsCount": "{count, plural, one {# credit} other {# credits}}",
+      "comingSoonButton": "Coming soon",
+      "purchaseUnavailableTitle": "Purchasing isn't available yet — real payment credentials aren't set up."
+    },
+    "transactions": {
+      "title": "Your Recent Transactions",
+      "subtitle": "The real ledger behind your balance.",
+      "loading": "Loading…",
+      "empty": "No transactions yet.",
+      "reasons": {
+        "betaTrialSignup": "Welcome bonus",
+        "roomRefine": "Room refine",
+        "companionMessage": "Companion message",
+        "commitmentCompleted": "Weekly Goal Achieved",
+        "reflectionCompleted": "Completed a Reflection"
+      }
+    }
+  },
+  "Growth": {
+    "title": "Growth Tracker",
+    "subtitle": "A snapshot of your journey across all areas of life.",
+    "breatheCheckIn": "Breathe & Check In",
+    "hero": { "title": "You're growing. You're becoming.", "subtitle": "This is your space to see yourself clearly, with compassion and truth." },
+    "stats": {
+      "alignmentScore": "Alignment Score",
+      "areasGrowing": "Areas Growing",
+      "patternsShifting": "Patterns Shifting",
+      "insightsGained": "Insights Gained"
+    },
+    "domains": { "title": "Domains of Life", "subtitle": "Your alignment across key life areas" },
+    "alignmentOverTime": { "title": "Alignment Over Time", "subtitle": "Your overall alignment trend" },
+    "archetypes": { "title": "Your Archetypes", "subtitle": "The energies that show up for you" },
+    "valuesNeeds": {
+      "title": "Values & Needs Snapshot",
+      "subtitle": "What drives you and what you need more of",
+      "topValues": "Top Values",
+      "topNeeds": "Top Needs",
+      "nothingYet": "Nothing yet"
+    },
+    "comingSoon": "Coming soon",
+    "corePillars": {
+      "title": "Core Pillars",
+      "description": "Needs more real usage data before DPNR can compute a meaningful pillar-alignment score. Not built yet — this is an honest gap, not a bug."
+    },
+    "emotionalLandscape": {
+      "title": "Emotional Landscape",
+      "description": "Needs a real emotion/sentiment-tracking model behind it, which doesn't exist yet. Not built yet — this is an honest gap, not a bug."
+    },
+    "recentDecisions": {
+      "title": "Recent Decisions",
+      "subtitle": "From your past decisions",
+      "loading": "Loading…",
+      "empty": "No decisions yet.",
+      "startOne": "Start one"
+    },
+    "decisionStatus": { "active": "Active", "completed": "Completed", "archived": "Archived" },
+    "weeklyReflection": {
+      "title": "This Week's Reflection",
+      "empty": "Nothing yet this week — your next Daily Card will show up here."
+    }
+  },
+  "EvolutionMap": {
+    "title": "My Evolution Map",
+    "subtitle": "Your personal roadmap to growth, alignment, and the life you're here to create.",
+    "hero": { "title": "You set the goals. We guide the way.", "subtitle": "Track your progress, celebrate wins, and evolve intentionally." },
+    "glance": {
+      "lifeDomains": "Life Domains",
+      "averageProgress": "Average Progress",
+      "activeGoals": "Active Goals",
+      "milestonesAchieved": "Milestones Achieved"
+    },
+    "lifeDomains": {
+      "title": "Life Domains",
+      "empty": "Nothing here yet — complete a Decision Room or Mirror Room session and confirm a few signals in InnerSelf to start building your Life Domains picture.",
+      "subtitle": "Explore and grow in every area of your life"
+    },
+    "focusAreas": {
+      "title": "Focus Areas — {domain}",
+      "subtitle": "What DPNR has confirmed with you here",
+      "empty": "Nothing confirmed in this domain yet."
+    },
+    "shapeOfWork": {
+      "title": "The Shape of This Work",
+      "subtitle": "A general framework for this kind of growth work — not a tracker of exactly where you are."
+    },
+    "stages": {
+      "awareness": { "label": "Awareness", "copy": "Understand your patterns and where you are today." },
+      "healing": { "label": "Healing", "copy": "Release what has been holding you back." },
+      "practice": { "label": "Practice", "copy": "Build new habits and ways of relating." },
+      "integration": { "label": "Integration", "copy": "Live your values as your natural way of being." }
+    },
+    "goals": {
+      "title": "Goals & Dreams",
+      "addGoal": "Add Goal",
+      "subtitle": "What you truly want to create",
+      "placeholder": "What do you want to create?",
+      "noDomain": "No domain",
+      "leaveBlankOngoing": "Leave blank for Ongoing",
+      "saving": "Saving…",
+      "saveGoal": "Save goal",
+      "cancel": "Cancel",
+      "loading": "Loading…",
+      "empty": "No goals here yet.",
+      "target": "Target: {date}",
+      "ongoing": "Ongoing",
+      "marking": "Marking…",
+      "markComplete": "Mark complete"
+    }
+  },
+  "Library": {
+    "title": "Content & Learning",
+    "subtitle": "Curated for your journey. Learn, reflect, and grow at your own pace.",
+    "searchPlaceholder": "Search topics...",
+    "loading": "Loading…",
+    "empty": "Nothing in the Library yet.",
+    "featuredToday": "Featured Today",
+    "noResults": "No topics match \"{query}\".",
+    "forYou": "For You",
+    "startHere": "Start Here",
+    "exploreByTheme": "Explore by Theme",
+    "shelves": {
+      "knowYourself": "Know Yourself",
+      "patternsWorthNoticing": "Patterns Worth Noticing",
+      "relationships": "Relationships",
+      "emotionalWorld": "Emotional World",
+      "workMoney": "Work & Money",
+      "bodyEnergy": "Body & Energy",
+      "meaningLife": "Meaning & Life"
+    },
+    "themes": {
+      "ME": "Identity & Self",
+      "FEEL": "Emotions & Regulation",
+      "PATTERNS": "Patterns & Loops",
+      "NEED": "Needs & Values",
+      "RELATE": "Attachment & Closeness",
+      "REPAIR": "Repair & Self-Compassion",
+      "BODY": "Body & Nervous System",
+      "CHOOSE": "Decisions & Direction",
+      "CREATE": "Work, Money & Creation",
+      "LIFE": "Meaning & Life"
+    },
+    "topic": {
+      "loadError": "Couldn't load this topic.",
+      "forYou": "For you",
+      "recognize": "Recognize — how it may show up",
+      "possibleRootsTitle": "Possible roots — what may be underneath",
+      "possibleRootsHint": "Possibilities to consider, not a diagnosis — only one might fit, or none.",
+      "personalReflection": "Personal reflection",
+      "workWithIt": "Work with it",
+      "relatedTopics": "Related topics",
+      "tapToOpen": "Tap to open →",
+      "rooms": {
+        "mirror": "Explore in Mirror Room",
+        "decision": "Explore in Decision Room",
+        "companion": "Talk it through in Main Chat"
+      }
+    }
+  },
+  "Rooms": {
+    "title": "Workshop Rooms",
+    "innerOS": "InnerOS",
+    "accountSettingsTitle": "Account settings",
+    "subtitle": "Guided sessions to think something through, out loud, with structure.",
+    "decision": { "title": "Start a Decision", "subtitle": "~25 minutes · 7 guided steps" },
+    "mirror": { "title": "Start a Mirror Room session", "subtitle": "~12 minutes · 6 guided steps" }
+  },
+  "Dashboard": {
+    "greeting": "Good morning{name}",
+    "subtitle": "Your journey. Your awareness. Your evolution.",
+    "checkIn": "Check in",
+    "justCompleted": "Decision mapped. Your reflection is saved.",
+    "innerSelf": {
+      "title": "My InnerSelf",
+      "subtitle": "Your Digital Twin",
+      "pictureForming": "Picture forming…",
+      "stillLearning": "Still learning this part of you",
+      "alignmentScore": "Alignment Score",
+      "phaseOf": "You're in a phase of"
+    },
+    "roadmap": {
+      "label": "Roadmap: {state}",
+      "states": { "active": "Active", "evolving": "Evolving", "paused": "Paused", "archived": "Archived" },
+      "pause": "Pause",
+      "resume": "Resume",
+      "archive": "Archive"
+    },
+    "lifeDomains": { "title": "Life Domains", "subtitle": "What you've been exploring" },
+    "proposal": { "title": "A shift worth naming?", "updateRoadmap": "Update my Roadmap", "notNow": "Not now" },
+    "credits": { "label": "Credits", "runningLowUpgrade": "Running low · Upgrade" },
+    "patterns": { "title": "Patterns Track", "subtitle": "What DPNR has noticed, by confidence" },
+    "archetypes": { "title": "Leading Archetypes", "subtitle": "The energies that show up for you" },
+    "evolution": { "title": "My Evolution", "lastDays": "{count, plural, one {Last # day} other {Last # days}}" },
+    "explore": {
+      "library": { "title": "Library", "subtitle": "Read something" },
+      "growth": { "title": "Growth Tracker", "subtitle": "What's changing" },
+      "workRooms": { "title": "Work Rooms", "subtitle": "Decision · Mirror" }
+    },
+    "suggestedNextStep": "Suggested Next Step",
+    "cueLabels": { "continuation": "Continuing on", "commitment": "Upcoming commitment", "worthExploring": "Worth exploring" },
+    "roomLink": { "decision": "Decision Room", "mirror": "Mirror Room", "library": "Content & Learning" }
+  },
   "Metadata": {
     "title": "InnerOS — DPNR",
     "description": "Your personal Human Operating System — reflect, decide, and grow with DPNR."
