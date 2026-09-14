@@ -8,6 +8,7 @@ import { revokeCurrentSessionTicket, changePasswordAndRewrapDek } from '@/lib/au
 import { exportUserData, deleteAccountData, getCredits, ApiError } from '@/lib/api/v1-client'
 import type { CreditsResponse } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
+import PasswordCreationField, { passwordsReadyToSubmit } from '@/components/auth/PasswordCreationField'
 
 /**
  * Reskinned onto the shared Sidebar/MobileNav shell + design tokens in
@@ -71,12 +72,8 @@ export default function AccountPage() {
     e.preventDefault()
     setPasswordError(null)
     setPasswordChanged(false)
-    if (newPassword.length < 8) {
-      setPasswordError('New password must be at least 8 characters.')
-      return
-    }
-    if (newPassword !== confirmNewPassword) {
-      setPasswordError('New passwords do not match.')
+    if (!passwordsReadyToSubmit(newPassword, confirmNewPassword)) {
+      setPasswordError('Please meet all password requirements and make sure both entries match.')
       return
     }
     setPasswordChanging(true)
@@ -197,29 +194,19 @@ export default function AccountPage() {
                 autoComplete="current-password"
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
               />
-              <input
-                type="password"
-                placeholder="New password (min. 8 characters)"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-                autoComplete="new-password"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
-              />
-              <input
-                type="password"
-                placeholder="Confirm new password"
-                value={confirmNewPassword}
-                onChange={(e) => setConfirmNewPassword(e.target.value)}
-                required
-                autoComplete="new-password"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+              <PasswordCreationField
+                password={newPassword}
+                onPasswordChange={setNewPassword}
+                confirmPassword={confirmNewPassword}
+                onConfirmPasswordChange={setConfirmNewPassword}
+                passwordPlaceholder="New password"
+                confirmPlaceholder="Confirm new password"
               />
               {passwordError && <p className="text-red-400 text-xs">{passwordError}</p>}
               {passwordChanged && <p className="text-green-400/80 text-xs">Password changed.</p>}
               <button
                 type="submit"
-                disabled={passwordChanging}
+                disabled={passwordChanging || !passwordsReadyToSubmit(newPassword, confirmNewPassword)}
                 className="w-full py-3 rounded-2xl border border-[var(--color-violet-800)]/60 bg-[var(--color-violet-900)]/30 text-[var(--color-violet-300)] hover:bg-[var(--color-violet-900)]/50 disabled:opacity-40 text-sm font-medium transition-all"
               >
                 {passwordChanging ? 'Changing…' : 'Change password'}

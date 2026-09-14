@@ -7,6 +7,7 @@ import { forgotPassword, confirmForgotPassword, signIn } from '@/lib/cognito/cli
 import { recoverAndRewrapDek, establishSessionTicket } from '@/lib/auth/keyBootstrap'
 import { ApiError } from '@/lib/api/v1-client'
 import RecoveryCodeReveal from '@/components/auth/RecoveryCodeReveal'
+import PasswordCreationField, { passwordsReadyToSubmit } from '@/components/auth/PasswordCreationField'
 import type { RecoveryCode } from '@/lib/crypto'
 
 /**
@@ -48,12 +49,8 @@ export default function ForgotPasswordPage() {
 
   async function handleReset(e: React.FormEvent) {
     e.preventDefault()
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters.')
-      return
-    }
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match.')
+    if (!passwordsReadyToSubmit(newPassword, confirmPassword)) {
+      setError('Please meet all password requirements and make sure both entries match.')
       return
     }
     setLoading(true)
@@ -209,25 +206,17 @@ export default function ForgotPasswordPage() {
               required
               className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm text-center tracking-[0.3em] focus:outline-none focus:border-purple-500/60 transition-colors"
             />
-            <input
-              type="password"
-              placeholder="New password (min. 8 characters)"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
-            />
-            <input
-              type="password"
-              placeholder="Confirm new password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+            <PasswordCreationField
+              password={newPassword}
+              onPasswordChange={setNewPassword}
+              confirmPassword={confirmPassword}
+              onConfirmPasswordChange={setConfirmPassword}
+              passwordPlaceholder="New password"
+              confirmPlaceholder="Confirm new password"
             />
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !passwordsReadyToSubmit(newPassword, confirmPassword)}
               className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98]"
             >
               {loading ? 'Resetting…' : 'Reset password'}

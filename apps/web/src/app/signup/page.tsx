@@ -6,12 +6,14 @@ import Link from 'next/link'
 import { signUp, confirmSignUp, resendConfirmationCode, signIn } from '@/lib/cognito/client'
 import { bootstrapKeysAtSignup, establishSessionTicket } from '@/lib/auth/keyBootstrap'
 import RecoveryCodeReveal from '@/components/auth/RecoveryCodeReveal'
+import PasswordCreationField, { passwordsReadyToSubmit } from '@/components/auth/PasswordCreationField'
 import type { RecoveryCode } from '@/lib/crypto'
 
 export default function SignupPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -27,8 +29,8 @@ export default function SignupPage() {
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.')
+    if (!passwordsReadyToSubmit(password, confirmPassword)) {
+      setError('Please meet all password requirements and make sure both entries match.')
       return
     }
     if (!consented) {
@@ -195,16 +197,13 @@ export default function SignupPage() {
           </div>
           <div>
             <label htmlFor="signup-password" className="block text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide mb-1.5">
-              Password <span className="normal-case">(min. 8 characters)</span>
+              Password
             </label>
-            <input
-              id="signup-password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-purple-500/60 transition-colors"
+            <PasswordCreationField
+              password={password}
+              onPasswordChange={setPassword}
+              confirmPassword={confirmPassword}
+              onConfirmPasswordChange={setConfirmPassword}
             />
           </div>
           {/* Consent */}
@@ -228,7 +227,7 @@ export default function SignupPage() {
 
           <button
             type="submit"
-            disabled={loading || !consented}
+            disabled={loading || !consented || !passwordsReadyToSubmit(password, confirmPassword)}
             className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98]"
           >
             {loading ? 'Creating account…' : 'Create account'}
