@@ -394,9 +394,10 @@ conversational onboarding).
 
 ## 11. Slice A — built and locally verified, Session 50 (2026-09-14)
 
-**Not deployed. Not committed.** Built and verified against the local dev
-server only, per this project's protocol of getting the user's go-ahead
-before touching real infrastructure or git history.
+**Committed (`51bf9f3` on `mvp`) at the user's explicit request. Not pushed,
+not deployed.** Built and verified against the local dev server only, per
+this project's protocol of getting the user's go-ahead before touching real
+infrastructure or shared git history.
 
 - Installed `next-intl@4.14.5` (confirmed compatible with `next@^16.3.1`/
   `react@^19`). While auditing dependencies for the install, `npm audit`
