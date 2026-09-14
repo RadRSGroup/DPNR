@@ -1,7 +1,8 @@
 # DPNR — Hebrew Localization + Language Selector: Plan
 
-**Status: Slices A and B built, deployed to real AWS, and fully
-live-verified, Session 50 (2026-09-14).** Written Session 48 (2026-09-11)
+**Status: Slices A, B, and C built and live-verified, Session 50 (2026-09-14).
+A and B are deployed to real AWS; C is frontend-only, nothing to deploy.**
+Written Session 48 (2026-09-11)
 after a full
 codebase survey. Scope, per the user's explicit choice: **both** static UI
 translation **and** localization of the AI-generated conversational content
@@ -598,3 +599,109 @@ built — Slice B only built manual switching plus best-effort persistence,
 matching the plan's original scope. Committed as `7aeb4db` on `mvp` at the
 user's request; pushing to `origin` and any further deploys are separate
 asks.
+
+## 13. Slice C — built and live-verified, Session 50 (2026-09-14)
+
+RTL shell + Hebrew typography (§5). Scoped, per the plan's own "don't
+attempt this as one pass" discipline, to the **app shell only** —
+`components/layout/*` (Sidebar, MobileNav, PageHeader, nav-items),
+`components/shared/*`, `components/ui/*`, and the two `app/[locale]/
+layout.tsx` files. Screen-level physical-direction classes (Companion,
+Decision Room, Mirror Room, Library, signup, etc.) are explicitly **not**
+touched here — each later slice fixes its own screens' classes as it
+touches them, same as the plan always said. Hebrew typography itself
+(Heebo/Frank Ruhl Libre) was already resolved and built in Slice A (§9
+item 3) — nothing further needed there.
+
+**Audited the actual shell scope, not assumed it** — grepped every
+`className` in the four target directories for physical-direction Tailwind
+tokens (`pl-/pr-/ml-/mr-/left-/right-/text-left/text-right/border-l-/
+border-r-/rounded-{t,b}{l,r}-`) and every `lucide-react` import for
+directional icons. Found less debt than the plan's "~1,738 `className=`
+occurrences across 76 files" headline number suggested was possible in
+scope — the shell itself is small and was already written fairly
+direction-agnostic (`px-*`, `gap-*`, `items-start`/`items-end` are already
+logical or symmetric and needed no change).
+
+**Fixed** (4 files):
+- `components/layout/Sidebar.tsx`: `border-r` (the seam between the
+  sidebar and main content) → `border-e` — resolves to the correct
+  physical side under either `dir`, confirmed live (below). The
+  `SidebarMiniCard`'s `ChevronRight` ("navigate into Wallet/Profile," a
+  genuinely directional affordance) got `rtl:-scale-x-100`.
+- `components/layout/MobileNav.tsx`: `left-0 right-0` → `inset-x-0` — was
+  already direction-agnostic in practice (both edges pinned to 0), just
+  normalized off a physical utility name so it doesn't trip the new lint
+  check below.
+- `components/shared/RoadmapTimelineCard.tsx`: `text-left`/`text-right` →
+  `text-start`/`text-end`; the internal `align?: 'left' | 'right'` prop
+  (unused by any external caller — Dashboard/Growth/Evolution Map only
+  ever pass `roadmap`) renamed to `'start' | 'end'` to match. Also gave
+  both connector-line divs `rtl:bg-gradient-to-l` alongside their existing
+  `bg-gradient-to-r`: Tailwind's flex row itself reverses visually under
+  `dir="rtl"` (browser-native, no code needed), but a fixed-direction CSS
+  gradient does **not** auto-flip with it — without the RTL override the
+  amber→violet→magenta connector would visually point backwards relative
+  to the now-reversed Current Focus→Theme→Direction node order.
+- `components/shared/AlignmentHistoryChart.tsx`: the "latest score" header
+  label's `text-right` → `text-end`. **Deliberately did not touch the SVG
+  chart's own geometry** — added a doc comment explaining why: time-series
+  charts conventionally keep a chronological left-to-right axis regardless
+  of page reading direction (an internationally-recognized convention, not
+  a Hebrew-specific gap), so mirroring it would make the data harder to
+  read, not more localized. This is the plan's own §5 "icons with no
+  inherent direction... must not be flipped" principle applied to a chart
+  instead of an icon.
+
+**New: a debt-ratchet CI lint check**, per §5's explicit ask ("Add a
+grep-based CI check ... that flags new physical-direction classes going
+forward so the debt doesn't silently regrow"). This repo has no GitHub
+Actions CI — `apps/web/scripts/check-rtl-classes.mjs` is wired into
+`npm run lint` instead (chained after `eslint`), so it runs under this
+project's own existing "lint clean before done" discipline every session
+already follows. It does **not** fail on the ~19 files/~25 occurrences of
+pre-existing physical-direction classes in not-yet-migrated screens
+(`apps/web/scripts/rtl-baseline.json`, the checked-in baseline) — it fails
+only if a file's count goes *above* its baseline (regression) or a file
+with no baseline entry introduces any (new debt in a fresh file). A future
+slice that migrates one of the baseline files re-runs the script with
+`UPDATE_RTL_BASELINE=1` to tighten it — the script prints which files
+improved beyond baseline as a nudge to do this, but doesn't force it.
+Scans only actual `className="..."`/`className={'...'}`/`className={\`...\`}`
+values (not arbitrary file text) — an early draft that scanned the whole
+file self-flagged on the word "left-to-right" inside this slice's own new
+doc comment, caught before committing, fixed by scoping the regex to
+`className` attribute values only.
+
+**Verified**: `npm run lint` (eslint + the new RTL check) clean, `tsc
+--noEmit` clean, full monorepo `npm run build` clean (same 26 routes, no
+regressions). **Live-verified against the real, already-signed-in test
+account this browser session already had** (from Slice B's own live
+verification — reused rather than creating a new throwaway account for a
+pure-CSS change): at 1400px width, `/he/dashboard`'s sidebar correctly
+renders on the visual **right** with its border on the visual **left**
+(`getComputedStyle` confirmed `border-left-width` set, `border-right-width:
+0`, and the `<aside>`'s bounding rect positioned at the right edge of the
+viewport) — both automatic from `border-e` + the browser's native RTL flex
+reversal, no JS involved. The `ChevronRight` mirror was verified by reading
+the compiled CSS rule directly rather than trusting a screenshot (Tailwind
+v4 compiles `rtl:-scale-x-100` to the modern `scale` CSS property, not
+`transform` — checking `getComputedStyle(...).transform` first read `none`
+and looked like a bug; `getComputedStyle(...).scale` correctly read `"-1
+1"` once checked the right property). Same compiled-CSS technique confirmed
+`border-e`/`text-start`/`text-end`/`inset-x-0`/`rtl:bg-gradient-to-l` all
+generated correct logical/RTL-scoped CSS. `/growth` (English) confirmed
+unaffected — sidebar still renders on the left with the border on the
+right, byte-identical visual result to before this slice. **One real gap,
+disclosed rather than glossed over**: `RoadmapTimelineCard`'s own gradient
+fix was **not** visually observed live — the test account has zero
+Roadmap data (honest empty state, "No decisions yet"), so the card never
+renders for it. Confidence rests on the same direct compiled-CSS
+verification technique (confirmed `rtl:bg-gradient-to-l` compiles to `--tw-
+gradient-position: to left in oklab`, correctly scoped to `[dir="rtl"]`),
+not a live click-through — a future session with a real-data test account
+touching Growth Tracker should give this one a real look.
+
+Committed locally at the user's request ("complete slice c"), same
+pattern as Slice B — not pushed, nothing to deploy (frontend-only, no CDK
+change).

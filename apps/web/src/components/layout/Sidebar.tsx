@@ -21,7 +21,7 @@ export default function Sidebar() {
   }, [])
 
   return (
-    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 border-r border-[var(--color-border-glass)] bg-black/20 min-h-screen p-4">
+    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 border-e border-[var(--color-border-glass)] bg-black/20 min-h-screen p-4">
       <Link href="/dashboard" className="flex items-center gap-2 px-2 py-3">
         <RingLogo className="w-8 h-8" />
         <div>
@@ -90,7 +90,7 @@ function SidebarMiniCard({ href, icon, title, subtitle }: { href: string; icon: 
         <div className="text-sm text-white leading-tight truncate">{title}</div>
         <div className="text-xs text-[var(--color-text-tertiary)] leading-tight truncate">{subtitle}</div>
       </div>
-      <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-[var(--color-text-tertiary)] shrink-0" />
+      <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-[var(--color-text-tertiary)] shrink-0 rtl:-scale-x-100" />
     </Link>
   )
 }

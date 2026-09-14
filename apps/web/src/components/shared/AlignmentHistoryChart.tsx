@@ -14,6 +14,14 @@ interface Point {
  * `ALIGNMENT_HISTORY_WINDOW_DAYS`, currently 30) — no 90D/1Y option, since
  * offering a range the data can never fill would look broken rather than
  * honestly sparse.
+ *
+ * RTL note (Hebrew Localization Slice C): the SVG plot's own axis stays
+ * chronological left-to-right (oldest -> newest) under dir="rtl" too,
+ * deliberately not mirrored — time-series charts follow international
+ * date-axis convention rather than page reading direction, so flipping it
+ * would make the data harder to read, not more localized. Only the
+ * surrounding UI chrome (range toggle, "latest score" label) follows
+ * logical start/end.
  */
 const RANGE_OPTIONS = [
   { key: '7d', label: '7D', days: 7 },
@@ -68,7 +76,7 @@ export default function AlignmentHistoryChart({ points }: { points: Point[] }) {
           ))}
         </div>
         {latest && (
-          <div className="text-right leading-none">
+          <div className="text-end leading-none">
             <p className="text-lg text-white font-medium">{latest.score}%</p>
             <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">Today</p>
           </div>

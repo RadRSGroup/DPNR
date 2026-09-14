@@ -20,18 +20,23 @@ export default function RoadmapTimelineCard({ roadmap }: { roadmap: NonNullable<
       <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-4">My Roadmap</p>
       <div className="flex flex-col lg:flex-row lg:items-start gap-3 lg:gap-2">
         <RoadmapNode label="Current Focus" value={roadmap.currentFocus} color="var(--color-amber-400)" />
-        <div className="hidden lg:block w-6 h-px shrink-0 bg-gradient-to-r from-[var(--color-amber-400)] to-[var(--color-violet-500)] mt-2" />
+        {/* bg-gradient-to-r needs an explicit RTL mirror: the connector's
+            color stops are visually fixed (amber->violet), but the flex row
+            itself reverses direction under dir="rtl" (Tailwind flex-row has
+            no built-in RTL awareness), so the gradient must flip with it or
+            the color transition would visually point the wrong way. */}
+        <div className="hidden lg:block w-6 h-px shrink-0 bg-gradient-to-r rtl:bg-gradient-to-l from-[var(--color-amber-400)] to-[var(--color-violet-500)] mt-2" />
         <RoadmapNode label="Theme" value={roadmap.theme} color="var(--color-violet-400)" />
-        <div className="hidden lg:block w-6 h-px shrink-0 bg-gradient-to-r from-[var(--color-violet-500)] to-[var(--color-magenta-500)] mt-2" />
-        <RoadmapNode label="Direction" value={roadmap.direction} color="var(--color-magenta-500)" align="right" />
+        <div className="hidden lg:block w-6 h-px shrink-0 bg-gradient-to-r rtl:bg-gradient-to-l from-[var(--color-violet-500)] to-[var(--color-magenta-500)] mt-2" />
+        <RoadmapNode label="Direction" value={roadmap.direction} color="var(--color-magenta-500)" align="end" />
       </div>
     </Card>
   )
 }
 
-function RoadmapNode({ label, value, color, align = 'left' }: { label: string; value: string; color: string; align?: 'left' | 'right' }) {
+function RoadmapNode({ label, value, color, align = 'start' }: { label: string; value: string; color: string; align?: 'start' | 'end' }) {
   return (
-    <div className={`flex flex-col min-w-0 lg:flex-1 items-start text-left ${align === 'right' ? 'lg:items-end lg:text-right' : ''}`}>
+    <div className={`flex flex-col min-w-0 lg:flex-1 items-start text-start ${align === 'end' ? 'lg:items-end lg:text-end' : ''}`}>
       <div className="w-3 h-3 rounded-full mb-2 shrink-0" style={{ backgroundColor: color, boxShadow: `0 0 8px 0 ${color}` }} />
       <p className="text-[10px] uppercase tracking-wide text-[var(--color-text-tertiary)]">{label}</p>
       <p className="text-sm text-white mt-0.5 lg:line-clamp-2">{value}</p>
