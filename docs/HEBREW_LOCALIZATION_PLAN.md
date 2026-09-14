@@ -702,6 +702,6 @@ gradient-position: to left in oklab`, correctly scoped to `[dir="rtl"]`),
 not a live click-through — a future session with a real-data test account
 touching Growth Tracker should give this one a real look.
 
-Committed locally at the user's request ("complete slice c"), same
-pattern as Slice B — not pushed, nothing to deploy (frontend-only, no CDK
-change).
+Committed as `7a7fc10` on `mvp` at the user's request ("complete slice c"),
+same pattern as Slice B — not pushed, nothing to deploy (frontend-only, no
+CDK change).
