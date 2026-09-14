@@ -1,0 +1,398 @@
+'use client'
+import { useState, useEffect, useRef } from 'react'
+import Image from 'next/image'
+import { Link } from '@/i18n/navigation'
+import { useRouter } from '@/i18n/navigation'
+import { Heart, Cloud, Shuffle, UserCircle } from 'lucide-react'
+import { getCurrentSession } from '@/lib/cognito/client'
+import { getCompanionContext, sendCompanionMessage, ApiError } from '@/lib/api/v1-client'
+import type { CompanionDirective } from '@dpnr/shared-types'
+import DirectiveCard from '@/components/companion/DirectiveCard'
+import PullACard from '@/components/companion/PullACard'
+import RecentConversations from '@/components/companion/RecentConversations'
+import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
+
+interface ChatMessage {
+  role: 'user' | 'assistant'
+  text: string
+  createdAt: string
+  directive?: CompanionDirective | null
+  failed?: boolean
+}
+
+const QUICK_PROMPTS = [
+  { icon: Heart, lead: 'Help me understand', rest: "what I'm feeling", text: "Help me understand what I'm feeling right now." },
+  { icon: Cloud, lead: 'Help me see', rest: 'the pattern', text: 'Help me see the pattern in what I keep going through.' },
+  { icon: Shuffle, lead: 'Help me make', rest: 'a decision', text: "I'm stuck on a decision — help me make it." },
+  { icon: UserCircle, lead: 'Guide me based on', rest: 'what you know about me', text: 'Guide me based on what you know about me so far.' },
+]
+
+function timeGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 18) return 'Good afternoon'
+  return 'Good evening'
+}
+
+/**
+ * Companion's frontend — the last major AI surface without one
+ * (docs/AGENT_LOG.md Session 12 part 1 built the real backend; this is its
+ * first caller). A chat surface, reusing `/v1/companion/message` and
+ * `/v1/companion/context` verbatim — the `reply`/`directive` contract is
+ * treated as final per the handoff, nothing added client-side to guess at
+ * intent the backend didn't return.
+ *
+ * UI redesign (Session 20, Phase 2 of docs/AGENT_LOG.md's plan): reskinned
+ * against the "Main Chat" reference screen — real time-of-day greeting,
+ * quick-prompt starter chips (just fill the input, never auto-send).
+ *
+ * Session 42: the reference's other two desktop-right-column pieces are now
+ * real. **"Pull a Card"** (`PullACard`) is a genuinely different mechanic
+ * from the scheduled Daily Card the other three rooms still use — an
+ * on-demand pull from a stored card library, confirmed scoped to Companion
+ * only — and replaces this page's own previous dailyCard-driven widget
+ * (Session 43 finished the swap on mobile too — see the inline `PullACard`
+ * placement below — Session 42 only did desktop's right column). **"Recent
+ * Conversations"** (`RecentConversations`) is real too: Companion used to
+ * be one continuous thread forever; `sessionId` now identifies a specific
+ * conversation, switching/creating one calls `getCompanionContext`/
+ * `createCompanionConversation` and swaps `messages`/`sessionId` client-side
+ * with no page reload.
+ */
+export default function CompanionPage() {
+  const router = useRouter()
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  // Intelligence Spec §18/Appendix B — threaded down into DirectiveCard so a
+  // "Explore in Mirror/Decision Room" action from a Library topic can carry
+  // "source session" context, per the flow's own worked example.
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [sending, setSending] = useState(false)
+  const [firstName, setFirstName] = useState('')
+  const [creditsExhausted, setCreditsExhausted] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const session = await getCurrentSession()
+        if (!session) { router.push('/login'); return }
+        const email = session.getIdToken().payload.email as string | undefined
+        const namePart = email?.split('@')[0] ?? ''
+        setFirstName(namePart.charAt(0).toUpperCase() + namePart.slice(1))
+
+        const context = await getCompanionContext()
+        setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt })))
+        setSessionId(context.sessionId)
+      } catch {
+        // Degrades to an empty chat — same tolerance the Dashboard page uses.
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [router])
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+  }, [messages, sending])
+
+  /** Discrete conversations — switch to an existing one from Recent Conversations. */
+  async function handleSelectConversation(targetSessionId: string) {
+    if (targetSessionId === sessionId || loading) return
+    setLoading(true)
+    try {
+      const context = await getCompanionContext(targetSessionId)
+      setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt })))
+      setSessionId(context.sessionId)
+    } catch {
+      // Leave the currently-open conversation showing — same tolerance as the initial load.
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /** Discrete conversations — "New conversation" already created the empty session server-side; just reset local state to it. */
+  function handleNewConversation(newSessionId: string) {
+    setMessages([])
+    setSessionId(newSessionId)
+  }
+
+  async function handleSend() {
+    const text = input.trim()
+    if (!text || sending) return
+
+    setInput('')
+    setMessages((prev) => [...prev, { role: 'user', text, createdAt: new Date().toISOString() }])
+    setSending(true)
+
+    try {
+      const clientMessageId = crypto.randomUUID()
+      const res = await sendCompanionMessage({ text, clientMessageId, sessionId: sessionId ?? undefined })
+      setSessionId(res.sessionId)
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', text: res.reply, createdAt: new Date().toISOString(), directive: res.directive },
+      ])
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'credits_exhausted') {
+        // Mark the just-sent user turn as failed rather than adding a fake
+        // assistant reply — the modal itself explains why, no need to also
+        // say "something went wrong" over a message that never even reached the model.
+        setMessages((prev) => prev.map((m, i) => (i === prev.length - 1 ? { ...m, failed: true } : m)))
+        setCreditsExhausted(true)
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', text: 'Something went wrong on my end — try sending that again.', createdAt: new Date().toISOString(), failed: true },
+        ])
+      }
+    } finally {
+      setSending(false)
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
+    }
+  }
+
+  function fillPrompt(text: string) {
+    setInput(text)
+    textareaRef.current?.focus()
+  }
+
+  // Reversed from Session 23's "stay visible alongside an active thread"
+  // decision, per direct user feedback (a screenshot showing the greeting +
+  // quick prompts + mobile Explore row squeezing the actual chat thread
+  // into a few visible lines): the landing chrome now only shows on the
+  // true empty state, so an active conversation gets nearly the full
+  // vertical space.
+  const isLanding = !loading && messages.length === 0
+  const showPrompts = isLanding
+
+  return (
+    <div className="relative h-[calc(100dvh-4rem)] lg:h-dvh flex flex-col overflow-hidden">
+      <div className="absolute inset-0 -z-10">
+        <Image src="/images/backgrounds/companion-bg.webp" alt="" fill className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
+      </div>
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
+      {creditsExhausted && <CreditsExhaustedModal onClose={() => setCreditsExhausted(false)} />}
+
+      <div className="flex-1 overflow-hidden lg:grid lg:grid-cols-3 lg:gap-6 lg:px-8 lg:pt-6">
+        {/* Main column */}
+        <div className="lg:col-span-2 h-full flex flex-col overflow-hidden max-w-[393px] lg:max-w-none mx-auto w-full">
+          {/* Mobile: plain text greeting, no room for hero art here. Only on
+              the true landing state — see isLanding's doc comment above. */}
+          {isLanding && (
+            <div className="px-5 pt-14 pb-1 lg:hidden">
+              <h1 className="font-display text-2xl text-white">
+                {timeGreeting()}{firstName ? `, ${firstName}` : ''}
+              </h1>
+            </div>
+          )}
+
+          {/* Desktop: one hero banner card, same idiom as DecisionRoomLanding/
+              MirrorRoomLanding — the portrait bleeds to the card's own top/
+              bottom/right edges (an expected crop, not a seam) and only
+              fades where it meets the greeting text, into this card's own
+              background color so the fade can't mismatch. Landing-only, same
+              reasoning as the mobile greeting above. */}
+          {isLanding && (
+            <div className="hidden lg:block relative overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-glass)] bg-[var(--color-surface-glass)] h-64 mb-4">
+              <div className="absolute right-0 top-0 bottom-0 w-80 [mask-image:linear-gradient(to_left,black_55%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_left,black_55%,transparent_100%)]">
+                <Image
+                  src="/images/companion/companion-hero.webp"
+                  alt=""
+                  fill
+                  sizes="320px"
+                  className="object-cover object-top"
+                  priority
+                />
+              </div>
+              <div className="relative z-10 h-full flex flex-col justify-center px-8 max-w-[55%]">
+                <h1 className="font-display text-3xl text-white">
+                  {timeGreeting()}{firstName ? `, ${firstName}` : ''}
+                </h1>
+                <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+                  I&apos;m here with you. Let&apos;s continue where you are.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Pull a Card — mobile position, inline above the thread. Desktop
+              shows the same widget in the always-visible right column
+              instead (below); mobile has no persistent sidebar, so it's
+              landing-only here, same tradeoff as the quick prompts and
+              Explore row just below. This used to show the old scheduled
+              Daily Card via DailyGuidanceCard — Session 42 replaced that
+              widget slot with Pull a Card on desktop ("replaces this exact
+              widget slot rather than stacking alongside the untouched Daily
+              Card elsewhere") but missed mobile, leaving it as the only way
+              left to reach Pull a Card being desktop-only. */}
+          {isLanding && (
+            <div className="lg:hidden px-5 pt-2">
+              <PullACard />
+            </div>
+          )}
+
+          {/* pt-14 replaces the greeting block's own safe-area top padding
+              once the conversation is active and the greeting is hidden —
+              this page has no other fixed header providing that space. */}
+          <div
+            ref={scrollRef}
+            className={`scrollbar-glass flex-1 overflow-y-auto px-5 lg:px-0 pb-2 flex flex-col ${isLanding ? 'pt-2' : 'pt-14 lg:pt-2'} ${
+              !loading && messages.length === 0 ? 'justify-center' : 'space-y-3'
+            }`}
+          >
+            {loading && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">Loading…</p>}
+
+            {/* Same bubble treatment as a real assistant message (no fabricated
+                first turn — this is UI chrome, not a message DPNR sent) rather
+                than the plain floating text this replaced, so the empty state
+                has the same visual weight the reference's own opening line
+                does. Vertically centered in the thread area via the parent's
+                justify-center above, instead of top-aligned with a large dead
+                gap above the input bar. */}
+            {!loading && messages.length === 0 && (
+              <div className="flex justify-start">
+                <div className="max-w-[90%] lg:max-w-[480px] bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] text-white/85 rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed">
+                  <p>Hi — what&apos;s on your mind?</p>
+                  <p className="text-[var(--color-text-tertiary)] text-xs mt-1.5">
+                    I can help you think something through, or point you to a Room or a Library topic.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {messages.map((m, i) => (
+              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={m.role === 'user' ? 'max-w-[85%] lg:max-w-[400px]' : 'max-w-[90%] lg:max-w-[480px]'}>
+                  <div
+                    className={
+                      m.role === 'user'
+                        ? `bg-[var(--color-violet-600)] text-white rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed ${m.failed ? 'opacity-50' : ''}`
+                        : `bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] text-white/85 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed ${m.failed ? 'border-red-500/30 text-red-300/80' : ''}`
+                    }
+                  >
+                    {m.text}
+                  </div>
+                  {m.directive && <DirectiveCard directive={m.directive} sourceSessionId={sessionId} />}
+                </div>
+              </div>
+            ))}
+
+            {sending && (
+              <div className="flex justify-start">
+                <div className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] rounded-2xl rounded-bl-md px-4 py-2.5">
+                  <span className="flex gap-1">
+                    <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" />
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Direct navigation to the wider platform from Main Chat itself —
+              spec Table 2's own "Surface / Navigation behavior" row. On
+              desktop the sidebar already covers every destination here, so
+              this row is mobile-only. Landing-only now too — the bottom tab
+              bar (Chat/Dashboard/Mirror/Decision/Profile) already gives
+              persistent mobile navigation once a conversation is active, so
+              this row's job here is a first-visit convenience, not the only
+              way to navigate. */}
+          {isLanding && (
+          <div className="px-5 pt-2 lg:hidden">
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-2">Explore</p>
+            <div className="grid grid-cols-4 gap-2">
+              <Link href="/dashboard" className="liquid-glass active:scale-[0.98] rounded-2xl p-2.5 text-center">
+                <p className="text-white text-xs font-medium">InnerOS</p>
+              </Link>
+              <Link href="/rooms" className="liquid-glass active:scale-[0.98] rounded-2xl p-2.5 text-center">
+                <p className="text-white text-xs font-medium">Work Rooms</p>
+              </Link>
+              <Link href="/growth" className="liquid-glass active:scale-[0.98] rounded-2xl p-2.5 text-center">
+                <p className="text-white text-xs font-medium">Growth</p>
+              </Link>
+              <Link href="/library" className="liquid-glass active:scale-[0.98] rounded-2xl p-2.5 text-center">
+                <p className="text-white text-xs font-medium">Library</p>
+              </Link>
+            </div>
+          </div>
+          )}
+
+          {/* Quick-prompt chips — moved below the chat thread, directly above
+              the input bar (was between the hero and the thread), per direct
+              user feedback: sitting right where composing happens reads more
+              like "here's a way to start typing" than chrome squeezed above
+              the conversation. Still landing-only (showPrompts === isLanding),
+              same gating as before. */}
+          {showPrompts && (
+            <div className="px-5 lg:px-0 pt-1 pb-2">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
+                {QUICK_PROMPTS.map((p) => (
+                  <button
+                    key={p.text}
+                    onClick={() => fillPrompt(p.text)}
+                    className="liquid-glass text-left rounded-[var(--radius-card)] p-3 active:scale-[0.98]"
+                  >
+                    <p.icon className="w-4 h-4 text-[var(--color-violet-400)] mb-2" />
+                    <p className="text-white/80 text-xs leading-snug">
+                      {p.lead} <span className="text-[var(--color-violet-300)]">{p.rest}</span>
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="px-5 lg:px-0 pb-4 pt-3 flex items-end gap-2">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Share anything with me..."
+              rows={1}
+              disabled={loading}
+              className="flex-1 bg-[var(--color-surface-glass)] border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors max-h-32"
+            />
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || sending || loading}
+              className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-full bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] active:scale-[0.98] disabled:bg-white/10 disabled:cursor-not-allowed text-white transition-all"
+              aria-label="Send"
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M2 9L16 2L11 16L8 10L2 9Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" fill="currentColor" fillOpacity="0.15" />
+              </svg>
+            </button>
+          </div>
+          {isLanding && (
+            <p className="px-5 lg:px-0 pb-3 text-center text-[var(--color-text-tertiary)] text-xs">
+              Everything you share is private and encrypted.
+            </p>
+          )}
+        </div>
+
+        {/* Right column — desktop only */}
+        <div className="scrollbar-glass hidden lg:flex lg:flex-col lg:gap-4 lg:pb-6 lg:overflow-y-auto">
+          <PullACard />
+          <RecentConversations
+            activeSessionId={sessionId}
+            onSelect={handleSelectConversation}
+            onCreated={handleNewConversation}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -23,6 +23,18 @@ export const EARN_REFLECTION_COMPLETED_CREDITS = 1
 export const TierSchema = z.enum(['free', 'core', 'pro'])
 export type Tier = z.infer<typeof TierSchema>
 
+/**
+ * Collected at signup (docs/HEBREW_LOCALIZATION_PLAN.md gender-onboarding
+ * addition, Session 49) purely to pick correct Hebrew grammatical gender in
+ * AI-generated responses (second-person verb conjugation) — never used for
+ * anything else, and irrelevant when `preferredLanguage` is `'en'`.
+ * `unspecified` is the default and needs a real grammatical fallback
+ * decision before Slice E (AI-content localization) ships — flagged there,
+ * not resolved here.
+ */
+export const GenderIdentitySchema = z.enum(['male', 'female', 'unspecified'])
+export type GenderIdentity = z.infer<typeof GenderIdentitySchema>
+
 /** USER#<id> / PROFILE — app-level profile, not the Cognito record itself. */
 export const UserProfileItemSchema = z.object({
   pk: z.string(),
@@ -32,6 +44,7 @@ export const UserProfileItemSchema = z.object({
   consentedAt: z.string().datetime().nullable(),
   consentVersion: z.string().nullable(),
   preferredLanguage: z.enum(['en', 'he']).default('en'),
+  genderIdentity: GenderIdentitySchema.default('unspecified'),
   betaTrialActivatedAt: z.string().datetime().nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),

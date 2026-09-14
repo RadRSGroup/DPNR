@@ -1,6 +1,6 @@
 'use client'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/navigation'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import Sidebar from '@/components/layout/Sidebar'
 

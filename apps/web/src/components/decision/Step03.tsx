@@ -1,7 +1,7 @@
 'use client'
 import Image from 'next/image'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/navigation'
 import StepShell from './StepShell'
 import Sidebar from '@/components/layout/Sidebar'
 import PrimaryButton from '@/components/ui/PrimaryButton'

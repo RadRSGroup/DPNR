@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { Link } from '@/i18n/navigation'
+import { usePathname } from '@/i18n/navigation'
 import { User, Wallet, Headphones, ChevronRight } from 'lucide-react'
 import RingLogo from '@/components/icons/RingLogo'
 import { getCredits } from '@/lib/api/v1-client'

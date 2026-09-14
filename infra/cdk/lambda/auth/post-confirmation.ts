@@ -46,6 +46,12 @@ export const handler = async (
     consentedAt: null,
     consentVersion: null,
     preferredLanguage: 'en',
+    // Real gender-collection UI + its update endpoint are Slice B work
+    // (docs/HEBREW_LOCALIZATION_PLAN.md) — Cognito custom attributes can't
+    // be added to an already-live User Pool without recreating it, so this
+    // has to be set via a profile-update API call after signup, same as
+    // `preferredLanguage` will be. Defaults to 'unspecified' until then.
+    genderIdentity: 'unspecified',
     betaTrialActivatedAt: null,
     createdAt: now,
     updatedAt: now,

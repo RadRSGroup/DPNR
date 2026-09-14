@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { Link } from '@/i18n/navigation'
+import { usePathname } from '@/i18n/navigation'
 import { MessageCircle, LayoutGrid, Hexagon, Compass, User } from 'lucide-react'
 
 // A condensed 5-item version of PRIMARY_NAV — a phone-width bottom bar has no
