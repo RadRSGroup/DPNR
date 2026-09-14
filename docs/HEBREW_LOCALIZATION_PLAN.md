@@ -595,5 +595,6 @@ the SRP auth flow, not `USER_PASSWORD_AUTH`):
 job); no static UI translation exists yet (Slice D); auto-navigating a
 returning user to their *saved* `preferredLanguage` on login isn't
 built — Slice B only built manual switching plus best-effort persistence,
-matching the plan's original scope. Committed at the user's request;
-pushing to `origin` and any further deploys are separate asks.
+matching the plan's original scope. Committed as `7aeb4db` on `mvp` at the
+user's request; pushing to `origin` and any further deploys are separate
+asks.
