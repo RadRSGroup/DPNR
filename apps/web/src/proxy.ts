@@ -32,7 +32,9 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/rooms') ||
     pathname.startsWith('/library') ||
     pathname.startsWith('/mirror')
-  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup')
+  // /signup deliberately excluded from this gate — see the "Already
+  // authenticated" check below for why.
+  const isLoginPage = pathname.startsWith('/login')
   const isConsentPage = pathname.startsWith('/consent')
 
   // Unauthenticated → login
@@ -59,8 +61,17 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Already authenticated — skip auth pages
-  if (isAuthPage && hasSession) {
+  // Already authenticated — skip /login (revisiting it while signed in has
+  // no purpose). /signup is deliberately NOT included here: clicking
+  // "Create an account" while already signed in as someone else is a
+  // real, deliberate way to make a second account, not a mistaken
+  // revisit — Cognito's own `signIn()` (lib/cognito/client.ts) replaces
+  // `LastAuthUser` in localStorage on success, so completing signup here
+  // correctly switches to the new account rather than colliding with the
+  // old session. Found and fixed after the user reported "Create an
+  // account" bounced them straight back into their existing signed-in
+  // profile instead of the signup form.
+  if (isLoginPage && hasSession) {
     const url = request.nextUrl.clone()
     url.pathname = '/companion'
     return NextResponse.redirect(url)
