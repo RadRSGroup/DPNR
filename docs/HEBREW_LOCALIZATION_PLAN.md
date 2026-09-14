@@ -1006,5 +1006,5 @@ filename suggests the 300-question bank may be gendered (matching the
 the user whether a female/neutral variant exists or is coming separately,
 not assumed either way.
 
-Not committed yet — see the handoff in `docs/AGENT_LOG.md` for the actual
-commit hash once made.
+Committed as `56af596` on `mvp` at the user's request — not pushed, nothing
+to deploy (frontend-only, no CDK change).
