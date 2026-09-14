@@ -869,5 +869,5 @@ regardless of locale in every auth flow — mapping Cognito's own error
 codes to localized messages is real future work, documented inline at each
 try/catch rather than silently left unmentioned.
 
-Committed locally at the user's request ("continue with d") — not pushed,
+Committed as `c1c2600` on `mvp` at the user's request ("continue with d") — not pushed,
 nothing to deploy (frontend-only, no CDK change).
