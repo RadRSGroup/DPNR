@@ -1,6 +1,6 @@
 'use client'
 
-import { useLocale } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useRouter, usePathname } from '@/i18n/navigation'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { updatePreferences } from '@/lib/api/v1-client'
@@ -22,6 +22,7 @@ import { updatePreferences } from '@/lib/api/v1-client'
  * an error state for.
  */
 export default function LanguageSelector({ className }: { className?: string }) {
+  const t = useTranslations('Nav')
   const locale = useLocale()
   const router = useRouter()
   const pathname = usePathname()
@@ -38,7 +39,7 @@ export default function LanguageSelector({ className }: { className?: string }) 
   return (
     <div
       role="group"
-      aria-label="Language"
+      aria-label={t('languageAriaLabel')}
       className={`inline-flex items-center gap-1 rounded-full border border-[var(--color-border-glass)] bg-white/5 p-0.5 text-xs ${className ?? ''}`}
     >
       <button

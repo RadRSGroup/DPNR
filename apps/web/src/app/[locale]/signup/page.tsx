@@ -1,7 +1,7 @@
 'use client'
 import Image from 'next/image'
 import { useState } from 'react'
-import { useLocale } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { Link } from '@/i18n/navigation'
 import { signUp, confirmSignUp, resendConfirmationCode, signIn } from '@/lib/cognito/client'
@@ -14,6 +14,7 @@ import type { RecoveryCode } from '@/lib/crypto'
 import type { GenderIdentity } from '@dpnr/shared-types'
 
 export default function SignupPage() {
+  const t = useTranslations('Signup')
   const router = useRouter()
   const locale = useLocale()
   const [email, setEmail] = useState('')
@@ -36,11 +37,11 @@ export default function SignupPage() {
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
     if (!passwordsReadyToSubmit(password, confirmPassword)) {
-      setError('Please meet all password requirements and make sure both entries match.')
+      setError(t('errorPasswordRequirements'))
       return
     }
     if (!consented) {
-      setError('Please accept the Terms of Use and Privacy Policy to continue.')
+      setError(t('errorConsentRequired'))
       return
     }
     setLoading(true)
@@ -49,7 +50,7 @@ export default function SignupPage() {
       await signUp(email, password)
       setStage('confirm')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign up failed.')
+      setError(err instanceof Error ? err.message : t('errorSignUpFailed'))
     } finally {
       setLoading(false)
     }
@@ -90,7 +91,7 @@ export default function SignupPage() {
       router.push('/consent')
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Invalid or expired code.')
+      setError(err instanceof Error ? err.message : t('errorInvalidCode'))
       setLoading(false)
     }
   }
@@ -108,7 +109,7 @@ export default function SignupPage() {
       await resendConfirmationCode(email)
       setResent(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not resend the code.')
+      setError(err instanceof Error ? err.message : t('errorResendFailed'))
     }
   }
 
@@ -131,8 +132,8 @@ export default function SignupPage() {
         <div className="max-w-[393px] mx-auto px-5 min-h-screen flex flex-col justify-center">
           <div className="text-center space-y-4 mb-6">
             <div className="w-16 h-16 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-3xl mx-auto">✦</div>
-            <h2 className="text-white text-xl font-light">Check your email</h2>
-            <p className="text-white/50 text-sm">We sent a 6-digit code to <span className="text-white/80">{email}</span>.</p>
+            <h2 className="text-white text-xl font-light">{t('checkEmail')}</h2>
+            <p className="text-white/50 text-sm">{t('codeSentTo')} <span className="text-white/80">{email}</span>.</p>
           </div>
 
           {error && (
@@ -145,7 +146,7 @@ export default function SignupPage() {
             <input
               type="text"
               inputMode="numeric"
-              placeholder="Confirmation code"
+              placeholder={t('confirmationCodePlaceholder')}
               value={code}
               onChange={e => setCode(e.target.value)}
               required
@@ -156,12 +157,12 @@ export default function SignupPage() {
               disabled={loading}
               className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98]"
             >
-              {loading ? 'Confirming…' : 'Confirm & continue'}
+              {loading ? t('confirming') : t('confirmAndContinue')}
             </button>
           </form>
 
           <button onClick={handleResend} disabled={resent} className="text-purple-400 text-sm hover:text-purple-300 mt-6 disabled:opacity-50">
-            {resent ? 'Code resent — check your email' : "Didn't get a code? Resend"}
+            {resent ? t('codeResent') : t('resendCode')}
           </button>
         </div>
       </div>
@@ -183,9 +184,9 @@ export default function SignupPage() {
           <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR</p>
           <div className="relative inline-block">
             <h1 className="text-white text-2xl font-light">InnerOS</h1>
-            <span className="absolute top-1/2 left-full -translate-y-1/2 ml-2 text-[10px] font-semibold tracking-widest uppercase text-yellow-400 border border-yellow-400/40 rounded-full px-2 py-0.5 whitespace-nowrap">Beta</span>
+            <span className="absolute top-1/2 start-full -translate-y-1/2 ms-2 text-[10px] font-semibold tracking-widest uppercase text-yellow-400 border border-yellow-400/40 rounded-full px-2 py-0.5 whitespace-nowrap">{t('beta')}</span>
           </div>
-          <p className="text-[var(--color-text-tertiary)] text-sm mt-2">Create your free account</p>
+          <p className="text-[var(--color-text-tertiary)] text-sm mt-2">{t('subtitle')}</p>
         </div>
 
         {error && (
@@ -197,7 +198,7 @@ export default function SignupPage() {
         <form onSubmit={handleSignup} className="space-y-4">
           <div>
             <label htmlFor="signup-email" className="block text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide mb-1.5">
-              Email
+              {t('email')}
             </label>
             <input
               id="signup-email"
@@ -211,7 +212,7 @@ export default function SignupPage() {
           </div>
           <div>
             <label htmlFor="signup-password" className="block text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide mb-1.5">
-              Password
+              {t('password')}
             </label>
             <PasswordCreationField
               password={password}
@@ -222,9 +223,9 @@ export default function SignupPage() {
           </div>
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide mb-1.5">
-              Gender
+              {t('gender')}
             </label>
-            <p className="text-white/40 text-xs mb-2">Used only to address you correctly in Hebrew.</p>
+            <p className="text-white/40 text-xs mb-2">{t('genderHint')}</p>
             <GenderSelector value={gender} onChange={setGender} />
           </div>
           {/* Consent */}
@@ -238,11 +239,14 @@ export default function SignupPage() {
               {consented && <span className="text-white text-xs leading-none">✓</span>}
             </div>
             <span className="text-white/50 text-xs leading-relaxed">
-              I agree to the{' '}
-              <Link href="/terms" target="_blank" className="text-purple-400 hover:text-purple-300 underline">Terms of Use</Link>
-              {' '}and{' '}
-              <Link href="/privacy" target="_blank" className="text-purple-400 hover:text-purple-300 underline">Privacy & Data Policy</Link>
-              , including the use of my anonymised data to improve the service.
+              {t.rich('consentText', {
+                terms: (chunks) => (
+                  <Link href="/terms" target="_blank" className="text-purple-400 hover:text-purple-300 underline">{chunks}</Link>
+                ),
+                privacy: (chunks) => (
+                  <Link href="/privacy" target="_blank" className="text-purple-400 hover:text-purple-300 underline">{chunks}</Link>
+                ),
+              })}
             </span>
           </label>
 
@@ -251,13 +255,13 @@ export default function SignupPage() {
             disabled={loading || !consented || !passwordsReadyToSubmit(password, confirmPassword)}
             className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98]"
           >
-            {loading ? 'Creating account…' : 'Create account'}
+            {loading ? t('creatingAccount') : t('createAccount')}
           </button>
         </form>
 
         <p className="text-center text-[var(--color-text-tertiary)] text-sm mt-8">
-          Already have an account?{' '}
-          <Link href="/login" className="text-purple-400 hover:text-purple-300">Sign in</Link>
+          {t('haveAccount')}{' '}
+          <Link href="/login" className="text-purple-400 hover:text-purple-300">{t('signIn')}</Link>
         </p>
       </div>
     </div>

@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { Link } from '@/i18n/navigation'
 import { useRouter } from '@/i18n/navigation'
+import { useLocale } from 'next-intl'
 import { Wallet, Target, Hexagon, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getCredits, getCreditsTransactions, getPlans } from '@/lib/api/v1-client'
@@ -82,6 +83,7 @@ function PlanCard({ plan }: { plan: PlanSummary }) {
 }
 
 export default function WalletPage() {
+  const locale = useLocale()
   const router = useRouter()
   const [credits, setCredits] = useState<CreditsResponse | null>(null)
   const [transactions, setTransactions] = useState<CreditsTransactionsResponse['transactions']>([])
@@ -253,7 +255,7 @@ export default function WalletPage() {
                       )}
                       <div className="min-w-0">
                         <p className="text-white/80 text-sm truncate">{reasonLabel(t.reason)}</p>
-                        <p className="text-[var(--color-text-tertiary)] text-xs">{new Date(t.createdAt).toLocaleDateString()}</p>
+                        <p className="text-[var(--color-text-tertiary)] text-xs">{new Date(t.createdAt).toLocaleDateString(locale)}</p>
                       </div>
                     </div>
                     <p className={`text-sm font-medium shrink-0 ${t.amount >= 0 ? 'text-green-400/80' : 'text-white/50'}`}>

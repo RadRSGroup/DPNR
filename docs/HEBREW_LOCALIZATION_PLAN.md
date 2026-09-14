@@ -1,7 +1,9 @@
 # DPNR — Hebrew Localization + Language Selector: Plan
 
-**Status: Slices A, B, and C built and live-verified, Session 50 (2026-09-14).
-A and B are deployed to real AWS; C is frontend-only, nothing to deploy.**
+**Status: Slices A, B, C, and a first increment of D built and live-verified,
+Session 50 (2026-09-14). A and B are deployed to real AWS; C and D are
+frontend-only, nothing to deploy. D is partial — see §14 for exactly what's
+covered and what's deliberately deferred.**
 Written Session 48 (2026-09-11)
 after a full
 codebase survey. Scope, per the user's explicit choice: **both** static UI
@@ -331,7 +333,7 @@ starts, `AGENT_LOG.md` updated per slice.
 | **A** | i18n infra: install `next-intl`, `[locale]` routing (`en` unprefixed / `he` prefixed), merge into `proxy.ts` (§4.1), `<html lang dir>` wiring, extract existing hardcoded UI strings into `en.json`. No visible behavior change beyond a working (empty) `/he` route. | — |
 | **B** | Language selector UI (header nav + account/settings) + persistence: write `preferredLanguage` via the account API, set a guest cookie, add `custom:locale` claim injection (§4.2, mirroring `custom:consent`) — gets its own `security-review` pass per the standing guardrail. | A |
 | **C** | RTL shell + Hebrew typography: `dir` switching verified across the app shell, logical-property migration for nav/shared components, Hebrew-capable font(s) (§5's font decision resolved first), directional-icon audit, CI lint for new physical-direction classes. | A |
-| **D** | Static UI content: translate the extracted `en.json` → `he.json` (auth, nav, forms, settings, pricing, legal/marketing, empty/error states), fix the 4 hardcoded-locale date/format sites, add the CI key-parity check (§7). | A, C |
+| **D** (partial — see §14) | Static UI content: translate the extracted `en.json` → `he.json` (auth, nav, forms, settings, pricing, legal/marketing, empty/error states), fix the 4 hardcoded-locale date/format sites, add the CI key-parity check (§7). **Done**: auth funnel (login/signup/forgot-password/consent), nav shell, legal (terms/privacy), pricing, root metadata, error boundary, all 6 hardcoded-locale sites, the CI check. **Not done**: Dashboard/Companion/Decision Room/Mirror Room/Library/Growth Tracker/Evolution Map/Wallet/Account screen content (~900+ strings) — deferred, likely sequenced with Slice E per §14's reasoning. | A, C |
 | **E** | AI-content localization infra: `{{language}}` var threaded through the 8 seed files + ~20 call sites (§4.3), re-seed, live-verify one real Hebrew-language session per room type (Companion, Decision Room, Mirror Room, Twin, Roadmap, Library, Continuity) for fluency and no code-switching. | A, B |
 | **F** | Safety/crisis localization (§4.4/§4.5) — highest care, its own live-verification pass reproducing Session 30's "does the model stay on-script" test in Hebrew, plus the hand-translated `FALLBACK_SAFETY_MESSAGE` twin. | E |
 | **G** | Content Library + Pull-a-Card translation (§6) — content-ops workstream, sequenced once A-F are proven; needs a named human reviewer. | D |
@@ -705,3 +707,167 @@ touching Growth Tracker should give this one a real look.
 Committed as `7a7fc10` on `mvp` at the user's request ("complete slice c"),
 same pattern as Slice B — not pushed, nothing to deploy (frontend-only, no
 CDK change).
+
+## 14. Slice D — first increment built and live-verified, Session 50 (2026-09-14)
+
+Static UI content translation (§8's D row). **A real-scope survey done
+before writing any code found the true scope is ~1,200–1,400 distinct
+hardcoded UI strings across ~60 files — far larger than the plan's original
+one-line D description implied.** Rather than attempt all of it in one pass
+(this project's own standing "small, working increments" guardrail, and the
+precedent every prior multi-part build here has followed — Content Library,
+Pull-a-Card, etc.), this session scoped a first, coherent increment and
+explicitly deferred the rest, documented below rather than silently treating
+D as "done."
+
+**Scope built this increment: the entire pre-authenticated funnel, plus the
+always-visible app shell.** Landing page, Login, Signup (incl. the
+confirmation-code and recovery-code-reveal stages), Forgot Password (all 4
+stages), Consent, Terms of Use, Privacy & Data Policy, Pricing, the root
+`<html lang>`/page `<title>`/`<meta description>`, the global error
+boundary, and every nav-adjacent shared component (`Sidebar`,
+`MobileNav`, `nav-items.ts`, `LanguageSelector`'s aria-label,
+`PasswordCreationField`, `RecoveryCodeReveal`, `GenderSelector`). This is a
+real, user-meaningful boundary, not an arbitrary cutoff: a brand-new Hebrew
+user can now sign up, read the legal pages, see pricing, and navigate the
+whole app shell entirely in Hebrew before ever reaching content that's
+still English.
+
+**Deliberately deferred, not silently skipped** — the authenticated app's
+own screens (Dashboard, Companion's UI chrome, Decision Room's 14-step flow
+chrome, Mirror Room's 6-step flow chrome, Library, Growth Tracker, Evolution
+Map, Wallet, Account settings, Twin/Roadmap detail pages): roughly 900+ of
+the surveyed strings, concentrated overwhelmingly in Decision Room + Mirror
+Room's step-by-step chrome (~700 strings across 26 files — more than half
+the entire app). Beyond the sheer size, there's a real product-coherence
+argument for *not* rushing these into this increment even if there were
+time: those screens interleave static UI labels with AI-generated content
+(reflections, prompts) that Slice E hasn't localized yet — translating just
+the buttons and labels while the actual Companion/Decision Room/Mirror Room
+*conversation* stays English would produce a half-Hebrew, half-English
+screen, arguably a worse experience than staying consistently English until
+Slice E lands. A future session should treat "Decision Room + Mirror Room
+UI chrome" as its own slice, likely sequenced alongside or right after
+Slice E for exactly this reason — flagging this judgment call here rather
+than deciding it silently.
+
+**Translation-key architecture**: one namespace per page/feature matching
+Slice A's existing `Common` convention (`Landing`, `Login`, `Signup`,
+`ForgotPassword`, `Consent`, `Auth.{passwordField,recoveryCode,gender}`,
+`Nav.{items,mobileItems}`, `Pricing`, `Errors`, `Metadata`, `Terms`,
+`Privacy`, plus two small single-purpose ones — `AlignmentChart`,
+`CalendarButtons` — picked up while fixing their hardcoded-locale sites,
+see below). `messages/en.json`/`messages/he.json` now hold 214 matching
+keys each (§7's "translation files are code, not data" — normal review,
+not a vendor auto-pull).
+
+- **Legal pages (`Terms`/`Privacy`) use one rich-text block per section**
+  (`t.rich('sections.sN.body', {p, ul, li, strong, ...})`), not a key per
+  paragraph — a translator or reviewer works with one coherent block of
+  text per section (13 sections in Terms, 9 in Privacy + a 6-row table),
+  and paragraph/list structure travels with the translation instead of
+  being reassembled from fragments in code. `Section`'s own `[&_ul]:pl-5`
+  and Privacy's table `text-left`/`pr-4` were fixed to their logical
+  equivalents (`ps-5`, `text-start`/`pe-4`) while in these files anyway —
+  small, in-scope RTL debt the files already carried, closed rather than
+  left for a later pass.
+- **Known, pre-existing content issue, not introduced by this
+  translation**: Terms §5 ("Subscriptions and Payments") describes a
+  3-tier Core-$15/Pro-$25 monthly subscription model that predates the real
+  Credits system and doesn't match the product today (`pricing/page.tsx`'s
+  own doc comment already flags this same drift for the pricing page
+  itself). Translated faithfully as-is — rewriting Terms of Use content is
+  a legal/product decision, not something a translation slice should
+  decide unilaterally — but flagging it again here since Hebrew now
+  doubles the surface area of a pre-existing accuracy gap. A future session
+  should get the user's sign-off on real §5 content before either locale's
+  version is trusted for a real launch.
+- **`Signup`'s consent checkbox and `Consent` page's own agreement text**
+  use `t.rich(..., {terms: ..., privacy: ...})` to embed real `<Link>`
+  components inline — not string concatenation around a translated
+  sentence, which breaks word order across languages.
+- **`RoadmapTimelineCard`'s `align` prop internal rename** (Slice C's own
+  `'left'|'right'` → `'start'|'end'`) is unrelated to this slice but was
+  already done in C; not re-touched here.
+
+**The 4 hardcoded-locale/date-format sites from §2 — actually 6 once
+re-audited** (line numbers had shifted since the plan's original survey;
+one site the original grep pattern couldn't have caught was found too):
+- `wallet/page.tsx`, `decision/[id]/page.tsx`, `mirror/[id]/page.tsx`,
+  `CalendarButtons.tsx`, `AlignmentHistoryChart.tsx`'s `formatAxisDate` —
+  all switched from a hardcoded `'en-GB'`/`'en-US'`/no-locale
+  `toLocaleDateString(...)` call to `toLocaleDateString(locale, ...)`,
+  `locale` threaded in via `useLocale()` at each call site (module-level
+  helper functions took `locale` as a new parameter rather than trying to
+  call a hook outside a component).
+- **`lib/format.ts`'s `timeAgo()`** — not part of the plan's original list
+  (it hardcodes English relative-time strings/pluralization, not a
+  `toLocaleDateString`/`'en-*'` literal, so the plan's own grep pattern
+  wouldn't have matched it), found during the re-audit. Rewritten to use
+  `Intl.RelativeTimeFormat(locale, {numeric: 'auto'})` instead of
+  hand-rolled English pluralization — this is *better* than adding a
+  `{count, plural, ...}` translation message would have been, since
+  `Intl.RelativeTimeFormat` already knows Hebrew's plural/dual rules
+  natively; there's nothing to maintain in `messages/*.json` for this one.
+  3 call sites updated (`growth/page.tsx`, `DecisionRoomLanding.tsx`,
+  `RecentConversations.tsx`) to pass `locale` — those two files are
+  otherwise **not** translated this increment (out of scope per above),
+  only this one call site's date-format correctness was touched, a
+  narrow, surgical fix independent of the surrounding untranslated screen.
+- **`AlignmentHistoryChart`'s "Today" label** (both the header stat and
+  the chart's own final x-axis tick) is now translated via a new minimal
+  `AlignmentChart.today` key — the chart's *geometry* still deliberately
+  doesn't mirror under RTL (Slice C's own documented exception, time-series
+  axes follow international convention over reading direction), but the
+  label *text* on it is still real UI copy that needed translating like
+  anything else; direction-agnostic and language-agnostic are different
+  questions, this only affected the first one.
+
+**New CI guard**: `apps/web/scripts/check-i18n-parity.mjs`, wired into
+`npm run lint` alongside Slice C's RTL check — diffs the full flattened key
+sets of `en.json`/`he.json` and fails on any mismatch in either direction.
+Unlike the RTL check's debt-ratchet baseline, this one has no baseline —
+every key must exist in both files from the moment it's added, since
+next-intl silently falls back to the raw key on a miss (§7's own explicit
+ask). Currently 214/214 keys match.
+
+**Verified**: `npm run lint` (eslint + both Slice C/D check scripts),
+`tsc --noEmit`, full monorepo `npm run build` (26 routes unchanged),
+`npx vitest run` (26 pre-existing tests, untouched by this slice) all
+clean. Live-checked extensively against a real local dev server, both
+locales: `/` and `/he` render correct, distinct content with no
+`NEXT_LOCALE` cookie (genuine default) and with one set explicitly;
+`<title>`/`<meta description>` confirmed locale-correct via
+`document.title`/the meta tag directly, not just eyeballed. `/he/signup`
+live-verified end to end including typing a partial password and watching
+the (already-Hebrew-translated, Slice-D-untouched-logic)
+`PasswordCreationField` checklist react correctly. `/he/terms` and
+`/he/privacy` both confirmed to render every section's rich-text
+`<p>`/`<ul>`/`<li>`/`<strong>` structure correctly (checked via full page
+text extraction, not sampling), including the privacy-table's 6 rows and
+both pages' closing contact/cross-link blocks. `/he/pricing`'s "Back" link
+confirmed to actually mirror via `getComputedStyle(svg).scale === '-1 1'`,
+not just visually assumed. `/he/forgot-password`'s request stage
+live-verified. **`/he/consent` was not reachable for a live check** — the
+only available browser session (reused from Slice B/C's own test account)
+is already past consent, so visiting `/consent` correctly auto-redirects
+to `/companion` per `proxy.ts`'s existing "already consented" branch,
+itself confirmed working correctly rather than broken; confidence in
+`Consent`'s own translated content rests on the i18n-parity check + build +
+code review, not a live click-through — same disclosed-gap convention
+Slice C used for `RoadmapTimelineCard`. Zero `next-intl` `MISSING_MESSAGE`
+console errors observed across every page visited, both locales. The
+Sidebar's `Nav.creditsCount` plural message confirmed live at `0 קרדיטים`
+(the real account's real balance) — correctly resolves to Hebrew's
+`other` CLDR category, not a hardcoded `other`-only string.
+
+**Not done, honestly**: the ~900+ deferred strings above; any product
+decision on Terms §5's stale content; Slice E (AI-content localization,
+still has no consumer for the `custom:locale` claim); auth error messages
+that come straight from the Cognito SDK (`err.message`) stay English
+regardless of locale in every auth flow — mapping Cognito's own error
+codes to localized messages is real future work, documented inline at each
+try/catch rather than silently left unmentioned.
+
+Committed locally at the user's request ("continue with d") — not pushed,
+nothing to deploy (frontend-only, no CDK change).

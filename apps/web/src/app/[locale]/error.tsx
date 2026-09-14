@@ -1,6 +1,7 @@
 'use client'
 import Image from 'next/image'
 import { useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 
 export default function GlobalError({
@@ -10,6 +11,7 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const t = useTranslations('Errors')
   useEffect(() => {
     console.error('Global error:', error)
   }, [error])
@@ -20,16 +22,14 @@ export default function GlobalError({
         <Image src="/images/backgrounds/utility-bg.webp" alt="" fill className="object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
       </div>
-      <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-widest">Something went wrong</p>
-      <p className="text-white/60 text-sm text-center leading-relaxed">
-        An unexpected error occurred. Your progress is saved — you can continue from InnerOS.
-      </p>
+      <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-widest">{t('somethingWrong')}</p>
+      <p className="text-white/60 text-sm text-center leading-relaxed">{t('unexpectedError')}</p>
       <div className="flex gap-3 w-full">
         <button
           onClick={reset}
           className="flex-1 py-3 rounded-xl border border-white/20 text-white/60 hover:text-white hover:border-white/35 text-sm transition-all"
         >
-          Try again
+          {t('tryAgain')}
         </button>
         <Link
           href="/dashboard"

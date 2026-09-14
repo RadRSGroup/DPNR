@@ -1,6 +1,7 @@
 'use client'
 import Image from 'next/image'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { Link } from '@/i18n/navigation'
 import { forgotPassword, confirmForgotPassword, signIn } from '@/lib/cognito/client'
@@ -20,6 +21,7 @@ import type { RecoveryCode } from '@/lib/crypto'
  * under the new password (rotating the recovery code in the process).
  */
 export default function ForgotPasswordPage() {
+  const t = useTranslations('ForgotPassword')
   const router = useRouter()
   const [stage, setStage] = useState<'request' | 'reset' | 'recover' | 'done'>('request')
   const [email, setEmail] = useState('')
@@ -41,7 +43,7 @@ export default function ForgotPasswordPage() {
       await forgotPassword(email)
       setStage('reset')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not start password reset.')
+      setError(err instanceof Error ? err.message : t('errorRequestFailed'))
     } finally {
       setLoading(false)
     }
@@ -50,7 +52,7 @@ export default function ForgotPasswordPage() {
   async function handleReset(e: React.FormEvent) {
     e.preventDefault()
     if (!passwordsReadyToSubmit(newPassword, confirmPassword)) {
-      setError('Please meet all password requirements and make sure both entries match.')
+      setError(t('errorPasswordRequirements'))
       return
     }
     setLoading(true)
@@ -61,7 +63,7 @@ export default function ForgotPasswordPage() {
       await signIn(email, newPassword)
       setStage('recover')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Invalid or expired code.')
+      setError(err instanceof Error ? err.message : t('errorInvalidCode'))
     } finally {
       setLoading(false)
     }
@@ -88,7 +90,7 @@ export default function ForgotPasswordPage() {
       // distinguish further by design. Cognito's password is already
       // changed at this point, so retrying here doesn't require redoing
       // the email/code step.
-      setError('That recovery code doesn’t match this account. Check it and try again.')
+      setError(t('errorRecoveryCodeMismatch'))
     } finally {
       setLoading(false)
     }
@@ -108,8 +110,8 @@ export default function ForgotPasswordPage() {
           recoveryCode={rotatedCode}
           onContinue={handleDone}
           continuing={continuing}
-          title="Save your new recovery code"
-          subtitle="Your old recovery code no longer works. This one replaces it — the only way back in if you forget your password again."
+          title={t('newRecoveryCodeTitle')}
+          subtitle={t('newRecoveryCodeSubtitle')}
         />
       )
     }
@@ -125,16 +127,16 @@ export default function ForgotPasswordPage() {
         <div className="max-w-[393px] mx-auto px-5 min-h-screen flex flex-col justify-center">
           <div className="text-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-3xl mx-auto">✓</div>
-            <h2 className="text-white text-xl font-light">Password reset</h2>
+            <h2 className="text-white text-xl font-light">{t('passwordReset')}</h2>
             {noKeysMessage && (
-              <p className="text-white/50 text-sm px-4">Your password has been changed. You can sign in now.</p>
+              <p className="text-white/50 text-sm px-4">{t('noKeysMessage')}</p>
             )}
             <button
               onClick={handleDone}
               disabled={continuing}
               className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98] mt-4"
             >
-              {continuing ? 'Continuing…' : 'Continue'}
+              {continuing ? t('continuing') : t('continue')}
             </button>
           </div>
         </div>
@@ -153,19 +155,17 @@ export default function ForgotPasswordPage() {
         <div className="mb-10 text-center">
           <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR</p>
           <h1 className="text-white text-2xl font-light">
-            {stage === 'request' && 'Reset your password'}
-            {stage === 'reset' && 'Check your email'}
-            {stage === 'recover' && 'Enter your recovery code'}
+            {stage === 'request' && t('requestTitle')}
+            {stage === 'reset' && t('resetTitle')}
+            {stage === 'recover' && t('recoverTitle')}
           </h1>
           <p className="text-[var(--color-text-tertiary)] text-sm mt-2">
-            {stage === 'request' && "We'll send a code to your email."}
-            {stage === 'reset' && (
-              <>
-                Enter the code sent to <span className="text-white/80">{email}</span> and choose a new password.
-              </>
-            )}
-            {stage === 'recover' &&
-              "Your password is changed. Now enter your recovery code so we can restore access to your encrypted data."}
+            {stage === 'request' && t('requestSubtitle')}
+            {stage === 'reset' &&
+              t.rich('resetSubtitle', {
+                email: () => <span className="text-white/80">{email}</span>,
+              })}
+            {stage === 'recover' && t('recoverSubtitle')}
           </p>
         </div>
 
@@ -179,7 +179,7 @@ export default function ForgotPasswordPage() {
           <form onSubmit={handleRequest} className="space-y-4">
             <input
               type="email"
-              placeholder="Email"
+              placeholder={t('emailPlaceholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -190,7 +190,7 @@ export default function ForgotPasswordPage() {
               disabled={loading}
               className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98]"
             >
-              {loading ? 'Sending…' : 'Send reset code'}
+              {loading ? t('sending') : t('sendResetCode')}
             </button>
           </form>
         )}
@@ -200,7 +200,7 @@ export default function ForgotPasswordPage() {
             <input
               type="text"
               inputMode="numeric"
-              placeholder="Confirmation code"
+              placeholder={t('confirmationCodePlaceholder')}
               value={code}
               onChange={(e) => setCode(e.target.value)}
               required
@@ -211,15 +211,15 @@ export default function ForgotPasswordPage() {
               onPasswordChange={setNewPassword}
               confirmPassword={confirmPassword}
               onConfirmPasswordChange={setConfirmPassword}
-              passwordPlaceholder="New password"
-              confirmPlaceholder="Confirm new password"
+              passwordPlaceholder={t('newPasswordPlaceholder')}
+              confirmPlaceholder={t('confirmNewPasswordPlaceholder')}
             />
             <button
               type="submit"
               disabled={loading || !passwordsReadyToSubmit(newPassword, confirmPassword)}
               className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98]"
             >
-              {loading ? 'Resetting…' : 'Reset password'}
+              {loading ? t('resetting') : t('resetPassword')}
             </button>
           </form>
         )}
@@ -239,13 +239,13 @@ export default function ForgotPasswordPage() {
               disabled={loading}
               className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-2xl px-5 py-4 font-medium transition-all active:scale-[0.98]"
             >
-              {loading ? 'Verifying…' : 'Verify code'}
+              {loading ? t('verifying') : t('verifyCode')}
             </button>
           </form>
         )}
 
         <p className="text-center text-[var(--color-text-tertiary)] text-sm mt-8">
-          <Link href="/login" className="text-purple-400 hover:text-purple-300">Back to sign in</Link>
+          <Link href="/login" className="text-purple-400 hover:text-purple-300">{t('backToSignIn')}</Link>
         </p>
       </div>
     </div>

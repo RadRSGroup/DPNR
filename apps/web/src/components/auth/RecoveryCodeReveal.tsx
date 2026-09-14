@@ -1,6 +1,7 @@
 'use client'
 import Image from 'next/image'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import type { RecoveryCode } from '@/lib/crypto'
 import Card from '@/components/ui/Card'
 
@@ -26,9 +27,10 @@ export default function RecoveryCodeReveal({
   onContinue,
   continuing,
   error,
-  title = 'Save your recovery code',
-  subtitle = "This is the only way back into your account if you forget your password. We can't recover it for you — we never see your password or your data.",
+  title,
+  subtitle,
 }: RecoveryCodeRevealProps) {
+  const t = useTranslations('Auth.recoveryCode')
   const [acknowledged, setAcknowledged] = useState(false)
 
   return (
@@ -46,8 +48,8 @@ export default function RecoveryCodeReveal({
         <div className="pt-16 pb-6 text-center">
           <div className="w-14 h-14 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-2xl mx-auto mb-4">🔑</div>
           <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR</p>
-          <h1 className="text-white text-xl font-light">{title}</h1>
-          <p className="text-[var(--color-text-tertiary)] text-sm mt-2 leading-relaxed">{subtitle}</p>
+          <h1 className="text-white text-xl font-light">{title ?? t('defaultTitle')}</h1>
+          <p className="text-[var(--color-text-tertiary)] text-sm mt-2 leading-relaxed">{subtitle ?? t('defaultSubtitle')}</p>
         </div>
 
         <div className="flex-1 space-y-4">
@@ -58,7 +60,7 @@ export default function RecoveryCodeReveal({
           </Card>
 
           <p className="text-[var(--color-text-tertiary)] text-xs text-center px-2 leading-relaxed">
-            Write it down or save it in a password manager — not just a screenshot you might lose.
+            {t('writeItDown')}
           </p>
 
           {error && (
@@ -77,8 +79,7 @@ export default function RecoveryCodeReveal({
               {acknowledged && <span className="text-white text-xs leading-none">✓</span>}
             </div>
             <span className="text-white/50 text-xs leading-relaxed">
-              I&apos;ve saved this code somewhere safe. If I lose both my password and this code, my data is
-              permanently unrecoverable.
+              {t('acknowledgeText')}
             </span>
           </label>
 
@@ -87,7 +88,7 @@ export default function RecoveryCodeReveal({
             disabled={!acknowledged || continuing}
             className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 active:scale-[0.98] text-white rounded-2xl px-5 py-4 font-medium transition-all"
           >
-            {continuing ? 'Continuing…' : "I've saved it — continue"}
+            {continuing ? t('continuing') : t('savedContinue')}
           </button>
         </div>
       </div>

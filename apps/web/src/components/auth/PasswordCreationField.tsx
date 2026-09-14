@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 /**
  * Mirrors Cognito's actual pool policy (`infra/cdk/lib/auth-stack.ts`'s
@@ -7,11 +8,11 @@ import { useState } from 'react'
  * required) — shown here so a user finds out *before* submitting, not from
  * a generic Cognito rejection message after the fact.
  */
-const REQUIREMENTS: { label: string; test: (pw: string) => boolean }[] = [
-  { label: 'At least 8 characters', test: (pw) => pw.length >= 8 },
-  { label: 'One uppercase letter', test: (pw) => /[A-Z]/.test(pw) },
-  { label: 'One lowercase letter', test: (pw) => /[a-z]/.test(pw) },
-  { label: 'One number', test: (pw) => /[0-9]/.test(pw) },
+const REQUIREMENTS: { id: string; test: (pw: string) => boolean }[] = [
+  { id: 'minLength', test: (pw) => pw.length >= 8 },
+  { id: 'uppercase', test: (pw) => /[A-Z]/.test(pw) },
+  { id: 'lowercase', test: (pw) => /[a-z]/.test(pw) },
+  { id: 'number', test: (pw) => /[0-9]/.test(pw) },
 ]
 
 export function isPasswordValid(password: string): boolean {
@@ -51,10 +52,11 @@ export default function PasswordCreationField({
   onPasswordChange,
   confirmPassword,
   onConfirmPasswordChange,
-  passwordPlaceholder = 'Password',
-  confirmPlaceholder = 'Confirm password',
+  passwordPlaceholder,
+  confirmPlaceholder,
   autoComplete = 'new-password',
 }: Props) {
+  const t = useTranslations('Auth.passwordField')
   const [touched, setTouched] = useState(false)
   const showChecklist = touched || password.length > 0
   const showConfirmState = confirmPassword.length > 0
@@ -66,7 +68,7 @@ export default function PasswordCreationField({
       <div>
         <input
           type="password"
-          placeholder={passwordPlaceholder}
+          placeholder={passwordPlaceholder ?? t('passwordPlaceholder')}
           value={password}
           onChange={(e) => onPasswordChange(e.target.value)}
           onFocus={() => setTouched(true)}
@@ -80,7 +82,7 @@ export default function PasswordCreationField({
               const met = req.test(password)
               return (
                 <li
-                  key={req.label}
+                  key={req.id}
                   className={`text-xs flex items-center gap-1.5 transition-colors ${
                     met ? 'text-green-400/80' : 'text-[var(--color-text-tertiary)]'
                   }`}
@@ -92,7 +94,7 @@ export default function PasswordCreationField({
                   >
                     {met ? '✓' : ''}
                   </span>
-                  {req.label}
+                  {t(`requirements.${req.id}`)}
                 </li>
               )
             })}
@@ -103,7 +105,7 @@ export default function PasswordCreationField({
       <div>
         <input
           type="password"
-          placeholder={confirmPlaceholder}
+          placeholder={confirmPlaceholder ?? t('confirmPlaceholder')}
           value={confirmPassword}
           onChange={(e) => onConfirmPasswordChange(e.target.value)}
           required
@@ -116,8 +118,8 @@ export default function PasswordCreationField({
                 : 'border-white/10 focus:border-purple-500/60'
           }`}
         />
-        {mismatch && <p className="text-red-400 text-xs mt-1.5 px-1">Passwords do not match.</p>}
-        {matches && <p className="text-green-400/80 text-xs mt-1.5 px-1">Passwords match.</p>}
+        {mismatch && <p className="text-red-400 text-xs mt-1.5 px-1">{t('mismatch')}</p>}
+        {matches && <p className="text-green-400/80 text-xs mt-1.5 px-1">{t('match')}</p>}
       </div>
     </div>
   )

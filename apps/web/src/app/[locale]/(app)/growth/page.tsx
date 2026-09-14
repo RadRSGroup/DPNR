@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { Link } from '@/i18n/navigation'
 import { useRouter } from '@/i18n/navigation'
 import { TrendingUp, Wind, Layers, Waves } from 'lucide-react'
+import { useLocale } from 'next-intl'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getDashboard, getDecisionsList, getCompanionContext, getGrowthValuesNeeds } from '@/lib/api/v1-client'
 import type { DashboardResponse, DecisionsListResponse, CompanionContextResponse, GrowthValuesNeedsResponse } from '@dpnr/shared-types'
@@ -47,6 +48,7 @@ import { timeAgo } from '@/lib/format'
  */
 
 function GrowthTrackerContent() {
+  const locale = useLocale()
   const router = useRouter()
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null)
   const [decisions, setDecisions] = useState<DecisionsListResponse['decisions']>([])
@@ -314,7 +316,7 @@ function GrowthTrackerContent() {
                     >
                       <div className="min-w-0">
                         <p className="text-sm text-white/80 line-clamp-1">{d.title}</p>
-                        <p className="text-xs text-[var(--color-text-tertiary)]">{timeAgo(d.createdAt)}</p>
+                        <p className="text-xs text-[var(--color-text-tertiary)]">{timeAgo(d.createdAt, locale)}</p>
                       </div>
                       <span className="text-xs text-[var(--color-text-tertiary)] capitalize shrink-0">{d.status}</span>
                     </Link>

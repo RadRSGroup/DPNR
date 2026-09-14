@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { usePathname } from '@/i18n/navigation'
 import { User, Wallet, Headphones, ChevronRight } from 'lucide-react'
@@ -10,6 +11,7 @@ import { PRIMARY_NAV } from './nav-items'
 import LanguageSelector from '@/components/shared/LanguageSelector'
 
 export default function Sidebar() {
+  const t = useTranslations('Nav')
   const pathname = usePathname()
   const [credits, setCredits] = useState<number | null>(null)
 
@@ -26,7 +28,7 @@ export default function Sidebar() {
         <RingLogo className="w-8 h-8" />
         <div>
           <div className="text-sm font-semibold leading-tight">DPNR</div>
-          <div className="text-[10px] text-[var(--color-text-tertiary)] leading-tight">Human Operating System</div>
+          <div className="text-[10px] text-[var(--color-text-tertiary)] leading-tight">{t('tagline')}</div>
           <div className="text-xs text-[var(--color-violet-400)] leading-tight">innerOS</div>
         </div>
       </Link>
@@ -48,8 +50,8 @@ export default function Sidebar() {
               onClick={(e) => item.comingSoon && e.preventDefault()}
             >
               <Icon className="w-[18px] h-[18px] shrink-0" />
-              <span className="flex-1">{item.label}</span>
-              {item.comingSoon && <span className="text-[10px] uppercase tracking-wide text-[var(--color-text-tertiary)]">Soon</span>}
+              <span className="flex-1">{t(`items.${item.labelKey}`)}</span>
+              {item.comingSoon && <span className="text-[10px] uppercase tracking-wide text-[var(--color-text-tertiary)]">{t('soon')}</span>}
             </Link>
           )
         })}
@@ -59,17 +61,17 @@ export default function Sidebar() {
         <SidebarMiniCard
           href="/wallet"
           icon={<Wallet className="w-[18px] h-[18px]" />}
-          title="My Wallet"
-          subtitle={credits !== null ? `${credits} credits` : 'View credits'}
+          title={t('myWallet')}
+          subtitle={credits !== null ? t('creditsCount', { count: credits }) : t('viewCredits')}
         />
-        <SidebarMiniCard href="/account" icon={<User className="w-[18px] h-[18px]" />} title="My Profile" subtitle="Settings" />
+        <SidebarMiniCard href="/account" icon={<User className="w-[18px] h-[18px]" />} title={t('myProfile')} subtitle={t('settings')} />
       </div>
 
       <div className="mt-auto pt-4 flex items-center gap-3 px-3 py-2.5 text-white/50 text-sm">
         <Headphones className="w-[18px] h-[18px]" />
         <div>
-          <div>Need help?</div>
-          <div className="text-xs text-[var(--color-text-tertiary)]">We&apos;re here for you</div>
+          <div>{t('needHelp')}</div>
+          <div className="text-xs text-[var(--color-text-tertiary)]">{t('needHelpSubtitle')}</div>
         </div>
       </div>
 

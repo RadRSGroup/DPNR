@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
 
 interface Point {
   date: string
@@ -28,11 +29,13 @@ const RANGE_OPTIONS = [
   { key: '30d', label: '30D', days: 30 },
 ] as const
 
-function formatAxisDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+function formatAxisDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, { month: 'short', day: 'numeric' })
 }
 
 export default function AlignmentHistoryChart({ points }: { points: Point[] }) {
+  const t = useTranslations('AlignmentChart')
+  const locale = useLocale()
   const [range, setRange] = useState<(typeof RANGE_OPTIONS)[number]['key']>('30d')
   const activeDays = RANGE_OPTIONS.find((r) => r.key === range)!.days
   const visible = points.slice(-activeDays)
@@ -78,7 +81,7 @@ export default function AlignmentHistoryChart({ points }: { points: Point[] }) {
         {latest && (
           <div className="text-end leading-none">
             <p className="text-lg text-white font-medium">{latest.score}%</p>
-            <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">Today</p>
+            <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">{t('today')}</p>
           </div>
         )}
       </div>
@@ -132,7 +135,7 @@ export default function AlignmentHistoryChart({ points }: { points: Point[] }) {
             fontSize="9"
             fill="rgba(255,255,255,0.35)"
           >
-            {i === visible.length - 1 ? 'Today' : formatAxisDate(visible[i].date)}
+            {i === visible.length - 1 ? t('today') : formatAxisDate(visible[i].date, locale)}
           </text>
         ))}
       </svg>

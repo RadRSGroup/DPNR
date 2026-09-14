@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { usePathname } from '@/i18n/navigation'
 import { MessageCircle, LayoutGrid, Hexagon, Compass, User } from 'lucide-react'
@@ -7,15 +8,17 @@ import { MessageCircle, LayoutGrid, Hexagon, Compass, User } from 'lucide-react'
 // A condensed 5-item version of PRIMARY_NAV — a phone-width bottom bar has no
 // room for all 7 sidebar items plus the 3 mini-cards, so this picks the
 // highest-traffic destinations and folds everything else behind My Profile.
+// labelKey indexes the `Nav.mobileItems` translation namespace.
 const MOBILE_NAV = [
-  { label: 'Chat', href: '/companion', icon: MessageCircle },
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutGrid },
-  { label: 'Mirror', href: '/mirror/new', icon: Hexagon },
-  { label: 'Decision', href: '/decision/new', icon: Compass },
-  { label: 'Profile', href: '/account', icon: User },
+  { labelKey: 'chat', href: '/companion', icon: MessageCircle },
+  { labelKey: 'dashboard', href: '/dashboard', icon: LayoutGrid },
+  { labelKey: 'mirror', href: '/mirror/new', icon: Hexagon },
+  { labelKey: 'decision', href: '/decision/new', icon: Compass },
+  { labelKey: 'profile', href: '/account', icon: User },
 ]
 
 export default function MobileNav() {
+  const t = useTranslations('Nav.mobileItems')
   const pathname = usePathname()
 
   return (
@@ -31,7 +34,7 @@ export default function MobileNav() {
               className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] ${active ? 'text-[var(--color-violet-400)]' : 'text-white/50'}`}
             >
               <Icon className="w-5 h-5" />
-              {item.label}
+              {t(item.labelKey)}
             </Link>
           )
         })}

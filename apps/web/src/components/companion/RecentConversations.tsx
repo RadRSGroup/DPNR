@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useLocale } from 'next-intl'
 import { MessageSquarePlus } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import { getCompanionConversations, createCompanionConversation } from '@/lib/api/v1-client'
@@ -20,6 +21,7 @@ interface Props {
  * no v1 destination, out of scope for this pass.
  */
 export default function RecentConversations({ activeSessionId, onSelect, onCreated }: Props) {
+  const locale = useLocale()
   const [conversations, setConversations] = useState<CompanionConversationsListResponse['conversations']>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
@@ -74,7 +76,7 @@ export default function RecentConversations({ activeSessionId, onSelect, onCreat
               }`}
             >
               <p className="text-sm text-white/80 line-clamp-1">{c.title ?? 'New conversation'}</p>
-              <span className="text-xs text-[var(--color-text-tertiary)] shrink-0">{timeAgo(c.lastMessageAt)}</span>
+              <span className="text-xs text-[var(--color-text-tertiary)] shrink-0">{timeAgo(c.lastMessageAt, locale)}</span>
             </button>
           ))}
         </div>

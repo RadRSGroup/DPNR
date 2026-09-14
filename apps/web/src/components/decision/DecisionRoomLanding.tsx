@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from '@/i18n/navigation'
+import { useLocale } from 'next-intl'
 import { Search, Telescope, Heart, Target, CheckCircle2, ArrowRightCircle, Clock, PieChart } from 'lucide-react'
 import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
@@ -51,6 +52,7 @@ interface Props {
  * — same data Companion's own widget shows.
  */
 export default function DecisionRoomLanding({ userName, onStart, sourceTopicTitle }: Props) {
+  const locale = useLocale()
   const router = useRouter()
   const firstName = userName.includes('@') ? userName.split('@')[0] : userName.split(' ')[0] || userName
   const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
@@ -191,7 +193,7 @@ export default function DecisionRoomLanding({ userName, onStart, sourceTopicTitl
                         >
                           <div className="min-w-0">
                             <p className="text-sm text-white/80 line-clamp-1">{d.title}</p>
-                            <p className="text-xs text-[var(--color-text-tertiary)]">{timeAgo(d.createdAt)}</p>
+                            <p className="text-xs text-[var(--color-text-tertiary)]">{timeAgo(d.createdAt, locale)}</p>
                           </div>
                           <span className="text-xs text-[var(--color-text-tertiary)] capitalize shrink-0">{d.status}</span>
                         </button>

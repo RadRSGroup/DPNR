@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { useParams } from 'next/navigation'
+import { useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
@@ -21,8 +22,8 @@ import type { MirrorRoomFullResponse } from '@dpnr/shared-types'
  * not a guess.
  */
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+function formatDate(iso: string, locale: string) {
+  return new Date(iso).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 function Field({ label, value }: { label: string; value?: string }) {
@@ -36,6 +37,7 @@ function Field({ label, value }: { label: string; value?: string }) {
 }
 
 export default function MirrorDetailPage() {
+  const locale = useLocale()
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [session, setSession] = useState<MirrorRoomFullResponse | null>(null)
@@ -93,7 +95,7 @@ export default function MirrorDetailPage() {
                   >
                     {session.status === 'completed' ? '✓ Completed' : 'In progress'}
                     {' · '}
-                    {formatDate(session.createdAt)}
+                    {formatDate(session.createdAt, locale)}
                   </p>
                   <h1 className="font-display text-xl lg:text-2xl text-white mt-1">
                     {session.lifeDomain ? `Reflection — ${session.lifeDomain}` : 'Reflection'}

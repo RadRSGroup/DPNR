@@ -1,5 +1,334 @@
 {
   "Common": {
     "appName": "InnerOS"
+  },
+  "Metadata": {
+    "title": "InnerOS — DPNR",
+    "description": "Your personal Human Operating System — reflect, decide, and grow with DPNR."
+  },
+  "Landing": {
+    "beta": "Beta",
+    "tagline": "Your personal Human Operating System.",
+    "subtitle": "Reflect, decide, and grow — one conversation at a time.",
+    "signIn": "Sign In",
+    "newHere": "New here?",
+    "createAccount": "Create an account",
+    "footerTagline": "Private · Encrypted · AI-assisted"
+  },
+  "Login": {
+    "authFailed": "Authentication failed. Please try again.",
+    "signInFailed": "Sign in failed.",
+    "subtitle": "Sign in to continue",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "signingIn": "Signing in…",
+    "signIn": "Sign in",
+    "noAccount": "Don't have an account?",
+    "signUp": "Sign up"
+  },
+  "Signup": {
+    "errorPasswordRequirements": "Please meet all password requirements and make sure both entries match.",
+    "errorConsentRequired": "Please accept the Terms of Use and Privacy Policy to continue.",
+    "errorSignUpFailed": "Sign up failed.",
+    "errorInvalidCode": "Invalid or expired code.",
+    "errorResendFailed": "Could not resend the code.",
+    "checkEmail": "Check your email",
+    "codeSentTo": "We sent a 6-digit code to",
+    "confirmationCodePlaceholder": "Confirmation code",
+    "confirming": "Confirming…",
+    "confirmAndContinue": "Confirm & continue",
+    "codeResent": "Code resent — check your email",
+    "resendCode": "Didn't get a code? Resend",
+    "beta": "Beta",
+    "subtitle": "Create your free account",
+    "email": "Email",
+    "password": "Password",
+    "gender": "Gender",
+    "genderHint": "Used only to address you correctly in Hebrew.",
+    "consentText": "I agree to the <terms>Terms of Use</terms> and <privacy>Privacy & Data Policy</privacy>, including the use of my anonymised data to improve the service.",
+    "creatingAccount": "Creating account…",
+    "createAccount": "Create account",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in"
+  },
+  "ForgotPassword": {
+    "errorRequestFailed": "Could not start password reset.",
+    "errorPasswordRequirements": "Please meet all password requirements and make sure both entries match.",
+    "errorInvalidCode": "Invalid or expired code.",
+    "errorRecoveryCodeMismatch": "That recovery code doesn't match this account. Check it and try again.",
+    "newRecoveryCodeTitle": "Save your new recovery code",
+    "newRecoveryCodeSubtitle": "Your old recovery code no longer works. This one replaces it — the only way back in if you forget your password again.",
+    "passwordReset": "Password reset",
+    "noKeysMessage": "Your password has been changed. You can sign in now.",
+    "continuing": "Continuing…",
+    "continue": "Continue",
+    "requestTitle": "Reset your password",
+    "resetTitle": "Check your email",
+    "recoverTitle": "Enter your recovery code",
+    "requestSubtitle": "We'll send a code to your email.",
+    "resetSubtitle": "Enter the code sent to <email></email> and choose a new password.",
+    "recoverSubtitle": "Your password is changed. Now enter your recovery code so we can restore access to your encrypted data.",
+    "emailPlaceholder": "Email",
+    "sending": "Sending…",
+    "sendResetCode": "Send reset code",
+    "confirmationCodePlaceholder": "Confirmation code",
+    "newPasswordPlaceholder": "New password",
+    "confirmNewPasswordPlaceholder": "Confirm new password",
+    "resetting": "Resetting…",
+    "resetPassword": "Reset password",
+    "verifying": "Verifying…",
+    "verifyCode": "Verify code",
+    "backToSignIn": "Back to sign in"
+  },
+  "Consent": {
+    "errorGeneric": "Something went wrong. Please try again.",
+    "title": "Before you begin",
+    "subtitle": "Please review how we handle your data.",
+    "points": {
+      "decisionsStayYours": {
+        "title": "Your decisions stay yours",
+        "body": "Everything you write is private. We never share your personal content with third parties."
+      },
+      "aiProcessesContent": {
+        "title": "AI processes your content",
+        "body": "Your decision text is processed only during your active session, and encrypted so we can't access it either. It is not used to train any model."
+      },
+      "anonymisedAnalysis": {
+        "title": "Anonymised analysis",
+        "body": "We may analyse anonymised, aggregated usage patterns to improve the product. No individual content is read or attributed."
+      },
+      "downloadOrDelete": {
+        "title": "Download or delete anytime",
+        "body": "You can export all your data as JSON or permanently delete your account from Account Settings at any time."
+      }
+    },
+    "agreementText": "By continuing you agree to our <terms>Terms of Use</terms> and <privacy>Privacy & Data Policy</privacy>, including the use of anonymised data to improve the service.",
+    "saving": "Saving…",
+    "agreeButton": "I agree — take me in",
+    "withdrawText": "You can withdraw consent and delete your account at any time from <account>Account Settings</account>."
+  },
+  "Auth": {
+    "passwordField": {
+      "passwordPlaceholder": "Password",
+      "confirmPlaceholder": "Confirm password",
+      "requirements": {
+        "minLength": "At least 8 characters",
+        "uppercase": "One uppercase letter",
+        "lowercase": "One lowercase letter",
+        "number": "One number"
+      },
+      "mismatch": "Passwords do not match.",
+      "match": "Passwords match."
+    },
+    "recoveryCode": {
+      "defaultTitle": "Save your recovery code",
+      "defaultSubtitle": "This is the only way back into your account if you forget your password. We can't recover it for you — we never see your password or your data.",
+      "writeItDown": "Write it down or save it in a password manager — not just a screenshot you might lose.",
+      "acknowledgeText": "I've saved this code somewhere safe. If I lose both my password and this code, my data is permanently unrecoverable.",
+      "continuing": "Continuing…",
+      "savedContinue": "I've saved it — continue"
+    },
+    "gender": {
+      "ariaLabel": "Gender",
+      "options": {
+        "male": "Male",
+        "female": "Female",
+        "unspecified": "Prefer not to say"
+      }
+    }
+  },
+  "Nav": {
+    "tagline": "Human Operating System",
+    "items": {
+      "mainChat": "Main Chat",
+      "dashboard": "Dashboard",
+      "mirrorRoom": "Mirror Room",
+      "decisionRoom": "Decision Room",
+      "contentLearning": "Content & Learning",
+      "growthTracker": "Growth Tracker",
+      "evolutionMap": "My Evolution Map"
+    },
+    "soon": "Soon",
+    "myWallet": "My Wallet",
+    "viewCredits": "View credits",
+    "creditsCount": "{count, plural, one {# credit} other {# credits}}",
+    "myProfile": "My Profile",
+    "settings": "Settings",
+    "needHelp": "Need help?",
+    "needHelpSubtitle": "We're here for you",
+    "languageAriaLabel": "Language",
+    "mobileItems": {
+      "chat": "Chat",
+      "dashboard": "Dashboard",
+      "mirror": "Mirror",
+      "decision": "Decision",
+      "profile": "Profile"
+    }
+  },
+  "Pricing": {
+    "back": "Back",
+    "title": "Credits & Packages",
+    "subtitle": "DPNR runs on Credits, not a fixed monthly tier — you spend them only on real, meaningful actions.",
+    "betaBanner": "Every Beta account starts with free starter Credits — no payment method required. Credit packs and plans are coming soon; everyone stays on their starter balance until then.",
+    "starterCredits": "Starter Credits",
+    "starterCreditsSubtitle": "Included free at signup",
+    "noPaymentMethod": "No card or payment method needed",
+    "meaningfulActionsOnly": "Spent only on meaningful actions — never a surprise charge",
+    "balanceVisible": "Your balance is always visible from Account",
+    "creditPacksPlans": "Credit packs & plans",
+    "comingSoonDuringBeta": "Coming soon during Beta",
+    "comingSoon": "Coming soon",
+    "emailNotice": "We'll email everyone when Credit packs and plans open up."
+  },
+  "Errors": {
+    "somethingWrong": "Something went wrong",
+    "unexpectedError": "An unexpected error occurred. Your progress is saved — you can continue from InnerOS.",
+    "tryAgain": "Try again"
+  },
+  "AlignmentChart": {
+    "today": "Today"
+  },
+  "CalendarButtons": {
+    "addReminder": "Add check-in reminder"
+  },
+  "Terms": {
+    "back": "Back",
+    "title": "Terms of Use",
+    "effectiveDate": "Effective date: June 2026 · Last updated: June 2026",
+    "sections": {
+      "s1": {
+        "title": "1. Acceptance of Terms",
+        "body": "<p>By creating an account or using DPNR (\"the Service\"), you agree to be bound by these Terms of Use and our Privacy & Data Policy. If you do not agree, do not use the Service.</p><p>These terms apply to all users, including free-tier and paid subscribers.</p>"
+      },
+      "s2": {
+        "title": "2. Description of Service",
+        "body": "<p>DPNR is an AI-assisted personal-development platform. It includes a conversational Companion, structured guided sessions (Decision Room, Mirror Room), a personal Digital Twin that reflects patterns and progress back to you, and a content Library — together helping you explore, reflect on, and act on what matters to you. The Service uses AI language models (currently Anthropic's Claude, via AWS Bedrock) to generate reflections, suggestions, and projections based on content you provide.</p><p><strong>The Service is not a mental health service, therapy, or medical advice platform.</strong> It is a self-reflective tool. If you are in distress, please seek professional support.</p>"
+      },
+      "s3": {
+        "title": "3. Eligibility",
+        "body": "<p>You must be at least 16 years old to use the Service. By registering, you confirm that you meet this requirement.</p>"
+      },
+      "s4": {
+        "title": "4. User Accounts",
+        "body": "<ul><li>You are responsible for maintaining the security of your account credentials.</li><li>You agree not to share your account with others.</li><li>You may delete your account at any time from your account settings.</li><li>We reserve the right to suspend or terminate accounts that violate these terms.</li></ul>"
+      },
+      "s5": {
+        "title": "5. Subscriptions and Payments",
+        "body": "<ul><li>Free accounts receive a limited monthly AI token allowance (~3 sessions).</li><li>Paid plans (Core $15/mo, Pro $25/mo) are billed monthly via Grow.</li><li>Subscriptions renew automatically unless cancelled before the renewal date.</li><li>Refunds are handled on a case-by-case basis — contact support within 7 days of a charge.</li><li>Prices are inclusive of applicable VAT where required by law.</li></ul>"
+      },
+      "s6": {
+        "title": "6. Content You Provide",
+        "body": "<p>You retain ownership of all content you submit — your decision narratives, reflections, tags, and journal entries (\"User Content\").</p><p>By using the Service, you grant DPNR a limited, non-exclusive licence to process your User Content solely to:</p><ul><li>Deliver the Service features (AI responses, storage, display)</li><li>Generate anonymised, aggregated insights to improve the Service (see Section 7)</li></ul><p>We do not sell your personal content or share identified User Content with third parties.</p>"
+      },
+      "s7": {
+        "title": "7. Data Use for Service Improvement",
+        "body": "<p>To improve the Service's AI quality, product design, and user experience, we may analyse usage patterns and content in anonymised, aggregated form. This means:</p><ul><li><strong>Anonymisation:</strong> Personal identifiers (name, email, account ID) are removed before any analytical use.</li><li><strong>Aggregation:</strong> Insights are derived from patterns across many users — no individual decision narrative is read or attributed.</li><li><strong>No profiling:</strong> We do not build individual user profiles for advertising or third-party sale.</li><li><strong>AI training:</strong> Your content may be used in anonymised form to fine-tune or evaluate our internal AI prompts. We do not share raw User Content with our AI model provider for training purposes beyond standard API usage under that provider's own data terms.</li></ul><p>You may opt out of anonymised analytical use by contacting us. Opting out does not affect your ability to use the Service.</p>"
+      },
+      "s8": {
+        "title": "8. Prohibited Use",
+        "body": "<p>You agree not to:</p><ul><li>Use the Service to generate harmful, abusive, or illegal content</li><li>Attempt to reverse-engineer, scrape, or extract AI prompts or model outputs at scale</li><li>Resell or redistribute the Service without written permission</li><li>Use automated tools to generate fake decisions or abuse free-tier token limits</li></ul>"
+      },
+      "s9": {
+        "title": "9. Disclaimers",
+        "body": "<ul><li>The Service is provided \"as is\" without warranties of any kind.</li><li>AI-generated content (reflections, suggestions, projections) is illustrative — it may be inaccurate, incomplete, or not suited to your specific situation. Exercise your own judgement.</li><li>We do not guarantee uptime, data retention, or AI response quality.</li></ul>"
+      },
+      "s10": {
+        "title": "10. Limitation of Liability",
+        "body": "<p>To the maximum extent permitted by applicable law, DPNR shall not be liable for any indirect, incidental, or consequential damages arising from your use of the Service, including any decisions you make based on AI-generated content.</p>"
+      },
+      "s11": {
+        "title": "11. Your Data Rights",
+        "body": "<p>You have the right to:</p><ul><li><strong>Access & Download:</strong> Export all your data as a JSON file from your account settings at any time.</li><li><strong>Delete:</strong> Permanently delete your account and all associated data from your account settings. Deletion is irreversible.</li><li><strong>Correct:</strong> Edit your decisions, tags, and reflections directly within the app.</li><li><strong>Opt out of analytics:</strong> Contact us to exclude your data from anonymised analysis.</li></ul><p>For requests not handled in-app, email: <privacyEmail></privacyEmail></p>"
+      },
+      "s12": {
+        "title": "12. Changes to These Terms",
+        "body": "<p>We may update these terms. We will notify you by email or in-app banner at least 14 days before material changes take effect. Continued use after that date constitutes acceptance.</p>"
+      },
+      "s13": {
+        "title": "13. Governing Law",
+        "body": "<p>These terms are governed by the laws of the State of Israel. Disputes shall be resolved in the competent courts of Tel Aviv.</p>"
+      }
+    },
+    "questionsContact": "Questions? Contact us at <email></email>",
+    "privacyLink": "Privacy & Data Policy →",
+    "accountLink": "Account Settings →"
+  },
+  "Privacy": {
+    "back": "Back",
+    "title": "Privacy & Data Policy",
+    "effectiveDate": "Effective date: June 2026 · Last updated: June 2026",
+    "sections": {
+      "whatWeCollect": {
+        "title": "What We Collect",
+        "body": "<p>When you use DPNR we collect:</p><ul><li><strong>Account data:</strong> Email address, hashed password (managed via AWS Cognito) or OAuth token, and subscription tier.</li><li><strong>Your content:</strong> Everything you type into the app — Companion conversations, Decision Room narratives and options, Mirror Room reflections, journal check-ins, commitments, and outcomes.</li><li><strong>Usage data:</strong> AI token consumption per session, step completion events, and timestamps.</li><li><strong>Payment data:</strong> Subscription status and billing history. Card details are held exclusively by Grow (our payment processor) — we never store raw card numbers.</li></ul>"
+      },
+      "anonymisedAnalysis": {
+        "title": "Anonymised Analysis",
+        "body": "<p>We use anonymised, aggregated data to understand how people use the app and to improve the AI models and prompts. Specifically:</p><ul><li>All personal identifiers are stripped before analysis.</li><li>We look at patterns — e.g. which lens types are most used, common emotional themes — never at individual narratives.</li><li>Aggregated findings may inform product decisions, published research, or AI model improvements.</li><li>You can opt out by emailing <privacyEmail></privacyEmail> with the subject \"Opt out of analytics\".</li></ul>"
+      },
+      "aiProcessing": {
+        "title": "AI Processing",
+        "body": "<p>Your content is sent to Anthropic's Claude models, via AWS Bedrock, to generate reflections and suggestions. This runs under Anthropic and AWS's own commercial API data-use terms, under which your inputs and outputs are not used to train their models.</p><p>We do not send your email address or account ID to our AI provider — only the content needed to generate a response, and only for the duration of that request.</p>"
+      },
+      "dataSharing": {
+        "title": "Data Sharing",
+        "body": "<p>We share data only with:</p><ul><li><strong>Amazon Web Services (AWS)</strong> — authentication (Cognito), database and encrypted content storage (DynamoDB), and AI response generation (Bedrock/Anthropic Claude — content only, no PII)</li><li><strong>Grow</strong> — Israeli payment processing (billing data only)</li><li><strong>Vercel</strong> — application hosting</li></ul><p>We do not sell personal data to third parties.</p>"
+      },
+      "dataRetention": {
+        "title": "Data Retention",
+        "body": "<ul><li>Your decisions and reflections are retained for as long as your account is active.</li><li>When you delete your account, all personal data is permanently deleted within 30 days.</li><li>Anonymised, aggregated analytics data (no personal identifiers) may be retained indefinitely.</li><li>Payment records are retained for 7 years as required by Israeli accounting law.</li></ul>"
+      },
+      "yourRights": {
+        "title": "Your Rights",
+        "body": "<p>Under applicable data protection law you have the right to:</p><ul><li><strong>Access:</strong> See all data we hold about you (use \"Download my data\" in account settings)</li><li><strong>Portability:</strong> Export your data as machine-readable JSON</li><li><strong>Erasure:</strong> Delete your account and all associated data (use \"Delete my account\" in account settings)</li><li><strong>Correction:</strong> Edit your decisions and reflections directly in the app</li><li><strong>Restriction:</strong> Ask us to pause processing while a dispute is resolved</li><li><strong>Objection:</strong> Opt out of legitimate-interest processing (analytics)</li></ul><p>To exercise rights not covered in-app: <privacyEmail></privacyEmail></p>"
+      },
+      "security": {
+        "title": "Security",
+        "body": "<p>All data is encrypted in transit (TLS) and at rest. Your personal content — decisions, reflections, journal entries, and conversations — is additionally protected with per-user end-to-end encryption: each account has its own encryption key, wrapped under your password (and a one-time recovery code) using AWS KMS, so your content is never readable in plain form outside an authenticated session of yours. Application-level access controls ensure each user can only reach their own data. Passwords are never stored in plain text.</p>"
+      },
+      "cookies": {
+        "title": "Cookies",
+        "body": "<p>We use a session cookie to keep you signed in, alongside authentication tokens (issued by AWS Cognito) held in your browser. We do not use tracking or advertising cookies.</p>"
+      },
+      "changes": {
+        "title": "Changes",
+        "body": "<p>We'll notify you by email at least 14 days before any material change to this policy.</p>"
+      }
+    },
+    "usageTable": {
+      "title": "How We Use Your Data",
+      "purposeHeader": "Purpose",
+      "legalBasisHeader": "Legal basis",
+      "rows": {
+        "aiFeatures": {
+          "purpose": "Deliver Companion, Decision Room, Mirror Room, and other guided AI features",
+          "basis": "Contractual necessity"
+        },
+        "storeContent": {
+          "purpose": "Store and display your content and history",
+          "basis": "Contractual necessity"
+        },
+        "payments": {
+          "purpose": "Process subscription payments",
+          "basis": "Contractual necessity"
+        },
+        "anonymisedImprove": {
+          "purpose": "Anonymised analysis to improve AI prompts and product design",
+          "basis": "Legitimate interest (opt-out available)"
+        },
+        "aggregateReporting": {
+          "purpose": "Aggregate usage reporting (no individual attribution)",
+          "basis": "Legitimate interest"
+        },
+        "transactionalEmail": {
+          "purpose": "Email transactional messages (account confirmation, billing)",
+          "basis": "Contractual necessity"
+        }
+      }
+    },
+    "dataController": "Data controller: DPNR Ltd · Tel Aviv, Israel · <email></email>",
+    "termsLink": "Terms of Use →",
+    "accountLink": "Account Settings →"
   }
 }

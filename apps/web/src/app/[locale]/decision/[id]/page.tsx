@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { useParams } from 'next/navigation'
+import { useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
@@ -48,8 +49,8 @@ const TAG_COLOR: Record<TagType, string> = {
   need: 'text-indigo-300 border-indigo-700/40 bg-indigo-900/20',
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+function formatDate(iso: string, locale: string) {
+  return new Date(iso).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 function OptionSection({ option }: { option: DecisionRoomOptionView }) {
@@ -98,6 +99,7 @@ function OptionSection({ option }: { option: DecisionRoomOptionView }) {
 }
 
 export default function DecisionDetailPage() {
+  const locale = useLocale()
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [decision, setDecision] = useState<DecisionRoomFullResponse | null>(null)
@@ -155,7 +157,7 @@ export default function DecisionDetailPage() {
                   >
                     {decision.status === 'completed' ? '✓ Completed' : `Step ${decision.currentStep}/7 in progress`}
                     {' · '}
-                    {formatDate(decision.createdAt)}
+                    {formatDate(decision.createdAt, locale)}
                   </p>
                   <h1 className="font-display text-xl lg:text-2xl text-white mt-1">{decision.title}</h1>
                   {decision.subtitle && <p className="text-[var(--color-text-tertiary)] text-sm italic mt-1">{decision.subtitle}</p>}
@@ -210,7 +212,7 @@ export default function DecisionDetailPage() {
                         <div key={i} className="space-y-0.5">
                           {o.chosenOptionLabel && <p className="text-[var(--color-text-tertiary)] text-xs">Chose Option {o.chosenOptionLabel}</p>}
                           {o.reflection && <p className="text-white/70 text-sm leading-relaxed">{o.reflection}</p>}
-                          <p className="text-[var(--color-text-tertiary)] text-xs">{formatDate(o.createdAt)}</p>
+                          <p className="text-[var(--color-text-tertiary)] text-xs">{formatDate(o.createdAt, locale)}</p>
                         </div>
                       ))}
                     </div>
@@ -227,7 +229,7 @@ export default function DecisionDetailPage() {
                 {decision.reviewDate && (
                   <Card>
                     <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">Check-in date</p>
-                    <p className="text-white/60 text-sm">{formatDate(decision.reviewDate)}</p>
+                    <p className="text-white/60 text-sm">{formatDate(decision.reviewDate, locale)}</p>
                   </Card>
                 )}
               </div>

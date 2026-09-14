@@ -1,5 +1,7 @@
 'use client'
 
+import { useLocale, useTranslations } from 'next-intl'
+
 interface Props {
   title: string
   date: string          // YYYY-MM-DD
@@ -46,14 +48,16 @@ const calIcon = (
 )
 
 export function CalendarButtons({ title, date, description = '' }: Props) {
-  const displayDate = new Date(date).toLocaleDateString('en-GB', {
+  const t = useTranslations('CalendarButtons')
+  const locale = useLocale()
+  const displayDate = new Date(date).toLocaleDateString(locale, {
     day: 'numeric', month: 'long', year: 'numeric',
   })
 
   return (
     <div className="space-y-2">
       <p className="text-[var(--color-text-tertiary)] text-xs text-center">
-        Add check-in reminder · {displayDate}
+        {t('addReminder')} · {displayDate}
       </p>
       <div className="grid grid-cols-3 gap-2">
         <a

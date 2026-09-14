@@ -1,6 +1,7 @@
 'use client'
 import Image from 'next/image'
 import { useState, Suspense } from 'react'
+import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
 import { Link } from '@/i18n/navigation'
@@ -9,29 +10,14 @@ import { markConsentedLocally } from '@/lib/cognito/client'
 import Card from '@/components/ui/Card'
 
 const POINTS = [
-  {
-    icon: '🔒',
-    title: 'Your decisions stay yours',
-    body: 'Everything you write is private. We never share your personal content with third parties.',
-  },
-  {
-    icon: '✦',
-    title: 'AI processes your content',
-    body: 'Your decision text is processed only during your active session, and encrypted so we can’t access it either. It is not used to train any model.',
-  },
-  {
-    icon: '📊',
-    title: 'Anonymised analysis',
-    body: 'We may analyse anonymised, aggregated usage patterns to improve the product. No individual content is read or attributed.',
-  },
-  {
-    icon: '⬇',
-    title: 'Download or delete anytime',
-    body: 'You can export all your data as JSON or permanently delete your account from Account Settings at any time.',
-  },
-]
+  { id: 'decisionsStayYours', icon: '🔒' },
+  { id: 'aiProcessesContent', icon: '✦' },
+  { id: 'anonymisedAnalysis', icon: '📊' },
+  { id: 'downloadOrDelete', icon: '⬇' },
+] as const
 
 function ConsentContent() {
+  const t = useTranslations('Consent')
   const router = useRouter()
   const params = useSearchParams()
   const next = params.get('next') ?? '/companion' // default post-login landing — see proxy.ts's doc comment
@@ -48,7 +34,7 @@ function ConsentContent() {
       router.push(next)
       router.refresh()
     } catch {
-      setError('Something went wrong. Please try again.')
+      setError(t('errorGeneric'))
     } finally {
       setAccepting(false)
     }
@@ -64,27 +50,30 @@ function ConsentContent() {
       <div className="pt-16 pb-6 text-center">
         <div className="w-14 h-14 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-2xl mx-auto mb-4">✦</div>
         <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR · InnerOS</p>
-        <h1 className="text-white text-xl font-light">Before you begin</h1>
-        <p className="text-[var(--color-text-tertiary)] text-sm mt-2">Please review how we handle your data.</p>
+        <h1 className="text-white text-xl font-light">{t('title')}</h1>
+        <p className="text-[var(--color-text-tertiary)] text-sm mt-2">{t('subtitle')}</p>
       </div>
 
       <div className="flex-1 space-y-3">
         {POINTS.map(p => (
-          <Card key={p.title} className="flex gap-3">
+          <Card key={p.id} className="flex gap-3">
             <span className="text-lg flex-shrink-0 mt-0.5">{p.icon}</span>
             <div>
-              <p className="text-white/90 text-sm font-medium">{p.title}</p>
-              <p className="text-white/50 text-xs mt-1 leading-relaxed">{p.body}</p>
+              <p className="text-white/90 text-sm font-medium">{t(`points.${p.id}.title`)}</p>
+              <p className="text-white/50 text-xs mt-1 leading-relaxed">{t(`points.${p.id}.body`)}</p>
             </div>
           </Card>
         ))}
 
         <p className="text-[var(--color-text-tertiary)] text-xs text-center px-2 leading-relaxed">
-          By continuing you agree to our{' '}
-          <Link href="/terms" target="_blank" className="text-purple-400 underline">Terms of Use</Link>
-          {' '}and{' '}
-          <Link href="/privacy" target="_blank" className="text-purple-400 underline">Privacy & Data Policy</Link>
-          , including the use of anonymised data to improve the service.
+          {t.rich('agreementText', {
+            terms: (chunks) => (
+              <Link href="/terms" target="_blank" className="text-purple-400 underline">{chunks}</Link>
+            ),
+            privacy: (chunks) => (
+              <Link href="/privacy" target="_blank" className="text-purple-400 underline">{chunks}</Link>
+            ),
+          })}
         </p>
 
         {error && (
@@ -98,12 +87,15 @@ function ConsentContent() {
           disabled={accepting}
           className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 active:scale-[0.98] text-white rounded-2xl px-5 py-4 font-medium transition-all"
         >
-          {accepting ? 'Saving…' : 'I agree — take me in'}
+          {accepting ? t('saving') : t('agreeButton')}
         </button>
 
         <p className="text-white/20 text-xs text-center">
-          You can withdraw consent and delete your account at any time from{' '}
-          <Link href="/account" className="text-purple-400/60 underline">Account Settings</Link>.
+          {t.rich('withdrawText', {
+            account: (chunks) => (
+              <Link href="/account" className="text-purple-400/60 underline">{chunks}</Link>
+            ),
+          })}
         </p>
       </div>
     </div>

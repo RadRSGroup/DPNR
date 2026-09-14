@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { GenderIdentity } from '@dpnr/shared-types'
 
 /**
@@ -11,11 +12,7 @@ import type { GenderIdentity } from '@dpnr/shared-types'
  * settings page persists on change immediately. Both reuse this one
  * component rather than duplicating the three-option UI.
  */
-const OPTIONS: { value: GenderIdentity; label: string }[] = [
-  { value: 'male', label: 'Male' },
-  { value: 'female', label: 'Female' },
-  { value: 'unspecified', label: 'Prefer not to say' },
-]
+const OPTIONS: GenderIdentity[] = ['male', 'female', 'unspecified']
 
 export default function GenderSelector({
   value,
@@ -26,22 +23,23 @@ export default function GenderSelector({
   onChange: (next: GenderIdentity) => void
   className?: string
 }) {
+  const t = useTranslations('Auth.gender')
   return (
-    <div role="radiogroup" aria-label="Gender" className={`flex gap-2 ${className ?? ''}`}>
+    <div role="radiogroup" aria-label={t('ariaLabel')} className={`flex gap-2 ${className ?? ''}`}>
       {OPTIONS.map((opt) => (
         <button
-          key={opt.value}
+          key={opt}
           type="button"
           role="radio"
-          aria-checked={value === opt.value}
-          onClick={() => onChange(opt.value)}
+          aria-checked={value === opt}
+          onClick={() => onChange(opt)}
           className={`flex-1 py-2.5 rounded-xl border text-xs font-medium transition-all ${
-            value === opt.value
+            value === opt
               ? 'border-[var(--color-violet-500)]/60 bg-[var(--color-violet-900)]/40 text-[var(--color-violet-300)]'
               : 'border-white/10 text-white/60 hover:border-white/20 hover:text-white/80'
           }`}
         >
-          {opt.label}
+          {t(`options.${opt}`)}
         </button>
       ))}
     </div>

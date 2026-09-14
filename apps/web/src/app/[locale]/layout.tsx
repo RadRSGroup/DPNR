@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display, Heebo, Frank_Ruhl_Libre } from "next/font/google";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
-import { setRequestLocale } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import "../globals.css";
@@ -34,10 +34,23 @@ const frankRuhlLibre = Frank_Ruhl_Libre({
 // site-wide <title> had been left using it anyway since before the
 // InnerOS/DPNR rebrand. Matches the wordmark signup/login already show
 // ("DPNR" caption over an "InnerOS" title).
-export const metadata: Metadata = {
-  title: "InnerOS — DPNR",
-  description: "Your personal Human Operating System — reflect, decide, and grow with DPNR.",
-};
+//
+// Slice D: moved from a static `export const metadata` to `generateMetadata`
+// so the title/description can be localized — a static export can't read
+// the resolved `[locale]` param, `generateMetadata` can (it receives the
+// same `params` this layout does).
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "Metadata" });
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
 export default async function RootLayout({
   children,

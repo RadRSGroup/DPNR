@@ -29,12 +29,14 @@ const SRC_ROOT = path.join(__dirname, '..', 'src')
 const BASELINE_PATH = path.join(__dirname, 'rtl-baseline.json')
 
 // One token per physical-direction utility family, matched as a class-name
-// boundary (start of string, whitespace, or the opening quote/backtick that
-// precedes a className value) so we don't false-positive on unrelated
+// boundary: start of string, whitespace, the opening quote/backtick that
+// precedes a className value, or a Tailwind variant colon (lg:text-left,
+// rtl:pr-4, hover:border-r, etc.) — so we don't false-positive on unrelated
 // tokens (e.g. "leftover", a CSS var name, or `border-l` matching inside a
-// longer unrelated word).
+// longer unrelated word), but DO catch variant-prefixed physical classes,
+// which the first version of this script missed entirely.
 const PHYSICAL_PATTERN =
-  /(^|[\s"'`])(pl-|pr-|ml-|mr-|left-|right-|text-left\b|text-right\b|border-l-|border-r-|border-l\b|border-r\b|rounded-tl-|rounded-tr-|rounded-bl-|rounded-br-|rounded-l-|rounded-r-|float-left\b|float-right\b|clear-left\b|clear-right\b)/g
+  /(^|[\s"'`:])(pl-|pr-|ml-|mr-|left-|right-|text-left\b|text-right\b|border-l-|border-r-|border-l\b|border-r\b|rounded-tl-|rounded-tr-|rounded-bl-|rounded-br-|rounded-l-|rounded-r-|float-left\b|float-right\b|clear-left\b|clear-right\b)/g
 
 function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {

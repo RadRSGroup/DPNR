@@ -1,5 +1,7 @@
 'use client'
 import Image from 'next/image'
+import { ArrowLeft } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 
 /**
@@ -13,6 +15,7 @@ import { Link } from '@/i18n/navigation'
  * describes a commercial model the product doesn't actually have.
  */
 export default function PricingPage() {
+  const t = useTranslations('Pricing')
   return (
     <div className="relative min-h-screen max-w-[393px] mx-auto px-5 pb-16">
       <div className="absolute inset-0 -z-10">
@@ -21,40 +24,37 @@ export default function PricingPage() {
       </div>
 
       <div className="pt-14 pb-8">
-        <Link href="/dashboard" className="text-purple-400 text-sm">← Back</Link>
-        <h1 className="text-white text-2xl font-light mt-6">Credits & Packages</h1>
-        <p className="text-[var(--color-text-tertiary)] text-sm mt-2">
-          DPNR runs on Credits, not a fixed monthly tier — you spend them only on real, meaningful actions.
-        </p>
+        <Link href="/dashboard" className="inline-flex items-center gap-1 text-purple-400 text-sm">
+          <ArrowLeft className="w-4 h-4 rtl:-scale-x-100" /> {t('back')}
+        </Link>
+        <h1 className="text-white text-2xl font-light mt-6">{t('title')}</h1>
+        <p className="text-[var(--color-text-tertiary)] text-sm mt-2">{t('subtitle')}</p>
       </div>
 
       <div className="mb-5 bg-purple-900/20 border border-purple-700/30 rounded-2xl px-4 py-3">
-        <p className="text-purple-300 text-sm">
-          Every Beta account starts with free starter Credits — no payment method required. Credit packs and
-          plans are coming soon; everyone stays on their starter balance until then.
-        </p>
+        <p className="text-purple-300 text-sm">{t('betaBanner')}</p>
       </div>
 
       <div className="space-y-4">
         <div className="rounded-3xl p-5 border bg-white/5 border-white/10">
           <div className="flex items-end justify-between mb-3">
             <div>
-              <h2 className="text-white font-medium text-lg">Starter Credits</h2>
-              <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">Included free at signup</p>
+              <h2 className="text-white font-medium text-lg">{t('starterCredits')}</h2>
+              <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">{t('starterCreditsSubtitle')}</p>
             </div>
           </div>
           <ul className="space-y-2">
             <li className="flex items-center gap-2 text-sm text-white/60">
               <span className="text-purple-400 text-xs">✓</span>
-              No card or payment method needed
+              {t('noPaymentMethod')}
             </li>
             <li className="flex items-center gap-2 text-sm text-white/60">
               <span className="text-purple-400 text-xs">✓</span>
-              Spent only on meaningful actions — never a surprise charge
+              {t('meaningfulActionsOnly')}
             </li>
             <li className="flex items-center gap-2 text-sm text-white/60">
               <span className="text-purple-400 text-xs">✓</span>
-              Your balance is always visible from Account
+              {t('balanceVisible')}
             </li>
           </ul>
         </div>
@@ -62,22 +62,20 @@ export default function PricingPage() {
         <div className="rounded-3xl p-5 border bg-white/5 border-white/10 opacity-60">
           <div className="flex items-end justify-between mb-3">
             <div>
-              <h2 className="text-white font-medium text-lg">Credit packs & plans</h2>
-              <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">Coming soon during Beta</p>
+              <h2 className="text-white font-medium text-lg">{t('creditPacksPlans')}</h2>
+              <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">{t('comingSoonDuringBeta')}</p>
             </div>
           </div>
           <button
             disabled
             className="w-full rounded-2xl px-5 py-3.5 text-sm font-medium bg-white/5 text-[var(--color-text-tertiary)] cursor-not-allowed"
           >
-            Coming soon
+            {t('comingSoon')}
           </button>
         </div>
       </div>
 
-      <p className="text-center text-white/20 text-xs mt-8">
-        We&apos;ll email everyone when Credit packs and plans open up.
-      </p>
+      <p className="text-center text-white/20 text-xs mt-8">{t('emailNotice')}</p>
     </div>
   )
 }
