@@ -4,9 +4,11 @@ Scopes `DPNR_First_Time_Onboarding_MVP_Implementation_Guide_v3.pdf` (repo root,
 added by the user 2026-09-15) against the real live codebase. **Research and
 planning only — no code changes in this pass**, matching the same
 survey-before-build discipline `HEBREW_LOCALIZATION_PLAN.md` used before its
-Slice A started. Do not start building from this doc until the open decisions
-in §5 are answered — several of them are genuine architectural forks, not
-implementation details.
+Slice A started.
+
+**All five architectural forks below (§5) are now settled — answered by the
+user directly, 2026-09-15, same session.** §3/§4 reflect the settled shape.
+Slice A can start from this doc without re-litigating any of them.
 
 ## 1. What the reference doc actually specifies
 
@@ -54,104 +56,110 @@ plan.
 | Profile photo / gender pre-step | This session's own `/profile-setup` screen (gender + optional S3-backed photo, gated by `proxy.ts` exactly like `/consent`) | **Already shipped, deployed, live-verified** (see this file's neighbor entries in `docs/AGENT_LOG.md`, Session 51). This doc's flow doesn't mention either field — needs a decision on where `/profile-setup` sits relative to this new sequence. See §5.4. |
 | One-time, skippable, deterministic sequence | The exact same shape `/consent` and `/profile-setup` already are: a `dpnr_*` cookie mirroring a `custom:*` JWT claim (`proxy.ts`/`pre-token-generation.ts`), never shown again once complete | **Directly reusable pattern** — a fourth cookie/claim (`custom:onboardingComplete` or similar) is a mechanical extension of an already-proven mechanism, not new architecture. |
 
-## 3. Proposed data model (pending §5's decisions)
+## 3. Data model (settled shape)
 
-If built as a genuinely new, separate concept (§5.2's "keep them separate"
-answer), a natural shape — additive, no changes to existing items:
+**No new item type.** Per §5.2, card answers seed the *existing*
+`RoadmapItem` rather than a parallel `FIRST_SNAPSHOT` structure — Dashboard
+keeps exactly one "here's what DPNR understands about you" card, not two. The
+new persisted state is a small, additive `OnboardingSnapshotItem` — plain
+inputs only, not itself a second personalization summary — plus a claim/cookie
+gate identical to consent/profile-setup's:
 
 ```
-FirstSnapshotItem  (USER#<id> / FIRST_SNAPSHOT)
-  currentState: enum (7 values, §5.2)
-  activeDomains: string[]   (≤3, taxonomy per §5.3)
-  desiredStates: string[]   (≤3, taxonomy per §5.3)
-  interactionPreference: enum (6 values, or reuse InteractionMode per §5.3)
-  currentIntention: string | null   (ENCRYPTED — free text, same as any other personal content)
+OnboardingSnapshotItem  (USER#<id> / ONBOARDING_SNAPSHOT — plaintext, disposable
+                          card inputs, not personal-content-bearing the way a
+                          Mirror/Decision session is; ENCRYPTED only where noted)
+  currentState: enum (7 values, verbatim from the doc — no existing equivalent, see below)
+  activeDomains: LifeDomainCategory[]   (≤3 — reused, see mapping below, not the doc's own 10-value list)
+  desiredStates: string[]   (≤3 — small new enum, see below; no existing equivalent found)
+  interactionPreference: InteractionMode   (reused directly — see mapping below, not a new 6-value enum)
+  currentIntention: EncryptedBlob | null   (ENCRYPTED — free text is personal content like any other)
   snapshotFeedback: 'yes' | 'partly' | 'not_quite' | null
-  completedAt: string | null   (gates re-showing, same role as consentedAt/profileSetupCompletedAt)
+  completedAt: string | null   (gates proxy.ts's redirect, same role as consentedAt/profileSetupCompletedAt)
+
+// On completion (or skip): resolveOnboardingSnapshot() feeds
+// activeDomains/desiredStates/interactionPreference/currentIntention into
+// the *existing* runOnboardingTurn/RoadmapItem-creation path as richer
+// starting context, per §5.1 — it does not create the Roadmap itself.
 ```
 
-`INSIGHT_STATUS`/`CONFIDENCE` enums from the doc's §8 already exist in spirit
-as `TwinSignalStatusSchema` (`candidate|confirmed|rejected`) — reuse that
-rather than inventing parallel status vocabulary, unless §5.2 concludes these
-answers shouldn't become Twin signals at all.
+**Taxonomy mapping (§5.3 — reuse where reasonable, new only where nothing fits):**
+- `activeDomains` → **reuse `LifeDomainCategorySchema`** (7 values:
+  `self_inner_world`/`relationships`/`career_purpose`/`health_body`/
+  `money_abundance`/`creativity_expression`/`spirituality`). The doc's 10
+  options (Me/Love/Family/Friends/Work/Money/Body/Growth/Purpose/Fun) need an
+  explicit reduction, not a 1:1 rename — a real small design task for
+  whoever builds Slice B, sketched here as a starting point, not finalized:
+  `Me→self_inner_world`, `Love/Family/Friends→relationships`,
+  `Work/Purpose→career_purpose`, `Money→money_abundance`, `Body→health_body`,
+  `Growth→self_inner_world` or `spirituality` (ambiguous, needs a real call),
+  `Fun` has no clean home in any of the 7 — resolve during Slice B, not here.
+- `interactionPreference` → **reuse `InteractionModeSchema`** (9 values).
+  The doc's 6 options map more directly:
+  `"Help me understand it"→understand`, `"Give me perspective"→explore_pattern`,
+  `"Ask me the right question"→learn` (closest fit, imperfect),
+  `"Help me make a move"→act`, `"Just give me space to talk"→be_heard`,
+  `"Depends on the moment"→unknown`. `share`/`decide`/`regulate` are simply
+  never chosen directly at onboarding — fine, they're still reachable via the
+  existing per-turn classifier later.
+- `currentState` and `desiredStates` → **no existing equivalent found**
+  anywhere in the schema (checked `TwinSignalDomainSchema`, Decision Room's
+  free-text `values_needs_tags`/`fear_desire_tags` prompts — neither is a
+  fixed enum). Ship these two as new, small, literally-as-specified enums;
+  reuse only applies where something real already exists to reuse.
 
-## 4. Slice breakdown (mirrors `HEBREW_LOCALIZATION_PLAN.md`'s lettered-slice convention — proposed, not started)
+## 4. Slice breakdown (mirrors `HEBREW_LOCALIZATION_PLAN.md`'s lettered-slice convention — settled shape, not started)
 
-- **Slice A** — data model + state machine + persistence flags (schema, one
-  new DynamoDB item or `UserProfileItem` extension per §5.2, the
-  `custom:onboardingComplete` claim + `proxy.ts` gate). No UI.
-- **Slice B** — the four card components + progress UI, client-side only,
-  reusing `Card`/existing chip-style components; wired to real persistence
-  but no personalization payoff yet.
-- **Slice C** — optional free-text step + skip logic on every card (per the
-  doc's own "agency" principle — every step skippable).
-- **Slice D** — First Coordinates summary card + Yes/Partly/Not quite feedback
-  handling.
-- **Slice E** — personalize the first real entry: thread `FIRST_SNAPSHOT` into
-  Library recommendations and Pull-a-Card's existing ranking logic (§2's
-  "fully reusable" row), and into whichever onboarding mechanism §5.1 lands on.
-- **Explicitly not in MVP**: the WOW VIDEO itself (reserve a slot/player only,
-  per the doc's own §12 item 9), the Living Map.
+- **Slice A** — `OnboardingSnapshotItem` schema + the domain/interaction-mode
+  mapping tables from §3 (finalize the ambiguous cases) + `custom:onboardingComplete`
+  claim + `proxy.ts` gate (inserted right after `/profile-setup`, per §5.4 — no
+  question asked on this one, it's the natural default given where
+  `/profile-setup` already sits) + a new `/onboarding` route (per §5.6, a
+  dedicated route, not inline in Main Chat). No UI polish yet.
+- **Slice B** — the four card screens (`CURRENT_STATE`, `ACTIVE_DOMAINS`,
+  `DESIRED_STATES`, `INTERACTION_PREFERENCE`) as steps within `/onboarding`,
+  each backed by `PUT`-style persistence against the new item; finalize the
+  domain-mapping ambiguities from §3 here.
+- **Slice C** — optional free-text step + skip logic on every card (every
+  step skippable, per the doc's own "agency" principle) — `currentIntention`,
+  encrypted like any other free-text content.
+- **Slice D** — First Coordinates summary screen (reads back the snapshot,
+  not a new data shape) + Yes/Partly/Not quite feedback, then hands off into
+  the *existing* Companion onboarding conversation with the snapshot as seed
+  context (§5.1) — this is the one genuinely new integration point in
+  `runOnboardingTurn`/Roadmap-creation code.
+- **Slice E** — thread the snapshot into Library recommendations and
+  Pull-a-Card's existing ranking logic for a non-empty first Companion
+  entry (§2's "fully reusable" row — no new ranking engine, just an earlier
+  signal to rank against).
+- **Placeholder-only, not real integration**: a video slot/player at the top
+  of `/onboarding`'s first screen (§5.5 — build now, integrate the real WOW
+  VIDEO whenever Lital delivers it).
+- **Explicitly not in MVP**: the Living Map.
 
-## 5. Open decisions — need the user's call before Slice A starts
+## 5. Settled decisions (answered by the user, 2026-09-15)
 
-**5.1 — Relationship to the existing AI-conversational onboarding.** Real
-Companion code today already runs a full conversational onboarding
-(`runOnboardingTurn`) the first time any user without a Roadmap sends a
-message, ending in a real `RoadmapItem` + Twin signals. This doc's card
-sequence is a second, deterministic mechanism aimed at similar ground. Three
-defensible options, not pre-decided: **(a)** the card sequence runs first and
-its answers become context fed into the existing conversational onboarding
-(richer starting point, one fewer open question the model has to ask) — the
-existing mechanism stays the actual "understanding" engine; **(b)** the card
-sequence *replaces* the conversational onboarding entirely, and
-`FIRST_SNAPSHOT` becomes the new source for whatever the Roadmap used to
-capture; **(c)** both run, genuinely independent, accepting some redundancy
-in exchange for not touching already-shipped, working code.
+- **5.1 Relationship to the existing AI-conversational onboarding**: cards
+  run first and feed the existing `runOnboardingTurn` conversation as richer
+  starting context — that mechanism stays the real "understanding" engine,
+  not replaced or duplicated.
+- **5.2 First Coordinates data shape**: feeds the existing `RoadmapItem`:
+  no new `FIRST_SNAPSHOT`-as-a-second-summary item.
+- **5.3 Taxonomy reconciliation**: reuse existing enums where something real
+  already fits (`LifeDomainCategorySchema`, `InteractionModeSchema`); ship new,
+  small enums only where nothing does (`currentState`, `desiredStates`) — see
+  §3's mapping.
+- **5.4 Sequencing against `/profile-setup`**: not separately asked — the
+  natural default given where `/profile-setup` already sits (right after
+  consent) is for the new `/onboarding` sequence to insert immediately after
+  it, before Companion. Revisit if this turns out wrong once built.
+- **5.5 Build timing**: build Slices A–E now, with an inert placeholder
+  video slot — do not wait for the real WOW VIDEO.
+- **5.6 In-chat cards vs. dedicated route**: a dedicated `/onboarding` route,
+  same pattern as `/consent`/`/profile-setup` — not inline inside Main Chat's
+  conversation area (a real, deliberate fidelity tradeoff against the
+  reference screenshot, accepted for lower build effort).
 
-**5.2 — Does `FIRST_SNAPSHOT` become its own new data structure, or feed the
-existing `RoadmapItem`?** `RoadmapItem.content` (`currentFocus`/`theme`/
-`direction`) already is Dashboard's "here's what DPNR understands about you"
-card. A second, separately-shaped summary risks a confusing double-first-
-impression on day one. Options: keep them genuinely separate (§3's proposed
-schema, as the doc's own §8 implies); or treat the card answers as the *input*
-that seeds the Roadmap's first version (no new item type, `Slice A` becomes
-"extend Roadmap creation," not "add a new item family").
-
-**5.3 — Taxonomy reconciliation, or a deliberate 4th/5th one.** Following the
-project's own precedent (Session 45/46 — "unifying them is real, already-
-flagged product-decision tech debt... this follows that precedent rather than
-inventing a fourth resolution unilaterally"): should `ACTIVE_DOMAINS`/
-`DESIRED_STATES` map onto the existing 7-value `LifeDomainCategorySchema`
-(smaller, already used by Dashboard/Growth Tracker) or ship as their own new,
-10-value enums as the doc specifies verbatim? Same question for
-`INTERACTION_PREFERENCE` vs. the existing 9-value `InteractionModeSchema`.
-Reconciling now is more work; shipping new enums now is faster but adds a
-4th/5th/6th taxonomy to a codebase that already has this exact debt flagged
-twice.
-
-**5.4 — Sequencing against this session's already-shipped `/profile-setup`.**
-Where does gender/photo fit relative to the WOW VIDEO → card sequence? This
-doc's flow doesn't mention either field. Likely answer: `/profile-setup`
-keeps its current spot (right after consent, before Companion) and the new
-sequence would insert *after* it, gated behind the not-yet-built WOW VIDEO —
-but this is a real product call, not assumed here.
-
-**5.5 — Build now, or wait for the WOW VIDEO?** The doc's own flow position
-places this whole sequence *after* a video that doesn't exist yet ("developed
-and supplied separately by Lital"). Building Slices A–E now with an inert
-placeholder video slot (per the doc's own §12 item 9) is one option; waiting
-until the real video exists so the full intended flow can be verified
-end-to-end is the other.
-
-**5.6 — In-chat cards vs. a dedicated route.** The reference screenshot shows
-this rendered inside Main Chat's own conversation area (matching the doc's
-"appear within or alongside Main Chat, then collapse naturally back into the
-conversation" design direction). Building it that way is more work than a
-dedicated `/onboarding`-style route (the same pattern `/consent`/
-`/profile-setup` already use) but matches the reference and the doc's own
-"conversation always wins" principle more naturally. Flagging since it's a
-real effort/fidelity tradeoff, not a foregone conclusion.
-
-No ADR yet — nothing above is decided; this file exists so the decision can be
-made with full context, not to record one already made.
+No ADR — none of the above is irreversible in the ADR sense (a route/schema
+this narrow can be revised cleanly later), and every call here was the user's
+own explicit choice, not a unilateral architectural decision.
