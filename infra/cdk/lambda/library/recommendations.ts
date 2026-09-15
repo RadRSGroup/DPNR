@@ -1,9 +1,16 @@
 import type { APIGatewayProxyHandlerV2WithJWTAuthorizer } from 'aws-lambda'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb'
-import { userPk, type TwinSignalItem, type LibraryRecommendationsResponse, type ExploreTheme } from '@dpnr/shared-types'
+import {
+  userPk,
+  type TwinSignalItem,
+  type LibraryRecommendationsResponse,
+  type ExploreTheme,
+  type LifeDomainCategory,
+} from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
 import { listActiveTopics } from '../lib/library-catalog'
+import { getOnboardingActiveDomains } from '../lib/onboarding-snapshot-context'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const CATALOG_TABLE_NAME = process.env.LIBRARY_CATALOG_TABLE_NAME as string
@@ -35,6 +42,32 @@ const DOMAIN_TO_EXPLORE_THEME: Record<string, ExploreTheme> = {
 }
 
 /**
+ * First-Time Onboarding Slice E (`docs/FIRST_TIME_ONBOARDING_PLAN.md` §4) —
+ * a new, small, self-authored mapping from the onboarding card sequence's
+ * `activeDomains` (`LifeDomainCategorySchema`, reused per that plan's §3) to
+ * this endpoint's own `ExploreTheme` axis, same judgment-call authority as
+ * `DOMAIN_TO_EXPLORE_THEME` above and Session 24/46's own taxonomy mappings
+ * — the two axes were never designed to line up 1:1, so this is a real
+ * editorial call, not a derived fact. Grounded in what each theme's actual
+ * seeded topics are about (`library-topics-v2.seed.ts`), not guessed cold:
+ * `career_purpose`→CHOOSE matches how `direction`/`commitment` already land
+ * there above (both are "where someone is headed"); `money_abundance`/
+ * `creativity_expression`→CREATE both land on real CREATE topics ("Money
+ * Meaning", "Ambition", "Creative Block"); `spirituality`→LIFE matches
+ * LIFE's own "Meaning vs. Happiness" topic, the closest fit among the 10
+ * fixed themes (none of them is "spirituality" itself).
+ */
+const LIFE_DOMAIN_TO_EXPLORE_THEME: Record<LifeDomainCategory, ExploreTheme> = {
+  self_inner_world: 'ME',
+  relationships: 'RELATE',
+  career_purpose: 'CHOOSE',
+  health_body: 'BODY',
+  money_abundance: 'CREATE',
+  creativity_expression: 'CREATE',
+  spirituality: 'LIFE',
+}
+
+/**
  * GET /v1/library/recommendations — a real v1 ranking, replacing the
  * previously-always-empty stub (see git history for the prior handler's
  * own reasoning). Ranks topics by how many of the caller's confirmed Twin
@@ -49,9 +82,11 @@ const DOMAIN_TO_EXPLORE_THEME: Record<string, ExploreTheme> = {
  * not a "don't fabricate" violation, so it's left as a known gap rather
  * than blocking this on unrelated new tracking infrastructure.
  *
- * Degrades to an honest empty list if the caller has zero confirmed
- * signals — same "no half-finished implementations" standard the prior
- * stub's own doc comment already established for this endpoint.
+ * Degrades to an honest empty list if the caller has zero confirmed signals
+ * AND no First-Time Onboarding intake to fall back on (see the
+ * `rankedFromOnboarding` fallback below, Slice E) — same "no half-finished
+ * implementations" standard the prior stub's own doc comment already
+ * established for this endpoint.
  *
  * Intelligence Spec §17 "Do Nothing Is a Valid Recommendation" — when the
  * ranking above comes back empty for a person who nonetheless HAS some real
@@ -70,16 +105,20 @@ const INTEGRATION_SPACE_MESSAGE = 'You may already have enough to take with you 
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
     const userId = requireUserId(event)
+    const pk = userPk(userId)
 
-    const [signalsResult, topics] = await Promise.all([
+    const [signalsResult, topics, onboardingActiveDomains] = await Promise.all([
       ddb.send(
         new QueryCommand({
           TableName: APPLICATION_TABLE_NAME,
           KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
-          ExpressionAttributeValues: { ':pk': userPk(userId), ':prefix': 'TWIN#SIGNAL#' },
+          ExpressionAttributeValues: { ':pk': pk, ':prefix': 'TWIN#SIGNAL#' },
         })
       ),
       listActiveTopics(ddb, CATALOG_TABLE_NAME),
+      // First-Time Onboarding Slice E — see themeScores' fallback below.
+      // Plaintext-only read, no session ticket required.
+      getOnboardingActiveDomains(ddb, APPLICATION_TABLE_NAME, pk),
     ])
 
     const confirmedSignals = ((signalsResult.Items ?? []) as TwinSignalItem[]).filter(
@@ -93,6 +132,21 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       themeScores.set(theme, (themeScores.get(theme) ?? 0) + 1)
     }
 
+    // First-Time Onboarding Slice E: only when confirmed Twin signals gave
+    // no real theme score yet (a brand-new account — exactly the case that
+    // used to fall straight through to an honest empty list) — seed
+    // themeScores from the onboarding card sequence's own activeDomains
+    // instead, via LIFE_DOMAIN_TO_EXPLORE_THEME above. A real confirmed
+    // signal, once one exists, always wins outright — strictly a fallback,
+    // never a blend, same design as pull-card.ts's identical fallback.
+    const rankedFromOnboarding = themeScores.size === 0 && onboardingActiveDomains.length > 0
+    if (rankedFromOnboarding) {
+      for (const domain of onboardingActiveDomains) {
+        const theme = LIFE_DOMAIN_TO_EXPLORE_THEME[domain]
+        themeScores.set(theme, (themeScores.get(theme) ?? 0) + 1)
+      }
+    }
+
     const ranked = topics
       .map((topic) => ({ topic, score: themeScores.get(topic.exploreTheme) ?? 0 }))
       .filter((r) => r.score > 0)
@@ -100,8 +154,9 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       .slice(0, 4)
       .map((r) => ({
         topic: r.topic,
-        reason:
-          r.score === 1
+        reason: rankedFromOnboarding
+          ? `Related to what you shared when you got started`
+          : r.score === 1
             ? `Related to a confirmed ${r.topic.exploreTheme.toLowerCase()} signal`
             : `Related to ${r.score} confirmed ${r.topic.exploreTheme.toLowerCase()} signals`,
       }))

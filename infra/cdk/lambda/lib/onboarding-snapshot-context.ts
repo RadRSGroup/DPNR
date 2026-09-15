@@ -7,6 +7,7 @@ import {
   type OnboardingSnapshotItem,
   type OnboardingCurrentState,
   type OnboardingDesiredState,
+  type LifeDomainCategory,
 } from '@dpnr/shared-types'
 import type { SessionCrypto } from './session-crypto'
 
@@ -102,5 +103,29 @@ export async function getOnboardingSnapshotContext(
     return lines.length > 0 ? lines.join('\n') : NO_INTAKE
   } catch {
     return NO_INTAKE
+  }
+}
+
+/**
+ * Plain, no-crypto read of just the caller's onboarding `activeDomains` —
+ * First-Time Onboarding Slice E (`docs/FIRST_TIME_ONBOARDING_PLAN.md` §4):
+ * "an earlier signal to rank against" for Library recommendations and
+ * Pull-a-Card before any real confirmed Twin signal exists yet. Unlike
+ * `getOnboardingSnapshotContext` above, this never touches `currentIntention`
+ * (the one encrypted field on this item), so it needs no `SessionCrypto`/
+ * session ticket at all — same "degrade to empty, never throw" tolerance,
+ * an empty array reads identically to "no snapshot yet" for a caller.
+ */
+export async function getOnboardingActiveDomains(
+  ddb: DynamoDBDocumentClient,
+  tableName: string,
+  pk: string
+): Promise<LifeDomainCategory[]> {
+  try {
+    const result = await ddb.send(new GetCommand({ TableName: tableName, Key: { pk, sk: Sk.onboardingSnapshot() } }))
+    const item = result.Item as OnboardingSnapshotItem | undefined
+    return item?.activeDomains ?? []
+  } catch {
+    return []
   }
 }

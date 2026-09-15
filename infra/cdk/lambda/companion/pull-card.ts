@@ -13,6 +13,7 @@ import {
   type LifeDomainCategory,
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
+import { getOnboardingActiveDomains } from '../lib/onboarding-snapshot-context'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const CATALOG_TABLE_NAME = process.env.LIBRARY_CATALOG_TABLE_NAME as string
@@ -98,19 +99,27 @@ function resolveDirective(route: GuidanceCardItem['suggestedRoute']): CompanionD
  * context that "is available" as the brief specifically qualifies. Cards
  * whose `topic`/`lifeDomain` match the account's own most-referenced
  * confirmed-signal topic/domain are favored 70% of the time a match exists;
- * the other 30%, and always when there is no match (including every
- * brand-new account with zero confirmed signals), the pull is a plain
+ * the other 30%, and always when there is no match, the pull is a plain
  * uniform random pick across the whole active library — preserving the
  * source doc's own "not every card should feel therapeutic... depth should
  * feel earned, not imposed" principle instead of always steering toward the
- * heaviest-weighted theme, and preserving today's exact no-signals behavior
- * as an honest fallback rather than a broken empty state.
+ * heaviest-weighted theme.
+ *
+ * First-Time Onboarding Slice E (`docs/FIRST_TIME_ONBOARDING_PLAN.md` §4):
+ * a brand-new account with zero confirmed signals is no longer necessarily
+ * a "no match" case — if a First-Time Onboarding intake exists, its
+ * `activeDomains` seed `domainScores` below via the same
+ * `LIFE_DOMAIN_TO_CARD_DOMAIN` map `lifeDomain` already uses, so the very
+ * first pull can be a real, earned match instead of always uniform random.
+ * Strictly a fallback: any real confirmed-signal domain score always wins
+ * outright, never blended with the onboarding one.
  */
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
     const userId = requireUserId(event)
+    const pk = userPk(userId)
 
-    const [cardsResult, signalsResult] = await Promise.all([
+    const [cardsResult, signalsResult, onboardingActiveDomains] = await Promise.all([
       ddb.send(
         new ScanCommand({
           TableName: CATALOG_TABLE_NAME,
@@ -122,9 +131,14 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         new QueryCommand({
           TableName: APPLICATION_TABLE_NAME,
           KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
-          ExpressionAttributeValues: { ':pk': userPk(userId), ':prefix': 'TWIN#SIGNAL#' },
+          ExpressionAttributeValues: { ':pk': pk, ':prefix': 'TWIN#SIGNAL#' },
         })
       ),
+      // First-Time Onboarding Slice E — a real day-one domain signal for a
+      // brand-new account with zero confirmed Twin signals yet (see the
+      // domainScores fallback below). Plaintext-only read, no session
+      // ticket required.
+      getOnboardingActiveDomains(ddb, APPLICATION_TABLE_NAME, pk),
     ])
 
     const cards = (cardsResult.Items ?? []) as GuidanceCardItem[]
@@ -144,6 +158,20 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       if (signal.lifeDomain) {
         const domain = LIFE_DOMAIN_TO_CARD_DOMAIN[signal.lifeDomain]
         domainScores.set(domain, (domainScores.get(domain) ?? 0) + 1)
+      }
+    }
+
+    // First-Time Onboarding Slice E: only when confirmed Twin signals gave
+    // no real domain score yet (a brand-new account, the exact case that
+    // used to fall straight through to a plain uniform pull) — seed
+    // domainScores from the onboarding card-sequence's own activeDomains
+    // instead, via the same LIFE_DOMAIN_TO_CARD_DOMAIN map `lifeDomain`
+    // already uses above. A real confirmed signal, once one exists, always
+    // wins outright — this is strictly a fallback, never a blend.
+    if (domainScores.size === 0) {
+      for (const domain of onboardingActiveDomains) {
+        const cardDomain = LIFE_DOMAIN_TO_CARD_DOMAIN[domain]
+        domainScores.set(cardDomain, (domainScores.get(cardDomain) ?? 0) + 1)
       }
     }
 

@@ -37,6 +37,7 @@ const CONTINUATION_GAP_HOURS = 3
 const CONTINUATION_MODEL_HISTORY_TURNS = 6
 
 type MessageContent = { text: string }
+type RequireCrypto = () => Promise<SessionCrypto>
 
 /**
  * GET /v1/companion/context — recent turns for resuming a chat. Read-only
@@ -65,7 +66,15 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   try {
     const userId = requireUserId(event)
     const pk = userPk(userId)
-    const crypto = await getSessionCrypto(userId)
+    // Resolved lazily, not unconditionally — same fix as onboarding-snapshot.ts
+    // (Session 55 finding): getSessionCrypto both requires an active session
+    // ticket (a real HttpError(409, 'session_ticket_required') otherwise) and
+    // makes a real KMS Decrypt call, neither of which a plain resume of an
+    // empty session with no daily card has any reason to pay for. Only
+    // resolved by the helpers below when they actually have something to
+    // decrypt or encrypt.
+    let crypto: SessionCrypto | undefined
+    const requireCrypto = async () => (crypto ??= await getSessionCrypto(userId))
 
     // Discrete conversations: an explicit ?sessionId= targets that specific
     // conversation (ownership+type-checked inside resolveOrCreateSession,
@@ -81,14 +90,14 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const requestedSessionId = event.queryStringParameters?.sessionId
     if (requestedSessionId) {
       const sessionId = await resolveOrCreateSession(ddb, TABLE_NAME, pk, requestedSessionId)
-      const messages = await loadRecentMessages(crypto, pk, sessionId)
-      const continuation = await maybeSynthesizeContinuation(crypto, userId, pk, sessionId, messages)
+      const messages = await loadRecentMessages(requireCrypto, pk, sessionId)
+      const continuation = await maybeSynthesizeContinuation(requireCrypto, userId, pk, sessionId, messages)
       if (continuation) messages.push(continuation)
 
       const body: CompanionContextResponse = {
         sessionId,
         messages,
-        dailyCard: await getUndismissedDailyCard(crypto, pk),
+        dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
       }
       return jsonResponse(200, body)
     }
@@ -106,29 +115,29 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         const body: CompanionContextResponse = {
           sessionId: null,
           messages: [],
-          dailyCard: await getUndismissedDailyCard(crypto, pk),
+          dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
         }
         return jsonResponse(200, body)
       }
 
       const sessionId = await getOrCreateActiveCompanionSession(ddb, TABLE_NAME, pk)
-      const opener = await synthesizeOnboardingOpener(crypto, pk, sessionId)
+      const opener = await synthesizeOnboardingOpener(requireCrypto, pk, sessionId)
       const body: CompanionContextResponse = {
         sessionId,
         messages: opener ? [opener] : [],
-        dailyCard: await getUndismissedDailyCard(crypto, pk),
+        dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
       }
       return jsonResponse(200, body)
     }
 
-    const messages = await loadRecentMessages(crypto, pk, pointer.sessionId)
-    const continuation = await maybeSynthesizeContinuation(crypto, userId, pk, pointer.sessionId, messages)
+    const messages = await loadRecentMessages(requireCrypto, pk, pointer.sessionId)
+    const continuation = await maybeSynthesizeContinuation(requireCrypto, userId, pk, pointer.sessionId, messages)
     if (continuation) messages.push(continuation)
 
     const body: CompanionContextResponse = {
       sessionId: pointer.sessionId,
       messages,
-      dailyCard: await getUndismissedDailyCard(crypto, pk),
+      dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
     }
     return jsonResponse(200, body)
   } catch (err) {
@@ -138,7 +147,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
 
 /** Most recent CONTEXT_MESSAGE_LIMIT messages for a given conversation, decrypted, chronological. */
 async function loadRecentMessages(
-  crypto: SessionCrypto,
+  requireCrypto: RequireCrypto,
   pk: string,
   sessionId: string
 ): Promise<{ role: 'user' | 'assistant'; text: string; createdAt: string }[]> {
@@ -154,7 +163,9 @@ async function loadRecentMessages(
     })
   )
   const items = ((result.Items ?? []) as SessionMessageItem[]).reverse() // back to chronological order
+  if (items.length === 0) return [] // nothing to decrypt — don't force a crypto resolve
 
+  const crypto = await requireCrypto()
   return Promise.all(
     items.map(async (m) => ({
       role: m.role,
@@ -171,7 +182,7 @@ async function loadRecentMessages(
  * degrade to `null` rather than breaking context resume.
  */
 async function getUndismissedDailyCard(
-  crypto: SessionCrypto,
+  requireCrypto: RequireCrypto,
   pk: string
 ): Promise<CompanionContextResponse['dailyCard']> {
   try {
@@ -180,6 +191,7 @@ async function getUndismissedDailyCard(
     const item = result.Item as DailyCardItem | undefined
     if (!item || item.dismissedAt) return null
 
+    const crypto = await requireCrypto()
     const { text, kind } = await crypto.decryptField<{
       text: string
       kind: 'thought' | 'question' | 'reminder' | 'micro_practice'
@@ -202,7 +214,7 @@ async function getUndismissedDailyCard(
  * and self-limits immediately after (the fresh `createdAt` resets the gap).
  */
 async function maybeSynthesizeContinuation(
-  crypto: SessionCrypto,
+  requireCrypto: RequireCrypto,
   userId: string,
   pk: string,
   sessionId: string,
@@ -257,7 +269,7 @@ async function maybeSynthesizeContinuation(
       pk,
       sk: Sk.sessionMessage(sessionId, now),
       role: 'assistant',
-      content: await crypto.encryptField<MessageContent>({ text }),
+      content: await (await requireCrypto()).encryptField<MessageContent>({ text }),
       createdAt: now,
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: item }))
@@ -289,7 +301,7 @@ async function maybeSynthesizeContinuation(
  * never from this opener alone.
  */
 async function synthesizeOnboardingOpener(
-  crypto: SessionCrypto,
+  requireCrypto: RequireCrypto,
   pk: string,
   sessionId: string
 ): Promise<{ role: 'assistant'; text: string; createdAt: string } | null> {
@@ -303,7 +315,7 @@ async function synthesizeOnboardingOpener(
     // First-Time Onboarding Slice D — this is the very first message the
     // person ever sees, so it's the single highest-value place to use the
     // card-sequence answers: opening already oriented instead of from zero.
-    const onboardingSnapshot = await getOnboardingSnapshotContext(ddb, TABLE_NAME, pk, crypto)
+    const onboardingSnapshot = await getOnboardingSnapshotContext(ddb, TABLE_NAME, pk, await requireCrypto())
     const result = await callPromptModel(version, {
       conversationHistory: '(no prior messages — this is the start of the conversation)',
       // Intelligence Spec §17 — there's no real user turn to classify yet
@@ -324,7 +336,7 @@ async function synthesizeOnboardingOpener(
       pk,
       sk: Sk.sessionMessage(sessionId, now),
       role: 'assistant',
-      content: await crypto.encryptField<MessageContent>({ text }),
+      content: await (await requireCrypto()).encryptField<MessageContent>({ text }),
       createdAt: now,
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: item }))
