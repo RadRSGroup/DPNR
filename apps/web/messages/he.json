@@ -484,6 +484,22 @@
         "placeholder": "כתבו כמה שתרצו…",
         "skipButton": "דלג/י לעת עתה"
       }
+    },
+    "summary": {
+      "title": "הקואורדינטות הראשונות שלכם",
+      "rightNow": "עכשיו",
+      "lifeInFocus": "מה תופס מקום",
+      "moreOf": "רוצה יותר",
+      "howYouExplore": "איך אתם אוהבים לחקור",
+      "whatYouWant": "מה אתם רוצים מ-DPNR",
+      "emptyState": "השארתם את זה קליל — גם זה בסדר. בואו פשוט נדבר.",
+      "disclaimer": "זה לא מי שאתם. זו פשוט נקודת ההתחלה שלנו.",
+      "feedbackPrompt": "זה מרגיש כמוכם?",
+      "feedback": {
+        "yes": "כן",
+        "partly": "בערך",
+        "not_quite": "לא ממש"
+      }
     }
   },
   "Auth": {

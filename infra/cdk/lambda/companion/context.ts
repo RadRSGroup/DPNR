@@ -11,6 +11,7 @@ import {
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { getProfileForLanguage, toLanguageInstruction } from '../lib/locale'
+import { getOnboardingSnapshotContext } from '../lib/onboarding-snapshot-context'
 import { getSessionCrypto, type SessionCrypto } from '../lib/session-crypto'
 import { resolvePromptVersion } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
@@ -299,6 +300,10 @@ async function synthesizeOnboardingOpener(
     // doc comment for why this endpoint has no profile already in hand.
     const profile = await getProfileForLanguage(ddb, TABLE_NAME, pk)
     const languageInstruction = toLanguageInstruction(profile.preferredLanguage, profile.genderIdentity)
+    // First-Time Onboarding Slice D — this is the very first message the
+    // person ever sees, so it's the single highest-value place to use the
+    // card-sequence answers: opening already oriented instead of from zero.
+    const onboardingSnapshot = await getOnboardingSnapshotContext(ddb, TABLE_NAME, pk, crypto)
     const result = await callPromptModel(version, {
       conversationHistory: '(no prior messages — this is the start of the conversation)',
       // Intelligence Spec §17 — there's no real user turn to classify yet
@@ -309,6 +314,7 @@ async function synthesizeOnboardingOpener(
         "(the person has just opened Companion for the very first time and hasn't said anything yet — introduce yourself briefly and ask your first orienting question)",
       conclusionInstruction: '',
       languageInstruction,
+      onboardingSnapshot,
     })
     const text = typeof result === 'string' ? '' : typeof result.reply === 'string' ? result.reply.trim() : ''
     if (!text) return null

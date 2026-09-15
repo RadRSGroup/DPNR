@@ -484,6 +484,22 @@
         "placeholder": "Type as much or as little as you'd like…",
         "skipButton": "Skip for now"
       }
+    },
+    "summary": {
+      "title": "First Coordinates",
+      "rightNow": "Right now",
+      "lifeInFocus": "Life in focus",
+      "moreOf": "More of",
+      "howYouExplore": "How you like to explore",
+      "whatYouWant": "What you want from DPNR",
+      "emptyState": "You kept this one light — that's okay too. Let's just talk.",
+      "disclaimer": "This isn't who you are. It's simply where we're starting.",
+      "feedbackPrompt": "Does this feel like you?",
+      "feedback": {
+        "yes": "Yes",
+        "partly": "Partly",
+        "not_quite": "Not quite"
+      }
     }
   },
   "Auth": {

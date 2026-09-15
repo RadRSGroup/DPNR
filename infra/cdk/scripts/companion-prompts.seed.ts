@@ -120,6 +120,20 @@
  * `infra/cdk/lambda/lib/locale.ts`'s `toLanguageInstruction()`, the single
  * place that composes this string). `classify_interaction_mode` deliberately
  * did NOT get this var — it returns a structured enum, no user-facing prose.
+ *
+ * **First-Time Onboarding Slice D addition** (`docs/FIRST_TIME_ONBOARDING_PLAN.md`
+ * §4/§5.1 — "the one genuinely new integration point in the whole plan"):
+ * `onboard` gained a `{{onboardingSnapshot}}` variable, built fresh on every
+ * call (both `companion/context.ts`'s opener synthesis and every later
+ * `companion/message.ts` onboarding turn) by
+ * `infra/cdk/lambda/lib/onboarding-snapshot-context.ts` from the caller's
+ * `OnboardingSnapshotItem` — the card-sequence answers Slices A-C already
+ * collect, now used as real starting context instead of sitting unread.
+ * `respond` deliberately did NOT get this var: by the time `respond` is ever
+ * called, a real Roadmap already exists (message.ts only calls `onboard`
+ * until then), so the initial intake has already done its one job of
+ * shaping the *first* conversation — repeating it into every later
+ * `respond` turn indefinitely would be stale, not useful, context.
  */
 import type { PromptSeed } from './decision-room-prompts.seed'
 
@@ -259,7 +273,8 @@ How to conduct this:
 - This should feel like being asked by someone who actually cares, not filling out a profile. Never ask for anything you don't need for the orientation below.
 - Usually a few exchanges are enough. Stop as soon as you have a real, honest sense of things — don't manufacture extra questions just to seem thorough.
 - Stay warm, curious, and non-diagnostic. Never label the person with a fixed trait or type, and never state a guess as if it were certain.
-- If there is no prior conversation yet, this is your very first message ever to this person — introduce yourself briefly (you're DPNR's Companion) and ask your first question. Never set readyForRoadmap to true on this very first message; there's nothing to base it on yet.
+- Below, you may already have a short intake this person completed before this conversation started (a few quick taps, not a real conversation) — if so, treat it as real starting context, not something to interrogate them about again. Don't recite it back like a report and don't ask them to repeat something already in it; instead, let your first question go a layer deeper than what the intake alone could show. If no intake is available, proceed exactly as before.
+- If there is no prior conversation yet, this is your very first message ever to this person — introduce yourself briefly (you're DPNR's Companion) and ask your first question, informed by the intake below if there is one. Never set readyForRoadmap to true on this very first message; there's nothing to base it on yet.
 - The person's current need right now is estimated below as currentInteractionMode — let it shape your tone (e.g. "regulate"/"be_heard" means presence over analysis right now). Never mention this classification to the person directly.
 - If, and only if, they've described a real unresolved thread worth remembering for later (rare — most turns have none), set newOpenThreadSubject/newOpenThreadWhyItMatters.
 
@@ -274,7 +289,10 @@ Allowed suggestedSpaces values: "Mirror Room", "Decision Room", "Library".
 {{conclusionInstruction}}
 
 Output the reply text and the readiness decision together, every turn.`,
-    userTemplate: `Conversation so far, oldest to newest:
+    userTemplate: `This person's short pre-conversation intake, if they completed one (may say no intake is available):
+{{onboardingSnapshot}}
+
+Conversation so far, oldest to newest:
 {{conversationHistory}}
 
 The person's current need right now (an estimate, may be wrong — see system instructions): {{currentInteractionMode}}
@@ -287,6 +305,7 @@ The person's latest message:
       'currentMessage',
       'conclusionInstruction',
       'languageInstruction',
+      'onboardingSnapshot',
     ],
     outputSchema: {
       type: 'object',
@@ -330,7 +349,12 @@ The person's latest message:
       'only read (persistInitialRoadmap, message.ts) when readyForRoadmap is true, and even then only if all three ' +
       'text fields are non-empty — a bare readyForRoadmap with no real substance is treated as not ready at all. ' +
       'newOpenThreadSubject empty/absent means no new thread this turn (Intelligence Spec §17), same tolerance ' +
-      '`respond`\'s own copy of these fields has.',
+      '`respond`\'s own copy of these fields has. onboardingSnapshot (First-Time Onboarding Slice D) = a short ' +
+      'plain-English block built by lib/onboarding-snapshot-context.ts from the caller\'s OnboardingSnapshotItem ' +
+      '(the card-sequence answers, decrypting currentIntention if present), or a "(no onboarding intake available)" ' +
+      'sentinel when no such item exists (a legacy account, or the item predates this feature) — resolved fresh on ' +
+      'every call, both the opener and every later onboarding turn, same "repeat context every turn" convention ' +
+      '`respond`\'s own confirmedSignals/openThreads already use.',
   },
   {
     name: 'classify_interaction_mode',

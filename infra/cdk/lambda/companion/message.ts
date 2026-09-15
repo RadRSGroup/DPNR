@@ -20,6 +20,7 @@ import {
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { requireConsent } from '../lib/consent'
 import { getLocaleClaim, resolveLocale, toLanguageInstruction } from '../lib/locale'
+import { getOnboardingSnapshotContext } from '../lib/onboarding-snapshot-context'
 import { consumeCredits, COMPANION_MESSAGE_COST } from '../lib/credits'
 import { getSessionCrypto, type SessionCrypto } from '../lib/session-crypto'
 import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
@@ -449,6 +450,11 @@ async function runOnboardingTurn(
     userTurnCount >= MAX_ONBOARDING_USER_TURNS
       ? 'You must set readyForRoadmap to true now and give your honest best-effort currentFocus/theme/direction from everything shared so far, even if it feels incomplete — do not ask another question.'
       : ''
+  // First-Time Onboarding Slice D (docs/FIRST_TIME_ONBOARDING_PLAN.md §5.1)
+  // — the card-sequence answers feed every onboarding turn as real starting
+  // context, not just the opening question (see onboarding-snapshot-context.ts's
+  // own doc comment for why this is safe to repeat every turn).
+  const onboardingSnapshot = await getOnboardingSnapshotContext(ddb, TABLE_NAME, pk, crypto)
 
   const result = await callPromptModel(version, {
     conversationHistory,
@@ -456,6 +462,7 @@ async function runOnboardingTurn(
     currentMessage: userText,
     conclusionInstruction,
     languageInstruction,
+    onboardingSnapshot,
   })
   if (typeof result === 'string') {
     throw new HttpError(502, 'model_call_failed', 'Onboarding prompt did not return forced tool-use output.')
