@@ -496,6 +496,38 @@ export class ApiStack extends Stack {
     })
     props.avatarsBucket.grantPut(avatarUploadUrlFn)
 
+    // First-Time Onboarding, Slice A (docs/FIRST_TIME_ONBOARDING_PLAN.md §4).
+    // Needs a crypto/session-ticket grant, unlike userPreferencesFn — one
+    // field (currentIntention) is freshly-typed free text, encrypted like
+    // any other (see onboarding-snapshot.ts's own doc comment).
+    const onboardingSnapshotFn = new lambda.NodejsFunction(this, 'OnboardingSnapshotFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/account/onboarding-snapshot.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
+      description: 'PUT /v1/user/onboarding-snapshot — upserts the ONBOARDING_SNAPSHOT item.',
+    })
+    props.applicationTable.grantReadWriteData(onboardingSnapshotFn)
+    props.sessionTicketsKmsKey.grantDecrypt(onboardingSnapshotFn)
+    props.sessionTicketsTable.grantReadData(onboardingSnapshotFn)
+
+    const onboardingSnapshotGetFn = new lambda.NodejsFunction(this, 'OnboardingSnapshotGetFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/account/onboarding-snapshot-get.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
+      description: 'GET /v1/user/onboarding-snapshot — the caller\'s current onboarding selections, decrypted.',
+    })
+    props.applicationTable.grantReadData(onboardingSnapshotGetFn)
+    props.sessionTicketsKmsKey.grantDecrypt(onboardingSnapshotGetFn)
+    props.sessionTicketsTable.grantReadData(onboardingSnapshotGetFn)
+
     const userExportFn = new lambda.NodejsFunction(this, 'UserExportFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/account/export.ts'),
@@ -709,6 +741,20 @@ export class ApiStack extends Stack {
       path: '/v1/user/preferences',
       methods: [apigwv2.HttpMethod.GET],
       integration: new integrations.HttpLambdaIntegration('UserPreferencesGetIntegration', userPreferencesGetFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/user/onboarding-snapshot',
+      methods: [apigwv2.HttpMethod.PUT],
+      integration: new integrations.HttpLambdaIntegration('OnboardingSnapshotIntegration', onboardingSnapshotFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/user/onboarding-snapshot',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('OnboardingSnapshotGetIntegration', onboardingSnapshotGetFn),
       authorizer: this.cognitoAuthorizer,
     })
 

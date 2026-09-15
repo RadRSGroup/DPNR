@@ -8,6 +8,7 @@ export * from './library'
 export * from './continuity'
 export * from './webhooks'
 export * from './open-threads'
+export * from './onboarding'
 
 /**
  * Every /v1 endpoint in MVP_ARCHITECTURE.md §4 now has a contract here.

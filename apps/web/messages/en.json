@@ -410,6 +410,13 @@
     "continueButton": "Continue",
     "skipButton": "Skip for now"
   },
+  "Onboarding": {
+    "errorGeneric": "Something went wrong. Please try again.",
+    "title": "Let's make DPNR yours",
+    "subtitle": "A short guided welcome is on its way. For now, let's get you started.",
+    "continuing": "One moment…",
+    "continueButton": "Enter DPNR"
+  },
   "Auth": {
     "passwordField": {
       "passwordPlaceholder": "Password",

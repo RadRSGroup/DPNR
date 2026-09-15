@@ -40,6 +40,13 @@ const CONSENT_COOKIE = 'dpnr_consented'
 // security boundary, caveat as CONSENT_COOKIE above.
 const PROFILE_SETUP_COOKIE = 'dpnr_profile_setup'
 
+// Mirrors the ID token's `custom:onboardingComplete` claim
+// (pre-token-generation.ts, First-Time Onboarding Slice A) so proxy.ts can
+// gate the one-time /onboarding screen the same way it already gates
+// /consent and /profile-setup — same UX-only, not a security boundary,
+// caveat as the cookies above.
+const ONBOARDING_COOKIE = 'dpnr_onboarding'
+
 // Tracks the current sign-in's session-ticket id (lib/auth/keyBootstrap.ts's
 // `establishSessionTicket`) purely so a later sign-out can revoke it —
 // sessionStorage, not a cookie, since it's tab-scoped bookkeeping, not
@@ -100,12 +107,19 @@ function setSessionCookie(session: CognitoUserSession): void {
   if (profileSetupDone) {
     document.cookie = `${PROFILE_SETUP_COOKIE}=1; path=/; max-age=${maxAge}; samesite=lax`
   }
+
+  // Same only-ever-set-from-true, staleness-tolerant pattern as the two above.
+  const onboardingDone = idToken.payload['custom:onboardingComplete'] === 'true'
+  if (onboardingDone) {
+    document.cookie = `${ONBOARDING_COOKIE}=1; path=/; max-age=${maxAge}; samesite=lax`
+  }
 }
 
 function clearSessionCookie(): void {
   document.cookie = `${SESSION_COOKIE}=; path=/; max-age=0`
   document.cookie = `${CONSENT_COOKIE}=; path=/; max-age=0`
   document.cookie = `${PROFILE_SETUP_COOKIE}=; path=/; max-age=0`
+  document.cookie = `${ONBOARDING_COOKIE}=; path=/; max-age=0`
 }
 
 /**
@@ -128,6 +142,15 @@ export function markConsentedLocally(): void {
  */
 export function markProfileSetupCompleteLocally(): void {
   document.cookie = `${PROFILE_SETUP_COOKIE}=1; path=/; max-age=3600; samesite=lax`
+}
+
+/**
+ * Called right after the /onboarding screen's `updateOnboardingSnapshot({
+ * completed: true })` succeeds — same optimistic-cookie pattern as
+ * `markProfileSetupCompleteLocally()` above.
+ */
+export function markOnboardingCompleteLocally(): void {
+  document.cookie = `${ONBOARDING_COOKIE}=1; path=/; max-age=3600; samesite=lax`
 }
 
 export function signUp(email: string, password: string): Promise<void> {

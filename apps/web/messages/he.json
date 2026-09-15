@@ -410,6 +410,13 @@
     "continueButton": "המשך",
     "skipButton": "דלג/י לעת עתה"
   },
+  "Onboarding": {
+    "errorGeneric": "משהו השתבש. נסו שוב.",
+    "title": "בואו נתאים את DPNR אליכם",
+    "subtitle": "היכרות מודרכת קצרה בדרך אליכם. בינתיים, בואו נתחיל.",
+    "continuing": "רגע אחד…",
+    "continueButton": "כניסה ל-DPNR"
+  },
   "Auth": {
     "passwordField": {
       "passwordPlaceholder": "סיסמה",

@@ -45,6 +45,7 @@ export const Sk = {
   promptOverlay: (domain: string): string => `PROMPT_OVERLAY#${domain}`,
   safetyEvent: (eventId: string): string => `SAFETY#EVENT#${eventId}`,
   openThread: (threadId: string): string => `OPENTHREAD#${threadId}`,
+  onboardingSnapshot: (): 'ONBOARDING_SNAPSHOT' => 'ONBOARDING_SNAPSHOT',
 } as const
 
 /** Global (not per-user) tables — see MVP_ARCHITECTURE.md §3.2. */

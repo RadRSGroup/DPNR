@@ -47,6 +47,8 @@ import type {
   PreferencesResponse,
   AvatarUploadUrlRequest,
   AvatarUploadUrlResponse,
+  UpdateOnboardingSnapshotRequest,
+  OnboardingSnapshotResponse,
 } from '@dpnr/shared-types'
 import { getIdToken } from '../cognito/client'
 
@@ -169,6 +171,23 @@ export async function uploadAvatar(file: File): Promise<string | null> {
 }
 
 /** GET /v1/user/export — GDPR data export, used by /account's "Download my data." */
+/** GET /v1/user/onboarding-snapshot — the caller's current onboarding selections, decrypted. */
+export async function getOnboardingSnapshot(): Promise<OnboardingSnapshotResponse> {
+  const res = await authedFetch('/v1/user/onboarding-snapshot')
+  return parseOrThrow<OnboardingSnapshotResponse>(res)
+}
+
+/**
+ * PUT /v1/user/onboarding-snapshot — First-Time Onboarding, Slice A. Pass
+ * only the field(s) actually changing; the server leaves the rest alone.
+ */
+export async function updateOnboardingSnapshot(
+  request: UpdateOnboardingSnapshotRequest
+): Promise<OnboardingSnapshotResponse> {
+  const res = await authedFetch('/v1/user/onboarding-snapshot', { method: 'PUT', body: JSON.stringify(request) })
+  return parseOrThrow<OnboardingSnapshotResponse>(res)
+}
+
 export async function exportUserData(): Promise<UserExportResponse> {
   const res = await authedFetch('/v1/user/export')
   return parseOrThrow<UserExportResponse>(res)
