@@ -308,6 +308,23 @@ function OnboardingContent() {
 
         {step === 'intro' && (
           <div className="text-center">
+            {/* First-Time Onboarding, video-slot follow-up
+                (`docs/FIRST_TIME_ONBOARDING_PLAN.md` §5.5): an inert
+                placeholder for the real WOW VIDEO, which is developed and
+                supplied separately (per the source doc) and doesn't exist
+                yet — deliberately not a real <video>/player pointed at a
+                nonexistent source, just a static frame that reads as
+                "a video belongs here, coming soon" rather than broken
+                media. Swap this for the real player once the asset lands;
+                nothing else on this screen needs to change to accommodate
+                it. */}
+            <div className="w-full aspect-video rounded-2xl border border-white/10 bg-white/5 flex flex-col items-center justify-center gap-2 mb-6">
+              <div className="w-11 h-11 rounded-full border border-white/20 flex items-center justify-center text-white/40 text-base">
+                ▶
+              </div>
+              <p className="text-white/30 text-xs">{t('intro.videoComingSoon')}</p>
+            </div>
+
             <h1 className="text-white text-xl font-light mb-4">{t('intro.title')}</h1>
             <p className="text-[var(--color-text-tertiary)] text-sm">{t('intro.body1')}</p>
             <p className="text-[var(--color-text-tertiary)] text-sm mt-1">{t('intro.body2')}</p>

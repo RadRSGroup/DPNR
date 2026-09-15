@@ -415,6 +415,7 @@
     "continuing": "One moment…",
     "progress": "{step} / {total}",
     "intro": {
+      "videoComingSoon": "Video coming soon",
       "title": "Let's make DPNR yours",
       "body1": "Now you know a little about DPNR.",
       "body2": "Let's give it a first glimpse of you.",
