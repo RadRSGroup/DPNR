@@ -29,13 +29,15 @@ Fill four short fields, each 1–2 plain sentences:
 - remainsActive: a pattern, trigger, or open thread that's still active and unresolved.
 - suggestion: one small, concrete, optional thing worth considering next — never phrased as an instruction or a task they must complete.
 
-Warm, plain language throughout — never clinical, never diagnostic, never urgent.`,
+Warm, plain language throughout — never clinical, never diagnostic, never urgent.
+
+{{languageInstruction}}`,
     userTemplate: `Confirmed signals updated this week (most recent first):
 {{weekSignals}}
 
 Session summaries from this week (most recent first):
 {{weekSummaries}}`,
-    variables: ['weekSignals', 'weekSummaries'],
+    variables: ['weekSignals', 'weekSummaries', 'languageInstruction'],
     outputSchema: {
       type: 'object',
       required: ['stoodOut', 'shifted', 'remainsActive', 'suggestion'],
@@ -50,6 +52,8 @@ Session summaries from this week (most recent first):
       'weekSignals/weekSummaries = "- (domain) description" / "- summary" lines, filtered to the last 7 days ' +
       'only (not all-time, unlike daily_card/compose\'s confirmedSignals) — see gather-context.ts\'s ' +
       'all-time read plus compose-weekly-recap.ts\'s own 7-day filter. Either can be "(none this week)" — ' +
-      'compose-weekly-recap.ts skips calling this prompt entirely when both are, never composes a recap from nothing.',
+      'compose-weekly-recap.ts skips calling this prompt entirely when both are, never composes a recap from ' +
+      'nothing. languageInstruction (Hebrew Localization Slice E) — all four fields are real user-facing ' +
+      'content, same "profile already scanned, free to reuse" reasoning as daily_card/compose.',
   },
 ]

@@ -1,6 +1,7 @@
 import { ScanCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, userPk, type UserProfileItem, type DailyCardItem } from '@dpnr/shared-types'
 import { getSessionCrypto } from '../lib/session-crypto'
+import { toLanguageInstruction } from '../lib/locale'
 import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
 import { ddb, TABLE_NAME } from './helpers'
@@ -55,7 +56,7 @@ export const handler = async (): Promise<void> => {
         continue
       }
       try {
-        const composedOne = await composeForUser(profile.userId)
+        const composedOne = await composeForUser(profile)
         if (composedOne) composed++
         else skippedNoMaterial++
       } catch (err) {
@@ -72,8 +73,10 @@ export const handler = async (): Promise<void> => {
   )
 }
 
-async function composeForUser(userId: string): Promise<boolean> {
+async function composeForUser(profile: UserProfileItem): Promise<boolean> {
+  const userId = profile.userId
   const crypto = await getSessionCrypto(userId)
+  const languageInstruction = toLanguageInstruction(profile.preferredLanguage, profile.genderIdentity)
   const [{ confirmedSignals, sessionSummaries }, dueCommitments] = await Promise.all([
     gatherContinuityContext(userId, crypto),
     getDueCommitments(userId, crypto),
@@ -98,6 +101,7 @@ async function composeForUser(userId: string): Promise<boolean> {
     confirmedSignals: recentSignalsList || NONE_YET,
     recentSummary: recentSummary || NONE_YET,
     dueCommitments: dueCommitmentsList || NONE_YET,
+    languageInstruction,
   })
   if (typeof modelResult === 'string') {
     throw new Error('daily_card/compose did not return the forced structured output.')

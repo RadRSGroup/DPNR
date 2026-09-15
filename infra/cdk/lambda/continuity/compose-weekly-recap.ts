@@ -1,6 +1,7 @@
 import { ScanCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, userPk, type UserProfileItem, type WeeklyRecapItem } from '@dpnr/shared-types'
 import { getSessionCrypto } from '../lib/session-crypto'
+import { toLanguageInstruction } from '../lib/locale'
 import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
 import { isoWeekString } from '../lib/iso-week'
@@ -46,7 +47,7 @@ export const handler = async (): Promise<void> => {
         continue
       }
       try {
-        const composedOne = await composeForUser(profile.userId, weekAgoIso)
+        const composedOne = await composeForUser(profile, weekAgoIso)
         if (composedOne) composed++
         else skippedNoMaterial++
       } catch (err) {
@@ -63,8 +64,10 @@ export const handler = async (): Promise<void> => {
   )
 }
 
-async function composeForUser(userId: string, weekAgoIso: string): Promise<boolean> {
+async function composeForUser(profile: UserProfileItem, weekAgoIso: string): Promise<boolean> {
+  const userId = profile.userId
   const crypto = await getSessionCrypto(userId)
+  const languageInstruction = toLanguageInstruction(profile.preferredLanguage, profile.genderIdentity)
   const { confirmedSignals, sessionSummaries } = await gatherContinuityContext(userId, crypto)
 
   const weekSignalsList = confirmedSignals
@@ -84,6 +87,7 @@ async function composeForUser(userId: string, weekAgoIso: string): Promise<boole
   const modelResult = await callPromptModel(version, {
     weekSignals: weekSignalsList || NONE_THIS_WEEK,
     weekSummaries: weekSummariesList || NONE_THIS_WEEK,
+    languageInstruction,
   })
   if (typeof modelResult === 'string') {
     throw new Error('weekly_recap/compose did not return the forced structured output.')

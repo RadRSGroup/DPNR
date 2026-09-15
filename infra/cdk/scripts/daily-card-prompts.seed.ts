@@ -34,7 +34,9 @@ Choose exactly one kind:
 - "reminder": a gentle reference back to something they themselves named as important (a value, a commitment) — never a generic self-help reminder. If a due commitment is listed below, prefer naming that specific commitment over any other reminder material.
 - "micro_practice": one small, concrete, doable-in-under-a-minute action tied to a real pattern below.
 
-Ground everything in the confirmed signals, recent session summary, and due commitments given below — never invent a trait, pattern, or event that isn't actually there. If the material is thin, write something small and honest rather than stretching for false specificity. Never use urgency, streaks, "don't break your streak," countdown, or FOMO language of any kind — the product's own design rule forbids it. Keep the text to 1–2 short sentences, warm and plain, never clinical or diagnostic.`,
+Ground everything in the confirmed signals, recent session summary, and due commitments given below — never invent a trait, pattern, or event that isn't actually there. If the material is thin, write something small and honest rather than stretching for false specificity. Never use urgency, streaks, "don't break your streak," countdown, or FOMO language of any kind — the product's own design rule forbids it. Keep the text to 1–2 short sentences, warm and plain, never clinical or diagnostic.
+
+{{languageInstruction}}`,
     userTemplate: `Confirmed signals about this person (most recent first):
 {{confirmedSignals}}
 
@@ -43,7 +45,7 @@ Most recent session summary:
 
 Commitments due for review today or earlier (most urgent first):
 {{dueCommitments}}`,
-    variables: ['confirmedSignals', 'recentSummary', 'dueCommitments'],
+    variables: ['confirmedSignals', 'recentSummary', 'dueCommitments', 'languageInstruction'],
     outputSchema: {
       type: 'object',
       required: ['kind', 'text'],
@@ -57,6 +59,8 @@ Commitments due for review today or earlier (most urgent first):
       'recentSummary = the single most recent SessionSummaryItem\'s plain-text summary, or "(none yet)". ' +
       'dueCommitments = "- description" lines, up to 2 most urgent open commitments with reviewDate <= today, or "(none yet)". ' +
       'compose-daily-card.ts skips calling this prompt entirely (writes nothing) when all three are "(none yet)" — ' +
-      'never composes a card from nothing.',
+      'never composes a card from nothing. languageInstruction (Hebrew Localization Slice E) — text is the ' +
+      'card\'s real user-facing content; compose-daily-card.ts already scans the full UserProfileItem per user ' +
+      'for its consent check, so preferredLanguage/genderIdentity are free to reuse, no extra read needed.',
   },
 ]
