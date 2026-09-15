@@ -31,12 +31,13 @@ export async function extractCandidateSignals(
   sessionId: string,
   source: TwinSignalSource,
   roomType: 'Decision Room' | 'Mirror Room',
-  sessionSummary: string
+  sessionSummary: string,
+  languageInstruction: string
 ): Promise<string[]> {
   const writtenSignalIds: string[] = []
   try {
     const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'twin', 'extract_signals')
-    const result = await callPromptModel(version, { roomType, sessionSummary })
+    const result = await callPromptModel(version, { roomType, sessionSummary, languageInstruction })
     const signals = typeof result === 'string' ? [] : (result.signals as unknown[] | undefined) ?? []
 
     const now = new Date().toISOString()

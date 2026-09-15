@@ -33,7 +33,9 @@ If you do decide a revision is warranted, write:
 
 Never revise for the sake of it. Never invent detail beyond what the confirmed evidence actually supports. Never label the person with a fixed trait or type.
 
-Allowed suggestedSpaces values: "Mirror Room", "Decision Room", "Library".`,
+Allowed suggestedSpaces values: "Mirror Room", "Decision Room", "Library".
+
+{{languageInstruction}}`,
     userTemplate: `Current Roadmap:
 Current focus: {{currentFocus}}
 Theme: {{theme}}
@@ -41,7 +43,7 @@ Direction: {{direction}}
 
 All confirmed evidence about this person so far, most recent first:
 {{confirmedSignals}}`,
-    variables: ['currentFocus', 'theme', 'direction', 'confirmedSignals'],
+    variables: ['currentFocus', 'theme', 'direction', 'confirmedSignals', 'languageInstruction'],
     outputSchema: {
       type: 'object',
       required: ['shouldRevise'],
@@ -65,6 +67,9 @@ All confirmed evidence about this person so far, most recent first:
       'the one just confirmed — a revision decision needs the whole picture, not one isolated data point. ' +
       'currentFocus/theme/direction/rationale on the output are only read (and even then only if all four are ' +
       'non-empty) when shouldRevise is true — same "don\'t trust the flag alone" rule companion/onboard already ' +
-      'follows for readyForRoadmap.',
+      'follows for readyForRoadmap. languageInstruction (Hebrew Localization Slice E) — all four free-text ' +
+      'outputs are real user-facing prose (rationale explicitly so, per its own field doc above; ' +
+      'currentFocus/theme/direction are shown on Dashboard\'s Roadmap widget), so unlike twin/classify_signal ' +
+      'this prompt needs the var even though most of its output is short phrases rather than long text.',
   },
 ]

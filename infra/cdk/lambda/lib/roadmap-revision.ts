@@ -32,13 +32,20 @@ const MIN_CONFIRMED_SIGNALS_TO_CONSIDER = 2
  * Never throws — same best-effort convention as
  * rooms/twin-signals.ts's extractCandidateSignals/persistSessionSummary. A
  * revision check failing must never block the confirm action itself.
+ *
+ * `languageInstruction` (Hebrew Localization Slice E) — the caller
+ * (twin/confirm.ts) resolves it via lib/locale.ts's getProfileForLanguage,
+ * same "no existing profile read to reuse" pattern companion/context.ts
+ * already established, since this handler has no requireConsent() call to
+ * piggyback on.
  */
 export async function maybeProposeRoadmapRevision(
   ddb: DynamoDBDocumentClient,
   tableName: string,
   promptRegistryTableName: string,
   userId: string,
-  crypto: SessionCrypto
+  crypto: SessionCrypto,
+  languageInstruction: string
 ): Promise<void> {
   try {
     const pk = userPk(userId)
@@ -63,6 +70,7 @@ export async function maybeProposeRoadmapRevision(
       theme: roadmap.theme,
       direction: roadmap.direction,
       confirmedSignals: confirmedSignalsText,
+      languageInstruction,
     })
     if (typeof result === 'string' || result.shouldRevise !== true) return
 

@@ -36,12 +36,14 @@ For each signal you do extract:
 - description: one plain sentence, written from an outside observer's perspective (not "I" — "you"), using tentative language ("seems to", "may be emerging as") for anything inferred rather than explicitly stated by the person themselves.
 - confidence: 0–1. Use 0.9+ only for something the person stated directly in their own words. Use lower confidence the more this is your own inference from their behavior/choices rather than their explicit statement.
 
-Never invent detail beyond what the session summary actually contains. Never assign a fixed trait or label to the person — describe a pattern or moment, not an identity.`,
+Never invent detail beyond what the session summary actually contains. Never assign a fixed trait or label to the person — describe a pattern or moment, not an identity.
+
+{{languageInstruction}}`,
     userTemplate: `Session type: {{roomType}}
 
 Session summary:
 {{sessionSummary}}`,
-    variables: ['roomType', 'sessionSummary'],
+    variables: ['roomType', 'sessionSummary', 'languageInstruction'],
     outputSchema: {
       type: 'object',
       required: ['signals'],
@@ -63,7 +65,11 @@ Session summary:
     notes:
       'roomType = "Decision Room" | "Mirror Room" (human-readable, not the internal DECISION/MIRROR flowId). ' +
       'sessionSummary = a plain-text assembly of the session\'s real content (see gatherDecisionContext/ ' +
-      'MirrorContent in each commitment.ts caller) — never raw encrypted blobs, always already-decrypted text.',
+      'MirrorContent in each commitment.ts caller) — never raw encrypted blobs, always already-decrypted text. ' +
+      'languageInstruction (Hebrew Localization Slice E) — description is real user-facing prose (Dashboard, ' +
+      'Evolution Map, TwinCalibrationCard), unlike classify_signal below which only ever produces enum/numeric ' +
+      'output and so deliberately did NOT get this var, same "no prose, no var" rule ' +
+      'companion-prompts.seed.ts\'s classify_interaction_mode already established.',
   },
   {
     // Session 19 — called from twin/confirm.ts (via lib/signal-classification.ts)

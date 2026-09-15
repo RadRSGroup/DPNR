@@ -63,7 +63,15 @@ export const commitmentStep: StepDefinition = {
       .filter(Boolean)
       .join('\n')
     // Awaited — see decision-steps/commitment.ts's identical note on why.
-    const signalIds = await extractCandidateSignals(ctx.crypto, ctx.pk, ctx.sessionId, 'mirror_room', 'Mirror Room', summary)
+    const signalIds = await extractCandidateSignals(
+      ctx.crypto,
+      ctx.pk,
+      ctx.sessionId,
+      'mirror_room',
+      'Mirror Room',
+      summary,
+      ctx.languageInstruction
+    )
     await persistSessionSummary(ctx.crypto, ctx.pk, ctx.sessionId, summary, signalIds, 'mirror_room.commitment_summary')
 
     return { nextStepId: null, result: { commitment: commitment ?? null }, sessionComplete: true }

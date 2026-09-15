@@ -68,7 +68,15 @@ export const commitmentStep: StepDefinition = {
     // to this response: extractCandidateSignals() never throws (errors are
     // swallowed internally, see its own doc comment), so it can't turn this
     // into a failed COMMITMENT.
-    const signalIds = await extractCandidateSignals(ctx.crypto, ctx.pk, ctx.sessionId, 'decision_room', 'Decision Room', summary)
+    const signalIds = await extractCandidateSignals(
+      ctx.crypto,
+      ctx.pk,
+      ctx.sessionId,
+      'decision_room',
+      'Decision Room',
+      summary,
+      ctx.languageInstruction
+    )
     await persistSessionSummary(ctx.crypto, ctx.pk, ctx.sessionId, summary, signalIds, 'decision_room.commitment_summary')
 
     return { nextStepId: null, result: { commitment: commitment ?? null }, sessionComplete: true }

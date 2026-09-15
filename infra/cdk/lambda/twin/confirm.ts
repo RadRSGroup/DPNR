@@ -4,6 +4,7 @@ import { HttpError } from '../lib/http'
 import type { TwinSignalActionResponse } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
 import { getSessionCrypto } from '../lib/session-crypto'
+import { getProfileForLanguage, toLanguageInstruction } from '../lib/locale'
 import { maybeProposeRoadmapRevision } from '../lib/roadmap-revision'
 import { maybeClassifySignal } from '../lib/signal-classification'
 import { ddb, TABLE_NAME, findSignalById } from './helpers'
@@ -47,7 +48,16 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       })
     )
 
-    await maybeProposeRoadmapRevision(ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME, userId, crypto)
+    // Hebrew Localization Slice E (docs/HEBREW_LOCALIZATION_PLAN.md §4.3):
+    // no requireConsent() call here to piggyback a profile read on (this
+    // handler flips an already-confirmed signal's status, not fresh
+    // personal-content processing), so a small targeted read via
+    // getProfileForLanguage — same lib/locale.ts convention
+    // companion/context.ts's pure-GET paths already use.
+    const profile = await getProfileForLanguage(ddb, TABLE_NAME, signal.pk)
+    const languageInstruction = toLanguageInstruction(profile.preferredLanguage, profile.genderIdentity)
+
+    await maybeProposeRoadmapRevision(ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME, userId, crypto, languageInstruction)
     await maybeClassifySignal(ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME, signal, crypto)
 
     const response: TwinSignalActionResponse = { signalId, status: 'confirmed' }
