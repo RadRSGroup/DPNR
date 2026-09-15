@@ -1008,3 +1008,105 @@ not assumed either way.
 
 Committed as `56af596` on `mvp` at the user's request — not pushed, nothing
 to deploy (frontend-only, no CDK change).
+
+## 16. Slice F — scoped, not yet built (Session 57, 2026-09-15)
+
+By this point Slice E's `{{languageInstruction}}` threading is done for
+every domain except `safety` (`decision_room`, `mirror_room`, `companion`,
+`twin`, `daily_card`, `weekly_recap`, `library` all confirmed live —
+`roadmap` too, code-complete and confirmed running correctly live, though
+the *positive* "a revision gets proposed" case is still unproven, a
+separate open item, not part of Slice F). This section scopes Slice F
+itself, per §4.4/§4.5's own description — no code written yet.
+
+**What needs `{{languageInstruction}}` (re-confirmed against the real
+current code, not just the plan text above)**: `respond_concern`,
+`respond_danger`, `respond_high_stakes`, `respond_overload` — all four are
+plain user-facing prose. `classify_safety_state` does **not** — its input
+(free-text user messages) is already language-agnostic and its output is a
+structured state/confidence/reason-code object, no prose at all, same "no
+prose, no var" reasoning as `twin/classify_signal`.
+
+**Threading is unusually cheap for this slice**: `lib/safety.ts`'s
+`generateSafetyResponse()` is the one function that calls all four
+`respond_*` prompts (keyed by `SAFETY_RESPONSE_PROMPT_NAME`), and its two
+real callers — `companion/message.ts` and `rooms/command.ts` — **both
+already resolve `languageInstruction` earlier in the same handler** for
+their own normal-path prompts (Session 56/57 work). This just needs a new
+`languageInstruction: string` parameter on `generateSafetyResponse()`,
+threaded into the `callPromptModel()` call inside it, and one extra
+argument at both existing call sites — no new profile read anywhere,
+unlike several other Slice E increments.
+
+**`FALLBACK_SAFETY_MESSAGE` is a separate, smaller design decision**:
+per §4.4, it's deliberately outside the Prompt Registry mechanism (it
+exists for when Bedrock itself has already failed, so asking a model to
+translate it defeats the purpose) — it needs to become a
+`Record<'en' | 'he', string>` with a hand-translated, human-reviewed
+Hebrew string, selected by locale. `generateSafetyResponse()` currently
+has no locale/profile information at all in its own signature (only
+`classification`/`currentMessage`) — the cheapest option is to pass the
+same `languageInstruction` string's *locale* alongside it (e.g. a second
+small param, or derive the two together from one `{ locale, languageInstruction }`
+argument) rather than re-deriving locale from the instruction sentence by
+parsing it. Flagging this as the one small new plumbing decision this
+slice needs beyond pure mechanical repetition — not a product decision,
+just an implementation shape choice a build session should make and
+disclose, same as `library/topic-detail.ts`'s "which existing helper to
+reuse" calls in Slice E.
+
+**Live verification plan — two genuinely different questions, both
+needed, neither satisfied by the other**:
+
+1. **"Does the model stay on-script in Hebrew"** — reproducing Session
+   30's own incident (not a hypothetical: a real classification-pipeline
+   gap once caused a live reply to name actual hotline numbers, a direct
+   ADR 0012 violation) but as a **positive-path** test this time, not a
+   failure-injection one: for each of the four non-normal states, drive a
+   real Hebrew-language message through the real, deployed pipeline
+   end-to-end (real classification → real correct branch → real
+   `respond_*` call) and confirm the actual Hebrew reply never names a
+   specific hotline, phone number, or service — generic language only
+   ("a trusted person," "a mental health professional," "local emergency
+   services," translated faithfully, not a specific Israeli equivalent
+   like ER"N/1201 the model might reach for unprompted in Hebrew). This
+   is the real risk §4.4 already names — a Hebrew reply may be *more*
+   likely to improvise a locally-known resource than an English one,
+   precisely because the model has genuine Hebrew-language knowledge of
+   real Israeli services to draw on.
+2. **"Does Hebrew-language distress classify correctly"** — a
+   materially different question per §4.5: verify `classify_safety_state`
+   itself (unchanged, no `{{language}}` var) reliably assigns the correct
+   `safetyState` when the *input* is Hebrew, across all four non-normal
+   states plus a `normal`/`deep_reflection` control pair (to confirm it
+   isn't just becoming trigger-happy on any Hebrew emotional language).
+   Passing test 1 does not prove test 2, and vice versa — a pipeline can
+   stay on-script in its wording while still misclassifying the input
+   language, or classify correctly while still naming a hotline in its
+   reply.
+
+**A real operational note for whoever runs this live pass**: the original
+Session 29/30 English test messages were not preserved verbatim in this
+log (this project's own "no raw payloads" discipline applies to test
+content too, not just real user content) — a build session needs to
+compose its **own** synthetic Hebrew test messages per state. For the two
+higher-stakes states (`safety_concern`/`immediate_danger`) that means
+writing clearly synthetic, recognizable-but-not-genuinely-distressing
+test phrasing (the same spirit this session's own real Hebrew
+Decision/Mirror Room test content already used throughout Slice E —
+invented scenarios, never copied real distressing text from anywhere) —
+worth being deliberate about wording quality here specifically, given the
+subject matter, more than any other Slice E domain.
+
+**Not decided here, flagged for whoever builds this**: whether the
+`respond_*` prompts' own English test-case set (if one gets written down
+this time, unlike Session 29/30) should be preserved in this doc or the
+AGENT_LOG for future regression testing, given the "no raw payloads"
+tension above — a real judgment call between reproducibility and the
+project's own content-hygiene discipline, not resolved unilaterally in
+this scoping pass.
+
+No ADR needed for the threading mechanics (mechanical extension of an
+already-established pattern). The `FALLBACK_SAFETY_MESSAGE` locale-param
+shape is a small enough implementation choice not to need one either —
+flagged above for disclosure, not escalation.
