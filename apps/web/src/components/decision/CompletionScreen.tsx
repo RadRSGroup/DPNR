@@ -63,9 +63,7 @@ export default function CompletionScreen({
 
         {/* Hero */}
         <div className="text-center space-y-3">
-          <div className="w-16 h-16 rounded-full bg-yellow-400/20 border border-yellow-400/40 flex items-center justify-center text-3xl mx-auto">
-            ✦
-          </div>
+          <div className="w-16 h-16 rounded-full bg-yellow-400/20 border border-yellow-400/40 mx-auto" />
           <h1 className="text-white text-2xl font-medium">
             Well done, {firstName}!
           </h1>

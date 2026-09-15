@@ -23,7 +23,7 @@ interface Step05Props {
 export default function Step05({ decisionTitle, optionA, optionB, lens, initialTagsA, initialTagsB, onRefine, onComplete, onBack, onSkip }: Step05Props) {
   const sections = lens === 'pros_cons'
     ? [{ type: 'pro', label: 'Pros', icon: '✓' }, { type: 'con', label: 'Cons', icon: '✗' }]
-    : [{ type: 'desire', label: 'Desires', icon: '✦' }, { type: 'fear', label: 'Fears', icon: '⚡' }]
+    : [{ type: 'desire', label: 'Desires', icon: '♡' }, { type: 'fear', label: 'Fears', icon: '⚡' }]
 
   const [sectionIdx, setSectionIdx] = useState(0)
   const [currentOption, setCurrentOption] = useState<'A' | 'B'>('A')
@@ -187,7 +187,7 @@ export default function Step05({ decisionTitle, optionA, optionB, lens, initialT
 
           {loading && (
             <p className="text-purple-400/50 text-xs text-center animate-pulse">
-              ✦ Loading AI suggestions...
+              Loading AI suggestions...
             </p>
           )}
 

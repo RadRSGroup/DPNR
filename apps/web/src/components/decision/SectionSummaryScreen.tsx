@@ -108,7 +108,6 @@ export default function SectionSummaryScreen({
           className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white text-lg"
         >✕</button>
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-purple-400/40 flex items-center justify-center text-xs">✦</div>
           <span className="text-[var(--color-text-tertiary)] text-xs">Manifest yo...</span>
         </div>
         <div className="w-8 h-8" />
@@ -217,7 +216,7 @@ export default function SectionSummaryScreen({
         {/* AI reflection */}
         {loading && !wordFromUs && (
           <div className="flex items-center justify-center gap-2 text-fuchsia-400/50 text-xs py-3 animate-pulse">
-            <span>✦</span> Reflecting on your selections…
+            Reflecting on your selections…
           </div>
         )}
 

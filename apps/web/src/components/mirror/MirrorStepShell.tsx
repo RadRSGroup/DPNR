@@ -100,9 +100,6 @@ export default function MirrorStepShell({
         </button>
 
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-[var(--color-violet-500)]/40 flex items-center justify-center text-xs">
-            ✦
-          </div>
           <span className="text-[var(--color-text-tertiary)] text-xs">Mirror Room</span>
           <span className="text-[var(--color-text-tertiary)] text-xs">{minutesLeft} min</span>
         </div>

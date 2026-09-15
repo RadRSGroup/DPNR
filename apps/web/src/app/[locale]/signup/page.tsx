@@ -129,7 +129,6 @@ export default function SignupPage() {
 
         <div className="max-w-[393px] mx-auto px-5 min-h-screen flex flex-col justify-center">
           <div className="text-center space-y-4 mb-6">
-            <div className="w-16 h-16 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-3xl mx-auto">✦</div>
             <h2 className="text-white text-xl font-light">{t('checkEmail')}</h2>
             <p className="text-white/50 text-sm">{t('codeSentTo')} <span className="text-white/80">{email}</span>.</p>
           </div>

@@ -39,7 +39,6 @@ export default function CommitmentScreen({ decisionTitle, nextStep, onDone, onBa
 
       {/* Header */}
       <div className="pt-14 px-5 pb-4 text-center space-y-1">
-        <div className="w-12 h-12 rounded-full bg-purple-800/40 border border-purple-500/40 flex items-center justify-center text-xl mx-auto mb-3">✦</div>
         <h1 className="text-white text-lg font-medium">&quot;{decisionTitle}&quot;</h1>
         <p className="text-white/50 text-sm">Last Step: Before You Leave</p>
       </div>

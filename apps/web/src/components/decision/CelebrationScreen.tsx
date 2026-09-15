@@ -34,32 +34,10 @@ export default function CelebrationScreen({ userName, decisionTitle, onContinue 
       <div className="absolute inset-0 bg-[#0a0a0f] -z-10" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_55%_at_50%_45%,_rgba(167,139,250,0.22)_0%,_rgba(139,92,246,0.10)_50%,_transparent_80%)] -z-10" />
 
-      {/* Floating stars */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-        {[
-          { top: '12%', left: '18%', size: 'text-lg', delay: '0s' },
-          { top: '20%', right: '15%', size: 'text-sm', delay: '0.4s' },
-          { top: '35%', left: '8%',  size: 'text-xs', delay: '0.8s' },
-          { top: '70%', right: '10%', size: 'text-base', delay: '0.2s' },
-          { top: '80%', left: '20%', size: 'text-xs', delay: '1s' },
-          { top: '55%', right: '22%', size: 'text-sm', delay: '0.6s' },
-        ].map((s, i) => (
-          <span
-            key={i}
-            className="absolute text-purple-300/40 animate-pulse"
-            style={{ top: s.top, left: (s as { left?: string }).left, right: (s as { right?: string }).right, fontSize: undefined, animationDelay: s.delay }}
-          >
-            ✦
-          </span>
-        ))}
-      </div>
-
       <div className="flex flex-col items-center text-center space-y-8 fade-up">
         {/* Glow orb */}
         <div className="relative">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500/30 to-yellow-400/20 border border-purple-400/30 flex items-center justify-center text-4xl shadow-[0_0_60px_rgba(167,139,250,0.3)]">
-            ✦
-          </div>
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500/30 to-yellow-400/20 border border-purple-400/30 shadow-[0_0_60px_rgba(167,139,250,0.3)]" />
           <div className="absolute inset-0 rounded-full animate-ping bg-purple-500/10" style={{ animationDuration: '2.5s' }} />
         </div>
 

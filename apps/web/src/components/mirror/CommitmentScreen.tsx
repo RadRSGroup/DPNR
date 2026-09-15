@@ -39,7 +39,6 @@ export default function CommitmentScreen({ sessionTitle, onDone, onBack }: Props
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.45)_0%,_rgba(80,20,140,0.25)_45%,_transparent_75%)] -z-10" />
 
       <div className="pt-14 px-5 pb-4 text-center space-y-1">
-        <div className="w-12 h-12 rounded-full bg-purple-800/40 border border-purple-500/40 flex items-center justify-center text-xl mx-auto mb-3">✦</div>
         <h1 className="text-white text-lg font-medium">&quot;{sessionTitle}&quot;</h1>
         <p className="text-white/50 text-sm">Last Step: Before You Leave</p>
       </div>

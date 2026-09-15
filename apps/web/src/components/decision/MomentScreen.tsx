@@ -29,9 +29,6 @@ export default function MomentScreen({ onNext, onBack }: Props) {
           className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white text-lg"
         >✕</button>
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-purple-500/40 flex items-center justify-center text-xs">
-            ✦
-          </div>
           <span className="text-[var(--color-text-tertiary)] text-xs">Manifest yo...</span>
           <span className="text-[var(--color-text-tertiary)] text-xs">28 min</span>
         </div>

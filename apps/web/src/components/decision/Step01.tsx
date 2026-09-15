@@ -68,7 +68,6 @@ export default function Step01({ initialTitle = '', initialSubtitle, onRefine, o
                 disabled={loading}
                 className="text-purple-400 hover:text-purple-300 text-sm transition-colors flex items-center gap-1.5"
               >
-                <span className="text-purple-500">✦</span>
                 {loading ? 'Thinking...' : 'Suggest a frame for this decision'}
               </button>
             )

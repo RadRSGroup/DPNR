@@ -11,7 +11,7 @@ import Card from '@/components/ui/Card'
 
 const POINTS = [
   { id: 'decisionsStayYours', icon: '🔒' },
-  { id: 'aiProcessesContent', icon: '✦' },
+  { id: 'aiProcessesContent', icon: '🧠' },
   { id: 'anonymisedAnalysis', icon: '📊' },
   { id: 'downloadOrDelete', icon: '⬇' },
 ] as const
@@ -48,7 +48,6 @@ function ConsentContent() {
       </div>
 
       <div className="pt-16 pb-6 text-center">
-        <div className="w-14 h-14 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-2xl mx-auto mb-4">✦</div>
         <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR · InnerOS</p>
         <h1 className="text-white text-xl font-light">{t('title')}</h1>
         <p className="text-[var(--color-text-tertiary)] text-sm mt-2">{t('subtitle')}</p>

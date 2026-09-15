@@ -169,7 +169,7 @@ export default function Step06({ decisionTitle, optionA, optionB, initialValuesA
           ))}
           {loading && (
             <p className="text-purple-400/50 text-xs w-full text-center animate-pulse pt-2">
-              ✦ Loading AI suggestions...
+              Loading AI suggestions...
             </p>
           )}
         </div>

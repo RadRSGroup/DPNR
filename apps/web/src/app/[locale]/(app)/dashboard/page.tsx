@@ -159,7 +159,7 @@ function DashboardContent() {
 
         {justCompleted && (
           <div className="mb-4 bg-[var(--color-violet-900)]/40 border border-[var(--color-violet-600)]/40 rounded-2xl px-4 py-3">
-            <p className="text-[var(--color-violet-400)] text-sm">✦ {t('justCompleted')}</p>
+            <p className="text-[var(--color-violet-400)] text-sm">{t('justCompleted')}</p>
           </div>
         )}
 

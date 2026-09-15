@@ -71,7 +71,6 @@ function ProfileSetupContent() {
 
       <div className="max-w-[393px] mx-auto px-5 pb-10 min-h-screen flex flex-col">
         <div className="pt-16 pb-6 text-center">
-          <div className="w-14 h-14 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-2xl mx-auto mb-4">✦</div>
           <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR</p>
           <h1 className="text-white text-xl font-light">{t('title')}</h1>
           <p className="text-[var(--color-text-tertiary)] text-sm mt-2">{t('subtitle')}</p>
