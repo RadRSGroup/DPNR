@@ -37,7 +37,7 @@ const MODE_TO_INTERACTION_PREFERENCE = Object.fromEntries(
   Object.entries(INTERACTION_PREFERENCE_TO_MODE).map(([label, mode]) => [mode, label])
 ) as Record<InteractionMode, OnboardingInteractionPreferenceOption>
 
-type Step = 'intro' | 'currentState' | 'activeDomains' | 'desiredStates' | 'interactionPreference'
+type Step = 'intro' | 'currentState' | 'activeDomains' | 'desiredStates' | 'interactionPreference' | 'intention'
 const CARD_STEPS: Step[] = ['currentState', 'activeDomains', 'desiredStates', 'interactionPreference']
 
 const OPTION_BUTTON_BASE =
@@ -45,24 +45,30 @@ const OPTION_BUTTON_BASE =
 const OPTION_BUTTON_SELECTED =
   'border-[var(--color-violet-500)]/60 bg-[var(--color-violet-900)]/40 text-[var(--color-violet-300)]'
 const OPTION_BUTTON_UNSELECTED = 'border-white/10 text-white/70 hover:border-white/20 hover:text-white/90'
+const SKIP_BUTTON = 'w-full text-center text-white/40 hover:text-white/60 text-sm py-2 transition-colors disabled:opacity-50'
 
 /**
- * First-Time Onboarding, Slice B (`docs/FIRST_TIME_ONBOARDING_PLAN.md` §4,
+ * First-Time Onboarding, Slice C (`docs/FIRST_TIME_ONBOARDING_PLAN.md` §4,
  * source spec `docs/DPNR_First_Time_Onboarding_MVP_Implementation_Guide_v3.pdf`
- * §5.1-5.5) — the four real card screens, replacing Slice A's single-button
- * placeholder. A dedicated route (§5.6, not inline in Main Chat), each card
- * persisted field-by-field against the same `PUT /v1/user/onboarding-snapshot`
- * endpoint Slice A already built and live-verified.
+ * §5.6/§3 "Agency") — adds the optional `CURRENT_INTENTION` free-text step
+ * after Card 4, plus a real, dedicated "Skip" affordance on every card. The
+ * flow now finalizes (`completed: true`) at the intention step, matching the
+ * doc's own `INTENTION_SUBMITTED_OR_SKIPPED -> Generate First Coordinates`
+ * event — Slice B's shortcut of finalizing right after Card 4 is gone.
  *
- * Deliberately not yet built (later slices, per the plan doc): a dedicated
- * "Skip" affordance on every card (Slice C's job — for now, a multi-select
- * card's Continue button works with zero selections, which already satisfies
- * the doc's "every step can be skipped" UX principle without dedicated UI);
- * the optional free-text `CURRENT_INTENTION` step (Slice C); the First
- * Coordinates summary + Yes/Partly/Not quite feedback (Slice D) — this
- * screen finalizes the flow (`completed: true`) right after Card 4 instead,
- * same "ship a real, non-dead-ending increment" reasoning Slice A's own
- * placeholder used.
+ * Skip semantics: `currentState`/`interactionPreference` (single-choice
+ * cards) skip by simply advancing without writing anything, leaving the
+ * field `null` — same as never having answered it. `activeDomains`/
+ * `desiredStates` (multi-select cards) skip by explicitly persisting an
+ * empty array, distinct from Continue (which persists whatever's currently
+ * selected, including zero) — Slice B already made 0-selections a valid
+ * Continue outcome; this adds the dedicated, visible affordance the plan
+ * doc's own "every step can be skipped" principle calls for.
+ *
+ * Still not built (Slice D): the First Coordinates summary screen + Yes/
+ * Partly/Not quite feedback — this screen still finalizes and redirects
+ * straight to `next` after the intention step, same "ship a real, non-dead-
+ * ending increment" reasoning Slice A/B's own placeholders used.
  */
 function OnboardingContent() {
   const t = useTranslations('Onboarding')
@@ -80,6 +86,7 @@ function OnboardingContent() {
   const [desiredStates, setDesiredStates] = useState<OnboardingDesiredState[]>([])
   const [interactionPreferenceLabel, setInteractionPreferenceLabel] =
     useState<OnboardingInteractionPreferenceOption | null>(null)
+  const [intentionText, setIntentionText] = useState('')
 
   // Resume mid-flow: a returning user (e.g. a reload between cards) sees
   // their own real prior selections rather than starting over, the same
@@ -107,11 +114,14 @@ function OnboardingContent() {
           setStep('desiredStates')
         } else if (!snapshot.interactionPreference) {
           setStep('interactionPreference')
+        } else if (!snapshot.completedAt) {
+          // All 4 cards answered but the intention step was never reached/
+          // finished (e.g. the tab closed right after Card 4) — resume there
+          // rather than re-asking four already-answered questions.
+          setStep('intention')
         } else {
-          // Every card already answered but the flow never finalized (e.g.
-          // the tab closed right after the last card) — self-heal instead
-          // of re-asking four already-answered questions.
-          await updateOnboardingSnapshot({ completed: true })
+          // Genuinely already complete (e.g. a stale claim/cookie) —
+          // self-heal by leaving instead of re-showing a finished flow.
           markOnboardingCompleteLocally()
           router.push(next)
           router.refresh()
@@ -149,6 +159,10 @@ function OnboardingContent() {
     if (await save({ currentState: value })) setStep('activeDomains')
   }
 
+  function handleSkipCurrentState() {
+    setStep('activeDomains')
+  }
+
   function toggleActiveDomain(label: OnboardingActiveDomainOption) {
     setActiveDomainLabels((prev) =>
       prev.includes(label) ? prev.filter((l) => l !== label) : prev.length >= 3 ? prev : [...prev, label]
@@ -162,6 +176,11 @@ function OnboardingContent() {
     if (await save({ activeDomains: categories })) setStep('desiredStates')
   }
 
+  async function handleSkipActiveDomains() {
+    setActiveDomainLabels([])
+    if (await save({ activeDomains: [] })) setStep('desiredStates')
+  }
+
   function toggleDesiredState(value: OnboardingDesiredState) {
     setDesiredStates((prev) =>
       prev.includes(value) ? prev.filter((v) => v !== value) : prev.length >= 3 ? prev : [...prev, value]
@@ -172,14 +191,36 @@ function OnboardingContent() {
     if (await save({ desiredStates })) setStep('interactionPreference')
   }
 
+  async function handleSkipDesiredStates() {
+    setDesiredStates([])
+    if (await save({ desiredStates: [] })) setStep('interactionPreference')
+  }
+
   async function handleInteractionPreference(label: OnboardingInteractionPreferenceOption) {
     setInteractionPreferenceLabel(label)
     const mode = INTERACTION_PREFERENCE_TO_MODE[label]
-    if (await save({ interactionPreference: mode, completed: true })) {
+    if (await save({ interactionPreference: mode })) setStep('intention')
+  }
+
+  function handleSkipInteractionPreference() {
+    setStep('intention')
+  }
+
+  async function finishOnboarding(fields: UpdateOnboardingSnapshotRequest) {
+    if (await save(fields)) {
       markOnboardingCompleteLocally()
       router.push(next)
       router.refresh()
     }
+  }
+
+  async function handleIntentionContinue() {
+    const trimmed = intentionText.trim()
+    await finishOnboarding(trimmed ? { currentIntention: trimmed, completed: true } : { completed: true })
+  }
+
+  async function handleSkipIntention() {
+    await finishOnboarding({ completed: true })
   }
 
   if (loadingInitial) {
@@ -241,6 +282,9 @@ function OnboardingContent() {
                 </button>
               ))}
             </div>
+            <button onClick={handleSkipCurrentState} disabled={saving} className={`${SKIP_BUTTON} mt-4`}>
+              {t('cards.skipButton')}
+            </button>
           </div>
         )}
 
@@ -267,6 +311,9 @@ function OnboardingContent() {
               className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 active:scale-[0.98] text-white rounded-2xl px-5 py-4 font-medium transition-all mt-6"
             >
               {saving ? t('continuing') : t('cards.continueButton')}
+            </button>
+            <button onClick={handleSkipActiveDomains} disabled={saving} className={`${SKIP_BUTTON} mt-1`}>
+              {t('cards.skipButton')}
             </button>
           </div>
         )}
@@ -295,6 +342,9 @@ function OnboardingContent() {
             >
               {saving ? t('continuing') : t('cards.continueButton')}
             </button>
+            <button onClick={handleSkipDesiredStates} disabled={saving} className={`${SKIP_BUTTON} mt-1`}>
+              {t('cards.skipButton')}
+            </button>
           </div>
         )}
 
@@ -319,6 +369,33 @@ function OnboardingContent() {
                 </button>
               ))}
             </div>
+            <button onClick={handleSkipInteractionPreference} disabled={saving} className={`${SKIP_BUTTON} mt-4`}>
+              {t('cards.skipButton')}
+            </button>
+          </div>
+        )}
+
+        {step === 'intention' && (
+          <div>
+            <h2 className="text-white text-lg font-light text-center mb-5">{t('cards.currentIntention.prompt')}</h2>
+            <textarea
+              value={intentionText}
+              onChange={(e) => setIntentionText(e.target.value)}
+              disabled={saving}
+              rows={4}
+              placeholder={t('cards.currentIntention.placeholder')}
+              className="w-full rounded-2xl border border-white/10 bg-white/5 text-white text-sm placeholder:text-white/30 px-4 py-3.5 focus:outline-none focus:border-[var(--color-violet-500)]/60 disabled:opacity-50 resize-none"
+            />
+            <button
+              onClick={handleIntentionContinue}
+              disabled={saving}
+              className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 active:scale-[0.98] text-white rounded-2xl px-5 py-4 font-medium transition-all mt-6"
+            >
+              {saving ? t('continuing') : t('cards.continueButton')}
+            </button>
+            <button onClick={handleSkipIntention} disabled={saving} className={`${SKIP_BUTTON} mt-1`}>
+              {t('cards.currentIntention.skipButton')}
+            </button>
           </div>
         )}
 

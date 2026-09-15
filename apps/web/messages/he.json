@@ -423,6 +423,7 @@
     },
     "cards": {
       "continueButton": "המשך",
+      "skipButton": "דלג/י",
       "currentState": {
         "prompt": "איפה החיים מרגישים כרגע?",
         "options": {
@@ -477,6 +478,11 @@
           "be_heard": "פשוט תנו לי מרחב לדבר",
           "unknown": "תלוי ברגע"
         }
+      },
+      "currentIntention": {
+        "prompt": "יש משהו שממש הייתם רוצים שאעזור לכם להבין, לשנות או לנווט בו כרגע?",
+        "placeholder": "כתבו כמה שתרצו…",
+        "skipButton": "דלג/י לעת עתה"
       }
     }
   },

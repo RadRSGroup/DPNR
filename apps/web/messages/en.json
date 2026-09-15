@@ -423,6 +423,7 @@
     },
     "cards": {
       "continueButton": "Continue",
+      "skipButton": "Skip",
       "currentState": {
         "prompt": "Where does life feel like it is right now?",
         "options": {
@@ -477,6 +478,11 @@
           "be_heard": "Just give me space to talk",
           "unknown": "Depends on the moment"
         }
+      },
+      "currentIntention": {
+        "prompt": "Is there anything you'd really like me to help you understand, change or navigate right now?",
+        "placeholder": "Type as much or as little as you'd like…",
+        "skipButton": "Skip for now"
       }
     }
   },
