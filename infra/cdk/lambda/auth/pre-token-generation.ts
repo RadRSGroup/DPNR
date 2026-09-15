@@ -7,11 +7,14 @@ const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
 
 /**
- * Cognito pre-token-generation trigger. Injects `custom:consent` and
- * `custom:locale` claims so the API Gateway JWT authorizer / any handler
+ * Cognito pre-token-generation trigger. Injects `custom:consent`,
+ * `custom:locale`, and `custom:profileSetup` claims so the API Gateway JWT
+ * authorizer / any handler (and, for `profileSetup`, `proxy.ts`'s UX gate)
  * can fast-path read them without a DynamoDB read on every request
  * (migration plan §4.2, §3 card "Enforcement at the API layer";
- * `custom:locale` added docs/HEBREW_LOCALIZATION_PLAN.md Slice B).
+ * `custom:locale` added docs/HEBREW_LOCALIZATION_PLAN.md Slice B;
+ * `custom:profileSetup` added Session 51 for the post-signin profile-setup
+ * screen gate — same precedent as the other two, not a new pattern).
  *
  * IMPORTANT: both claims are fast-path optimizations, not the sole source
  * of truth — they're only as fresh as the last token refresh. Every
@@ -42,6 +45,7 @@ export const handler = async (
     claimsToAddOrOverride: {
       'custom:consent': hasConsented ? 'true' : 'false',
       'custom:locale': profile?.preferredLanguage ?? 'en',
+      'custom:profileSetup': profile?.profileSetupCompletedAt ? 'true' : 'false',
     },
   }
 

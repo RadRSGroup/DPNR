@@ -6,7 +6,7 @@ import { Link } from '@/i18n/navigation'
 import { usePathname } from '@/i18n/navigation'
 import { User, Wallet, Headphones, ChevronRight } from 'lucide-react'
 import RingLogo from '@/components/icons/RingLogo'
-import { getCredits } from '@/lib/api/v1-client'
+import { getCredits, getPreferences } from '@/lib/api/v1-client'
 import { PRIMARY_NAV } from './nav-items'
 import LanguageSelector from '@/components/shared/LanguageSelector'
 
@@ -14,12 +14,16 @@ export default function Sidebar() {
   const t = useTranslations('Nav')
   const pathname = usePathname()
   const [credits, setCredits] = useState<number | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
   useEffect(() => {
     getCredits().then((c) => setCredits(c.balance)).catch(() => {
       // Sidebar renders on every page, including ones with no session yet
       // (e.g. mid-redirect) — a failed fetch just leaves the generic label.
     })
+    // Session 51 — real photo when set, same tolerance as credits above
+    // (degrades to the generic User icon, never a broken image).
+    getPreferences().then((p) => setAvatarUrl(p.avatarUrl)).catch(() => {})
   }, [])
 
   return (
@@ -64,7 +68,19 @@ export default function Sidebar() {
           title={t('myWallet')}
           subtitle={credits !== null ? t('creditsCount', { count: credits }) : t('viewCredits')}
         />
-        <SidebarMiniCard href="/account" icon={<User className="w-[18px] h-[18px]" />} title={t('myProfile')} subtitle={t('settings')} />
+        <SidebarMiniCard
+          href="/account"
+          icon={
+            avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- presigned S3 URL, not a next/image-eligible static host
+              <img src={avatarUrl} alt="" className="w-[18px] h-[18px] rounded-full object-cover" />
+            ) : (
+              <User className="w-[18px] h-[18px]" />
+            )
+          }
+          title={t('myProfile')}
+          subtitle={t('settings')}
+        />
       </div>
 
       <div className="mt-auto pt-4 flex items-center gap-3 px-3 py-2.5 text-white/50 text-sm">

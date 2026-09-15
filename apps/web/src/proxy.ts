@@ -64,6 +64,11 @@ export async function proxy(request: NextRequest) {
   const { locale, path: pathname } = stripLocalePrefix(request.nextUrl.pathname)
   const hasSession = request.cookies.get('dpnr_session')?.value === '1'
   const hasConsent = request.cookies.get('dpnr_consented')?.value === '1'
+  // Session 51 — one-time post-signin profile-setup screen (gender +
+  // optional photo), gated the exact same way consent is: a cookie
+  // mirroring an ID-token claim, checked after consent so a brand-new
+  // signup always sees consent first, profile-setup second.
+  const hasProfileSetup = request.cookies.get('dpnr_profile_setup')?.value === '1'
 
   const isProtected =
     pathname.startsWith('/dashboard') ||
@@ -77,6 +82,7 @@ export async function proxy(request: NextRequest) {
   // authenticated" check below for why.
   const isLoginPage = pathname.startsWith('/login')
   const isConsentPage = pathname.startsWith('/consent')
+  const isProfileSetupPage = pathname.startsWith('/profile-setup')
 
   // Unauthenticated → login. `next` is stored UNPREFIXED — login/page.tsx
   // and consent/page.tsx both consume it via the locale-aware
@@ -100,11 +106,41 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Consented but profile-setup not done yet → profile-setup gate. Same
+  // unprefixed-`next` rule as the login/consent gates above; runs for
+  // every navigation (including a client-side `router.push` from
+  // consent/page.tsx's own handleAccept), so that page doesn't need to
+  // know about this step at all — it just pushes `next` like it always
+  // did, and lands on /profile-setup first if this is a fresh signup.
+  if (isProtected && hasSession && hasConsent && !hasProfileSetup) {
+    const url = request.nextUrl.clone()
+    url.pathname = withLocale('/profile-setup', locale)
+    url.searchParams.set('next', pathname)
+    return NextResponse.redirect(url)
+  }
+
   // Already consented — skip consent page. This branch redirects directly
   // via `NextResponse.redirect`, not the client-side locale-aware router,
   // so — unlike login/consent's own `router.push(next)` — `next` DOES need
   // prefixing here, at the point of use, not when it was stored above.
+  // Routes through /profile-setup first if that's not done yet either —
+  // same `next` carried forward either way.
   if (isConsentPage && hasConsent) {
+    const url = request.nextUrl.clone()
+    const next = request.nextUrl.searchParams.get('next')
+    if (!hasProfileSetup) {
+      url.pathname = withLocale('/profile-setup', locale)
+      url.searchParams.set('next', next ?? '/companion')
+    } else {
+      url.pathname = next ? withLocale(next, locale) : withLocale('/companion', locale)
+      url.searchParams.delete('next')
+    }
+    return NextResponse.redirect(url)
+  }
+
+  // Profile-setup already done — skip that screen. Same shape as the
+  // consent-page-skip branch above.
+  if (isProfileSetupPage && hasProfileSetup) {
     const url = request.nextUrl.clone()
     const next = request.nextUrl.searchParams.get('next')
     url.pathname = next ? withLocale(next, locale) : withLocale('/companion', locale)

@@ -24,13 +24,14 @@ export const TierSchema = z.enum(['free', 'core', 'pro'])
 export type Tier = z.infer<typeof TierSchema>
 
 /**
- * Collected at signup (docs/HEBREW_LOCALIZATION_PLAN.md gender-onboarding
- * addition, Session 49) purely to pick correct Hebrew grammatical gender in
- * AI-generated responses (second-person verb conjugation) — never used for
- * anything else, and irrelevant when `preferredLanguage` is `'en'`.
- * `unspecified` is the default and needs a real grammatical fallback
- * decision before Slice E (AI-content localization) ships — flagged there,
- * not resolved here.
+ * Collected via the dedicated post-signin profile-setup screen (moved out
+ * of the signup form itself in Session 51 — see `UserProfileItemSchema`'s
+ * `profileSetupCompletedAt`) purely to pick correct Hebrew grammatical
+ * gender in AI-generated responses (second-person verb conjugation) —
+ * never used for anything else, and irrelevant when `preferredLanguage` is
+ * `'en'`. `unspecified` is the default; Slice E's `toLanguageInstruction()`
+ * (`infra/cdk/lambda/lib/locale.ts`) falls back to masculine grammatical
+ * forms for it, per the user's own settled decision (Session 50).
  */
 export const GenderIdentitySchema = z.enum(['male', 'female', 'unspecified'])
 export type GenderIdentity = z.infer<typeof GenderIdentitySchema>
@@ -45,6 +46,15 @@ export const UserProfileItemSchema = z.object({
   consentVersion: z.string().nullable(),
   preferredLanguage: z.enum(['en', 'he']).default('en'),
   genderIdentity: GenderIdentitySchema.default('unspecified'),
+  // S3 object key (never a URL — the bucket is private, a fresh presigned
+  // GET is generated per read). `null` = no photo set.
+  avatarKey: z.string().nullable().default(null),
+  // Session 51 — gender moved out of the signup form into a dedicated
+  // post-signin profile-setup screen (gender + optional photo), per the
+  // user's own request superseding Session 50's "fold into signup"
+  // decision. Set once the screen is completed OR explicitly skipped;
+  // `null` is what gates `proxy.ts`'s one-time redirect to that screen.
+  profileSetupCompletedAt: z.string().datetime().nullable().default(null),
   betaTrialActivatedAt: z.string().datetime().nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),

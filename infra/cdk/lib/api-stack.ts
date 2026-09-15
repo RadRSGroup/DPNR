@@ -6,6 +6,7 @@ import * as bedrock from 'aws-cdk-lib/aws-bedrock'
 import * as cognito from 'aws-cdk-lib/aws-cognito'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 import * as kms from 'aws-cdk-lib/aws-kms'
+import * as s3 from 'aws-cdk-lib/aws-s3'
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager'
 import * as iam from 'aws-cdk-lib/aws-iam'
 import * as lambda from 'aws-cdk-lib/aws-lambda-nodejs'
@@ -55,6 +56,7 @@ export interface ApiStackProps extends StackProps {
   plansCatalogTable: dynamodb.Table
   sessionTicketsTable: dynamodb.Table
   sessionTicketsKmsKey: kms.Key
+  avatarsBucket: s3.Bucket
   isProduction?: boolean
 }
 
@@ -450,16 +452,49 @@ export class ApiStack extends Stack {
     const userPreferencesFn = new lambda.NodejsFunction(this, 'UserPreferencesFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/account/preferences.ts'),
-      description: 'PUT /v1/user/preferences — updates preferredLanguage/genderIdentity on the PROFILE item.',
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        AVATARS_BUCKET_NAME: props.avatarsBucket.bucketName,
+      },
+      description:
+        'PUT /v1/user/preferences — updates preferredLanguage/genderIdentity/avatarKey/profileSetupComplete on the PROFILE item.',
     })
     props.applicationTable.grantReadWriteData(userPreferencesFn)
+    // Same as UserPreferencesGetFn below — its response also generates a
+    // presigned GET for avatarKey (real bug found live, Session 51: this
+    // grant/env var was originally only wired to the GET Lambda, so a PUT
+    // that included an avatarKey succeeded at the DynamoDB write but then
+    // 500'd building its own response).
+    props.avatarsBucket.grantRead(userPreferencesFn)
 
     const userPreferencesGetFn = new lambda.NodejsFunction(this, 'UserPreferencesGetFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/account/preferences-get.ts'),
-      description: 'GET /v1/user/preferences — the caller\'s actual stored preferredLanguage/genderIdentity.',
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        AVATARS_BUCKET_NAME: props.avatarsBucket.bucketName,
+      },
+      description: 'GET /v1/user/preferences — the caller\'s actual stored preferredLanguage/genderIdentity/avatarUrl.',
     })
     props.applicationTable.grantReadData(userPreferencesGetFn)
+    // Needed to generate a presigned GET for `avatarKey` — this Lambda never
+    // actually reads the object itself, but a valid presigned URL can only
+    // grant permissions the signing identity itself holds.
+    props.avatarsBucket.grantRead(userPreferencesGetFn)
+
+    // Session 51 — profile-setup screen's photo upload. Direct
+    // browser-to-S3, so this Lambda only ever signs a URL, never touches
+    // image bytes (data-stack.ts's AvatarsBucket doc comment).
+    const avatarUploadUrlFn = new lambda.NodejsFunction(this, 'AvatarUploadUrlFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/account/avatar-upload-url.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        AVATARS_BUCKET_NAME: props.avatarsBucket.bucketName,
+      },
+      description: 'POST /v1/user/avatar/upload-url — presigned S3 PUT URL for a profile photo.',
+    })
+    props.avatarsBucket.grantPut(avatarUploadUrlFn)
 
     const userExportFn = new lambda.NodejsFunction(this, 'UserExportFn', {
       ...sharedProductLambdaProps,
@@ -674,6 +709,13 @@ export class ApiStack extends Stack {
       path: '/v1/user/preferences',
       methods: [apigwv2.HttpMethod.GET],
       integration: new integrations.HttpLambdaIntegration('UserPreferencesGetIntegration', userPreferencesGetFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/user/avatar/upload-url',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('AvatarUploadUrlIntegration', avatarUploadUrlFn),
       authorizer: this.cognitoAuthorizer,
     })
 

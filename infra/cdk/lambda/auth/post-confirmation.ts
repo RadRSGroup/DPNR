@@ -52,6 +52,12 @@ export const handler = async (
     // has to be set via a profile-update API call after signup, same as
     // `preferredLanguage` will be. Defaults to 'unspecified' until then.
     genderIdentity: 'unspecified',
+    avatarKey: null,
+    // Set for real via `PUT /v1/user/preferences`'s `profileSetupComplete`
+    // once the dedicated post-signin profile-setup screen is completed or
+    // skipped (Session 51) — `null` here is what gates proxy.ts's
+    // one-time redirect to that screen.
+    profileSetupCompletedAt: null,
     betaTrialActivatedAt: null,
     createdAt: now,
     updatedAt: now,

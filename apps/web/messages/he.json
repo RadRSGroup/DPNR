@@ -338,8 +338,6 @@
     "subtitle": "צרו חשבון חינמי",
     "email": "אימייל",
     "password": "סיסמה",
-    "gender": "מגדר",
-    "genderHint": "משמש רק כדי לפנות אליכם בצורה נכונה בעברית.",
     "consentText": "אני מסכימ/ה ל<terms>תנאי השימוש</terms> ול<privacy>מדיניות הפרטיות והנתונים</privacy>, לרבות השימוש בנתונים אנונימיים שלי לשיפור השירות.",
     "creatingAccount": "יוצרים חשבון…",
     "createAccount": "יצירת חשבון",
@@ -402,6 +400,16 @@
     "agreeButton": "אני מסכימ/ה — קחו אותי פנימה",
     "withdrawText": "תוכלו למשוך את ההסכמה ולמחוק את החשבון שלכם בכל עת דרך <account>הגדרות החשבון</account>."
   },
+  "ProfileSetup": {
+    "errorGeneric": "משהו השתבש. נסו שוב.",
+    "title": "עוד כמה דברים קטנים",
+    "subtitle": "עזרו לנו להתאים אישית את החוויה שלכם — תמיד תוכלו לשנות זאת מאוחר יותר בהגדרות החשבון.",
+    "gender": "מגדר",
+    "genderHint": "משמש רק כדי לפנות אליכם בצורה נכונה בעברית — אין לו השפעה באנגלית.",
+    "saving": "שומרים…",
+    "continueButton": "המשך",
+    "skipButton": "דלג/י לעת עתה"
+  },
   "Auth": {
     "passwordField": {
       "passwordPlaceholder": "סיסמה",
@@ -430,6 +438,14 @@
         "female": "נקבה",
         "unspecified": "מעדיפ/ה לא לציין"
       }
+    },
+    "avatar": {
+      "addPhoto": "הוספת תמונה",
+      "changePhoto": "החלפת תמונה",
+      "uploading": "מעלים…",
+      "errorFileType": "אנא בחרו תמונת JPEG, PNG או WebP.",
+      "errorFileSize": "אנא בחרו תמונה מתחת ל-5MB.",
+      "errorGeneric": "העלאת התמונה נכשלה."
     }
   },
   "Nav": {

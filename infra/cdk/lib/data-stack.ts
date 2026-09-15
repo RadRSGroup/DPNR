@@ -1,6 +1,7 @@
 import { Duration, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 import * as kms from 'aws-cdk-lib/aws-kms'
+import * as s3 from 'aws-cdk-lib/aws-s3'
 import { Construct } from 'constructs'
 
 export interface DataStackProps extends StackProps {
@@ -28,6 +29,7 @@ export class DataStack extends Stack {
   public readonly libraryCatalogTable: dynamodb.Table
   public readonly plansCatalogTable: dynamodb.Table
   public readonly sessionTicketsKmsKey: kms.Key
+  public readonly avatarsBucket: s3.Bucket
 
   constructor(scope: Construct, id: string, props: DataStackProps = {}) {
     super(scope, id, props)
@@ -147,6 +149,31 @@ export class DataStack extends Stack {
       keyUsage: kms.KeyUsage.ENCRYPT_DECRYPT,
       pendingWindow: Duration.days(7),
       removalPolicy,
+    })
+
+    // Profile photos (Session 51 — post-signin profile-setup screen). The
+    // first S3 bucket in this project. Private (no public read at all —
+    // `preferences-get.ts` hands out a short-lived presigned GET per read
+    // instead, same "never a durable public URL" posture as everything
+    // else user-generated in this app); CORS is required because the
+    // browser PUTs the image bytes directly to S3 from `apps/web`'s own
+    // origin, not through a Lambda proxy (`avatar-upload-url.ts` only ever
+    // issues the presigned PUT URL, never touches the bytes). Same
+    // allowed-origins list as `api-stack.ts`'s HTTP API CORS config —
+    // keep both in sync if either changes.
+    this.avatarsBucket = new s3.Bucket(this, 'AvatarsBucket', {
+      bucketName: `dpnr-avatars-${this.account}-${this.region}`,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      cors: [
+        {
+          allowedOrigins: ['http://localhost:3000', 'https://dpnr-mvp.onrender.com'],
+          allowedMethods: [s3.HttpMethods.PUT],
+          allowedHeaders: ['content-type'],
+        },
+      ],
+      removalPolicy,
+      autoDeleteObjects: !props.isProduction,
     })
   }
 }

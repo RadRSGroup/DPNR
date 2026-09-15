@@ -12,6 +12,7 @@ import Card from '@/components/ui/Card'
 import PasswordCreationField, { passwordsReadyToSubmit } from '@/components/auth/PasswordCreationField'
 import LanguageSelector from '@/components/shared/LanguageSelector'
 import GenderSelector from '@/components/shared/GenderSelector'
+import AvatarUpload from '@/components/shared/AvatarUpload'
 
 /**
  * Reskinned onto the shared Sidebar/MobileNav shell + design tokens in
@@ -30,6 +31,7 @@ export default function AccountPage() {
   const [credits, setCredits] = useState<CreditsResponse | null>(null)
   const [gender, setGender] = useState<GenderIdentity | null>(null)
   const [genderSaving, setGenderSaving] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
   const [deleteStep, setDeleteStep] = useState<'idle' | 'confirm' | 'deleting'>('idle')
   const [deleteConfirm, setDeleteConfirm] = useState('')
@@ -53,7 +55,9 @@ export default function AccountPage() {
         // Degrades to no Credits card — same tolerance every other page here uses.
       }
       try {
-        setGender((await getPreferences()).genderIdentity)
+        const preferences = await getPreferences()
+        setGender(preferences.genderIdentity)
+        setAvatarUrl(preferences.avatarUrl)
       } catch {
         // Degrades to the selector showing nothing pre-selected rather than
         // guessing — same "don't fabricate state" rule as the Credits card.
@@ -211,6 +215,7 @@ export default function AccountPage() {
               shown pre-selected to a guessed value. */}
           <Card className="space-y-3">
             <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">{t('preferences.label')}</p>
+            <AvatarUpload avatarUrl={avatarUrl} onUploaded={setAvatarUrl} />
             <div className="flex items-center justify-between">
               <span className="text-white/80 text-sm">{t('preferences.language')}</span>
               <LanguageSelector />

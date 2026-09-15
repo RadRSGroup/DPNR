@@ -338,8 +338,6 @@
     "subtitle": "Create your free account",
     "email": "Email",
     "password": "Password",
-    "gender": "Gender",
-    "genderHint": "Used only to address you correctly in Hebrew.",
     "consentText": "I agree to the <terms>Terms of Use</terms> and <privacy>Privacy & Data Policy</privacy>, including the use of my anonymised data to improve the service.",
     "creatingAccount": "Creating account…",
     "createAccount": "Create account",
@@ -402,6 +400,16 @@
     "agreeButton": "I agree — take me in",
     "withdrawText": "You can withdraw consent and delete your account at any time from <account>Account Settings</account>."
   },
+  "ProfileSetup": {
+    "errorGeneric": "Something went wrong. Please try again.",
+    "title": "A couple of quick things",
+    "subtitle": "Help us personalize your experience — you can always change these later in Account Settings.",
+    "gender": "Gender",
+    "genderHint": "Used only to address you correctly in Hebrew — has no effect in English.",
+    "saving": "Saving…",
+    "continueButton": "Continue",
+    "skipButton": "Skip for now"
+  },
   "Auth": {
     "passwordField": {
       "passwordPlaceholder": "Password",
@@ -430,6 +438,14 @@
         "female": "Female",
         "unspecified": "Prefer not to say"
       }
+    },
+    "avatar": {
+      "addPhoto": "Add photo",
+      "changePhoto": "Change photo",
+      "uploading": "Uploading…",
+      "errorFileType": "Please choose a JPEG, PNG, or WebP image.",
+      "errorFileSize": "Please choose an image under 5MB.",
+      "errorGeneric": "Could not upload the photo."
     }
   },
   "Nav": {

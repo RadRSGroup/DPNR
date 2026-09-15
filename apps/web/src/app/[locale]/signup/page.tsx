@@ -9,9 +9,7 @@ import { bootstrapKeysAtSignup, establishSessionTicket } from '@/lib/auth/keyBoo
 import { updatePreferences } from '@/lib/api/v1-client'
 import RecoveryCodeReveal from '@/components/auth/RecoveryCodeReveal'
 import PasswordCreationField, { passwordsReadyToSubmit } from '@/components/auth/PasswordCreationField'
-import GenderSelector from '@/components/shared/GenderSelector'
 import type { RecoveryCode } from '@/lib/crypto'
-import type { GenderIdentity } from '@dpnr/shared-types'
 
 export default function SignupPage() {
   const t = useTranslations('Signup')
@@ -20,7 +18,6 @@ export default function SignupPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [gender, setGender] = useState<GenderIdentity>('unspecified')
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -66,14 +63,15 @@ export default function SignupPage() {
       // second manual step — same net effect as the old flow's magic-link
       // click landing the user back in the app already authenticated.
       await signIn(email, password)
-      // The post-confirmation trigger always creates the profile with
-      // en/unspecified defaults, regardless of what was actually picked on
-      // this form or which locale this page was viewed in — write the real
-      // values now, while there's a fresh session to authenticate with.
-      // Best-effort: a failed write here isn't worth blocking or erroring
-      // the whole signup flow over, same tolerance establishSessionTicket
-      // below already uses.
-      await updatePreferences({ preferredLanguage: locale as 'en' | 'he', genderIdentity: gender }).catch(() => {})
+      // The post-confirmation trigger always creates the profile with an
+      // `en` default, regardless of which locale this page was viewed in —
+      // write the real value now, while there's a fresh session to
+      // authenticate with. Best-effort: a failed write here isn't worth
+      // blocking or erroring the whole signup flow over, same tolerance
+      // establishSessionTicket below already uses. Gender is no longer
+      // asked here — Session 51 moved it to the dedicated post-signin
+      // /profile-setup screen (proxy.ts's gate, right after consent).
+      await updatePreferences({ preferredLanguage: locale as 'en' | 'he' }).catch(() => {})
       // Phase 6 Stage 3: generate this account's real key bundle now, while
       // the password is still in scope. `null` means a bundle already
       // existed (a retried confirm after an earlier attempt already
@@ -220,13 +218,6 @@ export default function SignupPage() {
               confirmPassword={confirmPassword}
               onConfirmPasswordChange={setConfirmPassword}
             />
-          </div>
-          <div>
-            <label className="block text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide mb-1.5">
-              {t('gender')}
-            </label>
-            <p className="text-white/40 text-xs mb-2">{t('genderHint')}</p>
-            <GenderSelector value={gender} onChange={setGender} />
           </div>
           {/* Consent */}
           <label className="flex items-start gap-3 cursor-pointer group">

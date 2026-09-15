@@ -45,6 +45,8 @@ import type {
   RevokeSessionResponse,
   UpdatePreferencesRequest,
   PreferencesResponse,
+  AvatarUploadUrlRequest,
+  AvatarUploadUrlResponse,
 } from '@dpnr/shared-types'
 import { getIdToken } from '../cognito/client'
 
@@ -135,6 +137,35 @@ export async function getPreferences(): Promise<PreferencesResponse> {
 export async function updatePreferences(request: UpdatePreferencesRequest): Promise<PreferencesResponse> {
   const res = await authedFetch('/v1/user/preferences', { method: 'PUT', body: JSON.stringify(request) })
   return parseOrThrow<PreferencesResponse>(res)
+}
+
+/**
+ * POST /v1/user/avatar/upload-url — Session 51 (profile-setup screen).
+ * Only issues a presigned S3 PUT URL; the caller must actually PUT the
+ * image bytes to `uploadUrl` (with the same `Content-Type`), then call
+ * `updatePreferences({ avatarKey: key })` to attach it — see the shared
+ * `uploadAvatar()` helper below, which does all three steps.
+ */
+export async function getAvatarUploadUrl(request: AvatarUploadUrlRequest): Promise<AvatarUploadUrlResponse> {
+  const res = await authedFetch('/v1/user/avatar/upload-url', { method: 'POST', body: JSON.stringify(request) })
+  return parseOrThrow<AvatarUploadUrlResponse>(res)
+}
+
+/**
+ * Full client-side upload flow: get a presigned URL, PUT the file directly
+ * to S3 (never through this app's own API), then attach the resulting key
+ * to the profile. Returns the new `avatarUrl` (a fresh presigned GET) so
+ * the caller can render it immediately without a second round-trip.
+ */
+export async function uploadAvatar(file: File): Promise<string | null> {
+  const contentType = file.type as AvatarUploadUrlRequest['contentType']
+  const { uploadUrl, key } = await getAvatarUploadUrl({ contentType })
+  const putRes = await fetch(uploadUrl, { method: 'PUT', headers: { 'content-type': contentType }, body: file })
+  if (!putRes.ok) {
+    throw new ApiError(putRes.status, 'avatar_upload_failed', 'Uploading the photo failed.')
+  }
+  const { avatarUrl } = await updatePreferences({ avatarKey: key })
+  return avatarUrl
 }
 
 /** GET /v1/user/export — GDPR data export, used by /account's "Download my data." */

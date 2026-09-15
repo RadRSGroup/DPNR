@@ -3,6 +3,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, userPk, type UserProfileItem, type PreferencesResponse } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
+import { getAvatarPresignedUrl } from '../lib/avatar'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
@@ -31,6 +32,8 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const response: PreferencesResponse = {
       preferredLanguage: profile.preferredLanguage,
       genderIdentity: profile.genderIdentity,
+      avatarUrl: await getAvatarPresignedUrl(profile.avatarKey),
+      profileSetupCompletedAt: profile.profileSetupCompletedAt,
     }
     return jsonResponse(200, response)
   } catch (err) {

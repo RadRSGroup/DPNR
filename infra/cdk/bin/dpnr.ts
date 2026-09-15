@@ -34,4 +34,5 @@ new ApiStack(app, 'Dpnr-Api', {
   plansCatalogTable: dataStack.plansCatalogTable,
   sessionTicketsTable: dataStack.sessionTicketsTable,
   sessionTicketsKmsKey: dataStack.sessionTicketsKmsKey,
+  avatarsBucket: dataStack.avatarsBucket,
 })

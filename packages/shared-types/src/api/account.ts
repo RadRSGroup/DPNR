@@ -170,26 +170,73 @@ export type ConsentResponse = z.infer<typeof ConsentResponseSchema>
  * Neither Cognito custom attribute is an option here: they can't be added
  * to an already-live User Pool without recreating it, so both fields live
  * on the DynamoDB `PROFILE` item and are only ever written through this
- * endpoint. Both fields optional and independently settable — the
+ * endpoint. All fields optional and independently settable — the
  * language selector calls this with only `preferredLanguage`, the
- * signup/account gender question calls it with only `genderIdentity`, and
- * a future combined settings form could send both at once. At least one
- * must be present (an empty-object call is a client bug, not a valid
- * no-op request).
+ * dedicated post-signin profile-setup screen calls it with `genderIdentity`/
+ * `avatarKey`/`profileSetupComplete` together, and the Account settings
+ * page calls it with just one field at a time. At least one must be
+ * present (an empty-object call is a client bug, not a valid no-op
+ * request).
+ *
+ * `avatarKey` is the S3 object key from `POST /v1/user/avatar/upload-url`
+ * (never a URL — the bucket is private, `GET /v1/user/preferences`
+ * generates a fresh presigned `avatarUrl` on every read instead). `null`
+ * explicitly clears a previously-set photo (removing the field entirely
+ * would be indistinguishable from "don't touch this field").
+ *
+ * `profileSetupComplete` (write-only, always `true` when present — see
+ * `docs/AGENT_LOG.md` Session 51) marks the one-time post-signin
+ * profile-setup screen (gender + optional photo) as done, whether the
+ * user filled it in or explicitly skipped it — this is what stops
+ * `proxy.ts`'s gate from showing it again.
  */
 export const UpdatePreferencesRequestSchema = z
   .object({
     preferredLanguage: z.enum(['en', 'he']).optional(),
     genderIdentity: GenderIdentitySchema.optional(),
+    avatarKey: z.string().nullable().optional(),
+    profileSetupComplete: z.literal(true).optional(),
   })
-  .refine((v) => v.preferredLanguage !== undefined || v.genderIdentity !== undefined, {
-    message: 'At least one of preferredLanguage or genderIdentity is required.',
-  })
+  .refine(
+    (v) =>
+      v.preferredLanguage !== undefined ||
+      v.genderIdentity !== undefined ||
+      v.avatarKey !== undefined ||
+      v.profileSetupComplete !== undefined,
+    { message: 'At least one of preferredLanguage, genderIdentity, avatarKey, or profileSetupComplete is required.' }
+  )
 export type UpdatePreferencesRequest = z.infer<typeof UpdatePreferencesRequestSchema>
 
-/** Shared by both the PUT (write) and GET (read) `/v1/user/preferences` handlers — same two fields either way. */
+/**
+ * Shared by both the PUT (write) and GET (read) `/v1/user/preferences`
+ * handlers. `avatarUrl` is a short-lived presigned S3 GET URL (`null` when
+ * no photo is set) — generated fresh per read, never stored anywhere.
+ * `profileSetupCompletedAt` is `null` until the post-signin profile-setup
+ * screen has been completed or skipped once.
+ */
 export const PreferencesResponseSchema = z.object({
   preferredLanguage: z.enum(['en', 'he']),
   genderIdentity: GenderIdentitySchema,
+  avatarUrl: z.string().nullable(),
+  profileSetupCompletedAt: z.string().nullable(),
 })
 export type PreferencesResponse = z.infer<typeof PreferencesResponseSchema>
+
+/**
+ * POST /v1/user/avatar/upload-url — issues a short-lived presigned S3 PUT
+ * URL for a direct browser-to-S3 upload (never proxies image bytes through
+ * a Lambda). The caller must PUT the raw image bytes to `uploadUrl` with a
+ * `Content-Type` header matching what it requested, then send `key` back
+ * via `PUT /v1/user/preferences`'s `avatarKey` to actually attach it to the
+ * profile — issuing this URL does not itself change anything.
+ */
+export const AvatarUploadUrlRequestSchema = z.object({
+  contentType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
+})
+export type AvatarUploadUrlRequest = z.infer<typeof AvatarUploadUrlRequestSchema>
+
+export const AvatarUploadUrlResponseSchema = z.object({
+  uploadUrl: z.string(),
+  key: z.string(),
+})
+export type AvatarUploadUrlResponse = z.infer<typeof AvatarUploadUrlResponseSchema>

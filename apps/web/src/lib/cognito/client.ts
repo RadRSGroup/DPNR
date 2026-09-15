@@ -34,6 +34,12 @@ const SESSION_COOKIE = 'dpnr_session'
 // the built-in JWT authorizer doesn't enforce this claim either).
 const CONSENT_COOKIE = 'dpnr_consented'
 
+// Mirrors the ID token's `custom:profileSetup` claim (pre-token-generation.ts,
+// Session 51) so proxy.ts can gate the one-time post-signin profile-setup
+// screen the same way it already gates /consent — same UX-only, not a
+// security boundary, caveat as CONSENT_COOKIE above.
+const PROFILE_SETUP_COOKIE = 'dpnr_profile_setup'
+
 // Tracks the current sign-in's session-ticket id (lib/auth/keyBootstrap.ts's
 // `establishSessionTicket`) purely so a later sign-out can revoke it —
 // sessionStorage, not a cookie, since it's tab-scoped bookkeeping, not
@@ -84,11 +90,22 @@ function setSessionCookie(session: CognitoUserSession): void {
   if (consented) {
     document.cookie = `${CONSENT_COOKIE}=1; path=/; max-age=${maxAge}; samesite=lax`
   }
+
+  // Same only-ever-set-from-true, staleness-tolerant pattern as consent
+  // above — this claim is at most one token refresh (idTokenValidity, 1hr)
+  // behind a real completion, which just means an already-completed user
+  // could see the profile-setup screen once more on a very fresh device,
+  // never the reverse (an incomplete user skipping it).
+  const profileSetupDone = idToken.payload['custom:profileSetup'] === 'true'
+  if (profileSetupDone) {
+    document.cookie = `${PROFILE_SETUP_COOKIE}=1; path=/; max-age=${maxAge}; samesite=lax`
+  }
 }
 
 function clearSessionCookie(): void {
   document.cookie = `${SESSION_COOKIE}=; path=/; max-age=0`
   document.cookie = `${CONSENT_COOKIE}=; path=/; max-age=0`
+  document.cookie = `${PROFILE_SETUP_COOKIE}=; path=/; max-age=0`
 }
 
 /**
@@ -100,6 +117,17 @@ function clearSessionCookie(): void {
  */
 export function markConsentedLocally(): void {
   document.cookie = `${CONSENT_COOKIE}=1; path=/; max-age=3600; samesite=lax`
+}
+
+/**
+ * Called right after the profile-setup screen's `updatePreferences({ ...,
+ * profileSetupComplete: true })` succeeds — same optimistic-cookie pattern
+ * as `markConsentedLocally()` above, and for the same reason (the ID
+ * token's `custom:profileSetup` claim won't reflect this until the next
+ * refresh).
+ */
+export function markProfileSetupCompleteLocally(): void {
+  document.cookie = `${PROFILE_SETUP_COOKIE}=1; path=/; max-age=3600; samesite=lax`
 }
 
 export function signUp(email: string, password: string): Promise<void> {

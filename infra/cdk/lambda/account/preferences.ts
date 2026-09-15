@@ -3,23 +3,28 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, userPk, UpdatePreferencesRequestSchema, type PreferencesResponse } from '@dpnr/shared-types'
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
+import { getAvatarPresignedUrl } from '../lib/avatar'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
 
 /**
  * PUT /v1/user/preferences — the write path `preferredLanguage`/
- * `genderIdentity` never had (docs/HEBREW_LOCALIZATION_PLAN.md Slice B).
- * Same shape as `consent.ts`'s already-established write-path pattern:
- * requires an existing PROFILE item (created by the post-confirmation
- * trigger), never creates one. Only the fields present in the request are
- * updated — the Zod schema's `.refine()` already rejects an empty body
- * before this handler runs.
+ * `genderIdentity` never had (docs/HEBREW_LOCALIZATION_PLAN.md Slice B),
+ * extended in Session 51 for `avatarKey`/`profileSetupComplete` (the
+ * dedicated post-signin profile-setup screen). Same shape as `consent.ts`'s
+ * already-established write-path pattern: requires an existing PROFILE
+ * item (created by the post-confirmation trigger), never creates one. Only
+ * the fields present in the request are updated — the Zod schema's
+ * `.refine()` already rejects an empty body before this handler runs.
  */
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
     const userId = requireUserId(event)
-    const { preferredLanguage, genderIdentity } = parseBody(event, UpdatePreferencesRequestSchema)
+    const { preferredLanguage, genderIdentity, avatarKey, profileSetupComplete } = parseBody(
+      event,
+      UpdatePreferencesRequestSchema
+    )
     const now = new Date().toISOString()
 
     const setClauses = ['updatedAt = :now']
@@ -31,6 +36,14 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     if (genderIdentity !== undefined) {
       setClauses.push('genderIdentity = :gender')
       values[':gender'] = genderIdentity
+    }
+    if (avatarKey !== undefined) {
+      setClauses.push('avatarKey = :avatarKey')
+      values[':avatarKey'] = avatarKey
+    }
+    if (profileSetupComplete) {
+      setClauses.push('profileSetupCompletedAt = :profileSetupCompletedAt')
+      values[':profileSetupCompletedAt'] = now
     }
 
     const result = await ddb
@@ -54,6 +67,8 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const response: PreferencesResponse = {
       preferredLanguage: result.Attributes?.preferredLanguage as PreferencesResponse['preferredLanguage'],
       genderIdentity: result.Attributes?.genderIdentity as PreferencesResponse['genderIdentity'],
+      avatarUrl: await getAvatarPresignedUrl(result.Attributes?.avatarKey as string | null | undefined),
+      profileSetupCompletedAt: (result.Attributes?.profileSetupCompletedAt as string | null | undefined) ?? null,
     }
     return jsonResponse(200, response)
   } catch (err) {
