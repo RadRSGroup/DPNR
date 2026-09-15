@@ -7,6 +7,14 @@ export interface StepContext {
   action: RoomCommandAction
   input: Record<string, unknown>
   crypto: SessionCrypto
+  /**
+   * Hebrew Localization Slice E (docs/HEBREW_LOCALIZATION_PLAN.md §4.3) —
+   * the one instruction sentence every model-calling step passes to
+   * `callPromptModel` as `{{languageInstruction}}`, resolved once in
+   * `command.ts` from the `UserProfileItem` `requireConsent()` already
+   * returns (no extra read), same pattern `companion/message.ts` uses.
+   */
+  languageInstruction: string
 }
 
 export interface StepResult {

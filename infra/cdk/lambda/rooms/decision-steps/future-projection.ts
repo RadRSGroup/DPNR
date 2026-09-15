@@ -69,6 +69,7 @@ export const futureProjectionStep: StepDefinition = {
         contextLine: decisionContent.narrative ? `\nContext: ${decisionContent.narrative}` : '',
         optionLabel,
         optionText: optionContent.content,
+        languageInstruction: ctx.languageInstruction,
       })
       return {
         nextStepId: null,

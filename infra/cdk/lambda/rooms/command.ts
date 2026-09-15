@@ -11,6 +11,7 @@ import {
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { requireConsent } from '../lib/consent'
 import { consumeCredits, ROOM_REFINE_COST } from '../lib/credits'
+import { toLanguageInstruction } from '../lib/locale'
 import { classifySafety, generateSafetyResponse, extractFreeTextForSafetyCheck } from '../lib/safety'
 import { getSessionCrypto } from '../lib/session-crypto'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
@@ -55,7 +56,12 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const body = parseBody(event, RoomCommandRequestSchema)
     const crypto = await getSessionCrypto(userId)
 
-    await requireConsent(ddb, TABLE_NAME, userId)
+    // Hebrew Localization Slice E (docs/HEBREW_LOCALIZATION_PLAN.md §4.3):
+    // requireConsent() already reads the full UserProfileItem — capture it
+    // (previously discarded) rather than a second targeted read, same fix
+    // Session 50 part 6 made for companion/message.ts.
+    const profile = await requireConsent(ddb, TABLE_NAME, userId)
+    const languageInstruction = toLanguageInstruction(profile.preferredLanguage, profile.genderIdentity)
 
     const flow = FLOW_REGISTRY[body.flowId]
     if (!flow) {
@@ -149,6 +155,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         action: body.action,
         input: body.input,
         crypto,
+        languageInstruction,
       })
     }
 

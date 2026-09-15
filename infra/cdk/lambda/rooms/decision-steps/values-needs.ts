@@ -27,7 +27,11 @@ export const valuesNeedsStep: StepDefinition = {
       const option = await getOption(ctx.pk, ctx.sessionId, optionLabel)
       const optionContent = await ctx.crypto.decryptField<OptionContent>(option.content)
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'values_needs_tags')
-      const modelResult = await callPromptModel(version, { optionLabel, optionText: optionContent.content })
+      const modelResult = await callPromptModel(version, {
+        optionLabel,
+        optionText: optionContent.content,
+        languageInstruction: ctx.languageInstruction,
+      })
       return {
         nextStepId: null,
         result: typeof modelResult === 'string' ? { values: [], needs: [] } : modelResult,

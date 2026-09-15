@@ -33,6 +33,7 @@ export const clarityActionStep: StepDefinition = {
         optionA: context.optionAContent,
         optionB: context.optionBContent,
         chosenLean: context.chosenLean,
+        languageInstruction: ctx.languageInstruction,
       })
       return {
         nextStepId: null,

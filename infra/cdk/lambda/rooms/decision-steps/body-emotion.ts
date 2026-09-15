@@ -35,6 +35,7 @@ export const bodyEmotionStep: StepDefinition = {
         narrativeExcerpt: content.narrative.slice(0, 600), // matches the seed's documented truncation convention
         bodyLocation,
         emotion,
+        languageInstruction: ctx.languageInstruction,
       })
       return {
         nextStepId: null,

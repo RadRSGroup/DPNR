@@ -44,6 +44,18 @@
  * not validated *output*; re-check actual model behavior once Bedrock
  * access exists and the Prompt Registry Lambda can really call it.
  *
+ * Hebrew Localization Slice E (docs/HEBREW_LOCALIZATION_PLAN.md §4.3): every
+ * called prompt below (11 of 13 — see below) gained a `{{languageInstruction}}`
+ * variable, same convention/placement `companion-prompts.seed.ts` already
+ * established (a full instruction sentence, not a bare language name — see
+ * `infra/cdk/lambda/lib/locale.ts`'s own doc comment for why). `refine_option`
+ * and `step_info` were deliberately left untouched — both are genuinely dead
+ * code (no call site anywhere in `decision-steps/*.ts`, confirmed via a
+ * repo-wide grep before making this change), so adding an unfillable
+ * `{{languageInstruction}}` reference to a template nothing ever calls would
+ * be pure risk (an unfilled var throws in `fillTemplate`) for zero benefit —
+ * if either is ever revived, add the var then, alongside its own call site.
+ *
  * Templating convention (established Session 4, unchanged this session):
  * `{{variableName}}` placeholders in userTemplate, filled by simple string
  * substitution. The original prompts.ts code did some formatting inline
@@ -77,16 +89,21 @@ export const DECISION_ROOM_PROMPT_SEEDS: PromptSeed[] = [
     name: 'subtitle',
     systemTemplate: `Generate a short, empathetic one-line frame for a decision title.
 Keep it open, not prescriptive. Under 12 words. No advice.
+
+{{languageInstruction}}
+
 Output only that line — no preamble, no surrounding quotation marks.`,
     userTemplate: `{{title}}`,
-    variables: ['title'],
+    variables: ['title', 'languageInstruction'],
   },
   {
     name: 'parse_options',
     systemTemplate: `Read this decision narrative and extract exactly two distinct options the person is facing.
-Each option: 1–2 sentences. Clear, non-judgmental, faithful to their words.`,
+Each option: 1–2 sentences. Clear, non-judgmental, faithful to their words.
+
+{{languageInstruction}}`,
     userTemplate: `{{narrative}}`,
-    variables: ['narrative'],
+    variables: ['narrative', 'languageInstruction'],
     outputSchema: {
       type: 'object',
       properties: { optionA: { type: 'string' }, optionB: { type: 'string' } },
@@ -113,6 +130,8 @@ Write a 2–3 sentence reflection that:
 - Acknowledges the weight of what they're holding without trying to resolve it
 - Reads like a wise, warm companion who truly listened — not a therapist, not a chatbot
 
+{{languageInstruction}}
+
 No advice. No bullet points. No headers. Pure flowing prose.
 Begin directly with the reflection itself — no preamble like "Here's a reflection" or any framing sentence before it.`,
     userTemplate: `Decision they're navigating: "{{title}}"
@@ -122,15 +141,17 @@ What they shared in their own words:
 
 Where they feel it in the body: {{bodyLocation}}
 The emotional quality of that sensation: {{emotion}}`,
-    variables: ['title', 'narrativeExcerpt', 'bodyLocation', 'emotion'],
+    variables: ['title', 'narrativeExcerpt', 'bodyLocation', 'emotion', 'languageInstruction'],
     notes: 'narrativeExcerpt = (narrative ?? "").slice(0, 600) — caller truncates before substitution.',
   },
   {
     name: 'pros_cons_tags',
     systemTemplate: `Based on this decision option, suggest likely pros and cons as short tag labels (2–4 words each).
-5–7 pros, 4–6 cons. Realistic, not optimistic bias.`,
+5–7 pros, 4–6 cons. Realistic, not optimistic bias.
+
+{{languageInstruction}}`,
     userTemplate: `Option {{optionLabel}}: "{{optionText}}"\n\nContext: {{narrativeExcerpt}}`,
-    variables: ['optionLabel', 'optionText', 'narrativeExcerpt'],
+    variables: ['optionLabel', 'optionText', 'narrativeExcerpt', 'languageInstruction'],
     notes: 'narrativeExcerpt = narrative.slice(0, 400) — a shorter cap than emotion_reflection\'s 600; caller must match it exactly.',
     outputSchema: {
       type: 'object',
@@ -141,9 +162,11 @@ The emotional quality of that sensation: {{emotion}}`,
   {
     name: 'fear_desire_tags',
     systemTemplate: `Based on this decision narrative, suggest desire and fear phrases.
-6 desires (what they truly want, 2–4 words each), 6 fears (what they're afraid of, 2–4 words each).`,
+6 desires (what they truly want, 2–4 words each), 6 fears (what they're afraid of, 2–4 words each).
+
+{{languageInstruction}}`,
     userTemplate: `{{narrativeExcerpt}}`,
-    variables: ['narrativeExcerpt'],
+    variables: ['narrativeExcerpt', 'languageInstruction'],
     notes: 'narrativeExcerpt = narrative.slice(0, 600).',
     outputSchema: {
       type: 'object',
@@ -156,9 +179,11 @@ The emotional quality of that sensation: {{emotion}}`,
     systemTemplate: `Based on this decision option, suggest values and needs associated with choosing it.
 6 values (e.g. Growth, Security, Freedom, Integrity, Autonomy, Recognition).
 For needs, choose only from the Six Human Needs: Certainty, Variety, Significance, Love & Connection, Growth, Contribution.
-Return 3–6 needs that are most relevant to this option — do not invent other need labels.`,
+Return 3–6 needs that are most relevant to this option — do not invent other need labels.
+
+{{languageInstruction}}`,
     userTemplate: `Option {{optionLabel}}: "{{optionText}}"`,
-    variables: ['optionLabel', 'optionText'],
+    variables: ['optionLabel', 'optionText', 'languageInstruction'],
     outputSchema: {
       type: 'object',
       properties: { values: { type: 'array', items: { type: 'string' } }, needs: { type: 'array', items: { type: 'string' } } },
@@ -180,9 +205,11 @@ Begin directly with the explanation — no preamble like "Sure, here's what happ
     systemTemplate: `For someone considering this option, generate 4–5 realistic emotional/life states
 they might feel in one year if they chose it.
 Mix positive and challenging. Honest, not optimistic bias. Short phrases 3–6 words each.
-Stay strictly within the domain of the decision — do not introduce themes unrelated to it.`,
+Stay strictly within the domain of the decision — do not introduce themes unrelated to it.
+
+{{languageInstruction}}`,
     userTemplate: `Decision: "{{decisionTitle}}"{{contextLine}}\nOption {{optionLabel}}: "{{optionText}}"`,
-    variables: ['decisionTitle', 'contextLine', 'optionLabel', 'optionText'],
+    variables: ['decisionTitle', 'contextLine', 'optionLabel', 'optionText', 'languageInstruction'],
     notes: 'decisionTitle defaults to "" if absent. contextLine = "" if no narrative, else `\\nContext: ${narrative}` — caller pre-computes the whole conditional line, template has no conditional logic.',
     outputSchema: {
       type: 'object',
@@ -198,7 +225,9 @@ desireVsFear, valuesAndNeeds, futureSelf.
 Each summary: 1–2 sentences, warm and reflective, referencing their actual data.
 "situation": Distil the core tension/dilemma from the narrative (1 sentence).
 Each other field: what the data in that section revealed about the person's relationship to this decision.
-Stay specific — reference what they actually selected, not generic themes.`,
+Stay specific — reference what they actually selected, not generic themes.
+
+{{languageInstruction}}`,
     userTemplate: `Decision: "{{decisionTitle}}"
 Narrative: {{narrative}}
 Option A: "{{optionA}}" | Option B: "{{optionB}}"
@@ -216,7 +245,7 @@ Chosen lean: {{chosenLean}}`,
       'emotionColor', 'emotionBodyLocation', 'emotionReflection',
       'prosA', 'consA', 'prosB', 'consB', 'desiresA', 'fearsA',
       'valuesA', 'needsA', 'valuesB', 'needsB', 'projectionsA', 'projectionsB',
-      'chosenLean',
+      'chosenLean', 'languageInstruction',
     ],
     notes: 'emotionColor/emotionBodyLocation default to "—", emotionReflection defaults to "". prosA/consA/prosB/consB/desiresA/fearsA/valuesA/needsA/valuesB/needsB/projectionsA/projectionsB are each the corresponding tag array joined with ", ", defaulting to "—" when empty. chosenLean defaults to "undecided". Caller must replicate this exactly — see the original params.tagsA?.pro etc. logic in apps/web/src/lib/ai/prompts.ts.',
     outputSchema: {
@@ -236,12 +265,14 @@ Chosen lean: {{chosenLean}}`,
     name: 'clarity_action',
     systemTemplate: `Based on this decision exploration, suggest one concrete next small step.
 It should feel: Small, Safe, Possible within the next few days.
-1–2 sentences. Specific and actionable. Not prescriptive — frame it as an exploration or conversation, not a final decision.`,
+1–2 sentences. Specific and actionable. Not prescriptive — frame it as an exploration or conversation, not a final decision.
+
+{{languageInstruction}}`,
     userTemplate: `Decision: "{{decisionTitle}}"
 Context: {{narrative}}
 Option A: "{{optionA}}" | Option B: "{{optionB}}"
 Leaning towards: {{chosenLean}}`,
-    variables: ['decisionTitle', 'narrative', 'optionA', 'optionB', 'chosenLean'],
+    variables: ['decisionTitle', 'narrative', 'optionA', 'optionB', 'chosenLean', 'languageInstruction'],
     notes: 'chosenLean defaults to "undecided" when absent.',
     outputSchema: {
       type: 'object',
@@ -254,13 +285,15 @@ Leaning towards: {{chosenLean}}`,
     systemTemplate: `You are a compassionate decision guide. Based on everything the person explored — their pros/cons, fears, desires, values, and future projections — write a 2–3 sentence insight that:
 - Reflects what became visible through their exploration (name the real tension or theme)
 - Is specific to their decision — do NOT reference feelings or domains unrelated to it
-- Uses warm, non-directive language`,
+- Uses warm, non-directive language
+
+{{languageInstruction}}`,
     userTemplate: `Decision: "{{decisionTitle}}"
 Context: {{narrative}}
 Option A: "{{optionA}}"
 Option B: "{{optionB}}"
 What they explored: {{exploredTags}}`,
-    variables: ['decisionTitle', 'narrative', 'optionA', 'optionB', 'exploredTags'],
+    variables: ['decisionTitle', 'narrative', 'optionA', 'optionB', 'exploredTags', 'languageInstruction'],
     notes: 'exploredTags = allTags.slice(0, 30).join(", ") — caller caps to the first 30 tags before joining.',
     outputSchema: {
       type: 'object',
@@ -278,14 +311,16 @@ Write a short reflection (3–4 sentences) that:
 - Uses warm, curious, non-directive language ("it seems like...", "one part of you...", "there may be a tension between...")
 - Ends with a question or open observation that invites them to sit with the insight
 Produce two fields: "wordFromUs" is a single sentence (10–15 words) of gentle framing for
-this section; "reflection" is the 3–4 sentence paragraph described above.`,
+this section; "reflection" is the 3–4 sentence paragraph described above.
+
+{{languageInstruction}}`,
     userTemplate: `Decision: "{{decisionTitle}}"
 Step type: {{step}}
 Option A: "{{optionA}}"
 Option A selections: {{selectionsA}}
 Option B: "{{optionB}}"
 Option B selections: {{selectionsB}}`,
-    variables: ['decisionTitle', 'step', 'optionA', 'selectionsA', 'optionB', 'selectionsB'],
+    variables: ['decisionTitle', 'step', 'optionA', 'selectionsA', 'optionB', 'selectionsB', 'languageInstruction'],
     notes: '`step` is one of pros_cons|fears_desires|values_needs|values|needs|projections. selectionsA/selectionsB are the respective arrays joined with ", ".',
     outputSchema: {
       type: 'object',

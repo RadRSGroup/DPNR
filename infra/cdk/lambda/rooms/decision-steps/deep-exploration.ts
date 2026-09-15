@@ -72,6 +72,7 @@ export const deepExplorationStep: StepDefinition = {
           optionLabel,
           optionText: optionContent.content,
           narrativeExcerpt: decisionContent.narrative.slice(0, 400), // matches the seed's documented truncation
+          languageInstruction: ctx.languageInstruction,
         })
         return {
           nextStepId: null,
@@ -81,7 +82,10 @@ export const deepExplorationStep: StepDefinition = {
       }
 
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'fear_desire_tags')
-      const modelResult = await callPromptModel(version, { narrativeExcerpt: decisionContent.narrative.slice(0, 600) })
+      const modelResult = await callPromptModel(version, {
+        narrativeExcerpt: decisionContent.narrative.slice(0, 600),
+        languageInstruction: ctx.languageInstruction,
+      })
       return {
         nextStepId: null,
         result: typeof modelResult === 'string' ? { desires: [], fears: [] } : modelResult,

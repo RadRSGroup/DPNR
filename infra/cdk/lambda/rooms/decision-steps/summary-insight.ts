@@ -25,6 +25,7 @@ export const summaryInsightStep: StepDefinition = {
         optionA: context.optionAContent,
         optionB: context.optionBContent,
         exploredTags,
+        languageInstruction: ctx.languageInstruction,
       })
       return {
         nextStepId: null,

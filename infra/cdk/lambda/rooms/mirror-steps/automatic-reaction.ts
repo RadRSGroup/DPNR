@@ -43,6 +43,7 @@ export const automaticReactionStep: StepDefinition = {
         thought,
         emotion,
         bodyResponse,
+        languageInstruction: ctx.languageInstruction,
       })
       return {
         nextStepId: null,

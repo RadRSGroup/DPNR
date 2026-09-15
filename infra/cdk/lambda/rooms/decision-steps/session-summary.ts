@@ -46,6 +46,7 @@ export const sessionSummaryStep: StepDefinition = {
         projectionsA: context.projectionsA.join(', ') || '—',
         projectionsB: context.projectionsB.join(', ') || '—',
         chosenLean: context.chosenLean,
+        languageInstruction: ctx.languageInstruction,
       })
       return {
         nextStepId: null,

@@ -16,6 +16,11 @@
  * them as the approved first version, same status as `decision_room`'s
  * re-validated prompts, still unvalidated against a live model (no
  * AWS/Bedrock access exists yet), not unvalidated as product copy.
+ *
+ * Hebrew Localization Slice E (docs/HEBREW_LOCALIZATION_PLAN.md §4.3): both
+ * prompts gained a `{{languageInstruction}}` variable, same convention/
+ * placement `decision_room`'s own plain-text prompts (`emotion_reflection`
+ * and friends) already established.
  */
 import type { PromptSeed } from './decision-room-prompts.seed'
 
@@ -31,6 +36,8 @@ Write a 2–3 sentence reflection that:
 - Notices the pattern without naming it as a flaw or a fixed trait
 - Reads like a wise, warm companion who truly listened — not a therapist, not a chatbot
 
+{{languageInstruction}}
+
 No advice. No bullet points. No headers. Pure flowing prose.
 Begin directly with the reflection itself — no preamble like "Here's a reflection" or any framing sentence before it.`,
     userTemplate: `Situation: "{{situationExcerpt}}"
@@ -38,7 +45,7 @@ What triggered it: {{trigger}}
 Automatic thought: "{{thought}}"
 Emotion: {{emotion}}
 Where they felt it in the body: {{bodyResponse}}`,
-    variables: ['situationExcerpt', 'trigger', 'thought', 'emotion', 'bodyResponse'],
+    variables: ['situationExcerpt', 'trigger', 'thought', 'emotion', 'bodyResponse', 'languageInstruction'],
     notes: 'situationExcerpt = situation.slice(0, 600) — caller truncates before substitution, same convention as decision_room/emotion_reflection.',
   },
   {
@@ -50,6 +57,8 @@ Write a 3–4 sentence closing reflection that:
 - Names how this shows up for them (their automatic reaction, their coping response) without pathologizing it — this is a mirror, not a diagnosis
 - Stays warm, curious, and non-directive — no advice, no "you should"
 - Ends with something that invites them to sit with what they noticed, not a call to action
+
+{{languageInstruction}}
 
 No bullet points. No headers. Pure flowing prose.
 Begin directly with the reflection itself — no preamble like "Here's a synthesis" or any framing sentence before it.`,
@@ -65,6 +74,7 @@ Life domain affected: {{lifeDomain}}`,
     variables: [
       'situationExcerpt', 'trigger', 'thought', 'emotion', 'bodyResponse',
       'automaticReaction', 'copingResponse', 'recurringPattern', 'energyMoodEffect', 'lifeDomain',
+      'languageInstruction',
     ],
     notes: 'situationExcerpt = situation.slice(0, 600) — same truncation convention as `reflection`. Added at the user\'s explicit request for a closing synthesis, consistent with Decision Room\'s own closing sequence.',
   },

@@ -27,7 +27,7 @@ export const nameDecisionStep: StepDefinition = {
       // client, not a read.
       const { title } = parseValue(ctx.input, RefineInput)
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'subtitle')
-      const modelResult = await callPromptModel(version, { title })
+      const modelResult = await callPromptModel(version, { title, languageInstruction: ctx.languageInstruction })
       return {
         nextStepId: null,
         result: { subtitle: modelResult },

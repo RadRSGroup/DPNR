@@ -24,7 +24,7 @@ export const mapOptionsStep: StepDefinition = {
       // advance; the user still approves/edits both before SUBMIT_STEP.
       const { narrative } = parseValue(ctx.input, RefineInput)
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'parse_options')
-      const modelResult = await callPromptModel(version, { narrative })
+      const modelResult = await callPromptModel(version, { narrative, languageInstruction: ctx.languageInstruction })
       return {
         nextStepId: null,
         result: typeof modelResult === 'string' ? { optionA: modelResult, optionB: modelResult } : modelResult,

@@ -34,6 +34,7 @@ export const synthesisStep: StepDefinition = {
         recurringPattern: content.recurringPattern,
         energyMoodEffect: content.energyMoodEffect,
         lifeDomain: content.lifeDomain,
+        languageInstruction: ctx.languageInstruction,
       })
       return {
         nextStepId: null,

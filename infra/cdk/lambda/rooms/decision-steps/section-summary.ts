@@ -49,6 +49,7 @@ function createSectionSummaryStep(config: SectionSummaryConfig): StepDefinition 
           optionB: context.optionBContent,
           selectionsA,
           selectionsB,
+          languageInstruction: ctx.languageInstruction,
         })
         return {
           nextStepId: null,
