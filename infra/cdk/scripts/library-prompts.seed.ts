@@ -37,16 +37,23 @@ Write a 2–4 sentence personalized note that:
 - Reads like a perceptive companion pointing something out, not a report or a summary
 
 No advice. No bullet points. No headers. Pure flowing prose.
-Begin directly with the note itself — no preamble like "Here's why this is relevant" or any framing sentence before it.`,
+Begin directly with the note itself — no preamble like "Here's why this is relevant" or any framing sentence before it.
+
+{{languageInstruction}}`,
     userTemplate: `Topic: "{{topicTitle}}"
 What the topic covers: "{{topicBodyExcerpt}}"
 
 Their confirmed signals:
 {{confirmedSignals}}`,
-    variables: ['topicTitle', 'topicBodyExcerpt', 'confirmedSignals'],
+    variables: ['topicTitle', 'topicBodyExcerpt', 'confirmedSignals', 'languageInstruction'],
     notes:
       'topicBodyExcerpt = topic.body.slice(0, 500). confirmedSignals = confirmed TwinSignalItems only, ' +
       'each formatted as "- (domain) description" (description from the decrypted content blob), ' +
-      'capped at the 5 most recent, joined with "\\n" — caller must match this exactly.',
+      'capped at the 5 most recent, joined with "\\n" — caller must match this exactly. languageInstruction ' +
+      '(Hebrew Localization Slice E) — this is pure flowing prose shown directly to the reader; ' +
+      'library/topic-detail.ts has no existing profile read to reuse (unlike Rooms/Companion), so it resolves ' +
+      'this via lib/locale.ts\'s getProfileForLanguage, called only when personalization actually fires (there ' +
+      'are confirmed signals to draw on) — same "no call on every request" discipline that helper\'s own doc ' +
+      'comment describes.',
   },
 ]

@@ -11,6 +11,7 @@ import {
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { getSessionCrypto } from '../lib/session-crypto'
+import { getProfileForLanguage, toLanguageInstruction } from '../lib/locale'
 import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
 
@@ -94,10 +95,18 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
             )
           )
         ).join('\n')
+        // Hebrew Localization Slice E (docs/HEBREW_LOCALIZATION_PLAN.md
+        // §4.3): no existing profile read to reuse here, unlike Rooms/
+        // Companion — a small targeted read via getProfileForLanguage,
+        // called only in this branch (personalization actually firing),
+        // not on every plain topic GET.
+        const profile = await getProfileForLanguage(ddb, APPLICATION_TABLE_NAME, userPk(userId))
+        const languageInstruction = toLanguageInstruction(profile.preferredLanguage, profile.genderIdentity)
         const modelResult = await callPromptModel(version, {
           topicTitle: versionItem.title,
           topicBodyExcerpt: versionItem.body.slice(0, 500),
           confirmedSignals: confirmedSignalsList,
+          languageInstruction,
         })
         personalizedExplanation = typeof modelResult === 'string' ? modelResult : JSON.stringify(modelResult)
         usedPromptRef = promptRef('library', 'topic_explanation', version)
