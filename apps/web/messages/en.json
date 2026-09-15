@@ -412,10 +412,73 @@
   },
   "Onboarding": {
     "errorGeneric": "Something went wrong. Please try again.",
-    "title": "Let's make DPNR yours",
-    "subtitle": "A short guided welcome is on its way. For now, let's get you started.",
     "continuing": "One moment…",
-    "continueButton": "Enter DPNR"
+    "progress": "{step} / {total}",
+    "intro": {
+      "title": "Let's make DPNR yours",
+      "body1": "Now you know a little about DPNR.",
+      "body2": "Let's give it a first glimpse of you.",
+      "body3": "Four quick choices. No deep dive. You can change anything later.",
+      "startButton": "Start"
+    },
+    "cards": {
+      "continueButton": "Continue",
+      "currentState": {
+        "prompt": "Where does life feel like it is right now?",
+        "options": {
+          "growing": "Growing",
+          "changing": "Changing",
+          "figuring_things_out": "Figuring things out",
+          "pretty_good": "Pretty good",
+          "stuck_somewhere": "Stuck somewhere",
+          "a_lot_right_now": "A lot right now",
+          "something_else": "Something else…"
+        }
+      },
+      "activeDomains": {
+        "prompt": "What's taking up the most space in your life lately?",
+        "hint": "Choose up to 3.",
+        "options": {
+          "Me": "Me",
+          "Love": "Love",
+          "Family": "Family",
+          "Friends": "Friends",
+          "Work": "Work",
+          "Money": "Money",
+          "Body": "Body",
+          "Growth": "Growth",
+          "Purpose": "Purpose",
+          "Fun": "Fun"
+        }
+      },
+      "desiredStates": {
+        "prompt": "Right now, I could use more…",
+        "hint": "Choose up to 3.",
+        "options": {
+          "clarity": "Clarity",
+          "peace": "Peace",
+          "energy": "Energy",
+          "connection": "Connection",
+          "confidence": "Confidence",
+          "freedom": "Freedom",
+          "direction": "Direction",
+          "fun": "Fun",
+          "courage": "Courage",
+          "space": "Space"
+        }
+      },
+      "interactionPreference": {
+        "prompt": "When you come to me with something, what usually helps most?",
+        "options": {
+          "understand": "Help me understand it",
+          "explore_pattern": "Give me perspective",
+          "learn": "Ask me the right question",
+          "act": "Help me make a move",
+          "be_heard": "Just give me space to talk",
+          "unknown": "Depends on the moment"
+        }
+      }
+    }
   },
   "Auth": {
     "passwordField": {

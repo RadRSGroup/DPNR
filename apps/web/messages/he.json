@@ -412,10 +412,73 @@
   },
   "Onboarding": {
     "errorGeneric": "משהו השתבש. נסו שוב.",
-    "title": "בואו נתאים את DPNR אליכם",
-    "subtitle": "היכרות מודרכת קצרה בדרך אליכם. בינתיים, בואו נתחיל.",
     "continuing": "רגע אחד…",
-    "continueButton": "כניסה ל-DPNR"
+    "progress": "{step} / {total}",
+    "intro": {
+      "title": "בואו נתאים את DPNR אליכם",
+      "body1": "עכשיו כבר הכרתם קצת את DPNR.",
+      "body2": "בואו ניתן לה הצצה ראשונה אליכם.",
+      "body3": "ארבע בחירות קצרות. בלי צלילה עמוקה. תמיד תוכלו לשנות הכל אחר כך.",
+      "startButton": "בואו נתחיל"
+    },
+    "cards": {
+      "continueButton": "המשך",
+      "currentState": {
+        "prompt": "איפה החיים מרגישים כרגע?",
+        "options": {
+          "growing": "בצמיחה",
+          "changing": "בשינוי",
+          "figuring_things_out": "מנסה להבין לאן פניי מועדות",
+          "pretty_good": "די טוב",
+          "stuck_somewhere": "תקוע/ה במשהו",
+          "a_lot_right_now": "הרבה דברים כרגע",
+          "something_else": "משהו אחר…"
+        }
+      },
+      "activeDomains": {
+        "prompt": "מה תופס הכי הרבה מקום בחיים שלכם לאחרונה?",
+        "hint": "בחרו עד 3.",
+        "options": {
+          "Me": "אני",
+          "Love": "אהבה",
+          "Family": "משפחה",
+          "Friends": "חברים",
+          "Work": "עבודה",
+          "Money": "כסף",
+          "Body": "גוף",
+          "Growth": "צמיחה אישית",
+          "Purpose": "משמעות",
+          "Fun": "כיף"
+        }
+      },
+      "desiredStates": {
+        "prompt": "כרגע, הייתי רוצה יותר…",
+        "hint": "בחרו עד 3.",
+        "options": {
+          "clarity": "בהירות",
+          "peace": "שלווה",
+          "energy": "אנרגיה",
+          "connection": "חיבור",
+          "confidence": "ביטחון",
+          "freedom": "חופש",
+          "direction": "כיוון",
+          "fun": "כיף",
+          "courage": "אומץ",
+          "space": "מרחב"
+        }
+      },
+      "interactionPreference": {
+        "prompt": "כשאתם באים אליי עם משהו, מה הכי עוזר בדרך כלל?",
+        "options": {
+          "understand": "עזרו לי להבין את זה",
+          "explore_pattern": "תנו לי פרספקטיבה",
+          "learn": "שאלו אותי את השאלה הנכונה",
+          "act": "עזרו לי לעשות צעד",
+          "be_heard": "פשוט תנו לי מרחב לדבר",
+          "unknown": "תלוי ברגע"
+        }
+      }
+    }
   },
   "Auth": {
     "passwordField": {
