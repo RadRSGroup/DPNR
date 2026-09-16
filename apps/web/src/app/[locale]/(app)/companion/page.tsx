@@ -1,8 +1,10 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import Image from 'next/image'
 import { Link } from '@/i18n/navigation'
 import { useRouter } from '@/i18n/navigation'
+import { useSearchParams } from 'next/navigation'
+import { useTranslations, useLocale } from 'next-intl'
 import { Heart, Cloud, Shuffle, UserCircle } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getCompanionContext, sendCompanionMessage, ApiError } from '@/lib/api/v1-client'
@@ -11,6 +13,9 @@ import DirectiveCard from '@/components/companion/DirectiveCard'
 import PullACard from '@/components/companion/PullACard'
 import RecentConversations from '@/components/companion/RecentConversations'
 import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
+import { useOnboardingFlow } from '@/components/companion/onboarding/useOnboardingFlow'
+import OnboardingCardPanel from '@/components/companion/onboarding/OnboardingCardPanel'
+import OnboardingSummaryCard from '@/components/companion/onboarding/OnboardingSummaryCard'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -59,8 +64,12 @@ function timeGreeting() {
  * `createCompanionConversation` and swaps `messages`/`sessionId` client-side
  * with no page reload.
  */
-export default function CompanionPage() {
+function CompanionContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const locale = useLocale()
+  const t = useTranslations('Onboarding')
+  const onboarding = useOnboardingFlow()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   // Intelligence Spec §18/Appendix B — threaded down into DirectiveCard so a
   // "Explore in Mirror/Decision Room" action from a Library topic can carry
@@ -126,6 +135,17 @@ export default function CompanionPage() {
 
     setInput('')
     setMessages((prev) => [...prev, { role: 'user', text, createdAt: new Date().toISOString() }])
+
+    // First-Time Onboarding's free-text step, moved in-chat: while awaiting
+    // it, the composer's Send answers the onboarding question instead of
+    // opening a real Companion turn — the source doc's own framing is that
+    // this answer "naturally becomes the first conversation," so it's
+    // appended as a normal user bubble above but never sent to the model.
+    if (onboarding.awaitingIntention) {
+      await onboarding.submitIntention(text)
+      return
+    }
+
     setSending(true)
 
     try {
@@ -166,14 +186,39 @@ export default function CompanionPage() {
     textareaRef.current?.focus()
   }
 
+  /** First Coordinates' Yes/Partly/Not quite — same post-feedback navigation the old `/onboarding` page did. */
+  async function handleOnboardingFeedback(feedback: Parameters<typeof onboarding.handleSnapshotFeedback>[0]) {
+    if (await onboarding.handleSnapshotFeedback(feedback)) {
+      const next = searchParams.get('next') ?? '/companion'
+      // A real bug hit and fixed live while building this: `next` can be
+      // any protected route the user was originally trying to reach
+      // (proxy.ts's onboarding gate carries it forward), not just
+      // `/companion` — and while onboarding was still active, this same
+      // page's own permanent sidebar/nav `Link`s to those routes (e.g.
+      // Dashboard) get auto-prefetched by Next.js, which resolves them
+      // against THEN-current cookies and caches the resulting
+      // redirect-back-to-`/companion` in the client Router Cache. A plain
+      // `router.push(next)` here reused that stale cached entry and
+      // bounced straight back instead of landing on `next` — reproduced
+      // on every attempt, not a timing fluke. A real browser navigation
+      // always re-evaluates the middleware against current cookies, so it
+      // sidesteps the stale client-side cache entirely; a one-time
+      // "onboarding just finished" transition doesn't need to stay a soft
+      // SPA navigation anyway.
+      window.location.href = locale === 'he' ? (next === '/' ? '/he' : `/he${next}`) : next
+    }
+  }
+
   // Reversed from Session 23's "stay visible alongside an active thread"
   // decision, per direct user feedback (a screenshot showing the greeting +
   // quick prompts + mobile Explore row squeezing the actual chat thread
   // into a few visible lines): the landing chrome now only shows on the
   // true empty state, so an active conversation gets nearly the full
   // vertical space.
-  const isLanding = !loading && messages.length === 0
+  const pageLoading = loading || onboarding.loading
+  const isLanding = !pageLoading && messages.length === 0 && !onboarding.active
   const showPrompts = isLanding
+  const composerDisabled = pageLoading || (onboarding.active && !onboarding.awaitingIntention)
 
   return (
     <div className="relative h-[calc(100dvh-4rem)] lg:h-dvh flex flex-col overflow-hidden">
@@ -248,10 +293,78 @@ export default function CompanionPage() {
           <div
             ref={scrollRef}
             className={`scrollbar-glass flex-1 overflow-y-auto px-5 lg:px-0 pb-2 flex flex-col ${isLanding ? 'pt-2' : 'pt-14 lg:pt-2'} ${
-              !loading && messages.length === 0 ? 'justify-center' : 'space-y-3'
+              !pageLoading && messages.length === 0 && !onboarding.active ? 'justify-center' : 'space-y-3'
             }`}
           >
-            {loading && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">Loading…</p>}
+            {pageLoading && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">Loading…</p>}
+
+            {/* First-Time Onboarding, moved in-chat (see useOnboardingFlow's
+                own doc comment) — a single greeting bubble, then whichever
+                step is active: the four tap-to-choose cards, the free-text
+                prompt (answered via the composer below, not here), or the
+                First Coordinates summary + feedback. */}
+            {!pageLoading && onboarding.active && (
+              <div className="flex justify-start">
+                <div className="max-w-[90%] lg:max-w-[480px]">
+                  <div className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] text-white/85 rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed">
+                    <p>{t('intro.title')}</p>
+                    <p className="text-[var(--color-text-tertiary)] text-xs mt-1.5">{t('intro.body1')}</p>
+                    <p className="text-[var(--color-text-tertiary)] text-xs mt-1">{t('intro.body2')}</p>
+                    <p className="text-white/40 text-xs mt-1.5">{t('intro.body3')}</p>
+                  </div>
+
+                  {onboarding.cardStep && (
+                    <OnboardingCardPanel
+                      step={onboarding.cardStep}
+                      cardIndex={onboarding.cardIndex}
+                      cardTotal={onboarding.cardTotal}
+                      saving={onboarding.saving}
+                      currentState={onboarding.currentState}
+                      activeDomainLabels={onboarding.activeDomainLabels}
+                      desiredStates={onboarding.desiredStates}
+                      interactionPreferenceLabel={onboarding.interactionPreferenceLabel}
+                      onCurrentState={onboarding.handleCurrentState}
+                      onSkipCurrentState={onboarding.handleSkipCurrentState}
+                      onToggleActiveDomain={onboarding.toggleActiveDomain}
+                      onActiveDomainsContinue={onboarding.handleActiveDomainsContinue}
+                      onSkipActiveDomains={onboarding.handleSkipActiveDomains}
+                      onToggleDesiredState={onboarding.toggleDesiredState}
+                      onDesiredStatesContinue={onboarding.handleDesiredStatesContinue}
+                      onSkipDesiredStates={onboarding.handleSkipDesiredStates}
+                      onInteractionPreference={onboarding.handleInteractionPreference}
+                      onSkipInteractionPreference={onboarding.handleSkipInteractionPreference}
+                    />
+                  )}
+
+                  {onboarding.awaitingIntention && (
+                    <div className="mt-2 max-w-[420px] bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] text-white/85 rounded-2xl px-4 py-3 text-sm leading-relaxed">
+                      <p>{t('cards.currentIntention.prompt')}</p>
+                      <button
+                        onClick={() => onboarding.skipIntention()}
+                        disabled={onboarding.saving}
+                        className="text-white/40 hover:text-white/60 text-xs mt-2 transition-colors disabled:opacity-50"
+                      >
+                        {t('cards.currentIntention.skipButton')}
+                      </button>
+                    </div>
+                  )}
+
+                  {onboarding.showingSummary && (
+                    <OnboardingSummaryCard
+                      currentState={onboarding.currentState}
+                      activeDomainCategories={onboarding.activeDomainCategories}
+                      desiredStates={onboarding.desiredStates}
+                      interactionMode={onboarding.interactionMode}
+                      intentionText={onboarding.intentionText}
+                      saving={onboarding.saving}
+                      onFeedback={handleOnboardingFeedback}
+                    />
+                  )}
+
+                  {onboarding.error && <p className="text-red-400 text-xs mt-2">{onboarding.error}</p>}
+                </div>
+              </div>
+            )}
 
             {/* Same bubble treatment as a real assistant message (no fabricated
                 first turn — this is UI chrome, not a message DPNR sent) rather
@@ -260,7 +373,7 @@ export default function CompanionPage() {
                 does. Vertically centered in the thread area via the parent's
                 justify-center above, instead of top-aligned with a large dead
                 gap above the input bar. */}
-            {!loading && messages.length === 0 && (
+            {!pageLoading && messages.length === 0 && !onboarding.active && (
               <div className="flex justify-start">
                 <div className="max-w-[90%] lg:max-w-[480px] bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] text-white/85 rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed">
                   <p>Hi — what&apos;s on your mind?</p>
@@ -360,14 +473,14 @@ export default function CompanionPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Share anything with me..."
+              placeholder={onboarding.awaitingIntention ? t('cards.currentIntention.placeholder') : 'Share anything with me...'}
               rows={1}
-              disabled={loading}
+              disabled={composerDisabled}
               className="flex-1 bg-[var(--color-surface-glass)] border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors max-h-32"
             />
             <button
               onClick={handleSend}
-              disabled={!input.trim() || sending || loading}
+              disabled={!input.trim() || sending || composerDisabled}
               className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-full bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] active:scale-[0.98] disabled:bg-white/10 disabled:cursor-not-allowed text-white transition-all"
               aria-label="Send"
             >
@@ -383,16 +496,26 @@ export default function CompanionPage() {
           )}
         </div>
 
-        {/* Right column — desktop only */}
-        <div className="scrollbar-glass hidden lg:flex lg:flex-col lg:gap-4 lg:pb-6 lg:overflow-y-auto">
-          <PullACard />
-          <RecentConversations
-            activeSessionId={sessionId}
-            onSelect={handleSelectConversation}
-            onCreated={handleNewConversation}
-          />
-        </div>
+        {/* Right column — desktop only, hidden while onboarding owns the thread (same reasoning as the mobile-only widgets above). */}
+        {!onboarding.active && (
+          <div className="scrollbar-glass hidden lg:flex lg:flex-col lg:gap-4 lg:pb-6 lg:overflow-y-auto">
+            <PullACard />
+            <RecentConversations
+              activeSessionId={sessionId}
+              onSelect={handleSelectConversation}
+              onCreated={handleNewConversation}
+            />
+          </div>
+        )}
       </div>
     </div>
+  )
+}
+
+export default function CompanionPage() {
+  return (
+    <Suspense fallback={<div className="h-dvh" />}>
+      <CompanionContent />
+    </Suspense>
   )
 }

@@ -159,6 +159,20 @@ OnboardingSnapshotItem  (USER#<id> / ONBOARDING_SNAPSHOT — plaintext, disposab
   same pattern as `/consent`/`/profile-setup` — not inline inside Main Chat's
   conversation area (a real, deliberate fidelity tradeoff against the
   reference screenshot, accepted for lower build effort).
+  **Reversed 2026-09-16 (Session 58), at the user's explicit request**: the
+  reference screenshot always showed this rendered inside Main Chat's own
+  conversation area, and the dedicated-route shape's "lower build effort"
+  tradeoff no longer held once the user asked for the real thing. The
+  `/onboarding` route was deleted; `apps/web/src/components/companion/onboarding/`
+  (`useOnboardingFlow.ts` + two presentational components) now render the
+  same four cards + First Coordinates summary inline under a greeting bubble
+  in `(app)/companion/page.tsx`, and `proxy.ts`'s onboarding gate redirects to
+  `/companion` instead. The free-text `CURRENT_INTENTION` step no longer has
+  its own textarea card — it's answered through Main Chat's own composer
+  (the source doc's own framing: that answer "naturally becomes the first
+  conversation"). No data-model or backend change; see `docs/AGENT_LOG.md`
+  Session 58 for the full detail, including a real client-router-cache bug
+  found and fixed along the way.
 
 No ADR — none of the above is irreversible in the ADR sense (a route/schema
 this narrow can be revised cleanly later), and every call here was the user's

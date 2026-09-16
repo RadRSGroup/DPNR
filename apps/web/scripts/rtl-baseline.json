@@ -1,5 +1,5 @@
 {
-  "src/app/[locale]/(app)/companion/page.tsx": 4,
+  "src/app/[locale]/(app)/companion/page.tsx": 5,
   "src/components/companion/DirectiveCard.tsx": 2,
   "src/components/companion/LibrarySidePanel.tsx": 2,
   "src/components/companion/RecentConversations.tsx": 1,

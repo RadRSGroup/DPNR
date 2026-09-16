@@ -69,9 +69,14 @@ export async function proxy(request: NextRequest) {
   // mirroring an ID-token claim, checked after consent so a brand-new
   // signup always sees consent first, profile-setup second.
   const hasProfileSetup = request.cookies.get('dpnr_profile_setup')?.value === '1'
-  // First-Time Onboarding, Slice A (docs/FIRST_TIME_ONBOARDING_PLAN.md §4,
-  // §5.4) — same cookie-mirrors-claim gate, checked after profile-setup so
-  // the order is always consent -> profile-setup -> onboarding.
+  // First-Time Onboarding (docs/FIRST_TIME_ONBOARDING_PLAN.md §4, §5.4) —
+  // same cookie-mirrors-claim gate, checked after profile-setup so the
+  // order is always consent -> profile-setup -> onboarding. §5.6 originally
+  // put this behind its own `/onboarding` route; revisited 2026-09-16 at
+  // the user's request to match the reference screenshot (onboarding runs
+  // inside Main Chat itself, not a standalone screen) — so this gate now
+  // routes straight to `/companion`, which renders the flow inline
+  // (`useOnboardingFlow`), instead of a dedicated page.
   const hasOnboarding = request.cookies.get('dpnr_onboarding')?.value === '1'
 
   const isProtected =
@@ -87,7 +92,6 @@ export async function proxy(request: NextRequest) {
   const isLoginPage = pathname.startsWith('/login')
   const isConsentPage = pathname.startsWith('/consent')
   const isProfileSetupPage = pathname.startsWith('/profile-setup')
-  const isOnboardingPage = pathname.startsWith('/onboarding')
 
   // Unauthenticated → login. `next` is stored UNPREFIXED — login/page.tsx
   // and consent/page.tsx both consume it via the locale-aware
@@ -124,11 +128,19 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Profile-setup done but onboarding not yet — onboarding gate. Same
-  // unprefixed-`next` rule as the gates above.
-  if (isProtected && hasSession && hasConsent && hasProfileSetup && !hasOnboarding) {
+  // Profile-setup done but onboarding not yet — onboarding gate. Routes to
+  // `/companion` itself (not a separate page — see `hasOnboarding`'s own
+  // comment above); Main Chat renders the onboarding flow inline instead
+  // of whatever page was actually requested, same as the other gates
+  // above but reusing an existing protected route rather than needing a
+  // dedicated one. Same unprefixed-`next` rule as the gates above.
+  // `pathname !== '/companion'` guards against a self-redirect loop this
+  // gate would otherwise create when the requested page already IS
+  // `/companion` (redirecting `/companion` to itself, forever) — a real
+  // `ERR_TOO_MANY_REDIRECTS` hit and fixed live while building this.
+  if (isProtected && pathname !== '/companion' && hasSession && hasConsent && hasProfileSetup && !hasOnboarding) {
     const url = request.nextUrl.clone()
-    url.pathname = withLocale('/onboarding', locale)
+    url.pathname = withLocale('/companion', locale)
     url.searchParams.set('next', pathname)
     return NextResponse.redirect(url)
   }
@@ -137,8 +149,9 @@ export async function proxy(request: NextRequest) {
   // via `NextResponse.redirect`, not the client-side locale-aware router,
   // so — unlike login/consent's own `router.push(next)` — `next` DOES need
   // prefixing here, at the point of use, not when it was stored above.
-  // Routes through /profile-setup, then /onboarding, if either isn't done
-  // yet — same `next` carried forward either way.
+  // Routes through /profile-setup, then `/companion` (for its inline
+  // onboarding), if either isn't done yet — same `next` carried forward
+  // either way.
   if (isConsentPage && hasConsent) {
     const url = request.nextUrl.clone()
     const next = request.nextUrl.searchParams.get('next')
@@ -146,7 +159,7 @@ export async function proxy(request: NextRequest) {
       url.pathname = withLocale('/profile-setup', locale)
       url.searchParams.set('next', next ?? '/companion')
     } else if (!hasOnboarding) {
-      url.pathname = withLocale('/onboarding', locale)
+      url.pathname = withLocale('/companion', locale)
       url.searchParams.set('next', next ?? '/companion')
     } else {
       url.pathname = next ? withLocale(next, locale) : withLocale('/companion', locale)
@@ -156,28 +169,18 @@ export async function proxy(request: NextRequest) {
   }
 
   // Profile-setup already done — skip that screen. Same shape as the
-  // consent-page-skip branch above; routes through /onboarding next if
-  // that's not done yet either.
+  // consent-page-skip branch above; routes to `/companion` next (for its
+  // inline onboarding) if that's not done yet either.
   if (isProfileSetupPage && hasProfileSetup) {
     const url = request.nextUrl.clone()
     const next = request.nextUrl.searchParams.get('next')
     if (!hasOnboarding) {
-      url.pathname = withLocale('/onboarding', locale)
+      url.pathname = withLocale('/companion', locale)
       url.searchParams.set('next', next ?? '/companion')
     } else {
       url.pathname = next ? withLocale(next, locale) : withLocale('/companion', locale)
       url.searchParams.delete('next')
     }
-    return NextResponse.redirect(url)
-  }
-
-  // Onboarding already done — skip that screen. Same shape as the
-  // profile-setup-skip branch above.
-  if (isOnboardingPage && hasOnboarding) {
-    const url = request.nextUrl.clone()
-    const next = request.nextUrl.searchParams.get('next')
-    url.pathname = next ? withLocale(next, locale) : withLocale('/companion', locale)
-    url.searchParams.delete('next')
     return NextResponse.redirect(url)
   }
 
