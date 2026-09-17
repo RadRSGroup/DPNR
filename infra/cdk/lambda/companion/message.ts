@@ -19,7 +19,7 @@ import {
 } from '@dpnr/shared-types'
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { requireConsent } from '../lib/consent'
-import { getLocaleClaim, resolveLocale, toLanguageInstruction } from '../lib/locale'
+import { getLocaleClaim, resolveLocale, toLanguageInstruction, type Locale } from '../lib/locale'
 import { getOnboardingSnapshotContext } from '../lib/onboarding-snapshot-context'
 import { consumeCredits, COMPANION_MESSAGE_COST } from '../lib/credits'
 import { getSessionCrypto, type SessionCrypto } from '../lib/session-crypto'
@@ -95,12 +95,9 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     // Hebrew Localization Slice E (docs/HEBREW_LOCALIZATION_PLAN.md §4.2) —
     // the profile read above already gives the authoritative
     // preferredLanguage for free; the JWT claim is only a fallback for the
-    // (here, unreachable) case of no profile read. Safety-response
-    // generation is deliberately NOT localized yet — see Slice F.
-    const languageInstruction = toLanguageInstruction(
-      resolveLocale(profile, getLocaleClaim(event)),
-      profile.genderIdentity
-    )
+    // (here, unreachable) case of no profile read.
+    const locale: Locale = resolveLocale(profile, getLocaleClaim(event))
+    const languageInstruction = toLanguageInstruction(locale, profile.genderIdentity)
 
     const sessionId = await resolveOrCreateSession(ddb, TABLE_NAME, pk, body.sessionId)
     const recentMessages = await queryRecentMessages(pk, sessionId, MODEL_CONTEXT_MESSAGES)
@@ -197,7 +194,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       // credit charge (this isn't a normal billable turn), no onboarding
       // Roadmap logic. Per spec §30: "Do not use reward language... during
       // a safety flow."
-      reply = await generateSafetyResponse(ddb, PROMPT_REGISTRY_TABLE_NAME, classification, body.text)
+      reply = await generateSafetyResponse(ddb, PROMPT_REGISTRY_TABLE_NAME, classification, body.text, languageInstruction, locale)
       directive = null
     } else {
       // Intelligence Spec §17 "Current Interaction Mode" — classified fresh

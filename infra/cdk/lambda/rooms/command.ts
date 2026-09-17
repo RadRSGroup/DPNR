@@ -11,7 +11,7 @@ import {
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { requireConsent } from '../lib/consent'
 import { consumeCredits, ROOM_REFINE_COST } from '../lib/credits'
-import { toLanguageInstruction } from '../lib/locale'
+import { toLanguageInstruction, type Locale } from '../lib/locale'
 import { classifySafety, generateSafetyResponse, extractFreeTextForSafetyCheck } from '../lib/safety'
 import { getSessionCrypto } from '../lib/session-crypto'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
@@ -61,7 +61,8 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     // (previously discarded) rather than a second targeted read, same fix
     // Session 50 part 6 made for companion/message.ts.
     const profile = await requireConsent(ddb, TABLE_NAME, userId)
-    const languageInstruction = toLanguageInstruction(profile.preferredLanguage, profile.genderIdentity)
+    const locale: Locale = profile.preferredLanguage
+    const languageInstruction = toLanguageInstruction(locale, profile.genderIdentity)
 
     const flow = FLOW_REGISTRY[body.flowId]
     if (!flow) {
@@ -130,7 +131,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         `Room: ${body.flowId}, Step: ${body.stepId}`
       )
       if (classification.safetyState === 'safety_concern' || classification.safetyState === 'immediate_danger') {
-        const message = await generateSafetyResponse(ddb, PROMPT_REGISTRY_TABLE_NAME, classification, freeText)
+        const message = await generateSafetyResponse(ddb, PROMPT_REGISTRY_TABLE_NAME, classification, freeText, languageInstruction, locale)
         safetyIntervention = { safetyState: classification.safetyState, message }
       }
     }

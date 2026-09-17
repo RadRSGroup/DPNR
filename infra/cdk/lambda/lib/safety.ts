@@ -10,6 +10,7 @@ import {
 } from '@dpnr/shared-types'
 import { resolvePromptVersion } from './prompt-registry'
 import { callPromptModel, type GuardrailRef } from './model-call'
+import type { Locale } from './locale'
 
 const sns = new SNSClient({})
 
@@ -144,9 +145,24 @@ export async function classifySafety(
 // safety-leaning regardless of which of the four states triggered it
 // (matches ADR 0012 decision #1's constraints), so even this failure path
 // stays spec-compliant rather than silently degrading it.
-const FALLBACK_SAFETY_MESSAGE =
-  "I want to make sure I'm giving you the right kind of support right now. If anything feels urgent or unsafe, please " +
-  'reach out to a trusted person, a mental health professional, or your local emergency services.'
+//
+// Hebrew Localization Slice F (docs/HEBREW_LOCALIZATION_PLAN.md §16) —
+// deliberately outside the Prompt Registry/model-call mechanism (this fires
+// when Bedrock itself has already failed, so asking a model to translate it
+// defeats the purpose), so it's a hand-translated, human-reviewed Hebrew
+// string here, not a `{{languageInstruction}}` var. Selected by `locale`
+// alone, not gender — this is a fixed-text failure path, not a normal model
+// reply, and the Hebrew string uses masculine grammatical forms as the
+// default, same convention `toLanguageInstruction()` uses for an
+// unspecified/unknown gender.
+const FALLBACK_SAFETY_MESSAGE: Record<Locale, string> = {
+  en:
+    "I want to make sure I'm giving you the right kind of support right now. If anything feels urgent or unsafe, please " +
+    'reach out to a trusted person, a mental health professional, or your local emergency services.',
+  he:
+    'חשוב לי לוודא שאני נותן לך את סוג התמיכה הנכון כרגע. אם משהו מרגיש דחוף או לא בטוח, ' +
+    'אנא פנה לאדם קרוב שאתה סומך עליו, לאיש מקצוע בתחום בריאות הנפש, או לשירותי החירום באזורך.',
+}
 
 const SAFETY_RESPONSE_PROMPT_NAME: Record<SafetyClassification['safetyState'], string> = {
   normal: 'respond_concern', // never actually called for 'normal' — see classifySafety's own gating
@@ -169,12 +185,22 @@ const SAFETY_RESPONSE_PROMPT_NAME: Record<SafetyClassification['safetyState'], s
  * to `FALLBACK_SAFETY_MESSAGE` if the model call itself fails, rather than
  * letting the request fail outright on exactly the turn where a reply
  * matters most.
+ *
+ * Hebrew Localization Slice F — takes both `languageInstruction` (threaded
+ * into the real prompt call, same as every other Slice E/F domain) and
+ * `locale` (used only to pick the right `FALLBACK_SAFETY_MESSAGE` string,
+ * since that fixed text lives outside the templating mechanism). Both
+ * callers (`companion/message.ts`, `rooms/command.ts`) already resolve a
+ * `languageInstruction` string from the same profile earlier in the same
+ * handler — no new profile read needed here.
  */
 export async function generateSafetyResponse(
   ddb: DynamoDBDocumentClient,
   promptRegistryTableName: string,
   classification: SafetyClassification,
-  currentMessage: string
+  currentMessage: string,
+  languageInstruction: string,
+  locale: Locale
 ): Promise<string> {
   const promptName = SAFETY_RESPONSE_PROMPT_NAME[classification.safetyState]
   try {
@@ -184,13 +210,14 @@ export async function generateSafetyResponse(
       {
         currentMessage,
         reasonCodes: classification.reasonCodes.join(', '),
+        languageInstruction,
       },
       getSafetyGuardrailRef()
     )
-    return typeof result === 'string' && result.length > 0 ? result : FALLBACK_SAFETY_MESSAGE
+    return typeof result === 'string' && result.length > 0 ? result : FALLBACK_SAFETY_MESSAGE[locale]
   } catch (err) {
     console.error('Safety response generation failed (using fixed fallback):', err instanceof Error ? err.message : 'unknown error')
-    return FALLBACK_SAFETY_MESSAGE
+    return FALLBACK_SAFETY_MESSAGE[locale]
   }
 }
 

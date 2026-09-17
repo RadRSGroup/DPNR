@@ -42,6 +42,17 @@
  * its own product review. Flag for review before treating exact wording as
  * final; this is meant to prove the mechanism (classification → correct
  * branch → safe, generic response), not to be the last word on tone.
+ *
+ * Hebrew Localization Slice F (docs/HEBREW_LOCALIZATION_PLAN.md §16,
+ * scoped Session 57 part 8, built this session): the four `respond_*`
+ * prompts now carry `{{languageInstruction}}` — real user-facing prose,
+ * same treatment as every other Slice E domain. `classify_safety_state`
+ * deliberately does not — pure enum/numeric classification output, no
+ * prose, same "no prose, no var" rule `twin/classify_signal` already
+ * established. `lib/safety.ts`'s hardcoded `FALLBACK_SAFETY_MESSAGE` (used
+ * only when the model call itself fails) is a separate, hand-translated
+ * `Record<'en' | 'he', string>` outside this Prompt Registry mechanism
+ * entirely, selected by locale — not part of this seed data.
  */
 import type { PromptSeed } from './decision-room-prompts.seed'
 
@@ -127,16 +138,21 @@ Your response must:
 - Stay warm and human, not clinical or scripted-sounding - but brief. This is not the moment for a long reply.
 - Do not continue the ordinary conversation topic, room routing, or any structured exercise - this reply stands alone.
 
-Output only the reply text itself - no preamble, no headers, no labels.`,
+Output only the reply text itself - no preamble, no headers, no labels.
+
+{{languageInstruction}}`,
     userTemplate: `The person's message:
 "{{currentMessage}}"
 
 Why this was flagged (internal classifier reasoning, for your context only — do not repeat these tags to the person):
 {{reasonCodes}}`,
-    variables: ['currentMessage', 'reasonCodes'],
+    variables: ['currentMessage', 'reasonCodes', 'languageInstruction'],
     notes:
       'reasonCodes = classifySafety()\'s own reasonCodes array joined as a comma-separated string, for the model\'s ' +
-      'internal context only — the system prompt explicitly forbids repeating these tags to the person.',
+      'internal context only — the system prompt explicitly forbids repeating these tags to the person. ' +
+      'languageInstruction (Hebrew Localization Slice F) — this is real user-facing prose, threaded the same way ' +
+      'every other Slice E domain\'s prompts are; both real callers (companion/message.ts, rooms/command.ts) already ' +
+      'resolve it from the same profile read they use for their own normal-path prompts.',
   },
   {
     name: 'respond_danger',
@@ -150,14 +166,16 @@ Your response must:
 - NEVER continue the prior conversation topic, offer advice on it, or invite any reflection, room routing, or exercise - immediate safety is the only thing this reply is for.
 - Keep it short - a few sentences at most. This is not the moment for length.
 
-Output only the reply text itself - no preamble, no headers, no labels.`,
+Output only the reply text itself - no preamble, no headers, no labels.
+
+{{languageInstruction}}`,
     userTemplate: `The person's message:
 "{{currentMessage}}"
 
 Why this was flagged (internal classifier reasoning, for your context only — do not repeat these tags to the person):
 {{reasonCodes}}`,
-    variables: ['currentMessage', 'reasonCodes'],
-    notes: 'Same reasonCodes convention as respond_concern.',
+    variables: ['currentMessage', 'reasonCodes', 'languageInstruction'],
+    notes: 'Same reasonCodes and languageInstruction convention as respond_concern.',
   },
   {
     name: 'respond_high_stakes',
@@ -171,14 +189,16 @@ Your response must:
 - Offer, only if it feels genuinely useful, to help them think through what matters most to them or what questions to bring to that professional - reflection support, not decision-making on their behalf.
 - Stay warm and conversational, not clinical or like a legal disclaimer. This is still a real DPNR response, just honest about its limits.
 
-Output only the reply text itself - no preamble, no headers, no labels.`,
+Output only the reply text itself - no preamble, no headers, no labels.
+
+{{languageInstruction}}`,
     userTemplate: `The person's message:
 "{{currentMessage}}"
 
 Why this was flagged (internal classifier reasoning, for your context only — do not repeat these tags to the person):
 {{reasonCodes}}`,
-    variables: ['currentMessage', 'reasonCodes'],
-    notes: 'Same reasonCodes convention as respond_concern.',
+    variables: ['currentMessage', 'reasonCodes', 'languageInstruction'],
+    notes: 'Same reasonCodes and languageInstruction convention as respond_concern.',
   },
   {
     name: 'respond_overload',
@@ -191,13 +211,15 @@ Your response must:
 - NEVER use reward, achievement, streak, or engagement language of any kind to encourage them to keep going instead.
 - Keep it short and gentle. This is a moment to slow down, not a moment for more words.
 
-Output only the reply text itself - no preamble, no headers, no labels.`,
+Output only the reply text itself - no preamble, no headers, no labels.
+
+{{languageInstruction}}`,
     userTemplate: `The person's message:
 "{{currentMessage}}"
 
 Why this was flagged (internal classifier reasoning, for your context only — do not repeat these tags to the person):
 {{reasonCodes}}`,
-    variables: ['currentMessage', 'reasonCodes'],
-    notes: 'Same reasonCodes convention as respond_concern.',
+    variables: ['currentMessage', 'reasonCodes', 'languageInstruction'],
+    notes: 'Same reasonCodes and languageInstruction convention as respond_concern.',
   },
 ]
