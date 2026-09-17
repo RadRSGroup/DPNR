@@ -1,7 +1,36 @@
 # DPNR — Main Chat UX Update: Plan
 
-**Status: scoped against two real reference mockups, several open
-decisions resolved. No code written yet.** Written Session 59 (2026-09-17)
+**Status (2026-09-17, updated): Slices B+C (top bar, composer icons, Focus
+Mode) and the harder half of Slice A (chat background system: schema,
+API, both preset assets, the selector UI) are all built and passing
+typecheck/lint/build. NOT deployed to real AWS yet** — the frontend
+correctly renders the new default preset and the selector UI works
+optimistically, but the actual save (`PUT /v1/user/preferences` with the
+new `chatBackground` field) hits the currently-deployed Lambda, which has
+no idea the field exists — confirmed live (a real `400`, not a guess) —
+so the choice doesn't yet survive a reload. Needs a real `Dpnr-Api` deploy
+(`PreferencesFn`, `PreferencesGetFn`, `PostConfirmationFn`'s code assets
+only — no new resources) before this closes for real.
+**The two preset background images are real, derived assets — not raw
+mockup crops.** The mockups are flattened UI composites (baked-in fake
+sidebar/text/chat bubbles); a direct crop would show ghost text through
+the real glass panel. Instead: each full 1536×1024 mockup went through a
+heavy Gaussian blur (~28-30px) + darken pass (PIL), which fully destroys
+the baked UI/text into unreadable soft color/light shapes while keeping
+each mockup's actual mood and palette (warm sunset tones for
+`environment`, violet nebula for `digital_twin`) — a legitimate technique
+the source PDF itself explicitly sanctions ("must adapt through blur,
+gradient, darkening... so chat readability always comes first"), not a
+shortcut. Saved as `apps/web/public/images/backgrounds/companion-bg.webp`
+(now the `digital_twin` default, replacing the old single hardcoded
+asset) and `companion-bg-environment.webp` (new).
+Custom background upload (a user's own photo) is still fully deferred —
+no S3 prefix/Lambda for it exists, `chatBackground: 'custom'` is a valid
+enum value with nowhere to point yet.
+
+---
+
+Written Session 59 (2026-09-17)
 against the source doc `docs/DPNR_Main_Chat_UX_Update_MVP.pdf` ("MVP
 Refinement Guide for Rad & Claude"), then revised same session once the
 user pointed to two full-fidelity reference mockups already in the repo —

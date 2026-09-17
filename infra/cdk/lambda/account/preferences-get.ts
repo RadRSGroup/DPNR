@@ -34,6 +34,10 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       genderIdentity: profile.genderIdentity,
       avatarUrl: await getAvatarPresignedUrl(profile.avatarKey),
       profileSetupCompletedAt: profile.profileSetupCompletedAt,
+      chatBackground: profile.chatBackground,
+      // No upload endpoint exists yet for a `custom` background (Main Chat
+      // UX Update §3.1's own disclosed deferral) — always null for now.
+      chatBackgroundUrl: null,
     }
     return jsonResponse(200, response)
   } catch (err) {

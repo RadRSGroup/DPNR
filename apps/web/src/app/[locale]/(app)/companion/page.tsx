@@ -7,8 +7,8 @@ import { useSearchParams } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
 import { Heart, Cloud, Shuffle, UserCircle, Plus, Mic, ImagePlus, X } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
-import { getCompanionContext, sendCompanionMessage, ApiError } from '@/lib/api/v1-client'
-import type { CompanionDirective } from '@dpnr/shared-types'
+import { getCompanionContext, sendCompanionMessage, getPreferences, ApiError } from '@/lib/api/v1-client'
+import type { CompanionDirective, ChatBackground } from '@dpnr/shared-types'
 import DirectiveCard from '@/components/companion/DirectiveCard'
 import PullACard from '@/components/companion/PullACard'
 import RecentConversations from '@/components/companion/RecentConversations'
@@ -81,6 +81,10 @@ function CompanionContent() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [firstName, setFirstName] = useState('')
+  // Main Chat UX Update (docs/MAIN_CHAT_UX_UPDATE_PLAN.md §3.1) — 'digital_twin'
+  // matches the schema's own default, so this is the correct value to render
+  // with before the real preference loads, not a placeholder guess.
+  const [chatBackground, setChatBackground] = useState<ChatBackground>('digital_twin')
   const [creditsExhausted, setCreditsExhausted] = useState(false)
   // Main Chat UX Update (docs/MAIN_CHAT_UX_UPDATE_PLAN.md §3.6) — the
   // composer's mic/image icons, confirmed against the reference mockups.
@@ -178,6 +182,15 @@ function CompanionContent() {
     }
     load()
   }, [router])
+
+  useEffect(() => {
+    getPreferences()
+      .then((p) => setChatBackground(p.chatBackground))
+      .catch(() => {
+        // Honest degrade to the schema's own default — same tolerance every
+        // other best-effort preferences read in this codebase already uses.
+      })
+  }, [])
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
@@ -309,11 +322,18 @@ function CompanionContent() {
   const isLanding = !pageLoading && messages.length === 0 && !onboarding.active
   const showPrompts = isLanding
   const composerDisabled = pageLoading || (onboarding.active && !onboarding.awaitingIntention)
+  // 'custom' falls back to the default preset — no upload endpoint exists
+  // yet to have ever set a real chatBackgroundUrl (§3.1's disclosed
+  // deferral), so there's nothing else it could render.
+  const backgroundSrc =
+    chatBackground === 'environment'
+      ? '/images/backgrounds/companion-bg-environment.webp'
+      : '/images/backgrounds/companion-bg.webp'
 
   return (
     <div className="relative h-[calc(100dvh-4rem)] lg:h-dvh flex flex-col overflow-hidden">
       <div className="absolute inset-0 -z-10">
-        <Image src="/images/backgrounds/companion-bg.webp" alt="" fill className="object-cover" />
+        <Image src={backgroundSrc} alt="" fill className="object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
       </div>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
@@ -563,7 +583,7 @@ function CompanionContent() {
 
           {attachedFileName && (
             <div className="px-5 lg:px-0 pb-2">
-              <div className="inline-flex items-center gap-2 liquid-glass rounded-full pl-3 pr-2 py-1.5 text-xs text-white/70">
+              <div className="inline-flex items-center gap-2 liquid-glass rounded-full ps-3 pe-2 py-1.5 text-xs text-white/70">
                 <ImagePlus className="w-3.5 h-3.5 text-[var(--color-violet-300)]" />
                 <span className="truncate max-w-[160px]">{attachedFileName}</span>
                 <button
@@ -601,9 +621,9 @@ function CompanionContent() {
                 placeholder={onboarding.awaitingIntention ? t('cards.currentIntention.placeholder') : 'Share anything with me...'}
                 rows={1}
                 disabled={composerDisabled}
-                className="flex-1 bg-[var(--color-surface-glass)] border border-white/15 rounded-2xl pl-4 pr-20 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors max-h-32"
+                className="flex-1 bg-[var(--color-surface-glass)] border border-white/15 rounded-2xl ps-4 pe-20 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors max-h-32"
               />
-              <div className="absolute right-3 bottom-3 flex items-center gap-2.5">
+              <div className="absolute end-3 bottom-3 flex items-center gap-2.5">
                 {speechSupported && (
                   <button
                     onClick={toggleDictation}

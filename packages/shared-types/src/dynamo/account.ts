@@ -36,6 +36,21 @@ export type Tier = z.infer<typeof TierSchema>
 export const GenderIdentitySchema = z.enum(['male', 'female', 'unspecified'])
 export type GenderIdentity = z.infer<typeof GenderIdentitySchema>
 
+/**
+ * Main Chat UX Update (docs/MAIN_CHAT_UX_UPDATE_PLAN.md §3.1) — two curated
+ * presets, both real finished designs per the reference mockups
+ * (docs/CHAT UX.png / CHAT UX 2.png), not a "pick one, defer the other"
+ * choice. `digital_twin` (the cosmic character, continuing this app's
+ * existing InnerSelf/Digital Twin branding) is the default for new users,
+ * matching the PDF's own stated reasoning for that option. `custom` means
+ * "use `chatBackgroundKey`" — the upload path itself isn't built yet (a
+ * separate, larger piece of Slice A needing its own S3 prefix/Lambda), so
+ * selecting `custom` with no key set falls back to the default preset,
+ * same tolerance `avatarKey: null` already gets.
+ */
+export const ChatBackgroundSchema = z.enum(['digital_twin', 'environment', 'custom'])
+export type ChatBackground = z.infer<typeof ChatBackgroundSchema>
+
 /** USER#<id> / PROFILE — app-level profile, not the Cognito record itself. */
 export const UserProfileItemSchema = z.object({
   pk: z.string(),
@@ -49,6 +64,10 @@ export const UserProfileItemSchema = z.object({
   // S3 object key (never a URL — the bucket is private, a fresh presigned
   // GET is generated per read). `null` = no photo set.
   avatarKey: z.string().nullable().default(null),
+  chatBackground: ChatBackgroundSchema.default('digital_twin'),
+  // S3 object key for a `custom` background, same private-bucket/presigned-
+  // read convention as `avatarKey`. `null` until the upload feature exists.
+  chatBackgroundKey: z.string().nullable().default(null),
   // Session 51 — gender moved out of the signup form into a dedicated
   // post-signin profile-setup screen (gender + optional photo), per the
   // user's own request superseding Session 50's "fold into signup"

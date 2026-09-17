@@ -101,7 +101,7 @@ export default function TopBar() {
 
       {/* Fixed min-width so the avatar doesn't shift right once `now`
           resolves from null (server) to a real Date (client, post-mount). */}
-      <div className="text-right text-xs leading-tight text-white/50 shrink-0 min-w-[110px]">
+      <div className="text-end text-xs leading-tight text-white/50 shrink-0 min-w-[110px]">
         {now && (
           <>
             <p className="text-white/80 text-sm font-medium">
@@ -130,7 +130,7 @@ export default function TopBar() {
         </button>
 
         {menuOpen && (
-          <div className="absolute right-0 top-full mt-2 w-44 liquid-glass rounded-xl py-1.5 z-20">
+          <div className="absolute end-0 top-full mt-2 w-44 liquid-glass rounded-xl py-1.5 z-20">
             <Link
               href="/account"
               className="flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:bg-white/5 transition-colors"
@@ -144,7 +144,7 @@ export default function TopBar() {
                 signOut()
                 router.push('/login')
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:bg-white/5 transition-colors text-left"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:bg-white/5 transition-colors text-start"
             >
               <LogOut className="w-4 h-4" /> Sign out
             </button>

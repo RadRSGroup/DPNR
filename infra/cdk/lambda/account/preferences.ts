@@ -21,10 +21,8 @@ const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
     const userId = requireUserId(event)
-    const { preferredLanguage, genderIdentity, avatarKey, profileSetupComplete } = parseBody(
-      event,
-      UpdatePreferencesRequestSchema
-    )
+    const { preferredLanguage, genderIdentity, avatarKey, profileSetupComplete, chatBackground, chatBackgroundKey } =
+      parseBody(event, UpdatePreferencesRequestSchema)
     const now = new Date().toISOString()
 
     const setClauses = ['updatedAt = :now']
@@ -44,6 +42,14 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     if (profileSetupComplete) {
       setClauses.push('profileSetupCompletedAt = :profileSetupCompletedAt')
       values[':profileSetupCompletedAt'] = now
+    }
+    if (chatBackground !== undefined) {
+      setClauses.push('chatBackground = :chatBackground')
+      values[':chatBackground'] = chatBackground
+    }
+    if (chatBackgroundKey !== undefined) {
+      setClauses.push('chatBackgroundKey = :chatBackgroundKey')
+      values[':chatBackgroundKey'] = chatBackgroundKey
     }
 
     const result = await ddb
@@ -69,6 +75,11 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       genderIdentity: result.Attributes?.genderIdentity as PreferencesResponse['genderIdentity'],
       avatarUrl: await getAvatarPresignedUrl(result.Attributes?.avatarKey as string | null | undefined),
       profileSetupCompletedAt: (result.Attributes?.profileSetupCompletedAt as string | null | undefined) ?? null,
+      chatBackground: (result.Attributes?.chatBackground as PreferencesResponse['chatBackground']) ?? 'digital_twin',
+      // No upload endpoint exists yet for a `custom` background (Main Chat
+      // UX Update §3.1's own disclosed deferral) — always null for now, not
+      // a presign call to a key nothing can ever actually set.
+      chatBackgroundUrl: null,
     }
     return jsonResponse(200, response)
   } catch (err) {

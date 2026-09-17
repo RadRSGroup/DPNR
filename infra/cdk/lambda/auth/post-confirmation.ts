@@ -53,6 +53,11 @@ export const handler = async (
     // `preferredLanguage` will be. Defaults to 'unspecified' until then.
     genderIdentity: 'unspecified',
     avatarKey: null,
+    // Main Chat UX Update (docs/MAIN_CHAT_UX_UPDATE_PLAN.md §3.1) — matches
+    // `UserProfileItemSchema`'s own default; no upload endpoint exists yet
+    // for a `custom` background, so `chatBackgroundKey` starts unset.
+    chatBackground: 'digital_twin',
+    chatBackgroundKey: null,
     // Set for real via `PUT /v1/user/preferences`'s `profileSetupComplete`
     // once the dedicated post-signin profile-setup screen is completed or
     // skipped (Session 51) — `null` here is what gates proxy.ts's

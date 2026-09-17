@@ -20,7 +20,11 @@
       "label": "Preferences",
       "language": "Language",
       "gender": "Gender",
-      "genderHint": "Used only to address you correctly in Hebrew — has no effect in English."
+      "genderHint": "Used only to address you correctly in Hebrew — has no effect in English.",
+      "chatBackground": "Chat Background",
+      "chatBackgroundDigitalTwin": "Digital Twin",
+      "chatBackgroundEnvironment": "Environment",
+      "chatBackgroundHint": "Choose the background behind Main Chat."
     },
     "security": {
       "label": "Security",

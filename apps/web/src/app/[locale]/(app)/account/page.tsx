@@ -7,11 +7,12 @@ import { Link } from '@/i18n/navigation'
 import { getCurrentSession, deleteCognitoUser, signOut, changePassword } from '@/lib/cognito/client'
 import { revokeCurrentSessionTicket, changePasswordAndRewrapDek } from '@/lib/auth/keyBootstrap'
 import { exportUserData, deleteAccountData, getCredits, getPreferences, updatePreferences, ApiError } from '@/lib/api/v1-client'
-import type { CreditsResponse, GenderIdentity } from '@dpnr/shared-types'
+import type { CreditsResponse, GenderIdentity, ChatBackground } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 import PasswordCreationField, { passwordsReadyToSubmit } from '@/components/auth/PasswordCreationField'
 import LanguageSelector from '@/components/shared/LanguageSelector'
 import GenderSelector from '@/components/shared/GenderSelector'
+import ChatBackgroundSelector from '@/components/shared/ChatBackgroundSelector'
 import AvatarUpload from '@/components/shared/AvatarUpload'
 
 /**
@@ -31,6 +32,8 @@ export default function AccountPage() {
   const [credits, setCredits] = useState<CreditsResponse | null>(null)
   const [gender, setGender] = useState<GenderIdentity | null>(null)
   const [genderSaving, setGenderSaving] = useState(false)
+  const [chatBackground, setChatBackground] = useState<ChatBackground | null>(null)
+  const [chatBackgroundSaving, setChatBackgroundSaving] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
   const [deleteStep, setDeleteStep] = useState<'idle' | 'confirm' | 'deleting'>('idle')
@@ -58,6 +61,7 @@ export default function AccountPage() {
         const preferences = await getPreferences()
         setGender(preferences.genderIdentity)
         setAvatarUrl(preferences.avatarUrl)
+        setChatBackground(preferences.chatBackground)
       } catch {
         // Degrades to the selector showing nothing pre-selected rather than
         // guessing — same "don't fabricate state" rule as the Credits card.
@@ -75,6 +79,18 @@ export default function AccountPage() {
       alert(t('genderSaveError'))
     } finally {
       setGenderSaving(false)
+    }
+  }
+
+  async function handleChatBackgroundChange(next: ChatBackground) {
+    setChatBackground(next) // optimistic, same reasoning as gender above
+    setChatBackgroundSaving(true)
+    try {
+      await updatePreferences({ chatBackground: next })
+    } catch {
+      alert(t('genderSaveError')) // the copy itself is generic ("Could not save — please try again."), reused rather than adding a duplicate string
+    } finally {
+      setChatBackgroundSaving(false)
     }
   }
 
@@ -227,6 +243,19 @@ export default function AccountPage() {
                   {t('preferences.genderHint')}
                 </p>
                 <GenderSelector value={gender} onChange={handleGenderChange} className={genderSaving ? 'opacity-60 pointer-events-none' : ''} />
+              </div>
+            )}
+            {chatBackground !== null && (
+              <div>
+                <p className="text-white/80 text-sm mb-2">{t('preferences.chatBackground')}</p>
+                <p className="text-[var(--color-text-tertiary)] text-xs mb-3">
+                  {t('preferences.chatBackgroundHint')}
+                </p>
+                <ChatBackgroundSelector
+                  value={chatBackground}
+                  onChange={handleChatBackgroundChange}
+                  className={chatBackgroundSaving ? 'opacity-60 pointer-events-none' : ''}
+                />
               </div>
             )}
           </Card>

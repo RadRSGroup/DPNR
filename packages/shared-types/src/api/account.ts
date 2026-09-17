@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { SessionTicketPurposeSchema } from '../dynamo/global-tables'
-import { GenderIdentitySchema } from '../dynamo/account'
+import { GenderIdentitySchema, ChatBackgroundSchema } from '../dynamo/account'
 
 /**
  * Auth/account endpoints (MVP_ARCHITECTURE.md §4, ported from the migration
@@ -196,14 +196,21 @@ export const UpdatePreferencesRequestSchema = z
     genderIdentity: GenderIdentitySchema.optional(),
     avatarKey: z.string().nullable().optional(),
     profileSetupComplete: z.literal(true).optional(),
+    chatBackground: ChatBackgroundSchema.optional(),
+    chatBackgroundKey: z.string().nullable().optional(),
   })
   .refine(
     (v) =>
       v.preferredLanguage !== undefined ||
       v.genderIdentity !== undefined ||
       v.avatarKey !== undefined ||
-      v.profileSetupComplete !== undefined,
-    { message: 'At least one of preferredLanguage, genderIdentity, avatarKey, or profileSetupComplete is required.' }
+      v.profileSetupComplete !== undefined ||
+      v.chatBackground !== undefined ||
+      v.chatBackgroundKey !== undefined,
+    {
+      message:
+        'At least one of preferredLanguage, genderIdentity, avatarKey, profileSetupComplete, chatBackground, or chatBackgroundKey is required.',
+    }
   )
 export type UpdatePreferencesRequest = z.infer<typeof UpdatePreferencesRequestSchema>
 
@@ -212,13 +219,18 @@ export type UpdatePreferencesRequest = z.infer<typeof UpdatePreferencesRequestSc
  * handlers. `avatarUrl` is a short-lived presigned S3 GET URL (`null` when
  * no photo is set) — generated fresh per read, never stored anywhere.
  * `profileSetupCompletedAt` is `null` until the post-signin profile-setup
- * screen has been completed or skipped once.
+ * screen has been completed or skipped once. `chatBackgroundUrl` is the same
+ * presigned-per-read convention as `avatarUrl`, but only meaningful when
+ * `chatBackground === 'custom'` — `null` otherwise (the two curated presets
+ * are static public assets the client already has, not S3 objects).
  */
 export const PreferencesResponseSchema = z.object({
   preferredLanguage: z.enum(['en', 'he']),
   genderIdentity: GenderIdentitySchema,
   avatarUrl: z.string().nullable(),
   profileSetupCompletedAt: z.string().nullable(),
+  chatBackground: ChatBackgroundSchema,
+  chatBackgroundUrl: z.string().nullable(),
 })
 export type PreferencesResponse = z.infer<typeof PreferencesResponseSchema>
 

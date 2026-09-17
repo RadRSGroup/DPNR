@@ -20,7 +20,11 @@
       "label": "העדפות",
       "language": "שפה",
       "gender": "מגדר",
-      "genderHint": "משמש רק כדי לפנות אליכם בצורה נכונה בעברית — אין לו השפעה באנגלית."
+      "genderHint": "משמש רק כדי לפנות אליכם בצורה נכונה בעברית — אין לו השפעה באנגלית.",
+      "chatBackground": "רקע הצ'אט",
+      "chatBackgroundDigitalTwin": "התאום הדיגיטלי",
+      "chatBackgroundEnvironment": "סביבה",
+      "chatBackgroundHint": "בחרו את הרקע שיופיע מאחורי הצ'אט הראשי."
     },
     "security": {
       "label": "אבטחה",
