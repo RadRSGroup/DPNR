@@ -1,16 +1,65 @@
 # DPNR — Main Chat UX Update: Plan
 
-**Status: scoped, no code written yet.** Written Session 59 (2026-09-17)
+**Status: scoped against two real reference mockups, several open
+decisions resolved. No code written yet.** Written Session 59 (2026-09-17)
 against the source doc `docs/DPNR_Main_Chat_UX_Update_MVP.pdf` ("MVP
-Refinement Guide for Rad & Claude") after a full survey of the current
-`companion/page.tsx` and everything it touches. The source doc is
-explicit that this is a **refinement**, not a redesign: keep the existing
-architecture, routes, nav, and composer; only the items below change.
+Refinement Guide for Rad & Claude"), then revised same session once the
+user pointed to two full-fidelity reference mockups already in the repo —
+`docs/CHAT UX.png` (Option B, photographic "DPNR Environment" background)
+and `docs/CHAT UX 2.png` (Option A, cosmic "Digital Twin" character
+background) — as **the actual target UI**, not just the PDF's text
+description. The source doc is explicit that this is a **refinement**, not
+a redesign: keep the existing architecture, routes, nav, and composer;
+only the items below change.
 
 This is smaller than the Hebrew Localization or First-Time Onboarding
 plans, but it bundles a few genuinely separate pieces of work (a new
 upload/asset system, a new persisted metric, a net-new audio feature) —
 don't build it all in one pass. Slices below are independently shippable.
+
+## 0. Composition analysis of the two reference mockups
+
+(Per this repo's `mockup-to-code` skill: describe the reference's own
+composition before writing code, so a port doesn't unconsciously shrink
+toward a "safe" default.) Both mockups share **identical layout and
+identical right-panel content** — only the background art and accent
+color differ (warm/gold vs. violet/cosmic), confirming these are two
+*skins* of one design, not two different screens:
+
+- **A full-bleed page background** (photographic scene or cosmic
+  character-portrait) sits behind everything, with the character/subject
+  positioned left-of-center so it never sits directly behind the
+  conversation glass panel. No separate corner "hero image" — the
+  background *is* the hero, matching this project's "hero art wants its
+  own dominant, non-shrunk treatment" lesson from other reskins.
+- **A top bar that does not exist in the app today at all**: search input
+  ("Search anything... ⌘K") roughly centered-right, then date+time, then a
+  small pill (leaf icon + "12 min today" + a chevron — reads as a
+  disclosure control, not just a static label), then the circular profile
+  avatar with its own small dropdown chevron. This is new chrome for
+  `companion/page.tsx`, not a relocation of something that exists
+  elsewhere.
+- **The conversation area is a semi-transparent "glass" card** floating
+  over the background (already partially true today via
+  `companion/page.tsx`'s existing gradient overlay — needs to get
+  measurably more glass/blurred to read as the mockup's soft, frosted
+  panel rather than a plain dark overlay).
+- **The composer row has 4 controls**: a leading `+` (attach) circle icon,
+  the text field, a mic icon, an image icon, and the existing circular
+  send button — all inline in the glass panel, not stacked.
+- **The right column is 3 stacked cards, in this exact order**: Today's
+  Card (a large, full-bleed photographic card with the question quoted
+  directly over the image, prev/next arrows and an expand icon in its
+  header, a "Pull a New Card" button below it) → Recent Conversations
+  (a plain list, relative timestamps, chevron per row, "View all" link) →
+  Focus Mode (small: a thumbnail image, "Focus Mode" title, "Deep Work •
+  DPNR Playlist" subtitle, a circular play button, and a small
+  settings/equalizer icon). This matches §2's already-confirmed order
+  exactly — only the Focus Mode card itself was missing.
+
+**One element neither the source PDF nor `docs/AGENT_LOG.md` mentions
+anywhere: the "Search anything... ⌘K" bar.** Not in scope per the PDF's
+own numbered list — flagged as a new, 7th open decision in §3.
 
 ---
 
@@ -73,65 +122,90 @@ don't build it all in one pass. Slices below are independently shippable.
    is already `PullACard → RecentConversations`, matching the PDF's first
    two slots exactly. Only the third slot (Focus Mode/Music) is missing.
 
-## 3. Open decisions — needs the user's call, not decided here
+## 3. Decisions — resolved by the reference mockups, plus what's still open
 
-1. **Default chat background: Option A (Digital Twin character) or Option B
-   (calm environment)?** The PDF names both as acceptable MVP choices but
-   doesn't pick one. Either way, real art needs to be sourced or generated
-   — this isn't just a code decision.
+**Resolved by the two mockups (the user's explicit instruction: treat them
+as the target UI, not a hypothetical to ask about further):**
+
+1. ~~Default background: A or B?~~ **Both are real, finished designs, not
+   two alternatives to pick between** — the mockups are the same layout in
+   two skins. Ship both as selectable presets (plus custom upload, per the
+   PDF's own §2), defaulting new users to Option A (the "Digital Twin"
+   cosmic character) since it continues this app's existing InnerSelf/
+   Digital Twin branding language (the PDF's own words for why it picked
+   that option). Option B ships as the second preset, immediately
+   available, not a "someday" item.
+5. ~~Where does the profile image render on Main Chat?~~ **A real top bar,
+   inline on this page** — confirmed directly in both mockups (§0). Net-new
+   chrome, not a relocation.
+6. ~~Are the composer's mic/image icons in scope?~~ **Yes** — both mockups
+   render them as part of the target UI, not a hypothetical. Scope for
+   *this* pass: **icons present and wired to what's realistically
+   buildable now** — the mic uses the browser's own Web Speech API to
+   dictate into the text field (a real, client-only feature, no backend
+   change, no new AWS surface), the image icon attaches a file locally.
+   **Not in scope for this pass**: server-side image understanding —
+   `companion/message.ts` has no vision/multimodal path today, and adding
+   one is a materially separate backend feature, not a UI icon. The
+   image icon should look real and functional (file picker works) but an
+   attached image is disclosed to the person as not yet analyzed by
+   Companion, rather than silently doing nothing or fabricating a response
+   to it.
+
+**Still genuinely open — these are asset/content/accuracy calls, not
+resolved by looking at a static mockup:**
+
 2. **Where does the per-question Pull-a-Card art come from?** 300 real,
    "meaningful and emotionally relevant" images is a substantial asset-
    production task, not a code task. Options: commission/generate all 300
    up front, ship a smaller curated subset first (e.g. per-category hero
-   images, 10 instead of 300), or keep the current single placeholder and
-   treat this as explicitly deferred. Recommend asking before any of this
-   is built, same as Slice 3's cover-art question was deferred back in
-   Session 24.
+   images), or keep the current single placeholder and treat this as
+   explicitly deferred (same call Session 24 made for Library cover art).
 3. **What does "Time on DPNR" actually measure, and how accurate does it
-   need to be for MVP?** A real cross-session accumulator is a real (if
-   small) backend feature — new event write(s) + a daily read. A cheaper
-   MVP proxy (e.g. derived from existing `SessionMessageItem` timestamps
-   for the day, no new writes) is very plausibly good enough and cheaper to
-   build — but that's a real accuracy/effort tradeoff the user should pick,
-   not something to silently approximate.
-4. **Is Focus Mode/Music real playback or an honest "coming soon" stub?**
-   No audio content or player exists today. Building a real player against
-   real tracks is a materially bigger lift than a disabled/placeholder
-   widget (the same pattern Wallet's checkout already uses for "coming
-   soon" functionality, Session 27) — recommend the stub for MVP unless the
-   user has real audio content ready to wire in now.
-5. **Where does the top-right profile image render on Main Chat
-   specifically?** `companion/page.tsx` doesn't render a profile-image
-   element in its own header today (it only lives in `Sidebar`/Account) —
-   confirm whether the PDF expects it added inline on this page's own top
-   bar (a small, net-new placement) or whether the existing sidebar
-   placement already satisfies the requirement.
-6. **Composer's voice input / image-file upload icons** — the PDF's
-   requirement 5 says "keep" these, implying they already exist; they
-   don't (`companion/page.tsx:470-491` has send only). This is a
-   pre-existing gap unrelated to anything this PDF changes — flag it back
-   to the user rather than assume it's suddenly in scope. Do not build
-   this as part of this plan unless explicitly asked.
+   need to be?** Default proposed: derive it from existing message/session
+   timestamps for the current calendar day (Companion + Decision Room +
+   Mirror Room) — no new writes, no new schema. This is disclosed as an
+   implementation choice, not escalated, since it's reversible and cheap;
+   flag here only because a true cross-session accumulator (start/
+   heartbeat/end events) would be a real, separate backend feature if the
+   derived approach turns out too imprecise later.
+4. **Is Focus Mode real audio playback, or a UI-only stub?** No audio
+   content or player exists anywhere in the codebase today. The mockups
+   show a specific, real-looking track ("Deep Work • DPNR Playlist") — but
+   real playback needs actual audio files/streaming the user would have to
+   supply; a stub (real UI, disabled/inert play control, same "coming
+   soon" pattern Wallet's checkout already uses) is a defensible interim
+   default (Session 27 precedent).
+7. **The "Search anything... ⌘K" bar — real search, or a visual-only
+   placeholder for now?** New discovery (§0), not named in the source PDF
+   or anywhere in `AGENT_LOG.md`/`MVP_ARCHITECTURE.md`. Real search across
+   conversations/content is a genuinely separate, non-trivial backend
+   feature (no search index exists anywhere in this codebase today) —
+   recommend a visual-only placeholder (renders, focuses, does nothing on
+   submit yet) for this pass, with real search scoped as its own future
+   slice if wanted.
 
-## 4. Proposed slices (pending the decisions in §3)
+## 4. Proposed slices
 
 - **Slice A — Chat background system.** `backgroundKey` field + upload
-  Lambda (mirrors avatar's exact pattern) + selection UI + real default
-  art for whichever option (§3.1) the user picks. Blocked on §3.1.
-- **Slice B — Focus Mode/Music widget.** Right-panel placement only,
-  scoped per §3.4 (stub vs. real playback). Not blocked on anything else —
-  could ship first if the user wants the smallest possible increment.
-- **Slice C — "Time on DPNR" indicator.** Scoped per §3.3's
-  accuracy/effort tradeoff. The smallest correct version is likely a
-  read-only derivation from existing message timestamps, no new writes —
-  worth proposing as the default unless the user wants true
-  cross-surface tracking (also covering Decision/Mirror Room time, not
-  just Companion).
-- **Slice D — Pull-a-Card visual upgrade.** Blocked on §3.2 (art sourcing
-  decision). Zero schema/API work either way — purely seed-data + assets.
-- **Nav/profile-image placement** (§3.5/§3.6) are small enough to fold into
-  whichever slice touches that part of the page, not their own slice.
+  Lambda (mirrors avatar's exact pattern) + selection UI with both preset
+  options (§3.1) + custom upload. Needs real art for both presets sourced/
+  finalized (does the mockup art itself ship as the preset art, or does a
+  different asset get produced from it? — ask before finalizing) but is
+  otherwise unblocked.
+- **Slice B — Top bar + composer icons.** The new top bar (search
+  placeholder, time-on-DPNR pill, profile avatar+dropdown) and the
+  composer's mic (Web Speech API)/image (local attach, disclosed as
+  unanalyzed) icons. Pure frontend, no new AWS infra, no blocking
+  decisions left — the smallest, most immediately buildable slice.
+- **Slice C — Focus Mode widget.** Right-panel placement, ships as the
+  disclosed stub per §3.4 unless the user supplies real audio content.
+- **Slice D — "Time on DPNR" indicator.** Wired into the new top bar from
+  Slice B; uses the derived-from-timestamps approach per §3.3 unless told
+  otherwise.
+- **Slice E — Pull-a-Card visual upgrade.** Blocked on §3.2 (art sourcing).
+  Zero schema/API work either way — purely seed-data + assets.
 
-No ADR needed for any of this yet — nothing here is an irreversible
-architectural call; §3's items are product/scope decisions for the user,
-not engineering decisions this doc is deciding unilaterally.
+No ADR needed for any of this — nothing here is an irreversible
+architectural call; the remaining open items in §3 are asset/content/
+accuracy calls for the user, not engineering decisions made unilaterally.

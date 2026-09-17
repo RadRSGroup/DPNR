@@ -5,13 +5,15 @@ import { Link } from '@/i18n/navigation'
 import { useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
-import { Heart, Cloud, Shuffle, UserCircle } from 'lucide-react'
+import { Heart, Cloud, Shuffle, UserCircle, Plus, Mic, ImagePlus, X } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getCompanionContext, sendCompanionMessage, ApiError } from '@/lib/api/v1-client'
 import type { CompanionDirective } from '@dpnr/shared-types'
 import DirectiveCard from '@/components/companion/DirectiveCard'
 import PullACard from '@/components/companion/PullACard'
 import RecentConversations from '@/components/companion/RecentConversations'
+import FocusMode from '@/components/companion/FocusMode'
+import TopBar from '@/components/companion/TopBar'
 import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
 import { useOnboardingFlow } from '@/components/companion/onboarding/useOnboardingFlow'
 import OnboardingCardPanel from '@/components/companion/onboarding/OnboardingCardPanel'
@@ -80,8 +82,81 @@ function CompanionContent() {
   const [sending, setSending] = useState(false)
   const [firstName, setFirstName] = useState('')
   const [creditsExhausted, setCreditsExhausted] = useState(false)
+  // Main Chat UX Update (docs/MAIN_CHAT_UX_UPDATE_PLAN.md §3.6) — the
+  // composer's mic/image icons, confirmed against the reference mockups.
+  // Mic is real client-only dictation (Web Speech API, no backend change).
+  // The image attach is a real file picker, but `companion/message.ts` has
+  // no vision/multimodal path today — attaching one is disclosed to the
+  // person rather than silently doing nothing or pretending it was seen.
+  const [attachedFileName, setAttachedFileName] = useState<string | null>(null)
+  const [listening, setListening] = useState(false)
+  // Feature-detected only after mount (`speechSupported` starts false, same
+  // on server and client) — checking `typeof window !== 'undefined'`
+  // directly during render is a real hydration mismatch, not a hypothetical:
+  // SSR always renders the "unsupported" branch, so any browser that DOES
+  // support this API renders a structurally different composer client-side
+  // (an extra mic button shifts every sibling after it) — reproduced and
+  // fixed live rather than assumed safe.
+  const [speechSupported, setSpeechSupported] = useState(false)
+  // No official TS lib.dom typings for the (non-standard, webkit-prefixed)
+  // Web Speech API yet — `any` here is the constructor itself, not app data.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const SpeechRecognitionCtorRef = useRef<any>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    // Deferred a tick (same "setState from a callback, not the effect body
+    // itself" shape this file's other effects already use for async calls)
+    // — this codebase's lint rule flags a direct synchronous setState call
+    // in an effect body regardless of why, and a bare feature-detection
+    // isn't exempt just because it's cheap.
+    Promise.resolve().then(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const ctor = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
+      if (ctor) {
+        SpeechRecognitionCtorRef.current = ctor
+        setSpeechSupported(true)
+      }
+    })
+  }, [])
+
+  function toggleDictation() {
+    const SpeechRecognitionCtor = SpeechRecognitionCtorRef.current
+    if (!SpeechRecognitionCtor) return
+    if (listening) {
+      recognitionRef.current?.stop()
+      return
+    }
+    const recognition = new SpeechRecognitionCtor()
+    recognition.lang = locale === 'he' ? 'he-IL' : 'en-US'
+    recognition.interimResults = false
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = (e: any) => {
+      const transcript = Array.from(e.results as ArrayLike<{ 0: { transcript: string } }>)
+        .map((r) => r[0].transcript)
+        .join(' ')
+      setInput((prev) => (prev ? `${prev} ${transcript}` : transcript))
+    }
+    recognition.onend = () => setListening(false)
+    recognition.onerror = () => setListening(false)
+    recognitionRef.current = recognition
+    setListening(true)
+    recognition.start()
+  }
+
+  function handleAttachClick() {
+    fileInputRef.current?.click()
+  }
+
+  function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) setAttachedFileName(file.name)
+    e.target.value = ''
+  }
 
   useEffect(() => {
     async function load() {
@@ -135,6 +210,21 @@ function CompanionContent() {
 
     setInput('')
     setMessages((prev) => [...prev, { role: 'user', text, createdAt: new Date().toISOString() }])
+
+    // An attachment never actually reaches Companion — no vision/multimodal
+    // path exists server-side yet (§3.6) — disclosed locally rather than
+    // silently dropped, so the person isn't left assuming it was seen.
+    if (attachedFileName) {
+      setAttachedFileName(null)
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          text: "I can see you attached an image — I can't actually look at images yet, but I've got everything else you shared.",
+          createdAt: new Date().toISOString(),
+        },
+      ])
+    }
 
     // First-Time Onboarding's free-text step, moved in-chat: while awaiting
     // it, the composer's Send answers the onboarding question instead of
@@ -229,7 +319,11 @@ function CompanionContent() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
       {creditsExhausted && <CreditsExhaustedModal onClose={() => setCreditsExhausted(false)} />}
 
-      <div className="flex-1 overflow-hidden lg:grid lg:grid-cols-3 lg:gap-6 lg:px-8 lg:pt-6">
+      <div className="lg:px-8 lg:pt-6">
+        <TopBar />
+      </div>
+
+      <div className="flex-1 overflow-hidden lg:grid lg:grid-cols-3 lg:gap-6 lg:px-8 lg:pt-0">
         {/* Main column */}
         <div className="lg:col-span-2 h-full flex flex-col overflow-hidden max-w-[393px] lg:max-w-none mx-auto w-full">
           {/* Mobile: plain text greeting, no room for hero art here. Only on
@@ -467,17 +561,71 @@ function CompanionContent() {
             </div>
           )}
 
+          {attachedFileName && (
+            <div className="px-5 lg:px-0 pb-2">
+              <div className="inline-flex items-center gap-2 liquid-glass rounded-full pl-3 pr-2 py-1.5 text-xs text-white/70">
+                <ImagePlus className="w-3.5 h-3.5 text-[var(--color-violet-300)]" />
+                <span className="truncate max-w-[160px]">{attachedFileName}</span>
+                <button
+                  onClick={() => setAttachedFileName(null)}
+                  className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-white/10"
+                  aria-label="Remove attachment"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelected}
+            className="hidden"
+          />
           <div className="px-5 lg:px-0 pb-4 pt-3 flex items-end gap-2">
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={onboarding.awaitingIntention ? t('cards.currentIntention.placeholder') : 'Share anything with me...'}
-              rows={1}
+            <button
+              onClick={handleAttachClick}
               disabled={composerDisabled}
-              className="flex-1 bg-[var(--color-surface-glass)] border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors max-h-32"
-            />
+              className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-full bg-[var(--color-surface-glass)] border border-white/15 text-white/60 hover:text-white/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              aria-label="Attach"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+            <div className="flex-1 relative flex items-end">
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={onboarding.awaitingIntention ? t('cards.currentIntention.placeholder') : 'Share anything with me...'}
+                rows={1}
+                disabled={composerDisabled}
+                className="flex-1 bg-[var(--color-surface-glass)] border border-white/15 rounded-2xl pl-4 pr-20 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors max-h-32"
+              />
+              <div className="absolute right-3 bottom-3 flex items-center gap-2.5">
+                {speechSupported && (
+                  <button
+                    onClick={toggleDictation}
+                    disabled={composerDisabled}
+                    className={`transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                      listening ? 'text-[var(--color-violet-300)]' : 'text-white/40 hover:text-white/70'
+                    }`}
+                    aria-label={listening ? 'Stop dictation' : 'Dictate'}
+                  >
+                    <Mic className="w-[18px] h-[18px]" />
+                  </button>
+                )}
+                <button
+                  onClick={handleAttachClick}
+                  disabled={composerDisabled}
+                  className="text-white/40 hover:text-white/70 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Attach an image"
+                >
+                  <ImagePlus className="w-[18px] h-[18px]" />
+                </button>
+              </div>
+            </div>
             <button
               onClick={handleSend}
               disabled={!input.trim() || sending || composerDisabled}
@@ -505,6 +653,7 @@ function CompanionContent() {
               onSelect={handleSelectConversation}
               onCreated={handleNewConversation}
             />
+            <FocusMode />
           </div>
         )}
       </div>
