@@ -2,15 +2,14 @@
 
 **Status (2026-09-17, updated): Slices B+C (top bar, composer icons, Focus
 Mode) and the harder half of Slice A (chat background system: schema,
-API, both preset assets, the selector UI) are all built and passing
-typecheck/lint/build. NOT deployed to real AWS yet** — the frontend
-correctly renders the new default preset and the selector UI works
-optimistically, but the actual save (`PUT /v1/user/preferences` with the
-new `chatBackground` field) hits the currently-deployed Lambda, which has
-no idea the field exists — confirmed live (a real `400`, not a guess) —
-so the choice doesn't yet survive a reload. Needs a real `Dpnr-Api` deploy
-(`PreferencesFn`, `PreferencesGetFn`, `PostConfirmationFn`'s code assets
-only — no new resources) before this closes for real.
+API, both preset assets, the selector UI) are all built and deployed to
+real AWS. Live-verified end to end**: `Dpnr-Auth`/`Dpnr-Api` deployed
+clean (code-asset-only changes across every Lambda that imports
+`@dpnr/shared-types`, no IAM/resource changes), then a real throwaway
+account confirmed the full loop — selecting "Environment" in Account
+settings, reloading Main Chat, and seeing `companion-bg-environment.webp`
+render, independently confirmed via a direct `aws dynamodb get-item`
+showing `chatBackground: "environment"` on the real `PROFILE` item.
 **The two preset background images are real, derived assets — not raw
 mockup crops.** The mockups are flattened UI composites (baked-in fake
 sidebar/text/chat bubbles); a direct crop would show ghost text through
