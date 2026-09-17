@@ -47,3 +47,6 @@ dev.log
 
 # Claude Code personal overrides
 .claude/settings.local.json
+
+# marketing video assets (large binaries, not source material for the app)
+docs/Animations/
