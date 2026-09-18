@@ -8,12 +8,14 @@ import { Suspense } from 'react'
 import { useTranslations } from 'next-intl'
 import { signIn } from '@/lib/cognito/client'
 import { establishSessionTicket } from '@/lib/auth/keyBootstrap'
+import { resolveSafeNext } from '@/lib/navigation/safeNext'
 
 function LoginForm() {
   const t = useTranslations('Login')
   const router = useRouter()
   const params = useSearchParams()
-  const next = params.get('next') ?? '/companion' // default post-login landing — see proxy.ts's doc comment
+  // Untrusted until validated — see resolveSafeNext's own doc comment (DPNR-03).
+  const next = resolveSafeNext(params.get('next'))
   const callbackError = params.get('error')
 
   const [email, setEmail] = useState('')

@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation'
 import { Link } from '@/i18n/navigation'
 import { grantConsent } from '@/lib/api/v1-client'
 import { markConsentedLocally } from '@/lib/cognito/client'
+import { resolveSafeNext } from '@/lib/navigation/safeNext'
 import Card from '@/components/ui/Card'
 
 const POINTS = [
@@ -20,7 +21,8 @@ function ConsentContent() {
   const t = useTranslations('Consent')
   const router = useRouter()
   const params = useSearchParams()
-  const next = params.get('next') ?? '/companion' // default post-login landing — see proxy.ts's doc comment
+  // Untrusted until validated — see resolveSafeNext's own doc comment (DPNR-03).
+  const next = resolveSafeNext(params.get('next'))
 
   const [accepting, setAccepting] = useState(false)
   const [error, setError] = useState<string | null>(null)

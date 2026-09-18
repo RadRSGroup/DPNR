@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import createMiddleware from 'next-intl/middleware'
 import { routing } from '@/i18n/routing'
+import { resolveSafeNext } from '@/lib/navigation/safeNext'
 
 const handleI18nRouting = createMiddleware(routing)
 
@@ -154,7 +155,10 @@ export async function proxy(request: NextRequest) {
   // either way.
   if (isConsentPage && hasConsent) {
     const url = request.nextUrl.clone()
-    const next = request.nextUrl.searchParams.get('next')
+    // Validated (DPNR-03) even though this branch only ever forwards a
+    // pathname, not a full URL — `url.pathname =` can't switch origin, but
+    // an unvalidated value could still smuggle an unexpected path/query.
+    const next = resolveSafeNext(request.nextUrl.searchParams.get('next'))
     if (!hasProfileSetup) {
       url.pathname = withLocale('/profile-setup', locale)
       url.searchParams.set('next', next ?? '/companion')
@@ -173,7 +177,7 @@ export async function proxy(request: NextRequest) {
   // inline onboarding) if that's not done yet either.
   if (isProfileSetupPage && hasProfileSetup) {
     const url = request.nextUrl.clone()
-    const next = request.nextUrl.searchParams.get('next')
+    const next = resolveSafeNext(request.nextUrl.searchParams.get('next'))
     if (!hasOnboarding) {
       url.pathname = withLocale('/companion', locale)
       url.searchParams.set('next', next ?? '/companion')
