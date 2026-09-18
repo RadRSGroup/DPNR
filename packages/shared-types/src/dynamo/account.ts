@@ -43,10 +43,11 @@ export type GenderIdentity = z.infer<typeof GenderIdentitySchema>
  * choice. `digital_twin` (the cosmic character, continuing this app's
  * existing InnerSelf/Digital Twin branding) is the default for new users,
  * matching the PDF's own stated reasoning for that option. `custom` means
- * "use `chatBackgroundKey`" — the upload path itself isn't built yet (a
- * separate, larger piece of Slice A needing its own S3 prefix/Lambda), so
- * selecting `custom` with no key set falls back to the default preset,
- * same tolerance `avatarKey: null` already gets.
+ * "use `chatBackgroundKey`" — a user's own uploaded photo, via
+ * `POST /v1/user/chat-background/upload-url`, same `chat-backgrounds/`
+ * prefix under the existing private `AvatarsBucket`. Selecting `custom`
+ * with no key set (upload started but never finished) falls back to the
+ * default preset, same tolerance `avatarKey: null` already gets.
  */
 export const ChatBackgroundSchema = z.enum(['digital_twin', 'environment', 'custom'])
 export type ChatBackground = z.infer<typeof ChatBackgroundSchema>
@@ -66,7 +67,7 @@ export const UserProfileItemSchema = z.object({
   avatarKey: z.string().nullable().default(null),
   chatBackground: ChatBackgroundSchema.default('digital_twin'),
   // S3 object key for a `custom` background, same private-bucket/presigned-
-  // read convention as `avatarKey`. `null` until the upload feature exists.
+  // read convention as `avatarKey`. `null` if none has been uploaded.
   chatBackgroundKey: z.string().nullable().default(null),
   // Session 51 — gender moved out of the signup form into a dedicated
   // post-signin profile-setup screen (gender + optional photo), per the

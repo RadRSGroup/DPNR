@@ -62,7 +62,7 @@ function LoginForm() {
       <div className="max-w-[393px] mx-auto px-5 min-h-screen flex flex-col justify-center">
         <div className="mb-10 text-center">
           <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR</p>
-          <h1 className="text-white text-2xl font-light">InnerOS</h1>
+          <h1 className="text-white text-2xl font-light">Your Human Operating System</h1>
           <p className="text-[var(--color-text-tertiary)] text-sm mt-2">{t('subtitle')}</p>
         </div>
 

@@ -496,6 +496,20 @@ export class ApiStack extends Stack {
     })
     props.avatarsBucket.grantPut(avatarUploadUrlFn)
 
+    // Main Chat UX Update's previously-deferred custom background upload
+    // (`docs/AGENT_LOG.md`) — same shape as avatarUploadUrlFn above, same
+    // bucket, a `chat-backgrounds/` prefix instead of `avatars/`.
+    const chatBackgroundUploadUrlFn = new lambda.NodejsFunction(this, 'ChatBackgroundUploadUrlFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/account/chat-background-upload-url.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        AVATARS_BUCKET_NAME: props.avatarsBucket.bucketName,
+      },
+      description: 'POST /v1/user/chat-background/upload-url — presigned S3 PUT URL for a custom chat background.',
+    })
+    props.avatarsBucket.grantPut(chatBackgroundUploadUrlFn)
+
     // First-Time Onboarding, Slice A (docs/FIRST_TIME_ONBOARDING_PLAN.md §4).
     // Needs a crypto/session-ticket grant, unlike userPreferencesFn — one
     // field (currentIntention) is freshly-typed free text, encrypted like
@@ -762,6 +776,16 @@ export class ApiStack extends Stack {
       path: '/v1/user/avatar/upload-url',
       methods: [apigwv2.HttpMethod.POST],
       integration: new integrations.HttpLambdaIntegration('AvatarUploadUrlIntegration', avatarUploadUrlFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/user/chat-background/upload-url',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration(
+        'ChatBackgroundUploadUrlIntegration',
+        chatBackgroundUploadUrlFn
+      ),
       authorizer: this.cognitoAuthorizer,
     })
 

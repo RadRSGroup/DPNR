@@ -24,6 +24,8 @@
       "chatBackground": "רקע הצ'אט",
       "chatBackgroundDigitalTwin": "התאום הדיגיטלי",
       "chatBackgroundEnvironment": "סביבה",
+      "chatBackgroundCustom": "מותאם אישית",
+      "chatBackgroundUploadPrompt": "+ העלאת תמונה משלכם",
       "chatBackgroundHint": "בחרו את הרקע שיופיע מאחורי הצ'אט הראשי."
     },
     "security": {
@@ -570,6 +572,7 @@
       "dashboard": "לוח בקרה",
       "mirror": "מראה",
       "decision": "החלטה",
+      "library": "ספרייה",
       "profile": "פרופיל"
     }
   },

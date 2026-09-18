@@ -222,7 +222,9 @@ export type UpdatePreferencesRequest = z.infer<typeof UpdatePreferencesRequestSc
  * screen has been completed or skipped once. `chatBackgroundUrl` is the same
  * presigned-per-read convention as `avatarUrl`, but only meaningful when
  * `chatBackground === 'custom'` — `null` otherwise (the two curated presets
- * are static public assets the client already has, not S3 objects).
+ * are static public assets the client already has, not S3 objects), and
+ * also `null` for `custom` if no `chatBackgroundKey` has actually been set
+ * yet (selected `custom` but never finished an upload).
  */
 export const PreferencesResponseSchema = z.object({
   preferredLanguage: z.enum(['en', 'he']),
@@ -252,3 +254,28 @@ export const AvatarUploadUrlResponseSchema = z.object({
   key: z.string(),
 })
 export type AvatarUploadUrlResponse = z.infer<typeof AvatarUploadUrlResponseSchema>
+
+/**
+ * POST /v1/user/chat-background/upload-url — Main Chat UX Update Slice A's
+ * previously-deferred `custom` background (docs/MAIN_CHAT_UX_UPDATE_PLAN.md
+ * §3.1). Same presigned-PUT shape as `AvatarUploadUrlRequest/Response`
+ * above — deliberately a separate pair of schemas rather than reusing the
+ * avatar ones, matching this codebase's existing convention of one schema
+ * per endpoint even when the shape is identical. Reuses the same private
+ * `AvatarsBucket` (`data-stack.ts`) under a `chat-backgrounds/` key prefix,
+ * not a new bucket — same trust model (per-user key namespacing, direct
+ * browser-to-S3 PUT, presigned-GET-per-read), no new CORS/lifecycle config
+ * needed. The caller must PUT the bytes to `uploadUrl`, then send `key`
+ * back via `PUT /v1/user/preferences`'s `chatBackgroundKey` (alongside
+ * `chatBackground: 'custom'`) to actually attach it.
+ */
+export const ChatBackgroundUploadUrlRequestSchema = z.object({
+  contentType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
+})
+export type ChatBackgroundUploadUrlRequest = z.infer<typeof ChatBackgroundUploadUrlRequestSchema>
+
+export const ChatBackgroundUploadUrlResponseSchema = z.object({
+  uploadUrl: z.string(),
+  key: z.string(),
+})
+export type ChatBackgroundUploadUrlResponse = z.infer<typeof ChatBackgroundUploadUrlResponseSchema>

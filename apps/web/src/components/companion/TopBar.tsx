@@ -5,6 +5,7 @@ import { Link, useRouter } from '@/i18n/navigation'
 import { getPreferences } from '@/lib/api/v1-client'
 import { signOut } from '@/lib/cognito/client'
 import { revokeCurrentSessionTicket } from '@/lib/auth/keyBootstrap'
+import LanguageSelector from '@/components/shared/LanguageSelector'
 
 /**
  * `useSyncExternalStore` is the correct primitive for a value that changes
@@ -111,6 +112,12 @@ export default function TopBar() {
           </>
         )}
       </div>
+
+      {/* User-requested (docs/AGENT_LOG.md Session 60 part 2): reachable
+          from Main Chat itself, not just buried in Account settings —
+          same "persistent chrome" reasoning Sidebar.tsx's own
+          LanguageSelector placement already uses. */}
+      <LanguageSelector className="shrink-0" />
 
       <div className="relative shrink-0" ref={menuRef}>
         <button

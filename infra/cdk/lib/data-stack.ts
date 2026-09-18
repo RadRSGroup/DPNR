@@ -161,6 +161,12 @@ export class DataStack extends Stack {
     // issues the presigned PUT URL, never touches the bytes). Same
     // allowed-origins list as `api-stack.ts`'s HTTP API CORS config —
     // keep both in sync if either changes.
+    //
+    // Also hosts Main Chat UX Update's custom chat-background uploads
+    // (`docs/AGENT_LOG.md`) under a `chat-backgrounds/` key prefix,
+    // alongside `avatars/` — same trust model, same CORS rule (PUT +
+    // content-type header), so a second bucket wasn't worth the extra
+    // resource just to separate two conceptually-similar upload types.
     this.avatarsBucket = new s3.Bucket(this, 'AvatarsBucket', {
       bucketName: `dpnr-avatars-${this.account}-${this.region}`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,

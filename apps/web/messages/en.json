@@ -24,6 +24,8 @@
       "chatBackground": "Chat Background",
       "chatBackgroundDigitalTwin": "Digital Twin",
       "chatBackgroundEnvironment": "Environment",
+      "chatBackgroundCustom": "Custom",
+      "chatBackgroundUploadPrompt": "+ Upload your own",
       "chatBackgroundHint": "Choose the background behind Main Chat."
     },
     "security": {
@@ -570,6 +572,7 @@
       "dashboard": "Dashboard",
       "mirror": "Mirror",
       "decision": "Decision",
+      "library": "Library",
       "profile": "Profile"
     }
   },

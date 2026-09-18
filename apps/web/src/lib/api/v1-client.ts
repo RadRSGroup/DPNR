@@ -47,6 +47,8 @@ import type {
   PreferencesResponse,
   AvatarUploadUrlRequest,
   AvatarUploadUrlResponse,
+  ChatBackgroundUploadUrlRequest,
+  ChatBackgroundUploadUrlResponse,
   UpdateOnboardingSnapshotRequest,
   OnboardingSnapshotResponse,
 } from '@dpnr/shared-types'
@@ -168,6 +170,41 @@ export async function uploadAvatar(file: File): Promise<string | null> {
   }
   const { avatarUrl } = await updatePreferences({ avatarKey: key })
   return avatarUrl
+}
+
+/**
+ * POST /v1/user/chat-background/upload-url — Main Chat UX Update's
+ * previously-deferred custom background. Same shape as
+ * `getAvatarUploadUrl()` above; only issues the presigned S3 PUT URL, the
+ * caller still has to PUT the bytes and attach the key.
+ */
+export async function getChatBackgroundUploadUrl(
+  request: ChatBackgroundUploadUrlRequest
+): Promise<ChatBackgroundUploadUrlResponse> {
+  const res = await authedFetch('/v1/user/chat-background/upload-url', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  })
+  return parseOrThrow<ChatBackgroundUploadUrlResponse>(res)
+}
+
+/**
+ * Full client-side upload flow for a custom chat background, mirroring
+ * `uploadAvatar()` above: presign, PUT the file directly to S3, then attach
+ * the resulting key (and set `chatBackground: 'custom'` in the same call,
+ * so a half-finished upload never silently becomes the active background
+ * without a real key behind it). Returns the new `chatBackgroundUrl` (a
+ * fresh presigned GET) so the caller can render it immediately.
+ */
+export async function uploadChatBackground(file: File): Promise<string | null> {
+  const contentType = file.type as ChatBackgroundUploadUrlRequest['contentType']
+  const { uploadUrl, key } = await getChatBackgroundUploadUrl({ contentType })
+  const putRes = await fetch(uploadUrl, { method: 'PUT', headers: { 'content-type': contentType }, body: file })
+  if (!putRes.ok) {
+    throw new ApiError(putRes.status, 'chat_background_upload_failed', 'Uploading the background failed.')
+  }
+  const { chatBackgroundUrl } = await updatePreferences({ chatBackground: 'custom', chatBackgroundKey: key })
+  return chatBackgroundUrl
 }
 
 /** GET /v1/user/export — GDPR data export, used by /account's "Download my data." */

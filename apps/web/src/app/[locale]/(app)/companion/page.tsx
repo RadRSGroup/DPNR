@@ -85,6 +85,7 @@ function CompanionContent() {
   // matches the schema's own default, so this is the correct value to render
   // with before the real preference loads, not a placeholder guess.
   const [chatBackground, setChatBackground] = useState<ChatBackground>('digital_twin')
+  const [chatBackgroundUrl, setChatBackgroundUrl] = useState<string | null>(null)
   const [creditsExhausted, setCreditsExhausted] = useState(false)
   // Main Chat UX Update (docs/MAIN_CHAT_UX_UPDATE_PLAN.md §3.6) — the
   // composer's mic/image icons, confirmed against the reference mockups.
@@ -185,7 +186,10 @@ function CompanionContent() {
 
   useEffect(() => {
     getPreferences()
-      .then((p) => setChatBackground(p.chatBackground))
+      .then((p) => {
+        setChatBackground(p.chatBackground)
+        setChatBackgroundUrl(p.chatBackgroundUrl)
+      })
       .catch(() => {
         // Honest degrade to the schema's own default — same tolerance every
         // other best-effort preferences read in this codebase already uses.
@@ -322,9 +326,10 @@ function CompanionContent() {
   const isLanding = !pageLoading && messages.length === 0 && !onboarding.active
   const showPrompts = isLanding
   const composerDisabled = pageLoading || (onboarding.active && !onboarding.awaitingIntention)
-  // 'custom' falls back to the default preset — no upload endpoint exists
-  // yet to have ever set a real chatBackgroundUrl (§3.1's disclosed
-  // deferral), so there's nothing else it could render.
+  // 'custom' with no chatBackgroundUrl yet (selected but never finished an
+  // upload) falls back to the default preset, same tolerance the schema's
+  // own doc comment (`dynamo/account.ts`) already documents for that case.
+  const showCustom = chatBackground === 'custom' && chatBackgroundUrl !== null
   const backgroundSrc =
     chatBackground === 'environment'
       ? '/images/backgrounds/companion-bg-environment.webp'
@@ -333,7 +338,15 @@ function CompanionContent() {
   return (
     <div className="relative h-[calc(100dvh-4rem)] lg:h-dvh flex flex-col overflow-hidden">
       <div className="absolute inset-0 -z-10">
-        <Image src={backgroundSrc} alt="" fill className="object-cover" />
+        {showCustom ? (
+          // A presigned S3 URL — next/image's remote-pattern allowlist
+          // doesn't cover this per-account, ever-changing host, same
+          // reasoning as AvatarUpload.tsx's own <img>.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={chatBackgroundUrl!} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <Image src={backgroundSrc} alt="" fill className="object-cover" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
       </div>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />

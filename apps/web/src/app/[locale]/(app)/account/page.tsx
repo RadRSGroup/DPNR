@@ -33,6 +33,7 @@ export default function AccountPage() {
   const [gender, setGender] = useState<GenderIdentity | null>(null)
   const [genderSaving, setGenderSaving] = useState(false)
   const [chatBackground, setChatBackground] = useState<ChatBackground | null>(null)
+  const [chatBackgroundUrl, setChatBackgroundUrl] = useState<string | null>(null)
   const [chatBackgroundSaving, setChatBackgroundSaving] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
@@ -62,6 +63,7 @@ export default function AccountPage() {
         setGender(preferences.genderIdentity)
         setAvatarUrl(preferences.avatarUrl)
         setChatBackground(preferences.chatBackground)
+        setChatBackgroundUrl(preferences.chatBackgroundUrl)
       } catch {
         // Degrades to the selector showing nothing pre-selected rather than
         // guessing — same "don't fabricate state" rule as the Credits card.
@@ -92,6 +94,15 @@ export default function AccountPage() {
     } finally {
       setChatBackgroundSaving(false)
     }
+  }
+
+  // `uploadChatBackground()` (called by ChatBackgroundSelector itself)
+  // already persists `chatBackground: 'custom'` + the new key in the same
+  // `PUT /v1/user/preferences` call — this just reflects that already-saved
+  // result locally, no second write.
+  function handleCustomBackgroundUploaded(url: string) {
+    setChatBackgroundUrl(url)
+    setChatBackground('custom')
   }
 
   async function handleDownload() {
@@ -254,6 +265,8 @@ export default function AccountPage() {
                 <ChatBackgroundSelector
                   value={chatBackground}
                   onChange={handleChatBackgroundChange}
+                  customUrl={chatBackgroundUrl}
+                  onCustomUploaded={handleCustomBackgroundUploaded}
                   className={chatBackgroundSaving ? 'opacity-60 pointer-events-none' : ''}
                 />
               </div>

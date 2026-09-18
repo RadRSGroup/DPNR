@@ -4,6 +4,7 @@ import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, userPk, type UserProfileItem, type PreferencesResponse } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { getAvatarPresignedUrl } from '../lib/avatar'
+import { getChatBackgroundPresignedUrl } from '../lib/chat-background'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
@@ -35,9 +36,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       avatarUrl: await getAvatarPresignedUrl(profile.avatarKey),
       profileSetupCompletedAt: profile.profileSetupCompletedAt,
       chatBackground: profile.chatBackground,
-      // No upload endpoint exists yet for a `custom` background (Main Chat
-      // UX Update §3.1's own disclosed deferral) — always null for now.
-      chatBackgroundUrl: null,
+      chatBackgroundUrl: await getChatBackgroundPresignedUrl(profile.chatBackgroundKey),
     }
     return jsonResponse(200, response)
   } catch (err) {

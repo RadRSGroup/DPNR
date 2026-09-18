@@ -1,9 +1,70 @@
 # DPNR — Main Chat UX Update: Plan
 
-**Status (2026-09-17, updated): Slices B+C (top bar, composer icons, Focus
-Mode) and the harder half of Slice A (chat background system: schema,
-API, both preset assets, the selector UI) are all built and deployed to
-real AWS. Live-verified end to end**: `Dpnr-Auth`/`Dpnr-Api` deployed
+**Status (2026-09-18, updated again): Slice A is fully built and
+live-verified; the two preset backgrounds were re-derived with a much
+lighter blur after the user reported the original pass hid the photo
+entirely; two new open design questions surfaced, neither built yet.**
+
+**Lighter preset-background blur (2026-09-18)**: the original Session 59
+part 4 treatment (28-30px Gaussian blur) went further than the "hide the
+mockup's baked UI text" goal actually required — the user reported the
+result reads as an abstract blur, "can't really see a photo." Regenerated
+both `companion-bg.webp`/`companion-bg-environment.webp` from the same
+source mockups at 16px blur + a lighter 0.65-brightness darken pass —
+tested 8/12/16px side by side first; 16px is the point where the baked
+nav labels/hero text/chat bubbles are fully illegible but the actual
+photo (the woman by the window; the cosmic figure) is clearly
+recognizable again.
+
+**Two open design questions from the same batch, not part of this plan's
+original scope, surfaced for the user rather than decided unilaterally**:
+(1) Main Chat re-greeting the user on every entry while keeping the 4
+quick-prompt chips visible — real tension with `isLanding`'s current
+chip-gating and `maybeSynthesizeContinuation`'s persisted-message
+behavior, see `docs/AGENT_LOG.md` Session 60 part 2 for the full
+breakdown and the three concrete questions it needs answered first. (2)
+Whether the EN/HE language switch belongs in Main Chat's own chrome
+(e.g. `TopBar.tsx`) rather than only in Account settings — a
+recommendation was given, not yet confirmed or built.
+
+**Status (2026-09-17): Slice A is now fully built, deployed,
+and live-verified — both curated presets AND custom photo upload.** Slices
+B+C (top bar, composer icons, Focus Mode) were already done (see below).
+
+Custom background upload: a user's own photo, uploaded via
+`POST /v1/user/chat-background/upload-url` (same private `AvatarsBucket`
+as profile photos, a `chat-backgrounds/` key prefix rather than a new
+bucket — same trust model, no new CORS/lifecycle config needed) and shown
+**as-is**, not stylized. `ChatBackgroundSelector.tsx` gained a third tile:
+the uploaded photo once set, or a dashed "+ Upload your own" prompt before
+that. Live-verified end to end against a real throwaway account: a
+canvas-generated test image PUT to S3 (200), `chatBackground: 'custom'` +
+the real key persisted via `PUT /v1/user/preferences` (confirmed directly
+via `aws dynamodb get-item` on the real `PROFILE` item), the Account page's
+Custom tile and Main Chat's background both rendering the real uploaded
+image via a fresh presigned GET, and switching back to a preset (`Digital
+Twin`) correctly flipping `chatBackground` while leaving
+`chatBackgroundKey` intact (so re-selecting Custom later doesn't need a
+re-upload). Full cleanup independently re-confirmed (S3 object, both
+DynamoDB tables, Cognito user).
+
+**A real, user-flagged scoping note for the future, not built this
+session**: the *real* long-term intent for `custom` is an AI-generated
+background derived from the user's own uploaded photo (echoing the
+"Digital Twin" concept's own stylized-likeness framing, and consistent
+with how the two curated presets are themselves derived/stylized art, not
+literal photos) — not the user's raw photo shown unprocessed behind chat
+text. That needs a real image-generation call (model choice, a job/async
+flow, moderation, storage of the generated result) — genuinely new scope,
+not a small extension of what's built. **For now, per the user's explicit
+call, `custom` shows the raw uploaded photo as-is** — accepted as a
+deliberate interim gap, not a bug, until AI-generation is scoped and
+built as its own piece of work.
+
+**Status (2026-09-17, earlier this session): Slices B+C (top bar, composer
+icons, Focus Mode) and the harder half of Slice A (chat background system:
+schema, API, both preset assets, the selector UI) were built and deployed
+to real AWS. Live-verified end to end**: `Dpnr-Auth`/`Dpnr-Api` deployed
 clean (code-asset-only changes across every Lambda that imports
 `@dpnr/shared-types`, no IAM/resource changes), then a real throwaway
 account confirmed the full loop — selecting "Environment" in Account
@@ -23,9 +84,6 @@ gradient, darkening... so chat readability always comes first"), not a
 shortcut. Saved as `apps/web/public/images/backgrounds/companion-bg.webp`
 (now the `digital_twin` default, replacing the old single hardcoded
 asset) and `companion-bg-environment.webp` (new).
-Custom background upload (a user's own photo) is still fully deferred —
-no S3 prefix/Lambda for it exists, `chatBackground: 'custom'` is a valid
-enum value with nowhere to point yet.
 
 ---
 
