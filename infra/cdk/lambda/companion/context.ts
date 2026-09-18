@@ -28,12 +28,6 @@ const PROMPT_REGISTRY_TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME as str
 // call's context budget), so intentionally not shared.
 const CONTEXT_MESSAGE_LIMIT = 50
 
-// How long since the last stored message before this counts as a real
-// "return" worth a synthesized opener, vs. the person just reloading the
-// page mid-conversation. An unconfirmed placeholder, same status as
-// STARTER_TRIAL_CREDITS/the fixed 06:00 UTC Continuity schedule — flag for
-// product review, don't treat as final.
-const CONTINUATION_GAP_HOURS = 3
 const CONTINUATION_MODEL_HISTORY_TURNS = 6
 
 type MessageContent = { text: string }
@@ -48,13 +42,15 @@ type RequireCrypto = () => Promise<SessionCrypto>
  * not new personal-content processing, same category `library/topic-detail.ts`'s
  * personalization already established for a GET endpoint that calls a model.
  *
- * Session 14 (workstream C, part 1 — docs/PHASE_AUDIT.md §4.6): when the
- * gap since the last stored message meets CONTINUATION_GAP_HOURS, this
- * synthesizes a short "welcome back" opener (the `companion/continuation`
- * prompt) and persists it as a real assistant turn before returning —
- * exactly what the spec's Golden Path B step 2 ("Companion opens with a
- * relevant continuation") asks for, requiring zero frontend change since
- * the Companion page already renders whatever's in `messages`.
+ * Session 14 (workstream C, part 1 — docs/PHASE_AUDIT.md §4.6) built a
+ * gap-gated, persisted "welcome back" turn; Session 60 (per the user's
+ * explicit "every visit, a fresh short greeting" request) replaced that
+ * with `synthesizeReturnGreeting()` below — every call with existing
+ * history gets a freshly-synthesized greeting, returned in its own
+ * `greeting` field rather than appended to `messages`, and never written
+ * to DynamoDB. Still the same `companion/continuation` prompt; the change
+ * is in *when* it fires (always, not gap-gated) and *how* the result is
+ * delivered (ephemeral response field, not a stored chat turn).
  *
  * Session 15 (workstream D): a truly brand-new user (no session pointer
  * *and* no Roadmap yet) gets the mirror-image treatment — the very first
@@ -84,20 +80,19 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     // conversation the frontend already knows about (just switched to, or
     // just created) should show its real messages (often empty), not a
     // synthesized onboarding question meant only for a truly first-ever
-    // open. Continuation-gap synthesis still applies, same as the
-    // pointer-based path — reopening an old conversation after a real gap
-    // deserves the same "welcome back" treatment.
+    // open. The fresh return-greeting still applies, same as the
+    // pointer-based path below — reopening any conversation with existing
+    // history deserves the same "welcome back" treatment.
     const requestedSessionId = event.queryStringParameters?.sessionId
     if (requestedSessionId) {
       const sessionId = await resolveOrCreateSession(ddb, TABLE_NAME, pk, requestedSessionId)
       const messages = await loadRecentMessages(requireCrypto, pk, sessionId)
-      const continuation = await maybeSynthesizeContinuation(requireCrypto, userId, pk, sessionId, messages)
-      if (continuation) messages.push(continuation)
 
       const body: CompanionContextResponse = {
         sessionId,
         messages,
         dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
+        greeting: await synthesizeReturnGreeting(userId, pk, messages),
       }
       return jsonResponse(200, body)
     }
@@ -116,6 +111,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
           sessionId: null,
           messages: [],
           dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
+          greeting: null,
         }
         return jsonResponse(200, body)
       }
@@ -126,18 +122,18 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         sessionId,
         messages: opener ? [opener] : [],
         dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
+        greeting: null,
       }
       return jsonResponse(200, body)
     }
 
     const messages = await loadRecentMessages(requireCrypto, pk, pointer.sessionId)
-    const continuation = await maybeSynthesizeContinuation(requireCrypto, userId, pk, pointer.sessionId, messages)
-    if (continuation) messages.push(continuation)
 
     const body: CompanionContextResponse = {
       sessionId: pointer.sessionId,
       messages,
       dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
+      greeting: await synthesizeReturnGreeting(userId, pk, messages),
     }
     return jsonResponse(200, body)
   } catch (err) {
@@ -203,28 +199,26 @@ async function getUndismissedDailyCard(
 }
 
 /**
- * Returns a freshly-synthesized-and-persisted continuation turn, or `null`
- * if it's not time for one yet, there's nothing to resume from, or
- * synthesis fails for any reason — this must never break a plain context
- * read. Writing from inside a GET is a deliberate, narrow exception (see
- * the handler's own doc comment); the read-modify-write below has the same
- * "known, acceptable race" shape `message.ts`'s `getOrCreateActiveCompanionSession`
- * already accepts — two near-simultaneous opens could each synthesize their
- * own opener, which is a harmless double greeting, not a correctness issue,
- * and self-limits immediately after (the fresh `createdAt` resets the gap).
+ * Returns a fresh, ephemeral "welcome back" line, or `null` if there's
+ * nothing to resume from yet or synthesis fails — this must never break a
+ * plain context read. Session 60 (the user's explicit "every visit, a
+ * fresh short greeting, chips still visible" request) — fires on every
+ * call with existing history, not gap-gated, and the result is returned
+ * in the response's own `greeting` field rather than written to DynamoDB:
+ * unlike this function's predecessor (`maybeSynthesizeContinuation`,
+ * gap-gated and persisted as a real stored turn), calling this on every
+ * single page load/reload would otherwise spam the real thread with a
+ * new permanent bubble each time. A real Bedrock call on every context
+ * fetch is a genuine new per-visit cost this project didn't have before —
+ * disclosed here and in docs/AGENT_LOG.md, not hidden, since it's a
+ * deliberate tradeoff for the requested UX, not an oversight.
  */
-async function maybeSynthesizeContinuation(
-  requireCrypto: RequireCrypto,
+async function synthesizeReturnGreeting(
   userId: string,
   pk: string,
-  sessionId: string,
   messages: { role: 'user' | 'assistant'; text: string; createdAt: string }[]
-): Promise<{ role: 'assistant'; text: string; createdAt: string } | null> {
+): Promise<string | null> {
   if (messages.length === 0) return null
-
-  const lastMessage = messages[messages.length - 1]
-  const gapMs = Date.now() - new Date(lastMessage.createdAt).getTime()
-  if (gapMs < CONTINUATION_GAP_HOURS * 60 * 60 * 1000) return null
 
   try {
     const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'companion', 'continuation')
@@ -262,29 +256,17 @@ async function maybeSynthesizeContinuation(
       languageInstruction,
     })
     const text = typeof result === 'string' ? result.trim() : ''
-    if (!text) return null
-
-    const now = new Date().toISOString()
-    const item: SessionMessageItem = {
-      pk,
-      sk: Sk.sessionMessage(sessionId, now),
-      role: 'assistant',
-      content: await (await requireCrypto()).encryptField<MessageContent>({ text }),
-      createdAt: now,
-    }
-    await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: item }))
-
-    return { role: 'assistant', text, createdAt: now }
+    return text || null
   } catch (err) {
-    // Never let a continuation-synthesis failure break a plain context
-    // read — same tolerance twin-signals.ts and topic-detail.ts's
-    // personalization already use for their own model output. Log only a
-    // generic message — never the model result or gathered content, per
-    // the "no raw payloads in logs" guardrail. `prompt_not_found` (the
-    // `companion` domain not seeded with `continuation` yet) is expected
-    // during rollout, not worth logging as an error.
+    // Never let a greeting-synthesis failure break a plain context read —
+    // same tolerance twin-signals.ts and topic-detail.ts's personalization
+    // already use for their own model output. Log only a generic message —
+    // never the model result or gathered content, per the "no raw payloads
+    // in logs" guardrail. `prompt_not_found` (the `companion` domain not
+    // seeded with `continuation` yet) is expected during rollout, not
+    // worth logging as an error.
     if (!(err instanceof HttpError && err.code === 'prompt_not_found')) {
-      console.error('Companion continuation synthesis failed (non-fatal):', err instanceof Error ? err.message : 'unknown error')
+      console.error('Companion return-greeting synthesis failed (non-fatal):', err instanceof Error ? err.message : 'unknown error')
     }
     return null
   }
@@ -308,7 +290,7 @@ async function synthesizeOnboardingOpener(
   try {
     const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'companion', 'onboard')
     // Hebrew Localization Slice E — same targeted read as
-    // maybeSynthesizeContinuation above, see getProfileForLanguage's own
+    // synthesizeReturnGreeting above, see getProfileForLanguage's own
     // doc comment for why this endpoint has no profile already in hand.
     const profile = await getProfileForLanguage(ddb, TABLE_NAME, pk)
     const languageInstruction = toLanguageInstruction(profile.preferredLanguage, profile.genderIdentity)

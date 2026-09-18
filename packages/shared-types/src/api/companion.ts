@@ -67,6 +67,16 @@ export const CompanionContextResponseSchema = z.object({
       feedback: DailyCardFeedbackSchema.nullable(),
     })
     .nullable(),
+  // A fresh, short "welcome back" line synthesized on every call when the
+  // caller has existing history — the user's own explicit "every visit"
+  // ask (docs/AGENT_LOG.md Session 60), deliberately NOT one of `messages`
+  // and NOT persisted server-side (unlike this field's predecessor,
+  // `maybeSynthesizeContinuation`'s gap-gated, persisted turn): re-sending
+  // the identical old message on every reload would spam the real thread
+  // with a duplicate stored bubble. `null` for a truly first-ever open
+  // (nothing to reference yet — see the onboarding-opener message inside
+  // `messages` instead) or if synthesis fails.
+  greeting: z.string().nullable(),
 })
 export type CompanionContextResponse = z.infer<typeof CompanionContextResponseSchema>
 

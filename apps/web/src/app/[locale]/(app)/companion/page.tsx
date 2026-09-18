@@ -73,6 +73,12 @@ function CompanionContent() {
   const t = useTranslations('Onboarding')
   const onboarding = useOnboardingFlow()
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  // Session 60 — a fresh, ephemeral "welcome back" line on every visit
+  // (the user's own explicit ask), never one of `messages`: it's not
+  // persisted server-side (see context.ts's synthesizeReturnGreeting),
+  // so it must not be treated as a real stored chat turn here either —
+  // re-fetched fresh on every load, never carried across a send/reload.
+  const [returnGreeting, setReturnGreeting] = useState<string | null>(null)
   // Intelligence Spec §18/Appendix B — threaded down into DirectiveCard so a
   // "Explore in Mirror/Decision Room" action from a Library topic can carry
   // "source session" context, per the flow's own worked example.
@@ -175,6 +181,7 @@ function CompanionContent() {
         const context = await getCompanionContext()
         setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt })))
         setSessionId(context.sessionId)
+        setReturnGreeting(context.greeting)
       } catch {
         // Degrades to an empty chat — same tolerance the Dashboard page uses.
       } finally {
@@ -208,6 +215,7 @@ function CompanionContent() {
       const context = await getCompanionContext(targetSessionId)
       setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt })))
       setSessionId(context.sessionId)
+      setReturnGreeting(context.greeting)
     } catch {
       // Leave the currently-open conversation showing — same tolerance as the initial load.
     } finally {
@@ -219,6 +227,7 @@ function CompanionContent() {
   function handleNewConversation(newSessionId: string) {
     setMessages([])
     setSessionId(newSessionId)
+    setReturnGreeting(null) // a brand-new thread has nothing to welcome the person back to yet
   }
 
   async function handleSend() {
@@ -316,15 +325,16 @@ function CompanionContent() {
     }
   }
 
-  // Reversed from Session 23's "stay visible alongside an active thread"
-  // decision, per direct user feedback (a screenshot showing the greeting +
-  // quick prompts + mobile Explore row squeezing the actual chat thread
-  // into a few visible lines): the landing chrome now only shows on the
-  // true empty state, so an active conversation gets nearly the full
-  // vertical space.
+  // isLanding still gates the hero/mobile-greeting/Explore-row chrome —
+  // Session 23's own "stay visible alongside an active thread" reversal
+  // (a screenshot showed that chrome + quick prompts + the Explore row
+  // squeezing the actual thread into a few visible lines) is still the
+  // right call for THAT chrome. Session 60 decoupled the quick-prompt
+  // chips specifically, per the user's explicit "chips always visible"
+  // ask — showPrompts no longer implies isLanding.
   const pageLoading = loading || onboarding.loading
   const isLanding = !pageLoading && messages.length === 0 && !onboarding.active
-  const showPrompts = isLanding
+  const showPrompts = !pageLoading && !onboarding.active
   const composerDisabled = pageLoading || (onboarding.active && !onboarding.awaitingIntention)
   // 'custom' with no chatBackgroundUrl yet (selected but never finished an
   // upload) falls back to the default preset, same tolerance the schema's
@@ -507,6 +517,20 @@ function CompanionContent() {
                   <p className="text-[var(--color-text-tertiary)] text-xs mt-1.5">
                     I can help you think something through, or point you to a Room or a Library topic.
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* Session 60 — a fresh "welcome back" line every visit, per the
+                user's explicit ask. Rendered separately from `messages`
+                (same bubble styling as a real assistant turn, so it doesn't
+                read as a different kind of thing) since it's never
+                persisted server-side — re-synthesized on every load, not
+                carried in the stored thread the way a real reply is. */}
+            {!pageLoading && !onboarding.active && returnGreeting && (
+              <div className="flex justify-start">
+                <div className="max-w-[90%] lg:max-w-[480px] bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] text-white/85 rounded-2xl rounded-es-md px-4 py-2.5 text-sm leading-relaxed">
+                  {returnGreeting}
                 </div>
               </div>
             )}
