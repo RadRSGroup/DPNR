@@ -44,7 +44,7 @@ const PROMPT_REGISTRY_TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME as str
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
     const userId = requireUserId(event)
-    const crypto = await getSessionCrypto(userId)
+    const crypto = await getSessionCrypto(userId, 'active_session')
     const slug = event.pathParameters?.slug
     if (!slug) {
       throw new HttpError(400, 'missing_slug', 'Path must include a topic slug.')

@@ -2,7 +2,7 @@ import { randomBytes, createCipheriv, createDecipheriv } from 'node:crypto'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { KMSClient, DecryptCommand } from '@aws-sdk/client-kms'
-import { GlobalKeys, ENCRYPTED_BLOB_VERSION, type SessionTicketItem, type EncryptedBlob } from '@dpnr/shared-types'
+import { GlobalKeys, ENCRYPTED_BLOB_VERSION, type SessionTicketItem, type SessionTicketPurpose, type EncryptedBlob } from '@dpnr/shared-types'
 import { HttpError } from './http'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
@@ -20,18 +20,32 @@ export interface SessionCrypto {
 }
 
 /**
- * Phase 6 Stage 4 (ADR 0009/0013) — resolves the caller's live DEK from
- * their active session ticket and returns real AES-256-GCM encrypt/decrypt
- * bound to it. This is the first real caller of the `kms:Decrypt` grant
- * Stage 2 put on 12 Lambdas — nothing called it before this.
+ * Phase 6 Stage 4 (ADR 0009/0013) — resolves the caller's live DEK from a
+ * session ticket and returns real AES-256-GCM encrypt/decrypt bound to it.
+ * This is the first real caller of the `kms:Decrypt` grant Stage 2 put on
+ * 12 Lambdas — nothing called it before this.
+ *
+ * `purpose` is required, not defaulted (security review 2026-09-14,
+ * DPNR-07): this table holds two disjoint ticket lifetimes —
+ * `active_session` (short-lived, created at login, what interactive
+ * Rooms/Companion/Twin/Account handlers must use) and `post_session`
+ * (long-lived, created alongside it, the ONLY ticket a scheduled job like
+ * the Continuity composers can ever have — they run with no user online,
+ * so `active_session` will always have expired or never existed for them).
+ * Before this fix, every caller — interactive and scheduled alike —
+ * queried `active_session` only; `post_session` tickets were written by
+ * `establishSessionTicket()` and never read by anything, so the Continuity
+ * composers could only decrypt for a user who happened to still have a
+ * live browser-session ticket, not the reliable "runs unattended on a
+ * schedule" behavior they're supposed to have.
  *
  * Deliberately re-resolves the DEK on every call, never cached at module
  * scope: a warm Lambda execution environment can be reused for a different
  * user's request on a later invocation, and caching a decrypted DEK there
  * would risk leaking one user's key into another's request.
  */
-export async function getSessionCrypto(userId: string): Promise<SessionCrypto> {
-  const ticket = await findActiveSessionTicket(userId)
+export async function getSessionCrypto(userId: string, purpose: SessionTicketPurpose): Promise<SessionCrypto> {
+  const ticket = await findSessionTicket(userId, purpose)
   const dek = await unwrapDek(ticket.kmsWrappedDek)
 
   return {
@@ -44,7 +58,7 @@ export async function getSessionCrypto(userId: string): Promise<SessionCrypto> {
   }
 }
 
-async function findActiveSessionTicket(userId: string): Promise<SessionTicketItem> {
+async function findSessionTicket(userId: string, purpose: SessionTicketPurpose): Promise<SessionTicketItem> {
   const now = new Date().toISOString()
   const result = await ddb.send(
     new QueryCommand({
@@ -52,12 +66,16 @@ async function findActiveSessionTicket(userId: string): Promise<SessionTicketIte
       KeyConditionExpression: 'pk = :pk',
       FilterExpression: '#purpose = :purpose AND expiresAt > :now',
       ExpressionAttributeNames: { '#purpose': 'purpose' },
-      ExpressionAttributeValues: { ':pk': GlobalKeys.sessionTicketPk(userId), ':purpose': 'active_session', ':now': now },
+      ExpressionAttributeValues: { ':pk': GlobalKeys.sessionTicketPk(userId), ':purpose': purpose, ':now': now },
     })
   )
   const items = (result.Items ?? []) as SessionTicketItem[]
   if (items.length === 0) {
-    throw new HttpError(409, 'session_ticket_required', 'No active encryption session — please sign in again to continue.')
+    const message =
+      purpose === 'active_session'
+        ? 'No active encryption session — please sign in again to continue.'
+        : 'No live post-session encryption ticket for this user — it has expired or was never established.'
+    throw new HttpError(409, 'session_ticket_required', message)
   }
   // Usually exactly one; a multi-tab/multi-login user could have more than
   // one live ticket, so take the most recently created.

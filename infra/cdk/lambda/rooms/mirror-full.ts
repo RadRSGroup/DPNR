@@ -17,7 +17,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   try {
     const userId = requireUserId(event)
     const pk = userPk(userId)
-    const crypto = await getSessionCrypto(userId)
+    const crypto = await getSessionCrypto(userId, 'active_session')
     const mirrorId = event.pathParameters?.id
     if (!mirrorId) {
       throw new HttpError(400, 'missing_id', 'Path must include a mirror session id.')

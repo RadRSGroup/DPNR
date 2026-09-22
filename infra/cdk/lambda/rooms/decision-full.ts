@@ -52,7 +52,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   try {
     const userId = requireUserId(event)
     const pk = userPk(userId)
-    const crypto = await getSessionCrypto(userId)
+    const crypto = await getSessionCrypto(userId, 'active_session')
     const decisionId = event.pathParameters?.id
     if (!decisionId) {
       throw new HttpError(400, 'missing_id', 'Path must include a decision id.')

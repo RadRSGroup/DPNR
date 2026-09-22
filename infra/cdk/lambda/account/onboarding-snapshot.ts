@@ -45,7 +45,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const pk = userPk(userId)
     const body = parseBody(event, UpdateOnboardingSnapshotRequestSchema)
     let crypto: Awaited<ReturnType<typeof getSessionCrypto>> | undefined
-    const requireCrypto = async () => (crypto ??= await getSessionCrypto(userId))
+    const requireCrypto = async () => (crypto ??= await getSessionCrypto(userId, 'active_session'))
 
     await requireConsent(ddb, TABLE_NAME, userId)
 

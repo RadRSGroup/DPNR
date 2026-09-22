@@ -52,7 +52,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   try {
     const userId = requireUserId(event)
     const pk = userPk(userId)
-    const crypto = await getSessionCrypto(userId)
+    const crypto = await getSessionCrypto(userId, 'active_session')
     const today = new Date().toISOString().slice(0, 10)
     const historyStart = new Date(Date.now() - ALIGNMENT_HISTORY_WINDOW_DAYS * 24 * 60 * 60 * 1000)
       .toISOString()

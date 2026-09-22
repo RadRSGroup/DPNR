@@ -89,7 +89,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const userId = requireUserId(event)
     const pk = userPk(userId)
     const body = parseBody(event, CompanionMessageRequestSchema)
-    const crypto = await getSessionCrypto(userId)
+    const crypto = await getSessionCrypto(userId, 'active_session')
 
     const profile = await requireConsent(ddb, TABLE_NAME, userId)
     // Hebrew Localization Slice E (docs/HEBREW_LOCALIZATION_PLAN.md §4.2) —

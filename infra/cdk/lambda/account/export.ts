@@ -21,7 +21,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   try {
     const userId = requireUserId(event)
     const pk = userPk(userId)
-    const crypto = await getSessionCrypto(userId)
+    const crypto = await getSessionCrypto(userId, 'active_session')
 
     const items: Record<string, unknown>[] = []
     let exclusiveStartKey: Record<string, unknown> | undefined

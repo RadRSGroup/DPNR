@@ -70,7 +70,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     // resolved by the helpers below when they actually have something to
     // decrypt or encrypt.
     let crypto: SessionCrypto | undefined
-    const requireCrypto = async () => (crypto ??= await getSessionCrypto(userId))
+    const requireCrypto = async () => (crypto ??= await getSessionCrypto(userId, 'active_session'))
 
     // Discrete conversations: an explicit ?sessionId= targets that specific
     // conversation (ownership+type-checked inside resolveOrCreateSession,
@@ -92,7 +92,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         sessionId,
         messages,
         dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
-        greeting: await synthesizeReturnGreeting(userId, pk, messages),
+        greeting: await synthesizeReturnGreeting(requireCrypto, userId, pk, messages),
       }
       return jsonResponse(200, body)
     }
@@ -133,7 +133,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       sessionId: pointer.sessionId,
       messages,
       dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
-      greeting: await synthesizeReturnGreeting(userId, pk, messages),
+      greeting: await synthesizeReturnGreeting(requireCrypto, userId, pk, messages),
     }
     return jsonResponse(200, body)
   } catch (err) {
@@ -214,6 +214,7 @@ async function getUndismissedDailyCard(
  * deliberate tradeoff for the requested UX, not an oversight.
  */
 async function synthesizeReturnGreeting(
+  requireCrypto: RequireCrypto,
   userId: string,
   pk: string,
   messages: { role: 'user' | 'assistant'; text: string; createdAt: string }[]
@@ -222,7 +223,7 @@ async function synthesizeReturnGreeting(
 
   try {
     const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'companion', 'continuation')
-    const { confirmedSignals, sessionSummaries } = await gatherContinuityContext(userId)
+    const { confirmedSignals, sessionSummaries } = await gatherContinuityContext(userId, await requireCrypto())
     // Hebrew Localization Slice E — this pure-GET handler never calls
     // requireConsent(), so there's no profile already in hand the way
     // message.ts has; a small targeted read here, not on every context

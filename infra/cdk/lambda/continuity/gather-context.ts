@@ -1,6 +1,6 @@
 import { QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { userPk, type TwinSignalItem, type SessionSummaryItem, type CommitmentItem, type OpenThreadItem } from '@dpnr/shared-types'
-import { getSessionCrypto, type SessionCrypto } from '../lib/session-crypto'
+import { type SessionCrypto } from '../lib/session-crypto'
 import { ddb, TABLE_NAME } from './helpers'
 
 export interface ConfirmedSignal {
@@ -33,21 +33,22 @@ const VISIBLE_OPEN_THREAD_STATUSES = new Set(['active', 'waiting_for_life', 'rea
  * slice; Weekly Recap wants everything from the last 7 days) — this just
  * gathers and decrypts, it doesn't filter by recency itself.
  *
- * `crypto` is optional: a caller that already resolved a `SessionCrypto` for
- * this same user this invocation (e.g. a batch composer resolving it once
- * per user in its loop) can pass it in to avoid a redundant DEK resolution;
- * any other caller can omit it and one is resolved here.
+ * `crypto` is required, not resolved internally (DPNR-07 fix): whether the
+ * right ticket purpose is `active_session` or `post_session` depends on the
+ * caller (an interactive Companion request vs. an unattended scheduled
+ * composer), and this function has no way to know which — every caller must
+ * resolve its own `SessionCrypto` with the purpose it actually has and pass
+ * it in. See `session-crypto.ts`'s own doc comment.
  */
 export async function gatherContinuityContext(
   userId: string,
-  crypto?: SessionCrypto
+  crypto: SessionCrypto
 ): Promise<{
   confirmedSignals: ConfirmedSignal[]
   sessionSummaries: DecryptedSessionSummary[]
   openThreads: DecryptedOpenThread[]
 }> {
   const pk = userPk(userId)
-  const resolvedCrypto = crypto ?? (await getSessionCrypto(userId))
 
   const [signalsResult, summariesResult, openThreadsResult] = await Promise.all([
     ddb.send(
@@ -79,7 +80,7 @@ export async function gatherContinuityContext(
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
       .map(async (s) => ({
         domain: s.domain,
-        description: (await resolvedCrypto.decryptField<{ description: string }>(s.content)).description,
+        description: (await crypto.decryptField<{ description: string }>(s.content)).description,
         updatedAt: s.updatedAt,
       }))
   )
@@ -92,7 +93,7 @@ export async function gatherContinuityContext(
       .filter((item) => item.sk.endsWith('#SUMMARY'))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .map(async (item) => ({
-        summary: (await resolvedCrypto.decryptField<{ summary: string; candidateSignalIds: string[] }>(item.content)).summary,
+        summary: (await crypto.decryptField<{ summary: string; candidateSignalIds: string[] }>(item.content)).summary,
         createdAt: item.createdAt,
       }))
   )
@@ -102,7 +103,7 @@ export async function gatherContinuityContext(
       .filter((t) => VISIBLE_OPEN_THREAD_STATUSES.has(t.status))
       .sort((a, b) => b.lastTouchedAt.localeCompare(a.lastTouchedAt))
       .map(async (t) => {
-        const decrypted = await resolvedCrypto.decryptField<{ subject: string; whyItMatters: string }>(t.content)
+        const decrypted = await crypto.decryptField<{ subject: string; whyItMatters: string }>(t.content)
         return { subject: decrypted.subject, lifeDomain: t.lifeDomain, lastTouchedAt: t.lastTouchedAt }
       })
   )
@@ -123,11 +124,10 @@ export interface DueCommitment {
  * (companion/message.ts), and a due-commitment lookup has no reason to run
  * on every chat turn — only the once-daily composer needs it.
  *
- * `crypto` is optional, same reasoning as `gatherContinuityContext` above.
+ * `crypto` is required, same reasoning as `gatherContinuityContext` above.
  */
-export async function getDueCommitments(userId: string, crypto?: SessionCrypto): Promise<DueCommitment[]> {
+export async function getDueCommitments(userId: string, crypto: SessionCrypto): Promise<DueCommitment[]> {
   const today = new Date().toISOString().slice(0, 10)
-  const resolvedCrypto = crypto ?? (await getSessionCrypto(userId))
 
   const result = await ddb.send(
     new QueryCommand({
@@ -142,7 +142,7 @@ export async function getDueCommitments(userId: string, crypto?: SessionCrypto):
       .filter((c) => c.status === 'open' && c.reviewDate !== null && c.reviewDate <= today)
       .sort((a, b) => (a.reviewDate as string).localeCompare(b.reviewDate as string))
       .map(async (c) => ({
-        description: (await resolvedCrypto.decryptField<{ description: string }>(c.content)).description,
+        description: (await crypto.decryptField<{ description: string }>(c.content)).description,
         reviewDate: c.reviewDate as string,
       }))
   )
