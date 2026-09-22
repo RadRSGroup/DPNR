@@ -13,10 +13,26 @@ const bedrock = new BedrockRuntimeClient({})
  */
 const STRUCTURED_OUTPUT_TOOL_NAME = 'record_structured_output'
 
-/** Reference to a deployed Bedrock Guardrail — see `callPromptModel`'s `guardrail` param. */
+/** Reference to a deployed Bedrock Guardrail — see `resolveGuardrailRef()` below. */
 export interface GuardrailRef {
   identifier: string
   version: string
+}
+
+/**
+ * Security review 2026-09-14 (DPNR-06): resolves the same env-driven
+ * Guardrail reference `lib/safety.ts` used to keep as its own private
+ * `getSafetyGuardrailRef()`, now shared here so every `callPromptModel`
+ * call attaches it, not just the two safety calls. `undefined` for any
+ * Lambda that doesn't have both `SAFETY_GUARDRAIL_ID`/`_VERSION` env vars
+ * wired (infra/cdk/lib/api-stack.ts's `safetyGuardrailEnv`) — a safe no-op,
+ * not an error, so this degrades cleanly for a Lambda that hasn't been
+ * given the guardrail grant/env yet rather than throwing.
+ */
+function resolveGuardrailRef(): GuardrailRef | undefined {
+  const identifier = process.env.SAFETY_GUARDRAIL_ID
+  const version = process.env.SAFETY_GUARDRAIL_VERSION
+  return identifier && version ? { identifier, version } : undefined
 }
 
 /**
@@ -33,11 +49,15 @@ export interface GuardrailRef {
  * equivalent to OpenAI's `response_format: json_object`. No `outputSchema`
  * calls normally and returns the text response as-is.
  *
- * `guardrail` (optional) attaches a native Bedrock Guardrail as a
- * defense-in-depth layer alongside whatever the prompt itself does (Stage 4
- * of docs/SAFETY_SYSTEM_DESIGN.md — currently only passed by lib/safety.ts's
- * two safety calls, not the other 8 domains, since that's the scope Stage 4
- * itself defines). Purely observational for now — every filter/topic in
+ * Every call attaches the native Bedrock Guardrail as a defense-in-depth
+ * layer alongside whatever the prompt itself does (Stage 4 of
+ * docs/SAFETY_SYSTEM_DESIGN.md), resolved automatically via
+ * `resolveGuardrailRef()` rather than requiring each of this function's ~20
+ * call sites to opt in individually — before this fix, only lib/safety.ts's
+ * two safety calls ever attached it, so every ordinary response-generation
+ * call (Companion replies, Room step handlers, Library, Twin extraction,
+ * Continuity composers) went completely unmonitored by it. Purely
+ * observational for now — every filter/topic in
  * `infra/cdk/lib/api-stack.ts`'s `SafetyGuardrail` is configured
  * `NONE`/detect-only, so this never blocks or alters a response; it only
  * adds `logGuardrailIntervention`'s structural (never-raw-content) CloudWatch
@@ -47,13 +67,13 @@ export interface GuardrailRef {
  */
 export async function callPromptModel(
   promptVersion: PromptVersionItem,
-  vars: Record<string, string>,
-  guardrail?: GuardrailRef
+  vars: Record<string, string>
 ): Promise<Record<string, unknown> | string> {
   const filledSystem = fillTemplate(promptVersion.systemTemplate, vars)
   const filledUser = fillTemplate(promptVersion.userTemplate, vars)
   const { model, temperature, maxTokens } = promptVersion.modelParams
   const { outputSchema } = promptVersion
+  const guardrail = resolveGuardrailRef()
 
   const response = await bedrock.send(
     new ConverseCommand({
