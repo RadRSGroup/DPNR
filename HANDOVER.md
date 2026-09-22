@@ -1,6 +1,14 @@
+> **⚠️ SUPERSEDED (security review 2026-09-14, DPNR-15) — preserved for historical reference only.**
+> This describes the pre-migration Supabase/GPT-4o data model and `POST /api/ai` route — both were
+> deleted from the codebase entirely by the Security remediation S1 slice (the whole legacy Supabase/
+> OpenAI plane, confirmed via repo-wide grep before deletion). The real backend is DynamoDB
+> single-table (`docs/MVP_ARCHITECTURE.md` §3) with a Prompt Registry driving real Bedrock/Claude
+> calls, not this document's schema or prompts. Read `docs/MVP_ARCHITECTURE.md` and
+> `docs/AGENT_LOG.md`'s "Prompt for next agent" section for the current system, not this file.
+
 # Decision Room — Data Science Handover
 **Repo:** github.com/RadRSGroup/DPNR · Branch: `decision-room`
-**Model:** GPT-4o (openai npm v6.42) · **Date:** June 2026 · **Confidential**
+**Model:** GPT-4o (openai npm v6.42) · **Date:** June 2026 · **Confidential** (superseded, see banner above)
 
 ---
 

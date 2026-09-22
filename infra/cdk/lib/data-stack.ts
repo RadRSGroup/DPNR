@@ -59,6 +59,12 @@ export class DataStack extends Stack {
       timeToLiveAttribute: 'ttl',
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       removalPolicy,
+      // Security review 2026-09-14 (DPNR-11) — guards against an accidental
+      // deletion via a botched CFN update/console action independent of
+      // `removalPolicy` above, which only governs what happens on an
+      // intentional full-stack teardown. `isProduction` gates it the same
+      // way it already gates `removalPolicy`, not a separate decision.
+      deletionProtection: props.isProduction,
     })
 
     // Prompt Registry — separate table, config-like data (migration plan
@@ -74,6 +80,7 @@ export class DataStack extends Stack {
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       removalPolicy,
+      deletionProtection: props.isProduction, // DPNR-11, see ApplicationTable's own comment above
     })
 
     // Session Tickets — deliberately NO PITR, NO backups, NO streams
@@ -101,6 +108,7 @@ export class DataStack extends Stack {
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       removalPolicy,
+      deletionProtection: props.isProduction, // DPNR-11, see ApplicationTable's own comment above
     })
 
     // Plans/Packages catalog — kept configurable per spec §Beta Trial,
@@ -113,6 +121,7 @@ export class DataStack extends Stack {
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       removalPolicy,
+      deletionProtection: props.isProduction, // DPNR-11, see ApplicationTable's own comment above
     })
 
     // Dedicated KMS key for session-ticket envelope encryption (migration

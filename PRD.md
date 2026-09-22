@@ -1,7 +1,16 @@
+> **⚠️ SUPERSEDED (security review 2026-09-14, DPNR-15) — preserved for historical reference only.**
+> This document describes the original pre-migration plan: Supabase/Postgres, OpenAI GPT-4o-mini,
+> Vercel hosting, Resend email, and a 3-tier token-cap subscription model (₪45/₪75). None of that is
+> the live system. The real stack is Cognito/DynamoDB/Bedrock/API Gateway on AWS, deployed on Render
+> (`apps/web/render.yaml`), with a credits-ledger billing model (not token caps) whose current
+> placeholder pricing lives in `infra/cdk/scripts/plans.seed.ts` (itself explicitly flagged there as
+> not yet a confirmed product decision). For current architecture and status, read
+> `docs/MVP_ARCHITECTURE.md` and `docs/AGENT_LOG.md`'s "Prompt for next agent" section, not this file.
+
 # Product Requirements Document
 ## Decision Room — MLP v1.0 (Revised)
 **DPNR Platform | Decision Making Feature**
-**Date:** June 8, 2026 | **Status:** Draft v1.1 — Full 7-Step Flow
+**Date:** June 8, 2026 | **Status:** Draft v1.1 — Full 7-Step Flow (superseded, see banner above)
 
 ---
 

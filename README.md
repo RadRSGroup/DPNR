@@ -12,9 +12,11 @@ A personal operating and navigation product: a persistent conversational Compani
 ## Structure
 
 ```
-apps/web/             Next.js app (Decision Room today; grows to host Companion, Dashboard, other rooms)
-infra/cdk/             AWS CDK app — Cognito, API Gateway, Lambda, DynamoDB, Bedrock, EventBridge (not yet built)
-packages/shared-types/ Types/schemas shared between apps/web and infra/cdk (not yet built)
+apps/web/             Next.js app — Main Chat/Companion, Dashboard, Decision Room, Mirror Room,
+                       Content Library, Growth Tracker/Digital Twin, Wallet, and more
+infra/cdk/             AWS CDK app — Cognito, API Gateway, Lambda, DynamoDB, Bedrock, EventBridge, KMS
+                       (deployed to a real AWS account, not a plan)
+packages/shared-types/ Types/schemas shared between apps/web and infra/cdk
 docs/                  Architecture, agent log, ADRs, setup runbooks
 ```
 
@@ -29,4 +31,12 @@ npm run lint
 
 ## Current state
 
-Pre-migration: Next.js 16 + Supabase (Postgres/Auth/RLS) + OpenAI GPT-4o, implementing Decision Room's 7-step flow only. See `apps/web/HANDOVER.md` for the current data model. The AWS migration (Cognito, DynamoDB, Bedrock, client-side encryption) is planned but not started — see `docs/AGENT_LOG.md` for exact status.
+Security review 2026-09-14 (DPNR-15) — this section was still describing the pre-migration, Phase-0
+snapshot (Supabase/OpenAI, AWS "planned but not started") long after both had shipped; see
+`docs/AGENT_LOG.md`'s Session 6 part 3 entry for when the real AWS migration actually happened.
+Rather than re-describing specifics here (which will drift again the moment they change), the durable
+rule is: **`docs/AGENT_LOG.md`'s "Prompt for next agent" section, at the top of that file, is the single
+current-status source of truth.** Read it before assuming anything about what's built, deployed, or in
+progress — this README isn't updated every session and shouldn't be treated as authoritative for status.
+The retired pre-migration Supabase/OpenAI snapshot is preserved for historical reference in `PRD.md`
+and `HANDOVER.md`, both marked superseded.

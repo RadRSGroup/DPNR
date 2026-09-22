@@ -4,8 +4,11 @@ import * as authorizers from 'aws-cdk-lib/aws-apigatewayv2-authorizers'
 import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations'
 import * as bedrock from 'aws-cdk-lib/aws-bedrock'
 import * as cognito from 'aws-cdk-lib/aws-cognito'
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch'
+import * as cloudwatchActions from 'aws-cdk-lib/aws-cloudwatch-actions'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 import * as kms from 'aws-cdk-lib/aws-kms'
+import * as logs from 'aws-cdk-lib/aws-logs'
 import * as s3 from 'aws-cdk-lib/aws-s3'
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager'
 import * as iam from 'aws-cdk-lib/aws-iam'
@@ -73,6 +76,16 @@ export interface ApiStackProps extends StackProps {
    * loud synth-time warning and a stack output instead of failing silently.
    */
   safetyAlertEmail?: string
+  /**
+   * Security review 2026-09-14 (DPNR-11) — same pattern as
+   * `safetyAlertEmail` above (context-only, never a hardcoded address),
+   * for the operational alarms below (API 4xx/5xx, safety-classifier
+   * fail-open rate, estimated AWS cost). Deliberately a separate topic and
+   * subscriber from `safetyAlertEmail`: that one is about a single real
+   * person's crisis reaching a human; this one is infra/ops health, and
+   * mixing the two would dilute the crisis alert's own urgency.
+   */
+  opsAlertEmail?: string
 }
 
 /**
@@ -1566,8 +1579,128 @@ export class ApiStack extends Stack {
       authorizer: this.cognitoAuthorizer,
     })
 
+    // Security review 2026-09-14 (DPNR-11) — operational alarms. None of
+    // 4xx/5xx/safety-fail-open/cost had any alerting before this; the only
+    // pre-existing signal was SafetyAlertTopic (S5/ADR 0012), which is
+    // specifically for a live immediate_danger classification reaching a
+    // human, not infra health — see OpsAlertTopic's own doc comment above
+    // for why that stays a separate topic rather than reusing this one.
+    const opsAlertTopic = new sns.Topic(this, 'OpsAlertTopic', {
+      topicName: 'dpnr-ops-alerts',
+      displayName: 'DPNR operational alerts',
+    })
+    if (props.opsAlertEmail) {
+      opsAlertTopic.addSubscription(new snsSubscriptions.EmailSubscription(props.opsAlertEmail))
+    } else {
+      Annotations.of(this).addWarning(
+        'OpsAlertTopic has no email subscriber configured (DPNR-11). 4xx/5xx/cost/safety-fail-open alarms will ' +
+          'fire into this topic but reach no one. Deploy with --context opsAlertEmail=<address> once a real ' +
+          'on-call address is decided, or subscribe one manually via `aws sns subscribe`.'
+      )
+    }
+    new CfnOutput(this, 'OpsAlertSubscriberConfigured', {
+      value: props.opsAlertEmail ? 'yes' : 'NO — see OpsAlertTopic Annotations warning at synth time',
+    })
+    const opsAlarmAction = new cloudwatchActions.SnsAction(opsAlertTopic)
+
+    // API Gateway 4xx/5xx — the whole /v1 surface had zero CloudWatch
+    // alarms of any kind before this. Fixed absolute-count thresholds, not
+    // percentiles or anomaly detection — this is a low-traffic beta
+    // (docs/PHASE_AUDIT.md's own live account counts), not production
+    // scale, so a simple floor is the honest signal; revisit once real
+    // traffic volume exists.
+    new cloudwatch.Alarm(this, 'Api5xxAlarm', {
+      alarmDescription: 'DPNR /v1 API Gateway 5xx errors in a 5-minute window — real backend failures, not client mistakes.',
+      metric: this.httpApi.metricServerError({ period: Duration.minutes(5), statistic: 'Sum' }),
+      threshold: 5,
+      evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    }).addAlarmAction(opsAlarmAction)
+
+    new cloudwatch.Alarm(this, 'Api4xxAlarm', {
+      alarmDescription:
+        'DPNR /v1 API Gateway 4xx rate over two consecutive 5-minute windows — a sustained spike can mean a ' +
+        'broken client release or a probing attacker, not just normal auth failures.',
+      metric: this.httpApi.metricClientError({ period: Duration.minutes(5), statistic: 'Sum' }),
+      threshold: 100,
+      evaluationPeriods: 2,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    }).addAlarmAction(opsAlarmAction)
+
+    // Safety classifier fail-open rate (DPNR-06/DPNR-11) — classifySafety()
+    // (lib/safety.ts) degrading to `normal` on a model/schema/call failure
+    // is spec-mandated behavior (§32), not a bug, and stays untouched. But
+    // a *sustained* run of fail-opens (a real Bedrock outage, a broken
+    // prompt, a bad deploy) should reach a human, not stay silently
+    // safe-by-default forever. These metric filters read the two Lambda
+    // log groups that call classifySafety() for the `[SAFETY_FAIL_OPEN]`
+    // marker lib/safety.ts's three failure branches now emit — keep that
+    // marker text and this filter pattern in sync if either changes.
+    const safetyFailOpenNamespace = 'Dpnr/Safety'
+    const safetyFailOpenMetricName = 'SafetyClassifierFailOpen'
+    for (const [label, fn] of [
+      ['Companion', companionMessageFn],
+      ['Rooms', roomsCommandFn],
+    ] as const) {
+      new logs.MetricFilter(this, `${label}SafetyFailOpenFilter`, {
+        logGroup: logs.LogGroup.fromLogGroupName(
+          this,
+          `${label}SafetyFailOpenLogGroup`,
+          `/aws/lambda/${fn.functionName}` // see lambda-observability-aspect.ts's own comment on this convention
+        ),
+        metricNamespace: safetyFailOpenNamespace,
+        metricName: safetyFailOpenMetricName,
+        filterPattern: logs.FilterPattern.literal('"[SAFETY_FAIL_OPEN]"'),
+        metricValue: '1',
+      })
+    }
+    new cloudwatch.Alarm(this, 'SafetyFailOpenAlarm', {
+      alarmDescription:
+        'Safety classifier degraded to normal (fail-open) 3+ times in 15 minutes across Companion/Rooms — the ' +
+        'fail-open default itself is intentional (spec §32); this alarm is for a sustained run that suggests a ' +
+        'real outage, not a single transient blip.',
+      metric: new cloudwatch.Metric({
+        namespace: safetyFailOpenNamespace,
+        metricName: safetyFailOpenMetricName,
+        period: Duration.minutes(15),
+        statistic: 'Sum',
+      }),
+      threshold: 3,
+      evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    }).addAlarmAction(opsAlarmAction)
+
+    // Cost (DPNR-11) — complements, does not replace, the AWS Budgets
+    // alert already live in this account (docs/AGENT_LOG.md Session 6 part
+    // 3: dpnr-monthly-dev-budget, $20/month, 80%/100% actual-spend email).
+    // CloudWatch's AWS/Billing EstimatedCharges metric only populates if
+    // "Receive Billing Alerts" is turned on in this account's Billing
+    // preferences (a console setting CDK cannot enable) and only exists in
+    // us-east-1 regardless of which region this stack deploys to. This
+    // alarm resource deploys harmlessly (stays INSUFFICIENT_DATA) even if
+    // that preference is off — whether it actually fires was NOT
+    // independently verified this session, disclosed rather than assumed.
+    if (this.region === 'us-east-1') {
+      new cloudwatch.Alarm(this, 'EstimatedChargesAlarm', {
+        alarmDescription:
+          'Estimated AWS charges exceeded $25 — a second, faster-evaluated signal alongside the existing AWS ' +
+          'Budgets $20/month alert, not a replacement for it.',
+        metric: new cloudwatch.Metric({
+          namespace: 'AWS/Billing',
+          metricName: 'EstimatedCharges',
+          dimensionsMap: { Currency: 'USD' },
+          period: Duration.hours(6),
+          statistic: 'Maximum',
+        }),
+        threshold: 25,
+        evaluationPeriods: 1,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      }).addAlarmAction(opsAlarmAction)
+    }
+
     new CfnOutput(this, 'ApiUrl', { value: this.httpApi.apiEndpoint })
     new CfnOutput(this, 'SafetyAlertTopicArn', { value: safetyAlertTopic.topicArn })
     new CfnOutput(this, 'SafetyGuardrailId', { value: safetyGuardrail.attrGuardrailId })
+    new CfnOutput(this, 'OpsAlertTopicArn', { value: opsAlertTopic.topicArn })
   }
 }

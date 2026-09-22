@@ -15,6 +15,8 @@
     "start": "npm run start --workspace=apps/web",
     "lint": "npm run lint --workspace=apps/web",
     "typecheck:cdk": "npm run build:shared-types && npm run typecheck --workspace=infra/cdk",
+    "test:cdk": "npm run build:shared-types && npm run test --workspace=infra/cdk",
+    "test:web": "npm run test --workspace=apps/web",
     "synth": "npm run build:shared-types && npm run synth --workspace=infra/cdk"
   }
 }

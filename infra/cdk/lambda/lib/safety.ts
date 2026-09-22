@@ -134,19 +134,26 @@ export async function classifySafety(
     const version = await resolvePromptVersion(ddb, promptRegistryTableName, 'safety', 'classify_safety_state')
     const result = await callPromptModel(version, { recentConversation, currentMessage })
     if (typeof result === 'string') {
-      console.error('Safety classification: prompt did not return forced tool-use output.')
+      // Security review 2026-09-14 (DPNR-06/DPNR-11) — `[SAFETY_FAIL_OPEN]`
+      // is a fixed, deliberately-matched marker: api-stack.ts's
+      // SafetyFailOpenAlarm reads it via a CloudWatch Logs metric filter.
+      // Don't reword this prefix without updating that filter pattern too.
+      console.error('[SAFETY_FAIL_OPEN] Safety classification: prompt did not return forced tool-use output.')
       classification = fallback
     } else {
       const parsed = SafetyClassificationSchema.safeParse(result)
       if (!parsed.success) {
-        console.error('Safety classification: model output failed schema validation.')
+        console.error('[SAFETY_FAIL_OPEN] Safety classification: model output failed schema validation.')
         classification = fallback
       } else {
         classification = parsed.data
       }
     }
   } catch (err) {
-    console.error('Safety classification call failed (non-fatal):', err instanceof Error ? err.message : 'unknown error')
+    console.error(
+      '[SAFETY_FAIL_OPEN] Safety classification call failed (non-fatal):',
+      err instanceof Error ? err.message : 'unknown error'
+    )
     classification = fallback
   }
 
