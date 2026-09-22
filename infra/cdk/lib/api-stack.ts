@@ -623,9 +623,21 @@ export class ApiStack extends Stack {
     const accountDeleteFn = new lambda.NodejsFunction(this, 'AccountDeleteFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/account/delete.ts'),
-      description: 'DELETE /v1/account — deletes the whole USER#<id> partition (Cognito identity deleted client-side, see delete.ts).',
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        // Security review 2026-09-14 (DPNR-09) — this Lambda now also
+        // deletes every session ticket for the caller, not just the
+        // application-table partition; see delete.ts's own doc comment.
+        // Never calls kms:Decrypt (it deletes the wrapped ciphertext rows
+        // wholesale, never unwraps them), so only table read/write is
+        // needed below, no KMS grant.
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
+      description:
+        'DELETE /v1/account — deletes the whole USER#<id> partition and every session ticket (Cognito identity deleted client-side, see delete.ts).',
     })
     props.applicationTable.grantReadWriteData(accountDeleteFn)
+    props.sessionTicketsTable.grantReadWriteData(accountDeleteFn)
 
     // Phase 6 Stage 2 (ADR 0013): key bootstrap + session-ticket endpoints.
     // sessionTicketPublicKeyFn deliberately does NOT use sharedProductLambdaProps
