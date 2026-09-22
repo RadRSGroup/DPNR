@@ -54,7 +54,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const userId = requireUserId(event)
     const pk = userPk(userId)
     const body = parseBody(event, RoomCommandRequestSchema)
-    const crypto = await getSessionCrypto(userId)
+    const crypto = await getSessionCrypto(userId, 'active_session')
 
     // Hebrew Localization Slice E (docs/HEBREW_LOCALIZATION_PLAN.md §4.3):
     // requireConsent() already reads the full UserProfileItem — capture it
@@ -186,7 +186,39 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       lastIdempotencyKey: body.idempotencyKey,
       lastResponse: await crypto.encryptField<RoomCommandResponse>(response),
     }
-    await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: updatedSession }))
+    // Conditioned on the exact same version this handler read above
+    // (security review 2026-09-14, DPNR-08): the check at lines 84-101 is
+    // pure application-code comparison and protects nothing by itself —
+    // two concurrent commands can both read the same sessionVersion, both
+    // pass that check, both consume credits and run the step's model call,
+    // then both reach this write and silently clobber one another,
+    // dropping whichever transition wrote second. Re-asserting the
+    // precondition atomically here means only one of two racing writes can
+    // ever succeed; the loser gets a real 409 instead of a lost update.
+    // For a brand-new session (no existingSession), the equivalent
+    // precondition is "still doesn't exist" — attribute_not_exists(pk)
+    // guards against two concurrent first-commands for the same sessionId.
+    try {
+      await ddb.send(
+        new PutCommand({
+          TableName: TABLE_NAME,
+          Item: updatedSession,
+          ConditionExpression: existingSession ? 'sessionVersion = :expectedVersion' : 'attribute_not_exists(pk)',
+          ...(existingSession
+            ? { ExpressionAttributeValues: { ':expectedVersion': body.expectedSessionVersion } }
+            : {}),
+        })
+      )
+    } catch (err) {
+      if (err instanceof Error && err.name === 'ConditionalCheckFailedException') {
+        throw new HttpError(
+          409,
+          'session_version_conflict',
+          'Another command for this session was written first — reload and retry with the current sessionVersion.'
+        )
+      }
+      throw err
+    }
 
     return jsonResponse(200, response)
   } catch (err) {
