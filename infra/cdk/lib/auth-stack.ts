@@ -76,6 +76,18 @@ export class AuthStack extends Stack {
         postConfirmation: postConfirmationFn,
         preTokenGeneration: preTokenGenerationFn,
       },
+      // Security review 2026-09-14 (DPNR-11) — this pool had no MFA option
+      // of any kind before this. OPTIONAL, not REQUIRED: flipping to
+      // REQUIRED would break every already-confirmed account's next sign-in
+      // with no enrollment step to fall back to, and this is additive/
+      // non-breaking for everyone who doesn't opt in. TOTP only, no SMS —
+      // avoids a per-message SNS cost and SMS's own weaker security
+      // properties for a feature nobody asked to have provisioned yet.
+      // Disclosed gap: this only turns MFA on at the Cognito pool level —
+      // no "set up an authenticator app" UI exists anywhere in apps/web,
+      // so real user adoption needs a separate frontend slice.
+      mfa: cognito.Mfa.OPTIONAL,
+      mfaSecondFactor: { sms: false, otp: true },
       removalPolicy,
     })
 

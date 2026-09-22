@@ -6,9 +6,9 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "synth": "cdk synth",
-    "diff": "cdk diff",
-    "deploy": "cdk deploy",
+    "synth": "cdk synth --context isProduction=false",
+    "diff": "cdk diff --context isProduction=false",
+    "deploy": "cdk deploy --context isProduction=false",
     "seed:prompt-registry": "ts-node --prefer-ts-exts scripts/seed-prompt-registry.ts",
     "seed:library-catalog": "ts-node --prefer-ts-exts scripts/seed-library-catalog.ts",
     "seed:plans-catalog": "ts-node --prefer-ts-exts scripts/seed-plans-catalog.ts",
