@@ -1,3 +1,5 @@
+'use client'
+import { useTranslations } from 'next-intl'
 import { Music, Play, SlidersHorizontal } from 'lucide-react'
 import Card from '@/components/ui/Card'
 
@@ -11,6 +13,7 @@ import Card from '@/components/ui/Card'
  * silently doing nothing, so it doesn't read as broken.
  */
 export default function FocusMode() {
+  const t = useTranslations('Companion.focusMode')
   return (
     <Card className="!p-3">
       <div className="flex items-center gap-3">
@@ -18,22 +21,22 @@ export default function FocusMode() {
           <Music className="w-5 h-5 text-[var(--color-violet-300)]" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm text-white/85">Focus Mode</p>
-          <p className="text-xs text-[var(--color-text-tertiary)] truncate">Deep Work &middot; DPNR Playlist</p>
+          <p className="text-sm text-white/85">{t('title')}</p>
+          <p className="text-xs text-[var(--color-text-tertiary)] truncate">{t('subtitle')}</p>
         </div>
         <button
           disabled
-          title="Coming soon"
+          title={t('comingSoon')}
           className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-white/10 text-white/40 cursor-not-allowed"
-          aria-label="Play (coming soon)"
+          aria-label={t('playLabel')}
         >
           <Play className="w-3.5 h-3.5 fill-current" />
         </button>
         <button
           disabled
-          title="Coming soon"
+          title={t('comingSoon')}
           className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-white/30 cursor-not-allowed"
-          aria-label="Focus Mode settings (coming soon)"
+          aria-label={t('settingsLabel')}
         >
           <SlidersHorizontal className="w-4 h-4" />
         </button>

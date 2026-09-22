@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 import { Layers } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import DirectiveCard from './DirectiveCard'
@@ -24,6 +25,7 @@ import type { PullCardResponse } from '@dpnr/shared-types'
  * resolver), which `DirectiveCard` already renders correctly.
  */
 export default function PullACard() {
+  const t = useTranslations('Companion.pullACard')
   const [card, setCard] = useState<PullCardResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
@@ -43,7 +45,7 @@ export default function PullACard() {
 
   return (
     <Card className="relative overflow-hidden">
-      <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-3">Pull a Card</p>
+      <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-3">{t('heading')}</p>
 
       {
         // pull-a-card.webp is a real tall/portrait card-back crop (335×580 —
@@ -67,7 +69,7 @@ export default function PullACard() {
         </>
       ) : (
         <p className="text-[var(--color-text-tertiary)] text-sm">
-          {error ? "Couldn't pull a card — try again." : 'Pull a card for something to sit with today.'}
+          {error ? t('error') : t('prompt')}
         </p>
       )}
 
@@ -76,7 +78,7 @@ export default function PullACard() {
         disabled={loading}
         className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] disabled:opacity-50 px-4 py-2.5 text-sm font-medium text-white transition-colors"
       >
-        <Layers className="w-4 h-4" /> {loading ? 'Pulling…' : card ? 'Pull a New Card' : 'Pull a Card'}
+        <Layers className="w-4 h-4" /> {loading ? t('pulling') : card ? t('pullAgain') : t('pullFirst')}
       </button>
     </Card>
   )

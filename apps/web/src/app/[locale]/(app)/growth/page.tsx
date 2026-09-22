@@ -17,6 +17,7 @@ import AlignmentHistoryChart from '@/components/shared/AlignmentHistoryChart'
 import { DOMAIN_META } from '@/components/shared/domain-meta'
 import StatTile from '@/components/shared/StatTile'
 import ArchetypeBadge from '@/components/shared/ArchetypeBadge'
+import CheckInModal from '@/components/shared/CheckInModal'
 import { timeAgo } from '@/lib/format'
 
 /**
@@ -56,6 +57,7 @@ function GrowthTrackerContent() {
   const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
   const [valuesNeeds, setValuesNeeds] = useState<GrowthValuesNeedsResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [checkInOpen, setCheckInOpen] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -95,13 +97,15 @@ function GrowthTrackerContent() {
             </h1>
             <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('subtitle')}</p>
           </div>
-          <Link
-            href="/mirror/new"
+          <button
+            onClick={() => setCheckInOpen(true)}
             className="liquid-glass hidden lg:inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-white/80"
           >
             <Wind className="w-4 h-4 text-[var(--color-amber-400)]" /> {t('breatheCheckIn')}
-          </Link>
+          </button>
         </div>
+
+        {checkInOpen && <CheckInModal onClose={() => setCheckInOpen(false)} />}
 
         <Card className="relative overflow-hidden !p-0 mb-4 lg:mb-6 hidden lg:block">
           <div className="relative h-40 lg:h-48">

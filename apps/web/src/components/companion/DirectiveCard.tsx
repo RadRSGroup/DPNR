@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { Link } from '@/i18n/navigation'
 import type { CompanionDirective, LibraryTopicDetailResponse } from '@dpnr/shared-types'
@@ -29,16 +30,17 @@ interface Props {
  */
 export default function DirectiveCard({ directive, sourceSessionId }: Props) {
   const router = useRouter()
+  const t = useTranslations('Companion.directiveCard')
 
   if (directive.kind === 'open_room') {
-    const label = directive.roomType === 'decision' ? 'Start a Decision Room' : 'Start a Mirror Room session'
+    const label = directive.roomType === 'decision' ? t('startDecisionRoom') : t('startMirrorRoom')
     return (
       <button
         onClick={() => router.push(`/${directive.roomType}/new`)}
         className="mt-2 w-full text-left bg-purple-600/20 border border-purple-500/40 hover:bg-purple-600/30 rounded-2xl px-4 py-3 transition-colors"
       >
         <p className="text-purple-200 text-sm font-medium">{label}</p>
-        <p className="text-purple-300/60 text-xs mt-0.5">Tap to open →</p>
+        <p className="text-purple-300/60 text-xs mt-0.5">{t('tapToOpen')}</p>
       </button>
     )
   }
@@ -49,8 +51,8 @@ export default function DirectiveCard({ directive, sourceSessionId }: Props) {
         onClick={() => router.push('/dashboard')}
         className="mt-2 w-full text-left bg-white/5 border border-white/15 hover:border-white/30 rounded-2xl px-4 py-3 transition-colors"
       >
-        <p className="text-white/80 text-sm font-medium">Open InnerOS</p>
-        <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">Tap to open →</p>
+        <p className="text-white/80 text-sm font-medium">{t('openInnerOS')}</p>
+        <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">{t('tapToOpen')}</p>
       </button>
     )
   }
@@ -59,6 +61,7 @@ export default function DirectiveCard({ directive, sourceSessionId }: Props) {
 }
 
 function LibraryTopicCard({ slug, sourceSessionId }: { slug: string; sourceSessionId?: string | null }) {
+  const t = useTranslations('Companion.directiveCard')
   const [topic, setTopic] = useState<LibraryTopicDetailResponse | null>(null)
   const [error, setError] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false)
@@ -79,18 +82,18 @@ function LibraryTopicCard({ slug, sourceSessionId }: { slug: string; sourceSessi
     <>
       <Card className="mt-2 w-full !px-4 !py-3 space-y-2">
         <p className="text-white/80 text-sm font-medium">{topic?.title ?? slug.replace(/-/g, ' ')}</p>
-        {!topic && !error && <p className="text-[var(--color-text-tertiary)] text-xs">From the Library · loading…</p>}
-        {error && <p className="text-[var(--color-text-tertiary)] text-xs">Couldn&apos;t load this topic right now.</p>}
+        {!topic && !error && <p className="text-[var(--color-text-tertiary)] text-xs">{t('libraryLoading')}</p>}
+        {error && <p className="text-[var(--color-text-tertiary)] text-xs">{t('libraryLoadError')}</p>}
         {topic?.quickDefinition && (
           <p className="text-white/70 text-sm leading-relaxed">{topic.quickDefinition}</p>
         )}
         {topic && (
           <div className="flex items-center gap-4 pt-1">
             <button onClick={() => setPanelOpen(true)} className="text-purple-300 text-xs hover:text-purple-200 transition-colors">
-              Understand deeper →
+              {t('understandDeeper')}
             </button>
             <Link href={`/library/${slug}`} className="text-[var(--color-text-tertiary)] text-xs hover:text-white/60 transition-colors">
-              View full topic
+              {t('viewFullTopic')}
             </Link>
           </div>
         )}

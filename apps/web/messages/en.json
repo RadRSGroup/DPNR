@@ -302,6 +302,26 @@
     "cueLabels": { "continuation": "Continuing on", "commitment": "Upcoming commitment", "worthExploring": "Worth exploring" },
     "roomLink": { "decision": "Decision Room", "mirror": "Mirror Room", "library": "Content & Learning" }
   },
+  "CheckInModal": {
+    "title": "Breathe & Check In",
+    "closeLabel": "Close",
+    "subtitle": "A few slow breaths, at your own pace.",
+    "breatheInLabel": "Breathe in…",
+    "holdLabel": "Hold…",
+    "breatheOutLabel": "Breathe out…",
+    "doneLabel": "Nicely done.",
+    "moodPrompt": "How are you feeling right now?",
+    "moodThanks": "Thanks for sharing.",
+    "skip": "Skip for now",
+    "moods": {
+      "calm": "Calm",
+      "anxious": "Anxious",
+      "tired": "Tired",
+      "hopeful": "Hopeful",
+      "stuck": "Stuck",
+      "okay": "Okay"
+    }
+  },
   "Metadata": {
     "title": "InnerOS — DPNR",
     "description": "Your personal Human Operating System — reflect, decide, and grow with DPNR."
@@ -509,6 +529,93 @@
       }
     }
   },
+  "Companion": {
+    "loading": "Loading…",
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "hero": {
+      "subtitle": "I'm here with you. Let's continue where you are."
+    },
+    "emptyState": {
+      "title": "Hi — what's on your mind?",
+      "body": "I can help you think something through, or point you to a Room or a Library topic."
+    },
+    "quickPrompts": {
+      "understand": {
+        "lead": "Help me understand",
+        "rest": "what I'm feeling",
+        "text": "Help me understand what I'm feeling right now."
+      },
+      "pattern": {
+        "lead": "Help me see",
+        "rest": "the pattern",
+        "text": "Help me see the pattern in what I keep going through."
+      },
+      "decision": {
+        "lead": "Help me make",
+        "rest": "a decision",
+        "text": "I'm stuck on a decision — help me make it."
+      },
+      "guide": {
+        "lead": "Guide me based on",
+        "rest": "what you know about me",
+        "text": "Guide me based on what you know about me so far."
+      }
+    },
+    "explore": {
+      "label": "Explore",
+      "innerOS": "InnerOS",
+      "workRooms": "Work Rooms",
+      "growth": "Growth",
+      "library": "Library"
+    },
+    "composer": {
+      "placeholder": "Share anything with me...",
+      "attach": "Attach",
+      "attachImage": "Attach an image",
+      "removeAttachment": "Remove attachment",
+      "send": "Send",
+      "dictate": "Dictate",
+      "stopDictation": "Stop dictation"
+    },
+    "attachmentNotSupported": "I can see you attached an image — I can't actually look at images yet, but I've got everything else you shared.",
+    "sendError": "Something went wrong on my end — try sending that again.",
+    "privacyNote": "Everything you share is private and encrypted.",
+    "pullACard": {
+      "heading": "Pull a Card",
+      "error": "Couldn't pull a card — try again.",
+      "prompt": "Pull a card for something to sit with today.",
+      "pulling": "Pulling…",
+      "pullAgain": "Pull a New Card",
+      "pullFirst": "Pull a Card"
+    },
+    "topBar": {
+      "searchPlaceholder": "Search anything...",
+      "accountMenu": "Account menu",
+      "myProfile": "My Profile",
+      "signOut": "Sign out"
+    },
+    "focusMode": {
+      "title": "Focus Mode",
+      "subtitle": "Deep Work · DPNR Playlist",
+      "comingSoon": "Coming soon",
+      "playLabel": "Play (coming soon)",
+      "settingsLabel": "Focus Mode settings (coming soon)"
+    },
+    "directiveCard": {
+      "startDecisionRoom": "Start a Decision Room",
+      "startMirrorRoom": "Start a Mirror Room session",
+      "tapToOpen": "Tap to open →",
+      "openInnerOS": "Open InnerOS",
+      "libraryLoading": "From the Library · loading…",
+      "libraryLoadError": "Couldn't load this topic right now.",
+      "understandDeeper": "Understand deeper →",
+      "viewFullTopic": "View full topic"
+    }
+  },
   "Auth": {
     "passwordField": {
       "passwordPlaceholder": "Password",
@@ -549,6 +656,7 @@
   },
   "Nav": {
     "tagline": "Human Operating System",
+    "brandHome": "DPNR home",
     "items": {
       "mainChat": "Main Chat",
       "dashboard": "Dashboard",

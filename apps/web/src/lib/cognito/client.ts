@@ -189,6 +189,18 @@ export function signIn(email: string, password: string): Promise<CognitoUserSess
     const authDetails = new AuthenticationDetails({ Username: normalizedEmail, Password: password })
     user.authenticateUser(authDetails, {
       onSuccess: (session) => {
+        // A fresh sign-in may be a *different* account than whatever last
+        // set these cookies in this browser (proxy.ts's own signup-while-
+        // signed-in-as-another-account flow relies on this being possible —
+        // see its doc comment). setSessionCookie() below only ever sets a
+        // cookie from a genuinely-true claim, by design (staleness
+        // tolerance for the *same* user's own post-grant window) — but that
+        // means it never clears a stale `1` left over from a previous
+        // account either. Clearing here, right before re-deriving from this
+        // session's own claims, is what makes that distinction: a same-user
+        // token refresh (getCurrentSession() below) never goes through this
+        // clear, only a brand-new authentication does.
+        clearSessionCookie()
         setSessionCookie(session)
         resolve(session)
       },

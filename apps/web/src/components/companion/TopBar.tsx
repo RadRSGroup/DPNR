@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useSyncExternalStore } from 'react'
 import { Search, ChevronDown, User as UserIcon, LogOut } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
 import { getPreferences } from '@/lib/api/v1-client'
 import { signOut } from '@/lib/cognito/client'
@@ -68,6 +69,7 @@ function useClock(): Date | null {
  */
 export default function TopBar() {
   const router = useRouter()
+  const t = useTranslations('Companion.topBar')
   const now = useClock()
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -94,7 +96,7 @@ export default function TopBar() {
     <div className="hidden lg:flex items-center gap-4 pb-4">
       <div className="flex-1 flex items-center gap-2 liquid-glass rounded-full px-4 py-2 text-white/40 text-sm max-w-xs">
         <Search className="w-4 h-4 shrink-0" />
-        <span className="flex-1 truncate">Search anything...</span>
+        <span className="flex-1 truncate">{t('searchPlaceholder')}</span>
         <kbd className="text-[10px] border border-white/15 rounded px-1.5 py-0.5">⌘K</kbd>
       </div>
 
@@ -123,7 +125,7 @@ export default function TopBar() {
         <button
           onClick={() => setMenuOpen((v) => !v)}
           className="flex items-center gap-1.5 rounded-full hover:bg-white/5 p-1 transition-colors"
-          aria-label="Account menu"
+          aria-label={t('accountMenu')}
         >
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- presigned S3 URL, not a next/image-eligible static host
@@ -143,7 +145,7 @@ export default function TopBar() {
               className="flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:bg-white/5 transition-colors"
               onClick={() => setMenuOpen(false)}
             >
-              <UserIcon className="w-4 h-4" /> My Profile
+              <UserIcon className="w-4 h-4" /> {t('myProfile')}
             </Link>
             <button
               onClick={async () => {
@@ -153,7 +155,7 @@ export default function TopBar() {
               }}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:bg-white/5 transition-colors text-start"
             >
-              <LogOut className="w-4 h-4" /> Sign out
+              <LogOut className="w-4 h-4" /> {t('signOut')}
             </button>
           </div>
         )}

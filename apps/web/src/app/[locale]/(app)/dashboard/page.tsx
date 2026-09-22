@@ -24,6 +24,7 @@ import DailyGuidanceCard from '@/components/companion/DailyGuidanceCard'
 import RoadmapTimelineCard from '@/components/shared/RoadmapTimelineCard'
 import TwinCalibrationCard from '@/components/shared/TwinCalibrationCard'
 import ArchetypeBadge from '@/components/shared/ArchetypeBadge'
+import CheckInModal from '@/components/shared/CheckInModal'
 
 /**
  * Labels for continuityCue kinds OTHER than 'daily_card' — that one now
@@ -71,6 +72,7 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true)
   const [proposalPending, setProposalPending] = useState(false)
   const [lifecyclePending, setLifecyclePending] = useState(false)
+  const [checkInOpen, setCheckInOpen] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -149,13 +151,15 @@ function DashboardContent() {
             </h1>
             <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('subtitle')}</p>
           </div>
-          <Link
-            href="/companion"
+          <button
+            onClick={() => setCheckInOpen(true)}
             className="liquid-glass hidden lg:inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-white/80"
           >
             {t('checkIn')}
-          </Link>
+          </button>
         </div>
+
+        {checkInOpen && <CheckInModal onClose={() => setCheckInOpen(false)} />}
 
         {justCompleted && (
           <div className="mb-4 bg-[var(--color-violet-900)]/40 border border-[var(--color-violet-600)]/40 rounded-2xl px-4 py-3">

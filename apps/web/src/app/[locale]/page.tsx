@@ -27,7 +27,7 @@ export default function Home() {
           <div className="space-y-3">
             <p className="text-[var(--color-violet-400)] text-xs tracking-[0.2em] uppercase">DPNR</p>
             <div className="flex items-center gap-3 justify-center lg:justify-start">
-              <h1 className="font-display text-5xl lg:text-6xl text-white">InnerOS</h1>
+              <h1 className="font-display text-5xl lg:text-6xl text-white">Your Human Operating System</h1>
               <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--color-amber-400)] border border-[var(--color-amber-400)]/40 rounded-full px-2 py-0.5 whitespace-nowrap">
                 {t("beta")}
               </span>

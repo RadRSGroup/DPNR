@@ -302,6 +302,26 @@
     "cueLabels": { "continuation": "בהמשך ל...", "commitment": "התחייבות קרובה", "worthExploring": "שווה לבדוק" },
     "roomLink": { "decision": "חדר ההחלטות", "mirror": "חדר המראה", "library": "תוכן ולמידה" }
   },
+  "CheckInModal": {
+    "title": "נשימה וצ'ק-אין",
+    "closeLabel": "סגירה",
+    "subtitle": "כמה נשימות איטיות, בקצב שלכם.",
+    "breatheInLabel": "שאפו אוויר…",
+    "holdLabel": "עצרו…",
+    "breatheOutLabel": "נשפו…",
+    "doneLabel": "יפה מאוד.",
+    "moodPrompt": "איך אתם מרגישים כרגע?",
+    "moodThanks": "תודה שסיפרתם.",
+    "skip": "דלגו לעכשיו",
+    "moods": {
+      "calm": "רגועים",
+      "anxious": "חרדים",
+      "tired": "עייפים",
+      "hopeful": "מלאי תקווה",
+      "stuck": "תקועים",
+      "okay": "בסדר"
+    }
+  },
   "Metadata": {
     "title": "InnerOS — DPNR",
     "description": "מערכת ההפעלה האנושית האישית שלך — להרהר, להחליט ולצמוח עם DPNR."
@@ -509,6 +529,93 @@
       }
     }
   },
+  "Companion": {
+    "loading": "טוענים…",
+    "greeting": {
+      "morning": "בוקר טוב",
+      "afternoon": "צהריים טובים",
+      "evening": "ערב טוב"
+    },
+    "hero": {
+      "subtitle": "אני כאן איתך. בואו נמשיך מאיפה שהפסקת."
+    },
+    "emptyState": {
+      "title": "היי — מה עובר לך בראש?",
+      "body": "אפשר לעזור לך לחשוב על משהו, או להפנות אותך לחדר או לנושא בספרייה."
+    },
+    "quickPrompts": {
+      "understand": {
+        "lead": "עזרו לי להבין",
+        "rest": "מה שאני מרגיש/ה",
+        "text": "עזרו לי להבין מה שאני מרגיש/ה כרגע."
+      },
+      "pattern": {
+        "lead": "עזרו לי לראות",
+        "rest": "את התבנית",
+        "text": "עזרו לי לראות את התבנית במה שאני חוזר/ת וחווה."
+      },
+      "decision": {
+        "lead": "עזרו לי לקחת",
+        "rest": "החלטה",
+        "text": "אני תקוע/ה בהחלטה — עזרו לי לקחת אותה."
+      },
+      "guide": {
+        "lead": "הדריכו אותי לפי",
+        "rest": "מה שידוע לך עליי",
+        "text": "הדריכו אותי לפי מה שידוע לך עליי עד כה."
+      }
+    },
+    "explore": {
+      "label": "גלו עוד",
+      "innerOS": "InnerOS",
+      "workRooms": "חדרי עבודה",
+      "growth": "צמיחה",
+      "library": "ספרייה"
+    },
+    "composer": {
+      "placeholder": "שתפו אותי בכל מה שעל הלב...",
+      "attach": "הוספה",
+      "attachImage": "הוספת תמונה",
+      "removeAttachment": "הסרת קובץ מצורף",
+      "send": "שליחה",
+      "dictate": "הקלטה קולית",
+      "stopDictation": "עצירת הקלטה קולית"
+    },
+    "attachmentNotSupported": "אני רואה שצירפת תמונה — אני עדיין לא יכול/ה לצפות בתמונות, אבל קיבלתי את כל השאר ששיתפת.",
+    "sendError": "משהו השתבש מהצד שלי — נסו לשלוח את זה שוב.",
+    "privacyNote": "כל מה שאתם משתפים הוא פרטי ומוצפן.",
+    "pullACard": {
+      "heading": "משיכת קלף",
+      "error": "לא הצלחנו למשוך קלף — נסו שוב.",
+      "prompt": "משכו קלף למשהו שכדאי להתעכב עליו היום.",
+      "pulling": "מושכים קלף…",
+      "pullAgain": "משכו קלף נוסף",
+      "pullFirst": "משכו קלף"
+    },
+    "topBar": {
+      "searchPlaceholder": "חיפוש בכל דבר...",
+      "accountMenu": "תפריט חשבון",
+      "myProfile": "הפרופיל שלי",
+      "signOut": "התנתקות"
+    },
+    "focusMode": {
+      "title": "מצב ריכוז",
+      "subtitle": "עבודה עמוקה · פלייליסט DPNR",
+      "comingSoon": "בקרוב",
+      "playLabel": "הפעלה (בקרוב)",
+      "settingsLabel": "הגדרות מצב ריכוז (בקרוב)"
+    },
+    "directiveCard": {
+      "startDecisionRoom": "פתיחת חדר קבלת החלטות",
+      "startMirrorRoom": "פתיחת מפגש בחדר מראות",
+      "tapToOpen": "הקש/י לפתיחה →",
+      "openInnerOS": "פתיחת InnerOS",
+      "libraryLoading": "מהספרייה · בטעינה…",
+      "libraryLoadError": "לא הצלחנו לטעון את הנושא הזה כרגע.",
+      "understandDeeper": "להבין לעומק →",
+      "viewFullTopic": "צפייה בנושא המלא"
+    }
+  },
   "Auth": {
     "passwordField": {
       "passwordPlaceholder": "סיסמה",
@@ -549,13 +656,14 @@
   },
   "Nav": {
     "tagline": "מערכת הפעלה אנושית",
+    "brandHome": "דף הבית של DPNR",
     "items": {
-      "mainChat": "צ'אט ראשי",
-      "dashboard": "לוח בקרה",
-      "mirrorRoom": "חדר המראה",
-      "decisionRoom": "חדר ההחלטות",
-      "contentLearning": "תוכן ולמידה",
-      "growthTracker": "מעקב צמיחה",
+      "mainChat": "צ׳אט ראשי",
+      "dashboard": "לוח הבקרה שלי",
+      "mirrorRoom": "חדר מראות",
+      "decisionRoom": "חדר קבלת החלטות",
+      "contentLearning": "ספריית תוכן והעשרה",
+      "growthTracker": "מעקב וצמיחה",
       "evolutionMap": "מפת ההתפתחות שלי"
     },
     "soon": "בקרוב",

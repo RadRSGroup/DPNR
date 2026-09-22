@@ -27,18 +27,21 @@ interface ChatMessage {
   failed?: boolean
 }
 
-const QUICK_PROMPTS = [
-  { icon: Heart, lead: 'Help me understand', rest: "what I'm feeling", text: "Help me understand what I'm feeling right now." },
-  { icon: Cloud, lead: 'Help me see', rest: 'the pattern', text: 'Help me see the pattern in what I keep going through.' },
-  { icon: Shuffle, lead: 'Help me make', rest: 'a decision', text: "I'm stuck on a decision — help me make it." },
-  { icon: UserCircle, lead: 'Guide me based on', rest: 'what you know about me', text: 'Guide me based on what you know about me so far.' },
+// Icons paired with their `Companion.quickPrompts.<key>` i18n namespace —
+// the lead/rest/text copy itself now lives in messages/en.json + he.json,
+// not here, so this array only carries what i18n can't (the icon).
+const QUICK_PROMPT_KEYS = [
+  { icon: Heart, key: 'understand' as const },
+  { icon: Cloud, key: 'pattern' as const },
+  { icon: Shuffle, key: 'decision' as const },
+  { icon: UserCircle, key: 'guide' as const },
 ]
 
-function timeGreeting() {
+function timeGreeting(t: (key: string) => string) {
   const h = new Date().getHours()
-  if (h < 12) return 'Good morning'
-  if (h < 18) return 'Good afternoon'
-  return 'Good evening'
+  if (h < 12) return t('greeting.morning')
+  if (h < 18) return t('greeting.afternoon')
+  return t('greeting.evening')
 }
 
 /**
@@ -71,6 +74,7 @@ function CompanionContent() {
   const searchParams = useSearchParams()
   const locale = useLocale()
   const t = useTranslations('Onboarding')
+  const tc = useTranslations('Companion')
   const onboarding = useOnboardingFlow()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   // Session 60 — a fresh, ephemeral "welcome back" line on every visit
@@ -246,7 +250,7 @@ function CompanionContent() {
         ...prev,
         {
           role: 'assistant',
-          text: "I can see you attached an image — I can't actually look at images yet, but I've got everything else you shared.",
+          text: tc('attachmentNotSupported'),
           createdAt: new Date().toISOString(),
         },
       ])
@@ -282,7 +286,7 @@ function CompanionContent() {
       } else {
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant', text: 'Something went wrong on my end — try sending that again.', createdAt: new Date().toISOString(), failed: true },
+          { role: 'assistant', text: tc('sendError'), createdAt: new Date().toISOString(), failed: true },
         ])
       }
     } finally {
@@ -374,7 +378,7 @@ function CompanionContent() {
           {isLanding && (
             <div className="px-5 pt-14 pb-1 lg:hidden">
               <h1 className="font-display text-2xl text-white">
-                {timeGreeting()}{firstName ? `, ${firstName}` : ''}
+                {timeGreeting(tc)}{firstName ? `, ${firstName}` : ''}
               </h1>
             </div>
           )}
@@ -399,10 +403,10 @@ function CompanionContent() {
               </div>
               <div className="relative z-10 h-full flex flex-col justify-center px-8 max-w-[55%]">
                 <h1 className="font-display text-3xl text-white">
-                  {timeGreeting()}{firstName ? `, ${firstName}` : ''}
+                  {timeGreeting(tc)}{firstName ? `, ${firstName}` : ''}
                 </h1>
                 <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                  I&apos;m here with you. Let&apos;s continue where you are.
+                  {tc('hero.subtitle')}
                 </p>
               </div>
             </div>
@@ -433,7 +437,7 @@ function CompanionContent() {
               !pageLoading && messages.length === 0 && !onboarding.active ? 'justify-center' : 'space-y-3'
             }`}
           >
-            {pageLoading && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">Loading…</p>}
+            {pageLoading && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">{tc('loading')}</p>}
 
             {/* First-Time Onboarding, moved in-chat (see useOnboardingFlow's
                 own doc comment) — a single greeting bubble, then whichever
@@ -513,9 +517,9 @@ function CompanionContent() {
             {!pageLoading && messages.length === 0 && !onboarding.active && (
               <div className="flex justify-start">
                 <div className="max-w-[90%] lg:max-w-[480px] bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] text-white/85 rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed">
-                  <p>Hi — what&apos;s on your mind?</p>
+                  <p>{tc('emptyState.title')}</p>
                   <p className="text-[var(--color-text-tertiary)] text-xs mt-1.5">
-                    I can help you think something through, or point you to a Room or a Library topic.
+                    {tc('emptyState.body')}
                   </p>
                 </div>
               </div>
@@ -575,19 +579,19 @@ function CompanionContent() {
               way to navigate. */}
           {isLanding && (
           <div className="px-5 pt-2 lg:hidden">
-            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-2">Explore</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-2">{tc('explore.label')}</p>
             <div className="grid grid-cols-4 gap-2">
               <Link href="/dashboard" className="liquid-glass active:scale-[0.98] rounded-2xl p-2.5 text-center">
-                <p className="text-white text-xs font-medium">InnerOS</p>
+                <p className="text-white text-xs font-medium">{tc('explore.innerOS')}</p>
               </Link>
               <Link href="/rooms" className="liquid-glass active:scale-[0.98] rounded-2xl p-2.5 text-center">
-                <p className="text-white text-xs font-medium">Work Rooms</p>
+                <p className="text-white text-xs font-medium">{tc('explore.workRooms')}</p>
               </Link>
               <Link href="/growth" className="liquid-glass active:scale-[0.98] rounded-2xl p-2.5 text-center">
-                <p className="text-white text-xs font-medium">Growth</p>
+                <p className="text-white text-xs font-medium">{tc('explore.growth')}</p>
               </Link>
               <Link href="/library" className="liquid-glass active:scale-[0.98] rounded-2xl p-2.5 text-center">
-                <p className="text-white text-xs font-medium">Library</p>
+                <p className="text-white text-xs font-medium">{tc('explore.library')}</p>
               </Link>
             </div>
           </div>
@@ -602,15 +606,15 @@ function CompanionContent() {
           {showPrompts && (
             <div className="px-5 lg:px-0 pt-1 pb-2">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
-                {QUICK_PROMPTS.map((p) => (
+                {QUICK_PROMPT_KEYS.map((p) => (
                   <button
-                    key={p.text}
-                    onClick={() => fillPrompt(p.text)}
+                    key={p.key}
+                    onClick={() => fillPrompt(tc(`quickPrompts.${p.key}.text`))}
                     className="liquid-glass text-left rounded-[var(--radius-card)] p-3 active:scale-[0.98]"
                   >
                     <p.icon className="w-4 h-4 text-[var(--color-violet-400)] mb-2" />
                     <p className="text-white/80 text-xs leading-snug">
-                      {p.lead} <span className="text-[var(--color-violet-300)]">{p.rest}</span>
+                      {tc(`quickPrompts.${p.key}.lead`)} <span className="text-[var(--color-violet-300)]">{tc(`quickPrompts.${p.key}.rest`)}</span>
                     </p>
                   </button>
                 ))}
@@ -626,7 +630,7 @@ function CompanionContent() {
                 <button
                   onClick={() => setAttachedFileName(null)}
                   className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-white/10"
-                  aria-label="Remove attachment"
+                  aria-label={tc('composer.removeAttachment')}
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -645,7 +649,7 @@ function CompanionContent() {
               onClick={handleAttachClick}
               disabled={composerDisabled}
               className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-full bg-[var(--color-surface-glass)] border border-white/15 text-white/60 hover:text-white/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              aria-label="Attach"
+              aria-label={tc('composer.attach')}
             >
               <Plus className="w-5 h-5" />
             </button>
@@ -655,7 +659,7 @@ function CompanionContent() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={onboarding.awaitingIntention ? t('cards.currentIntention.placeholder') : 'Share anything with me...'}
+                placeholder={onboarding.awaitingIntention ? t('cards.currentIntention.placeholder') : tc('composer.placeholder')}
                 rows={1}
                 disabled={composerDisabled}
                 className="flex-1 bg-[var(--color-surface-glass)] border border-white/15 rounded-2xl ps-4 pe-20 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors max-h-32"
@@ -668,7 +672,7 @@ function CompanionContent() {
                     className={`transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                       listening ? 'text-[var(--color-violet-300)]' : 'text-white/40 hover:text-white/70'
                     }`}
-                    aria-label={listening ? 'Stop dictation' : 'Dictate'}
+                    aria-label={listening ? tc('composer.stopDictation') : tc('composer.dictate')}
                   >
                     <Mic className="w-[18px] h-[18px]" />
                   </button>
@@ -677,7 +681,7 @@ function CompanionContent() {
                   onClick={handleAttachClick}
                   disabled={composerDisabled}
                   className="text-white/40 hover:text-white/70 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Attach an image"
+                  aria-label={tc('composer.attachImage')}
                 >
                   <ImagePlus className="w-[18px] h-[18px]" />
                 </button>
@@ -687,7 +691,7 @@ function CompanionContent() {
               onClick={handleSend}
               disabled={!input.trim() || sending || composerDisabled}
               className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-full bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] active:scale-[0.98] disabled:bg-white/10 disabled:cursor-not-allowed text-white transition-all"
-              aria-label="Send"
+              aria-label={tc('composer.send')}
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d="M2 9L16 2L11 16L8 10L2 9Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" fill="currentColor" fillOpacity="0.15" />
@@ -696,7 +700,7 @@ function CompanionContent() {
           </div>
           {isLanding && (
             <p className="px-5 lg:px-0 pb-3 text-center text-[var(--color-text-tertiary)] text-xs">
-              Everything you share is private and encrypted.
+              {tc('privacyNote')}
             </p>
           )}
         </div>
