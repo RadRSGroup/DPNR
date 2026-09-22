@@ -129,6 +129,31 @@ export class ApiStack extends Stack {
       },
     })
 
+    // Security review 2026-09-14 (DPNR-05): no account-level throttling
+    // existed anywhere on this API — a determined caller could drive
+    // unbounded Bedrock cost (every route ultimately reaches at least a
+    // safety-classification call, several reach a full model reply) with
+    // no rate limit standing in the way below the per-request credit/size
+    // checks. This is a blunt, first floor — one shared limit across every
+    // route and every caller, not per-user or per-IP (HttpApi's L2 default
+    // stage doesn't expose per-key throttling; that needs a usage-plan-style
+    // mechanism this stack doesn't have yet) — but it bounds the account's
+    // total worst-case request rate where today there is no ceiling at all.
+    // Values are a starting point, not load-tested: 50 requests/second
+    // steady-state, 100-request burst capacity, shared across the whole
+    // account. Generous for the real beta userbase (a handful of accounts,
+    // per docs/PHASE_AUDIT.md's own live counts) while still finite where
+    // today it's unbounded — cheap to tighten once real traffic patterns
+    // exist. Uses the L1 escape hatch since HttpApi's L2 defaultStage
+    // doesn't expose throttle settings directly.
+    const cfnDefaultStage = this.httpApi.defaultStage?.node.defaultChild as apigwv2.CfnStage | undefined
+    if (cfnDefaultStage) {
+      cfnDefaultStage.defaultRouteSettings = {
+        throttlingBurstLimit: 100,
+        throttlingRateLimit: 50,
+      }
+    }
+
     const healthFn = new lambda.NodejsFunction(this, 'HealthFn', {
       runtime: Runtime.NODEJS_24_X,
       entry: path.join(__dirname, '../lambda/health/handler.ts'),

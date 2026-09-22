@@ -14,6 +14,14 @@ export type FlowId = z.infer<typeof FlowIdSchema>
 export const RoomCommandActionSchema = z.enum(['SUBMIT_STEP', 'REFINE', 'SKIP', 'RESUME'])
 export type RoomCommandAction = z.infer<typeof RoomCommandActionSchema>
 
+// Security review 2026-09-14 (DPNR-05): `input`'s shape varies per step
+// (decision-steps.ts / mirror-steps.ts each define their own), so it can't
+// be bounded field-by-field here without duplicating every step's schema.
+// A ceiling on the serialized payload size closes the same unbounded-cost
+// gap CompanionMessageRequestSchema's own max() closes for chat text, without
+// constraining individual step input shapes.
+const ROOM_COMMAND_INPUT_MAX_SERIALIZED_CHARS = 20000
+
 export const RoomCommandRequestSchema = z.object({
   sessionId: z.string(),
   flowId: FlowIdSchema,
@@ -21,7 +29,9 @@ export const RoomCommandRequestSchema = z.object({
   action: RoomCommandActionSchema,
   expectedSessionVersion: z.number().int().min(0), // optimistic concurrency
   idempotencyKey: z.string(),
-  input: z.record(z.string(), z.unknown()),
+  input: z.record(z.string(), z.unknown()).refine((val) => JSON.stringify(val).length <= ROOM_COMMAND_INPUT_MAX_SERIALIZED_CHARS, {
+    message: `input payload exceeds the ${ROOM_COMMAND_INPUT_MAX_SERIALIZED_CHARS}-character serialized limit.`,
+  }),
 })
 export type RoomCommandRequest = z.infer<typeof RoomCommandRequestSchema>
 
