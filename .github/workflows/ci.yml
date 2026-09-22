@@ -1,0 +1,66 @@
+name: CI
+
+# Security review 2026-09-14 (DPNR-12) — this repo had zero CI of any kind
+# before this: no required check ever ran build/lint/typecheck/audit/test
+# against a PR or a push. `mvp` is this project's real working branch
+# (docs/AGENT_LOG.md — every session's "pushed to origin/mvp"), not
+# GitHub's own default-branch setting (`main`, an unrelated older branch
+# in this same multi-project repo) — deliberately targeting the one that
+# matters here, not the platform default.
+#
+# No AWS credentials of any kind are configured or needed — confirmed by
+# running `npm run typecheck:cdk`/`npm run synth` locally with every
+# AWS/CDK environment variable unset before writing this: `cdk synth`
+# synthesizes a fully environment-agnostic template (CloudFormation
+# pseudo-parameters instead of literal account/region) with no real
+# credentials, so this workflow deploys nothing and touches no live AWS
+# resource.
+on:
+  push:
+    branches: [mvp]
+  pull_request:
+    branches: [mvp]
+
+jobs:
+  build-lint-typecheck-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared-types
+        run: npm run build:shared-types
+
+      - name: apps/web lint (eslint + RTL ratchet + i18n parity)
+        run: npm run lint --workspace=apps/web
+
+      - name: apps/web test
+        run: npm run test:web
+
+      - name: apps/web build (also typechecks, via next build)
+        run: npm run build --workspace=apps/web
+
+      - name: infra/cdk typecheck
+        run: npm run typecheck --workspace=infra/cdk
+
+      - name: infra/cdk test
+        run: npm run test:cdk
+
+      - name: infra/cdk synth
+        run: npm run synth --workspace=infra/cdk
+
+      # Security review 2026-09-14 (DPNR-01) — the report treats a clean
+      # audit as a release condition. --omit=dev matches this project's
+      # own established convention (Security remediation S1's own commit)
+      # of not gating on dev-tooling-only findings (vitest's mocker,
+      # esbuild's dev server) that this project's usage pattern never
+      # exercises in a way that matters for a deployed Lambda/Next.js app.
+      - name: npm audit (production dependencies only)
+        run: npm audit --omit=dev

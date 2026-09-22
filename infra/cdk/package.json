@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "synth": "cdk synth --context isProduction=false",
     "diff": "cdk diff --context isProduction=false",
     "deploy": "cdk deploy --context isProduction=false",
@@ -31,8 +32,10 @@
     "@types/aws-lambda": "^8.10.145",
     "@types/node": "^20",
     "aws-cdk": "^2.160.0",
+    "aws-sdk-client-mock": "^4.1.0",
     "esbuild": "^0.23.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }
