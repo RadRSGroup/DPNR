@@ -66,7 +66,9 @@ export const handler = async (): Promise<void> => {
 
 async function composeForUser(profile: UserProfileItem, weekAgoIso: string): Promise<boolean> {
   const userId = profile.userId
-  const crypto = await getSessionCrypto(userId)
+  // Scheduled, no user present (DPNR-07 fix) — see compose-daily-card.ts's
+  // identical comment / session-crypto.ts's own doc comment.
+  const crypto = await getSessionCrypto(userId, 'post_session')
   const languageInstruction = toLanguageInstruction(profile.preferredLanguage, profile.genderIdentity)
   const { confirmedSignals, sessionSummaries } = await gatherContinuityContext(userId, crypto)
 

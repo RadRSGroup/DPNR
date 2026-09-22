@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import createMiddleware from 'next-intl/middleware'
 import { routing } from '@/i18n/routing'
+import { resolveSafeNext } from '@/lib/navigation/safeNext'
+import { buildSecurityHeaders } from '@/lib/securityHeaders'
 
 const handleI18nRouting = createMiddleware(routing)
 
@@ -57,8 +59,17 @@ function withLocale(path: string, locale: 'en' | 'he'): string {
  * then to `/he/login` by next-intl on the following request — one extra
  * hop, not a correctness bug, and not worth fully re-deriving next-intl's
  * own negotiation logic here just to collapse.
+ *
+ * Security review 2026-09-14 (DPNR-10) — renamed from the exported `proxy`
+ * to `resolveRoutingResponse`; the exported `proxy` below wraps this
+ * unchanged function purely to attach security headers to whatever
+ * response it decides on (redirect or pass-through), without touching any
+ * of the routing logic itself. The incoming `request`'s headers already
+ * carry `x-nonce` (set by `proxy` before calling this) by the time
+ * `handleI18nRouting` reads them, so next-intl's own internal response
+ * (and Next's subsequent render for a pass-through) sees it too.
  */
-export async function proxy(request: NextRequest) {
+async function resolveRoutingResponse(request: NextRequest) {
   const i18nResponse = handleI18nRouting(request)
 
   const { locale, path: pathname } = stripLocalePrefix(request.nextUrl.pathname)
@@ -154,7 +165,10 @@ export async function proxy(request: NextRequest) {
   // either way.
   if (isConsentPage && hasConsent) {
     const url = request.nextUrl.clone()
-    const next = request.nextUrl.searchParams.get('next')
+    // Validated (DPNR-03) even though this branch only ever forwards a
+    // pathname, not a full URL — `url.pathname =` can't switch origin, but
+    // an unvalidated value could still smuggle an unexpected path/query.
+    const next = resolveSafeNext(request.nextUrl.searchParams.get('next'))
     if (!hasProfileSetup) {
       url.pathname = withLocale('/profile-setup', locale)
       url.searchParams.set('next', next ?? '/companion')
@@ -173,7 +187,7 @@ export async function proxy(request: NextRequest) {
   // inline onboarding) if that's not done yet either.
   if (isProfileSetupPage && hasProfileSetup) {
     const url = request.nextUrl.clone()
-    const next = request.nextUrl.searchParams.get('next')
+    const next = resolveSafeNext(request.nextUrl.searchParams.get('next'))
     if (!hasOnboarding) {
       url.pathname = withLocale('/companion', locale)
       url.searchParams.set('next', next ?? '/companion')
@@ -201,6 +215,34 @@ export async function proxy(request: NextRequest) {
   }
 
   return i18nResponse
+}
+
+/**
+ * Security review 2026-09-14 (DPNR-10) — this app shipped with no CSP or
+ * other security headers at all. Generates a fresh per-request nonce,
+ * mutates the incoming request's own headers to carry it as `x-nonce`
+ * *before* delegating to `resolveRoutingResponse` (so next-intl's internal
+ * response — and Next's render for a pass-through — reads it too, per
+ * Next.js's own documented CSP-nonce middleware pattern: App Router
+ * automatically applies a nonce found this way to its own
+ * framework-generated inline scripts), then attaches the CSP plus the rest
+ * of the standard header set to whatever response comes back, redirect or
+ * pass-through alike.
+ */
+export async function proxy(request: NextRequest) {
+  // btoa/crypto.randomUUID, not Buffer — this middleware runs in the Edge
+  // Runtime (no explicit `runtime: 'nodejs'` in this file's own `config`
+  // below), where Buffer isn't guaranteed available but both Web APIs are.
+  const nonce = btoa(crypto.randomUUID())
+  request.headers.set('x-nonce', nonce)
+
+  const response = await resolveRoutingResponse(request)
+
+  for (const [name, value] of Object.entries(buildSecurityHeaders(nonce))) {
+    response.headers.set(name, value)
+  }
+
+  return response
 }
 
 export const config = {

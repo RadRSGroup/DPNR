@@ -6,6 +6,7 @@ import { useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
 import { updatePreferences } from '@/lib/api/v1-client'
 import { markProfileSetupCompleteLocally } from '@/lib/cognito/client'
+import { resolveSafeNext } from '@/lib/navigation/safeNext'
 import GenderSelector from '@/components/shared/GenderSelector'
 import AvatarUpload from '@/components/shared/AvatarUpload'
 import type { GenderIdentity } from '@dpnr/shared-types'
@@ -23,7 +24,8 @@ function ProfileSetupContent() {
   const t = useTranslations('ProfileSetup')
   const router = useRouter()
   const params = useSearchParams()
-  const next = params.get('next') ?? '/companion'
+  // Untrusted until validated — see resolveSafeNext's own doc comment (DPNR-03).
+  const next = resolveSafeNext(params.get('next'))
 
   const [gender, setGender] = useState<GenderIdentity>('unspecified')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)

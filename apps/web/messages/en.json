@@ -410,7 +410,7 @@
       },
       "aiProcessesContent": {
         "title": "AI processes your content",
-        "body": "Your decision text is processed only during your active session, and encrypted so we can't access it either. It is not used to train any model."
+        "body": "Your decision text is encrypted at rest with a key only you and your session can unlock. To generate a reply, our systems briefly decrypt it for that request — it is not used to train any model, and never kept decrypted beyond what that request needs."
       },
       "anonymisedAnalysis": {
         "title": "Anonymised analysis",
@@ -791,7 +791,7 @@
       },
       "dataSharing": {
         "title": "Data Sharing",
-        "body": "<p>We share data only with:</p><ul><li><strong>Amazon Web Services (AWS)</strong> — authentication (Cognito), database and encrypted content storage (DynamoDB), and AI response generation (Bedrock/Anthropic Claude — content only, no PII)</li><li><strong>Grow</strong> — Israeli payment processing (billing data only)</li><li><strong>Vercel</strong> — application hosting</li></ul><p>We do not sell personal data to third parties.</p>"
+        "body": "<p>We share data only with:</p><ul><li><strong>Amazon Web Services (AWS)</strong> — authentication (Cognito), database and encrypted content storage (DynamoDB), and AI response generation (Bedrock/Anthropic Claude — sent the conversation content needed for that request only)</li><li><strong>Grow</strong> — Israeli payment processing (billing data only)</li><li><strong>Render</strong> — application hosting</li></ul><p>We do not sell personal data to third parties.</p>"
       },
       "dataRetention": {
         "title": "Data Retention",
@@ -803,7 +803,7 @@
       },
       "security": {
         "title": "Security",
-        "body": "<p>All data is encrypted in transit (TLS) and at rest. Your personal content — decisions, reflections, journal entries, and conversations — is additionally protected with per-user end-to-end encryption: each account has its own encryption key, wrapped under your password (and a one-time recovery code) using AWS KMS, so your content is never readable in plain form outside an authenticated session of yours. Application-level access controls ensure each user can only reach their own data. Passwords are never stored in plain text.</p>"
+        "body": "<p>All data is encrypted in transit (TLS) and at rest. Your personal content — decisions, reflections, journal entries, and conversations — is additionally protected with per-user application-level encryption: each account has its own encryption key, wrapped under your password (and a one-time recovery code) using AWS KMS. That key is only ever unwrapped, server-side, for a limited window tied to your own session or a feature you've enabled (such as a Daily Card or Weekly Recap) — never held decrypted at rest or kept available indefinitely. This is not end-to-end encryption in the sense that only your device can ever read your content: our systems can and do decrypt it, briefly, to do the processing those features require. We never store your password in plain text, and if you lose both your password and your one-time recovery code, this content cannot be recovered by us or anyone else — there is no backend override.</p>"
       },
       "cookies": {
         "title": "Cookies",

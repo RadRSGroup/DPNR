@@ -9,27 +9,12 @@ import {
   type SafetyClassification,
 } from '@dpnr/shared-types'
 import { resolvePromptVersion } from './prompt-registry'
-import { callPromptModel, type GuardrailRef } from './model-call'
+import { callPromptModel } from './model-call'
 import type { Locale } from './locale'
 
 const sns = new SNSClient({})
 
 const SAFETY_EVENT_TTL_SECONDS = 90 * 24 * 60 * 60 // 90 days, ADR 0012
-
-/**
- * Stage 4 (docs/SAFETY_SYSTEM_DESIGN.md §7) — read directly from the
- * environment, same "optional at the code level, wired by api-stack.ts on
- * every Lambda that needs it" pattern `publishImmediateDangerAlert` below
- * already uses for `SAFETY_ALERT_TOPIC_ARN`. Every filter/topic on the
- * deployed guardrail is `NONE`/detect-only (see `api-stack.ts`'s
- * `SafetyGuardrail`), so passing this is purely additive telemetry — see
- * `model-call.ts`'s `callPromptModel` doc comment.
- */
-function getSafetyGuardrailRef(): GuardrailRef | undefined {
-  const identifier = process.env.SAFETY_GUARDRAIL_ID
-  const version = process.env.SAFETY_GUARDRAIL_VERSION
-  return identifier && version ? { identifier, version } : undefined
-}
 
 // Stage 2 (Rooms) heuristic — a Room command's `input` is a flexible
 // Record<string, unknown> (packages/shared-types/src/api/command-contract.ts:
@@ -44,20 +29,61 @@ function getSafetyGuardrailRef(): GuardrailRef | undefined {
 // length makes no classification call at all.
 const MIN_FREE_TEXT_LENGTH = 20
 
+// Security review 2026-09-14 (DPNR-06): MIN_FREE_TEXT_LENGTH's own tradeoff
+// has a real gap — a genuine crisis statement is very often SHORTER than 20
+// characters ("i want to die" is 14), so it was silently dropped before
+// classifySafety ever ran, no different from an empty command. This is a
+// small, deterministic, non-model safety net specifically for that gap: any
+// string of ANY length gets included if it contains one of these
+// unambiguous phrases, regardless of MIN_FREE_TEXT_LENGTH. Deliberately not
+// a replacement for the model classifier — a narrow, high-precision list
+// (avoiding single ambiguous words like "hurt" that would false-positive on
+// ordinary Decision/Mirror Room narratives) meant only to stop a short
+// message from being skipped outright, not to itself judge severity.
+// English-only as a first pass, same "first pass, revisit with real data"
+// status as the length floor above — Hebrew-phrase coverage is a real,
+// known gap for a future session, not solved here.
+const HIGH_RISK_PHRASES = [
+  'kill myself',
+  'end my life',
+  'ending my life',
+  'want to die',
+  'wanted to die',
+  "don't want to live",
+  'do not want to live',
+  'not want to be alive',
+  'hurt myself',
+  'hurting myself',
+  'harm myself',
+  'harming myself',
+  'end it all',
+  'better off dead',
+  'suicide',
+  'suicidal',
+]
+
+function containsHighRiskPhrase(value: string): boolean {
+  const normalized = value.toLowerCase()
+  return HIGH_RISK_PHRASES.some((phrase) => normalized.includes(phrase))
+}
+
 /**
  * Pulls whatever looks like real free text out of a Room command's `input`
  * bag for a safety check — a shallow scan (this codebase's step handlers
  * consistently keep free-text fields flat, never nested; see e.g.
  * mirror-steps/pattern.ts's `copingResponse`/`recurringPattern`) over every
- * string value at least `MIN_FREE_TEXT_LENGTH` characters long, joined with
- * blank lines. Returns `null` when nothing qualifies (a REFINE step like
- * decision-steps/deep-exploration.ts's `{optionLabel: 'A'}` has no free text
- * of its own — the narrative it references was already classified when it
- * was first submitted at an earlier step).
+ * string value at least `MIN_FREE_TEXT_LENGTH` characters long, OR any
+ * length at all if it matches `HIGH_RISK_PHRASES` (see that constant's own
+ * doc comment — the length floor alone silently dropped short crisis
+ * statements), joined with blank lines. Returns `null` when nothing
+ * qualifies (a REFINE step like decision-steps/deep-exploration.ts's
+ * `{optionLabel: 'A'}` has no free text of its own — the narrative it
+ * references was already classified when it was first submitted at an
+ * earlier step).
  */
 export function extractFreeTextForSafetyCheck(input: Record<string, unknown>): string | null {
   const values = Object.values(input).filter(
-    (v): v is string => typeof v === 'string' && v.length >= MIN_FREE_TEXT_LENGTH
+    (v): v is string => typeof v === 'string' && (v.length >= MIN_FREE_TEXT_LENGTH || containsHighRiskPhrase(v))
   )
   return values.length > 0 ? values.join('\n\n') : null
 }
@@ -78,11 +104,11 @@ export function extractFreeTextForSafetyCheck(input: Record<string, unknown>): s
  * guessing wrong in the alarming direction on a parsing glitch would itself
  * be a bad, confusing experience for someone who said nothing concerning.
  *
- * Stage 4 also attaches a native Bedrock Guardrail (via
- * `getSafetyGuardrailRef()` below, env-driven, no signature change needed
- * here) as a second, independent signal alongside this prompt's own
- * judgment — see `model-call.ts`'s `callPromptModel` doc comment for what
- * it does and doesn't do (detect-only, never blocks).
+ * `callPromptModel` also attaches a native Bedrock Guardrail (resolved
+ * automatically there, env-driven, not passed by this caller) as a second,
+ * independent signal alongside this prompt's own judgment — see
+ * `model-call.ts`'s own doc comment for what it does and doesn't do
+ * (detect-only, never blocks).
  */
 export async function classifySafety(
   ddb: DynamoDBDocumentClient,
@@ -106,7 +132,7 @@ export async function classifySafety(
   let classification: SafetyClassification
   try {
     const version = await resolvePromptVersion(ddb, promptRegistryTableName, 'safety', 'classify_safety_state')
-    const result = await callPromptModel(version, { recentConversation, currentMessage }, getSafetyGuardrailRef())
+    const result = await callPromptModel(version, { recentConversation, currentMessage })
     if (typeof result === 'string') {
       console.error('Safety classification: prompt did not return forced tool-use output.')
       classification = fallback
@@ -205,15 +231,11 @@ export async function generateSafetyResponse(
   const promptName = SAFETY_RESPONSE_PROMPT_NAME[classification.safetyState]
   try {
     const version = await resolvePromptVersion(ddb, promptRegistryTableName, 'safety', promptName)
-    const result = await callPromptModel(
-      version,
-      {
-        currentMessage,
-        reasonCodes: classification.reasonCodes.join(', '),
-        languageInstruction,
-      },
-      getSafetyGuardrailRef()
-    )
+    const result = await callPromptModel(version, {
+      currentMessage,
+      reasonCodes: classification.reasonCodes.join(', '),
+      languageInstruction,
+    })
     return typeof result === 'string' && result.length > 0 ? result : FALLBACK_SAFETY_MESSAGE[locale]
   } catch (err) {
     console.error('Safety response generation failed (using fixed fallback):', err instanceof Error ? err.message : 'unknown error')

@@ -1,4 +1,4 @@
-import { Stack, StackProps, Duration } from 'aws-cdk-lib'
+import { Stack, StackProps, Duration, Annotations } from 'aws-cdk-lib'
 import * as apigwv2 from 'aws-cdk-lib/aws-apigatewayv2'
 import * as authorizers from 'aws-cdk-lib/aws-apigatewayv2-authorizers'
 import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations'
@@ -14,6 +14,7 @@ import { Runtime } from 'aws-cdk-lib/aws-lambda'
 import * as events from 'aws-cdk-lib/aws-events'
 import * as targets from 'aws-cdk-lib/aws-events-targets'
 import * as sns from 'aws-cdk-lib/aws-sns'
+import * as snsSubscriptions from 'aws-cdk-lib/aws-sns-subscriptions'
 import { CfnOutput } from 'aws-cdk-lib'
 import * as path from 'path'
 import { Construct } from 'constructs'
@@ -58,6 +59,20 @@ export interface ApiStackProps extends StackProps {
   sessionTicketsKmsKey: kms.Key
   avatarsBucket: s3.Bucket
   isProduction?: boolean
+  /**
+   * Security review 2026-09-14 (DPNR-06/DPNR-11): a real person's email
+   * subscribed to `SafetyAlertTopic` below, so an `immediate_danger`
+   * classification actually reaches a human — the topic previously had
+   * zero subscribers, deliberately (a real address isn't committed into
+   * version-controlled code, same AWS Budgets precedent `bin/dpnr.ts`
+   * already follows), but that left the gap permanently invisible rather
+   * than temporarily open. Pass via CDK context: `cdk deploy --context
+   * safetyAlertEmail=you@example.com`. Omitting it still deploys (this
+   * stays optional, not a hard failure, since founder-only internal
+   * testing per ADR 0007 may have another real backstop) but surfaces a
+   * loud synth-time warning and a stack output instead of failing silently.
+   */
+  safetyAlertEmail?: string
 }
 
 /**
@@ -128,6 +143,31 @@ export class ApiStack extends Stack {
         allowHeaders: ['authorization', 'content-type'],
       },
     })
+
+    // Security review 2026-09-14 (DPNR-05): no account-level throttling
+    // existed anywhere on this API — a determined caller could drive
+    // unbounded Bedrock cost (every route ultimately reaches at least a
+    // safety-classification call, several reach a full model reply) with
+    // no rate limit standing in the way below the per-request credit/size
+    // checks. This is a blunt, first floor — one shared limit across every
+    // route and every caller, not per-user or per-IP (HttpApi's L2 default
+    // stage doesn't expose per-key throttling; that needs a usage-plan-style
+    // mechanism this stack doesn't have yet) — but it bounds the account's
+    // total worst-case request rate where today there is no ceiling at all.
+    // Values are a starting point, not load-tested: 50 requests/second
+    // steady-state, 100-request burst capacity, shared across the whole
+    // account. Generous for the real beta userbase (a handful of accounts,
+    // per docs/PHASE_AUDIT.md's own live counts) while still finite where
+    // today it's unbounded — cheap to tighten once real traffic patterns
+    // exist. Uses the L1 escape hatch since HttpApi's L2 defaultStage
+    // doesn't expose throttle settings directly.
+    const cfnDefaultStage = this.httpApi.defaultStage?.node.defaultChild as apigwv2.CfnStage | undefined
+    if (cfnDefaultStage) {
+      cfnDefaultStage.defaultRouteSettings = {
+        throttlingBurstLimit: 100,
+        throttlingRateLimit: 50,
+      }
+    }
 
     const healthFn = new lambda.NodejsFunction(this, 'HealthFn', {
       runtime: Runtime.NODEJS_24_X,
@@ -206,17 +246,33 @@ export class ApiStack extends Stack {
     // Safety alert topic (Session 29, ADR 0012 decision #3) — a live alert
     // on a real `immediate_danger` detection, since there is no other
     // crisis-response backstop during the current founder-only internal-
-    // testing phase (ADR 0007). Deliberately NO email subscription declared
-    // here, matching the AWS Budgets alert precedent (Session 4): a real
-    // person's email address isn't committed into version-controlled
-    // infrastructure code. Subscribe an address post-deploy via
-    // `aws sns subscribe --topic-arn <this topic's ARN> --protocol email
-    // --notification-endpoint <address>` (confirmation email required
-    // before it activates) — see docs/AGENT_LOG.md Session 29 for the
-    // exact command once run.
+    // testing phase (ADR 0007).
     const safetyAlertTopic = new sns.Topic(this, 'SafetyAlertTopic', {
       topicName: 'dpnr-safety-alerts',
       displayName: 'DPNR safety alerts',
+    })
+
+    // Security review 2026-09-14 (DPNR-06/DPNR-11) — `props.safetyAlertEmail`
+    // is the only way this topic ever gets a subscriber; still deliberately
+    // NOT hardcoded here, matching the AWS Budgets alert precedent
+    // (Session 4): a real person's email address isn't committed into
+    // version-controlled infrastructure code. What changed is that the
+    // absence of a subscriber is no longer silent — a missing value now
+    // produces a real synth-time warning (surfaces in every `cdk synth`/
+    // `cdk deploy` run, not just something you'd notice by reading this
+    // file) and a stack output flagging it, instead of the topic quietly
+    // existing with nobody listening.
+    if (props.safetyAlertEmail) {
+      safetyAlertTopic.addSubscription(new snsSubscriptions.EmailSubscription(props.safetyAlertEmail))
+    } else {
+      Annotations.of(this).addWarning(
+        'SafetyAlertTopic has no email subscriber configured (DPNR-06). An immediate_danger classification will ' +
+          "publish to this topic but reach no one. Deploy with --context safetyAlertEmail=<address> once a real " +
+          'on-call address is decided, or subscribe one manually via `aws sns subscribe`.'
+      )
+    }
+    new CfnOutput(this, 'SafetyAlertSubscriberConfigured', {
+      value: props.safetyAlertEmail ? 'yes' : 'NO — see SafetyAlertTopic Annotations warning at synth time',
     })
 
     /**
@@ -385,12 +441,17 @@ export class ApiStack extends Stack {
         PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
         SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
         SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+        // Security review 2026-09-14 (DPNR-06) — this function's synthesized
+        // continuation is a real model call and previously had no guardrail
+        // wiring at all, unlike companionMessageFn's normal reply path.
+        ...safetyGuardrailEnv,
       },
       description: 'GET /v1/companion/context — recent turns for resuming a chat; may synthesize a real continuation.',
     })
     props.applicationTable.grantReadWriteData(companionContextFn)
     props.promptRegistryTable.grantReadData(companionContextFn)
     grantBedrockConverse(companionContextFn)
+    grantApplyGuardrail(companionContextFn)
     props.sessionTicketsKmsKey.grantDecrypt(companionContextFn)
     props.sessionTicketsTable.grantReadData(companionContextFn)
 
@@ -562,9 +623,21 @@ export class ApiStack extends Stack {
     const accountDeleteFn = new lambda.NodejsFunction(this, 'AccountDeleteFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/account/delete.ts'),
-      description: 'DELETE /v1/account — deletes the whole USER#<id> partition (Cognito identity deleted client-side, see delete.ts).',
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        // Security review 2026-09-14 (DPNR-09) — this Lambda now also
+        // deletes every session ticket for the caller, not just the
+        // application-table partition; see delete.ts's own doc comment.
+        // Never calls kms:Decrypt (it deletes the wrapped ciphertext rows
+        // wholesale, never unwraps them), so only table read/write is
+        // needed below, no KMS grant.
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
+      description:
+        'DELETE /v1/account — deletes the whole USER#<id> partition and every session ticket (Cognito identity deleted client-side, see delete.ts).',
     })
     props.applicationTable.grantReadWriteData(accountDeleteFn)
+    props.sessionTicketsTable.grantReadWriteData(accountDeleteFn)
 
     // Phase 6 Stage 2 (ADR 0013): key bootstrap + session-ticket endpoints.
     // sessionTicketPublicKeyFn deliberately does NOT use sharedProductLambdaProps
@@ -649,6 +722,9 @@ export class ApiStack extends Stack {
         PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
         SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
         SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+        // Security review 2026-09-14 (DPNR-06) — the inline Roadmap-revision
+        // check's model call had no guardrail wiring at all before this.
+        ...safetyGuardrailEnv,
       },
       entry: path.join(__dirname, '../lambda/twin/confirm.ts'),
       description: 'POST /v1/twin/signals/{id}/confirm — also runs the Roadmap-revision check.',
@@ -656,6 +732,7 @@ export class ApiStack extends Stack {
     props.applicationTable.grantReadWriteData(twinConfirmFn)
     props.promptRegistryTable.grantReadData(twinConfirmFn)
     grantBedrockConverse(twinConfirmFn)
+    grantApplyGuardrail(twinConfirmFn)
     props.sessionTicketsKmsKey.grantDecrypt(twinConfirmFn)
     props.sessionTicketsTable.grantReadData(twinConfirmFn)
 
@@ -1113,6 +1190,9 @@ export class ApiStack extends Stack {
         // Twin signal content to build the personalized explanation.
         SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
         SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+        // Security review 2026-09-14 (DPNR-06) — the personalized-explanation
+        // model call had no guardrail wiring at all before this.
+        ...safetyGuardrailEnv,
       },
       entry: path.join(__dirname, '../lambda/library/topic-detail.ts'),
       description: 'GET /v1/library/topics/{slug} — topic + personalized explanation from confirmed Twin signals.',
@@ -1121,6 +1201,7 @@ export class ApiStack extends Stack {
     props.applicationTable.grantReadData(libraryTopicDetailFn)
     props.promptRegistryTable.grantReadData(libraryTopicDetailFn)
     grantBedrockConverse(libraryTopicDetailFn)
+    grantApplyGuardrail(libraryTopicDetailFn)
     props.sessionTicketsKmsKey.grantDecrypt(libraryTopicDetailFn)
     props.sessionTicketsTable.grantReadData(libraryTopicDetailFn)
 
@@ -1356,12 +1437,16 @@ export class ApiStack extends Stack {
         PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
         SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
         SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+        // Security review 2026-09-14 (DPNR-06) — this batch composer's model
+        // call had no guardrail wiring at all before this.
+        ...safetyGuardrailEnv,
       },
       description: 'Scheduled daily — composes DAILYCARD#<date> for every consented user with real material.',
     })
     props.applicationTable.grantReadWriteData(composeDailyCardFn)
     props.promptRegistryTable.grantReadData(composeDailyCardFn)
     grantBedrockConverse(composeDailyCardFn)
+    grantApplyGuardrail(composeDailyCardFn)
     // Phase 6 Stage 2 (ADR 0013): post_session-window decrypt grant for this pipeline.
     props.sessionTicketsKmsKey.grantDecrypt(composeDailyCardFn)
     props.sessionTicketsTable.grantReadData(composeDailyCardFn)
@@ -1375,12 +1460,15 @@ export class ApiStack extends Stack {
         PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
         SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
         SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+        // Security review 2026-09-14 (DPNR-06) — same as composeDailyCardFn above.
+        ...safetyGuardrailEnv,
       },
       description: 'Scheduled weekly — composes WEEKLYRECAP#<isoWeek> for every consented user with real material from the last 7 days.',
     })
     props.applicationTable.grantReadWriteData(composeWeeklyRecapFn)
     props.promptRegistryTable.grantReadData(composeWeeklyRecapFn)
     grantBedrockConverse(composeWeeklyRecapFn)
+    grantApplyGuardrail(composeWeeklyRecapFn)
     props.sessionTicketsKmsKey.grantDecrypt(composeWeeklyRecapFn)
     props.sessionTicketsTable.grantReadData(composeWeeklyRecapFn)
 

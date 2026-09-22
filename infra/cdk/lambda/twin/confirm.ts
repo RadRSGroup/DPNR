@@ -30,7 +30,7 @@ const PROMPT_REGISTRY_TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME as str
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
     const userId = requireUserId(event)
-    const crypto = await getSessionCrypto(userId)
+    const crypto = await getSessionCrypto(userId, 'active_session')
     const signalId = event.pathParameters?.id
     if (!signalId) {
       throw new HttpError(400, 'missing_signal_id', 'Path must include a signal id.')

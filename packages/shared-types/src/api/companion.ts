@@ -17,8 +17,15 @@ import {
  * Dashboard, surface a Library topic) the client is expected to act on.
  */
 
+// Security review 2026-09-14 (DPNR-05): unbounded text let a single
+// message inflate model-call cost/latency and safety-classification cost
+// with no ceiling. 8000 characters is generous for a chat turn (well
+// beyond what the composer UI reasonably expects someone to type) while
+// still bounding worst-case cost per request.
+const COMPANION_MESSAGE_MAX_CHARS = 8000
+
 export const CompanionMessageRequestSchema = z.object({
-  text: z.string().min(1),
+  text: z.string().min(1).max(COMPANION_MESSAGE_MAX_CHARS),
   clientMessageId: z.string(), // idempotency key — same role as the room command contract's
   // Discrete conversations — targets a specific conversation instead of
   // whatever the caller's pointer currently points at. Omitted = today's

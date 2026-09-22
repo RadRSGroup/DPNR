@@ -39,7 +39,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       desiredStates: item?.desiredStates ?? [],
       interactionPreference: item?.interactionPreference ?? null,
       currentIntention: item?.currentIntention
-        ? (await (await getSessionCrypto(userId)).decryptField<{ text: string }>(item.currentIntention)).text
+        ? (await (await getSessionCrypto(userId, 'active_session')).decryptField<{ text: string }>(item.currentIntention)).text
         : null,
       snapshotFeedback: item?.snapshotFeedback ?? null,
       completedAt: item?.completedAt ?? null,

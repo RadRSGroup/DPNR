@@ -24,7 +24,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   try {
     const userId = requireUserId(event)
     const pk = userPk(userId)
-    const crypto = await getSessionCrypto(userId)
+    const crypto = await getSessionCrypto(userId, 'active_session')
     const commitmentId = event.pathParameters?.commitmentId
     if (!commitmentId) {
       throw new HttpError(400, 'missing_commitment_id', 'Path must include a commitment id.')

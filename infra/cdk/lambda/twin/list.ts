@@ -17,7 +17,7 @@ import { ddb, TABLE_NAME } from './helpers'
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
     const userId = requireUserId(event)
-    const crypto = await getSessionCrypto(userId)
+    const crypto = await getSessionCrypto(userId, 'active_session')
 
     const result = await ddb.send(
       new QueryCommand({

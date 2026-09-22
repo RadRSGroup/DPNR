@@ -89,7 +89,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const userId = requireUserId(event)
     const pk = userPk(userId)
     const body = parseBody(event, CompanionMessageRequestSchema)
-    const crypto = await getSessionCrypto(userId)
+    const crypto = await getSessionCrypto(userId, 'active_session')
 
     const profile = await requireConsent(ddb, TABLE_NAME, userId)
     // Hebrew Localization Slice E (docs/HEBREW_LOCALIZATION_PLAN.md §4.2) —
@@ -197,6 +197,20 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       reply = await generateSafetyResponse(ddb, PROMPT_REGISTRY_TABLE_NAME, classification, body.text, languageInstruction, locale)
       directive = null
     } else {
+      const hasRoadmap = await roadmapExists(ddb, TABLE_NAME, pk)
+      // Security review 2026-09-14 (DPNR-05): checked before the
+      // interaction-mode classification call below, not after — a
+      // zero-credit user with a Roadmap used to still trigger that model
+      // call (on top of the always-free safety classification above)
+      // before finally hitting this 402. Only a real Companion reply is
+      // billable — onboarding turns stay free (user's own confirmed
+      // decision, Session 18), same rule already applied to Room
+      // REFINE-vs-SUBMIT_STEP in rooms/command.ts — so this gate only
+      // applies when hasRoadmap; onboarding proceeds exactly as before.
+      if (hasRoadmap) {
+        await consumeCredits(ddb, TABLE_NAME, pk, COMPANION_MESSAGE_COST, 'companion_message')
+      }
+
       // Intelligence Spec §17 "Current Interaction Mode" — classified fresh
       // every turn (never sticky), only in the non-safety-flagged branch
       // (a flagged turn's reply is fixed/generic regardless, so classifying
@@ -210,13 +224,6 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       )
       await updateSessionInteractionMode(ddb, TABLE_NAME, pk, currentInteractionMode)
 
-      const hasRoadmap = await roadmapExists(ddb, TABLE_NAME, pk)
-      // Only a real Companion reply is billable — onboarding turns stay free
-      // (user's own confirmed decision, Session 18), same rule already applied
-      // to Room REFINE-vs-SUBMIT_STEP in rooms/command.ts.
-      if (hasRoadmap) {
-        await consumeCredits(ddb, TABLE_NAME, pk, COMPANION_MESSAGE_COST, 'companion_message')
-      }
       const result = hasRoadmap
         ? await callCompanionModel(userId, pk, sessionId, crypto, history, body.text, currentInteractionMode, languageInstruction)
         : await runOnboardingTurn(crypto, pk, sessionId, history, body.text, currentInteractionMode, languageInstruction)

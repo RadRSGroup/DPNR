@@ -75,7 +75,10 @@ export const handler = async (): Promise<void> => {
 
 async function composeForUser(profile: UserProfileItem): Promise<boolean> {
   const userId = profile.userId
-  const crypto = await getSessionCrypto(userId)
+  // Scheduled, no user present (DPNR-07 fix) — the only ticket this job can
+  // ever have is the long-lived post_session one created alongside the
+  // active_session ticket at login. See session-crypto.ts's own doc comment.
+  const crypto = await getSessionCrypto(userId, 'post_session')
   const languageInstruction = toLanguageInstruction(profile.preferredLanguage, profile.genderIdentity)
   const [{ confirmedSignals, sessionSummaries }, dueCommitments] = await Promise.all([
     gatherContinuityContext(userId, crypto),
