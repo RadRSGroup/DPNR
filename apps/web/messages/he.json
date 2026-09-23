@@ -221,6 +221,9 @@
     "forYou": "בשבילכם",
     "startHere": "התחילו כאן",
     "exploreByTheme": "חקרו לפי נושא",
+    "openTopic": "לפתיחת הנושא",
+    "viewAll": "הצגת הכל",
+    "backToLibrary": "חזרה לכל התוכן",
     "shelves": {
       "knowYourself": "הכירו את עצמכם",
       "patternsWorthNoticing": "דפוסים ששווה לשים לב אליהם",
@@ -590,6 +593,7 @@
       "prompt": "משכו קלף למשהו שכדאי להתעכב עליו היום.",
       "pulling": "מושכים קלף…",
       "pullAgain": "משכו קלף נוסף",
+      "tagline": "נקודת מבט חדשה יכולה לשנות הכל.",
       "pullFirst": "משכו קלף"
     },
     "topBar": {

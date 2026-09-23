@@ -221,6 +221,9 @@
     "forYou": "For You",
     "startHere": "Start Here",
     "exploreByTheme": "Explore by Theme",
+    "openTopic": "Explore topic",
+    "viewAll": "View all",
+    "backToLibrary": "Back to all content",
     "shelves": {
       "knowYourself": "Know Yourself",
       "patternsWorthNoticing": "Patterns Worth Noticing",
@@ -590,6 +593,7 @@
       "prompt": "Pull a card for something to sit with today.",
       "pulling": "Pulling…",
       "pullAgain": "Pull a New Card",
+      "tagline": "A new perspective can change everything.",
       "pullFirst": "Pull a Card"
     },
     "topBar": {

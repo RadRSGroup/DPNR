@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display, Heebo, Frank_Ruhl_Libre } from "next/font/google";
+import { Inter, Playfair_Display, Heebo, Frank_Ruhl_Libre, Handlee } from "next/font/google";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -8,6 +8,11 @@ import "../globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-display" });
+// Handwritten face for Pull a Card's question text, matching the designer's
+// card reference. Latin-only (no Google handwritten face has legible Hebrew),
+// so it's loaded for English only; Hebrew cards use `--font-display` instead
+// (PullACard's `rtl:font-display`).
+const handlee = Handlee({ subsets: ["latin"], weight: "400", variable: "--font-hand" });
 
 // Hebrew-capable pairing, chosen to echo the existing Inter/Playfair Display
 // feel rather than match them glyph-for-glyph (Playfair has no Hebrew
@@ -72,7 +77,7 @@ export default async function RootLayout({
   const fontVariables =
     locale === "he"
       ? `${heebo.variable} ${frankRuhlLibre.variable} ${heebo.className}`
-      : `${inter.variable} ${playfair.variable} ${inter.className}`;
+      : `${inter.variable} ${playfair.variable} ${handlee.variable} ${inter.className}`;
 
   return (
     <html lang={locale} dir={dir}>

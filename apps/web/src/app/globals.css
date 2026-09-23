@@ -7,6 +7,7 @@
  */
 @theme {
   --font-display: var(--font-display), Georgia, serif;
+  --font-hand: var(--font-hand), cursive;
 
   --color-violet-950: #12071f;
   --color-violet-900: #1a0826;

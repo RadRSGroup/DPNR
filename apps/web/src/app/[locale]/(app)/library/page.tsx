@@ -3,13 +3,16 @@ import Image from 'next/image'
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from '@/i18n/navigation'
 import { useRouter } from '@/i18n/navigation'
-import { Search, ArrowRight } from 'lucide-react'
+import { Search, ArrowRight, ArrowLeft } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getLibraryTopics, getLibraryRecommendations } from '@/lib/api/v1-client'
 import type { LibraryTopicSummary, LibraryRecommendationsResponse, ExploreTheme } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
-import { THEME_META, THEME_ORDER } from '@/lib/library/theme-meta'
+import { THEME_ORDER } from '@/lib/library/theme-meta'
+import {
+  topicImage, themeCover, LIBRARY_HEADER_IMAGE, FOR_YOU_IMAGE, START_HERE_IMAGES,
+} from '@/lib/library/topic-images'
 
 /**
  * Named homepage shelves (Content Library Master Architecture v2, Part I §2)
@@ -50,25 +53,102 @@ const START_HERE_TITLES = [
   'Avoidance', 'Self-Trust', 'Attachment Styles - Overview', 'Emotional Regulation',
 ]
 
-function TopicCard({ topic, subtitle }: { topic: LibraryTopicSummary; subtitle?: string }) {
-  const { image, label } = THEME_META[topic.exploreTheme]
+/**
+ * The selected Explore Theme lives in the URL (`?theme=FEEL`) so the
+ * browser's own Back button returns from a theme view to the full shelves,
+ * and a theme view can be linked/refreshed. Unknown values are ignored.
+ */
+function themeFromUrl(): ExploreTheme | null {
+  const value = new URLSearchParams(window.location.search).get('theme')
+  return value && (THEME_ORDER as string[]).includes(value) ? (value as ExploreTheme) : null
+}
+
+/**
+ * One Library tile, in the designer's three styles
+ * (docs/reference-screens/theme_and_section_photos/): `photo` is the
+ * topic's own cover art with the title over a bottom scrim (every themed
+ * shelf); `startHere` and `forYou` are the designer's abstract/plain framed
+ * cards with the title set in the middle ("naming in the middle, bold",
+ * per the For You source file's own name). The framed styles carry their
+ * own glowing border in the art itself, so they get no extra ring.
+ */
+type TileVariant = 'photo' | 'startHere' | 'forYou'
+
+const TILE_ASPECT: Record<TileVariant, string> = {
+  photo: 'aspect-[4/3]',
+  startHere: 'aspect-[11/6]', // the Start Here art's own ~1.83:1
+  forYou: 'aspect-[720/257]', // the For You art's own ~2.8:1 — cropping it would clip its frame
+}
+
+function TopicTile({
+  topic, image, variant = 'photo', subtitle, className = 'w-36 lg:w-40',
+}: {
+  topic: LibraryTopicSummary
+  image: string
+  variant?: TileVariant
+  subtitle?: string
+  className?: string
+}) {
+  const framed = variant !== 'photo'
   return (
-    <Link href={`/library/${topic.slug}`} className="shrink-0 w-40 lg:w-48">
-      <Card className="h-full hover:border-white/20 active:scale-[0.98] transition-all">
-        <div className="relative w-9 h-9 rounded-full overflow-hidden mb-3 ring-1 ring-white/15">
-          <Image src={image} alt={label} fill sizes="36px" className="object-cover" />
-        </div>
-        <p className="text-white text-sm leading-snug">{topic.title}</p>
-        {subtitle && <p className="text-[var(--color-text-tertiary)] text-xs mt-1">{subtitle}</p>}
-      </Card>
+    <Link href={`/library/${topic.slug}`} className={`group shrink-0 ${className}`}>
+      <div
+        className={`relative overflow-hidden rounded-2xl transition-all active:scale-[0.98] ${TILE_ASPECT[variant]} ${
+          framed ? '' : 'ring-1 ring-white/10 group-hover:ring-white/30'
+        }`}
+      >
+        <Image
+          src={image}
+          alt=""
+          fill
+          sizes="(min-width: 1024px) 240px, 50vw"
+          className={`object-cover ${framed ? '' : 'transition-transform duration-500 group-hover:scale-105'}`}
+        />
+        {framed ? (
+          <div className="absolute inset-0 flex items-center justify-center px-5 text-center">
+            <p className={`text-white text-sm lg:text-base leading-snug drop-shadow-md ${variant === 'forYou' ? 'font-semibold' : 'font-medium'}`}>
+              {topic.title}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+            <p className="absolute inset-x-0 bottom-0 p-2.5 text-start text-white text-xs lg:text-sm leading-snug drop-shadow">
+              {topic.title}
+            </p>
+          </>
+        )}
+      </div>
+      {subtitle && <p className="text-[var(--color-text-tertiary)] text-xs mt-1.5 line-clamp-2">{subtitle}</p>}
     </Link>
   )
 }
 
-function Shelf({ title, children }: { title: string; children: React.ReactNode }) {
+function Shelf({ title, action, panel = false, children }: {
+  title: string
+  action?: React.ReactNode
+  panel?: boolean
+  children: React.ReactNode
+}) {
+  const header = (
+    <div className="flex items-center justify-between mb-3">
+      <p className="text-white text-sm lg:text-base">{title}</p>
+      {action}
+    </div>
+  )
+  // Themed shelves sit in glass panels (two per row on desktop, as in the
+  // designer's layout); the full-width For You / Start Here rows don't.
+  if (panel) {
+    return (
+      <Card className="min-w-0">
+        {header}
+        <div className="scrollbar-glass flex gap-3 overflow-x-auto pb-1">{children}</div>
+      </Card>
+    )
+  }
   return (
     <div className="mb-6">
-      <p className="text-white text-sm mb-3">{title}</p>
+      {header}
       <div className="scrollbar-glass flex gap-3 overflow-x-auto pb-1 -mx-5 px-5 lg:mx-0 lg:px-0">{children}</div>
     </div>
   )
@@ -95,6 +175,25 @@ export default function LibraryPage() {
   const [activeTheme, setActiveTheme] = useState<ExploreTheme | null>(null)
 
   useEffect(() => {
+    const onPopState = () => setActiveTheme(themeFromUrl())
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
+  // Every theme change goes through here so the URL (and so the Back button)
+  // always matches what's on screen. Search clears a theme with `replace`,
+  // so typing doesn't pile up history entries.
+  function selectTheme(theme: ExploreTheme | null, mode: 'push' | 'replace' = 'push') {
+    setActiveTheme(theme)
+    const url = new URL(window.location.href)
+    if (theme) url.searchParams.set('theme', theme)
+    else url.searchParams.delete('theme')
+    if (mode === 'push') window.history.pushState(null, '', url)
+    else window.history.replaceState(null, '', url)
+    if (mode === 'push') window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  useEffect(() => {
     async function load() {
       try {
         const session = await getCurrentSession()
@@ -102,6 +201,7 @@ export default function LibraryPage() {
 
         const data = await getLibraryTopics()
         setTopics(data.topics)
+        setActiveTheme(themeFromUrl())
         getLibraryRecommendations().then((r) => setRecommendations(r.recommendations)).catch(() => {})
       } catch {
         // Degrades to an empty state — same tolerance every other page here uses.
@@ -169,7 +269,7 @@ export default function LibraryPage() {
             <Search className="w-4 h-4 text-[var(--color-text-tertiary)] absolute start-3.5 top-1/2 -translate-y-1/2" />
             <input
               value={query}
-              onChange={(e) => { setQuery(e.target.value); setActiveTheme(null) }}
+              onChange={(e) => { setQuery(e.target.value); if (activeTheme) selectTheme(null, 'replace') }}
               placeholder={t('searchPlaceholder')}
               className="w-full bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] rounded-full ps-10 pe-4 py-2.5 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors"
             />
@@ -184,28 +284,31 @@ export default function LibraryPage() {
           </Card>
         )}
 
-        {!loading && featured && !searching && (
-          <Link href={`/library/${featured.slug}`} className="block mb-6">
-            <Card className="relative overflow-hidden !p-0 h-40 lg:h-48">
-              <Image src="/images/library/library-hero.webp" alt="" fill sizes="100vw" className="object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-base)] via-[var(--color-bg-base)]/40 to-transparent" />
-              <div className="absolute inset-0 flex flex-col items-start justify-end p-5 lg:p-8">
-                <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-1">{t('featuredToday')}</p>
-                <h2 className="font-display text-xl lg:text-2xl text-white">{featured.title}</h2>
-                <div className="flex items-center gap-1.5 mt-1 text-[var(--color-text-tertiary)] text-xs">
-                  <span>{t(`themes.${featured.exploreTheme}`)}</span>
-                  <ArrowRight className="w-3.5 h-3.5 rtl:-scale-x-100" />
-                </div>
+        {!loading && featured && !searching && !activeTheme && (
+          <Link href={`/library/${featured.slug}`} className="group block mb-8">
+            <div className="relative overflow-hidden rounded-[var(--radius-card-lg)] ring-1 ring-white/10 h-44 lg:h-64">
+              <Image src={LIBRARY_HEADER_IMAGE} alt="" fill priority sizes="100vw" className="object-cover" />
+              {/* Scrim on the text's (start) side only, so the art stays bright */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-base)]/90 via-[var(--color-bg-base)]/30 to-transparent lg:bg-gradient-to-r rtl:lg:bg-gradient-to-l lg:from-[var(--color-bg-base)]/85 lg:via-[var(--color-bg-base)]/35" />
+              <div className="absolute inset-0 flex flex-col items-start justify-end lg:justify-center p-5 lg:p-10 lg:max-w-[55%]">
+                <span className="liquid-glass rounded-full px-2.5 py-0.5 text-[11px] text-white/85 mb-2">{t('featuredToday')}</span>
+                <h2 className="font-display text-2xl lg:text-4xl text-white leading-tight">{featured.title}</h2>
+                <p className="text-white/70 text-xs lg:text-sm mt-1.5">{t(`themes.${featured.exploreTheme}`)}</p>
+                <span className="hidden lg:inline-flex items-center gap-1.5 mt-4 rounded-full bg-[var(--color-violet-600)] group-hover:bg-[var(--color-violet-500)] px-4 py-1.5 text-sm text-white transition-colors">
+                  {t('openTopic')} <ArrowRight className="w-4 h-4 rtl:-scale-x-100" />
+                </span>
               </div>
-            </Card>
+            </div>
           </Link>
         )}
 
         {searching ? (
           <>
             {filtered && filtered.length > 0 && (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-                {filtered.map((topic) => <TopicCard key={topic.slug} topic={topic} />)}
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+                {filtered.map((topic) => (
+                  <TopicTile key={topic.slug} topic={topic} image={topicImage(topic.slug, topic.exploreTheme)} className="w-full" />
+                ))}
               </div>
             )}
             {filtered?.length === 0 && (
@@ -214,40 +317,68 @@ export default function LibraryPage() {
           </>
         ) : (
           <>
-            {!loading && recommendations.length > 0 && (
+            {activeTheme && (
+              <div className="mb-6">
+                <button
+                  onClick={() => selectTheme(null)}
+                  className="liquid-glass inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-white hover:text-white"
+                >
+                  <ArrowLeft className="w-4 h-4 rtl:-scale-x-100" /> {t('backToLibrary')}
+                </button>
+                <h2 className="font-display text-xl lg:text-2xl text-white mt-4">
+                  {t(`themes.${activeTheme}`)}
+                  <span className="ms-2 text-sm font-sans text-[var(--color-text-tertiary)]">{byTheme.get(activeTheme)?.length ?? 0}</span>
+                </h2>
+              </div>
+            )}
+
+            {!loading && !activeTheme && recommendations.length > 0 && (
               <Shelf title={t('forYou')}>
                 {recommendations.map(({ topic, reason }) => (
-                  <TopicCard key={topic.slug} topic={topic} subtitle={reason} />
+                  <TopicTile key={topic.slug} topic={topic} image={FOR_YOU_IMAGE} variant="forYou" subtitle={reason} className="w-56 lg:w-64" />
                 ))}
               </Shelf>
             )}
 
-            {!loading && startHere.length > 0 && (
+            {!loading && !activeTheme && startHere.length > 0 && (
               <Shelf title={t('startHere')}>
-                {startHere.map((topic) => <TopicCard key={topic.slug} topic={topic} />)}
+                {startHere.map((topic, i) => (
+                  <TopicTile
+                    key={topic.slug}
+                    topic={topic}
+                    image={START_HERE_IMAGES[i % START_HERE_IMAGES.length]}
+                    variant="startHere"
+                    className="w-52 lg:w-56"
+                  />
+                ))}
               </Shelf>
             )}
 
             {!loading && topics && topics.length > 0 && (
               <div className="mb-6">
-                <p className="text-white text-sm mb-3">{t('exploreByTheme')}</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-white text-sm lg:text-base">{t('exploreByTheme')}</p>
+                </div>
+                <div className="scrollbar-glass flex gap-3 overflow-x-auto pb-1 -mx-5 px-5 lg:mx-0 lg:px-0">
                   {THEME_ORDER.filter((theme) => byTheme.has(theme)).map((theme) => {
                     const active = activeTheme === theme
                     return (
                       <button
                         key={theme}
-                        onClick={() => setActiveTheme(active ? null : theme)}
-                        className={`flex items-center gap-2 rounded-full ps-1.5 pe-3.5 py-1.5 text-xs transition-colors ${
-                          active
-                            ? 'bg-[var(--color-violet-600)] border border-[var(--color-violet-500)] text-white'
-                            : 'liquid-glass text-white/70'
-                        }`}
+                        onClick={() => selectTheme(active ? null : theme)}
+                        aria-pressed={active}
+                        className="group shrink-0 w-44 lg:w-52 text-start"
                       >
-                        <span className="relative w-6 h-6 rounded-full overflow-hidden shrink-0 ring-1 ring-white/15">
-                          <Image src={THEME_META[theme].image} alt="" fill sizes="24px" className="object-cover" />
+                        <span
+                          className={`relative block aspect-[1597/858] rounded-2xl overflow-hidden transition-all ${
+                            active ? 'ring-2 ring-[var(--color-violet-400)] shadow-[var(--shadow-glow-violet)]' : 'group-hover:brightness-110'
+                          } ${activeTheme && !active ? 'opacity-50' : ''}`}
+                        >
+                          <Image src={themeCover(theme)} alt="" fill sizes="(min-width: 1024px) 208px, 176px" className="object-cover" />
                         </span>
-                        {t(`themes.${theme}`)}
+                        <span className={`block mt-1.5 text-xs lg:text-sm ${active ? 'text-white' : 'text-white/75'}`}>
+                          {t(`themes.${theme}`)}
+                        </span>
                       </button>
                     )
                   })}
@@ -256,19 +387,37 @@ export default function LibraryPage() {
             )}
 
             {activeTheme ? (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-                {(byTheme.get(activeTheme) ?? []).map((topic) => <TopicCard key={topic.slug} topic={topic} />)}
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+                {(byTheme.get(activeTheme) ?? []).map((topic) => (
+                  <TopicTile key={topic.slug} topic={topic} image={topicImage(topic.slug, topic.exploreTheme)} className="w-full" />
+                ))}
               </div>
             ) : (
-              NAMED_SHELVES.map(({ titleKey, theme }) => {
-                const items = byTheme.get(theme)
-                if (!items || items.length === 0) return null
-                return (
-                  <Shelf key={theme} title={t(`shelves.${titleKey}`)}>
-                    {items.map((topic) => <TopicCard key={topic.slug} topic={topic} />)}
-                  </Shelf>
-                )
-              })
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {NAMED_SHELVES.map(({ titleKey, theme }) => {
+                  const items = byTheme.get(theme)
+                  if (!items || items.length === 0) return null
+                  return (
+                    <Shelf
+                      key={theme}
+                      panel
+                      title={t(`shelves.${titleKey}`)}
+                      action={
+                        <button
+                          onClick={() => selectTheme(theme)}
+                          className="inline-flex items-center gap-1 text-xs text-[var(--color-violet-400)] hover:text-[var(--color-violet-300)]"
+                        >
+                          {t('viewAll')} <ArrowRight className="w-3.5 h-3.5 rtl:-scale-x-100" />
+                        </button>
+                      }
+                    >
+                      {items.map((topic) => (
+                        <TopicTile key={topic.slug} topic={topic} image={topicImage(topic.slug, topic.exploreTheme)} />
+                      ))}
+                    </Shelf>
+                  )
+                })}
+              </div>
             )}
           </>
         )}
