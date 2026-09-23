@@ -31,7 +31,7 @@ export function buildSecurityHeaders(nonce: string): Record<string, string> {
     // plain <img> (see companion/page.tsx's own comment on why they're
     // not next/image-eligible) — needs a real AWS origin, not just 'self'.
     "img-src 'self' data: blob: https://*.amazonaws.com",
-    "font-src 'self' data:", // next/font/google self-hosts at build time — no external font origin needed
+    "font-src 'self' data:", // fonts are self-hosted from src/fonts via next/font/local — no external font origin needed
     // amazon-cognito-identity-js calls Cognito's IDP directly from the
     // browser; the app's own /v1 API is a different origin too. A CSP
     // source expression's wildcard is only valid as the leftmost hostname

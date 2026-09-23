@@ -1,18 +1,30 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display, Heebo, Frank_Ruhl_Libre, Handlee } from "next/font/google";
+import localFont from "next/font/local";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import "../globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-display" });
+// All fonts are self-hosted from `src/fonts/` (variable .woff2 files built
+// from google/fonts' OFL sources, subset to Latin + Hebrew — licences in
+// `src/fonts/OFL.md`). They used to come from `next/font/google`, which
+// downloads from Google at build time; Render's build started failing on
+// those downloads (Session 65: "Module not found: Can't resolve
+// '@vercel/turbopack-next/internal/font/google/font'" on Frank Ruhl Libre,
+// twice in a row), so the build no longer depends on that network call.
+const inter = localFont({ src: "../../fonts/Inter.woff2", weight: "100 900", variable: "--font-sans" });
+const playfair = localFont({
+  src: "../../fonts/PlayfairDisplay.woff2",
+  weight: "400 900",
+  variable: "--font-display",
+  adjustFontFallback: "Times New Roman",
+});
 // Handwritten face for Pull a Card's question text, matching the designer's
 // card reference. Latin-only (no Google handwritten face has legible Hebrew),
 // so it's loaded for English only; Hebrew cards use `--font-display` instead
 // (PullACard's `rtl:font-display`).
-const handlee = Handlee({ subsets: ["latin"], weight: "400", variable: "--font-hand" });
+const handlee = localFont({ src: "../../fonts/Handlee.woff2", weight: "400", variable: "--font-hand" });
 
 // Hebrew-capable pairing, chosen to echo the existing Inter/Playfair Display
 // feel rather than match them glyph-for-glyph (Playfair has no Hebrew
@@ -20,18 +32,17 @@ const handlee = Handlee({ subsets: ["latin"], weight: "400", variable: "--font-h
 // clean, modern Hebrew+Latin sans (extends Roboto) standing in for Inter;
 // Frank Ruhl Libre is a classic, literary Hebrew serif — the closest
 // available analogue to Playfair's editorial elegance for headings.
-// Both loaded via next/font/google, same as the Latin pair, specifically
-// so either can be swapped later without touching anything but this file.
 // Deliberately reuse the SAME `--font-sans`/`--font-display` variable names
 // as the Latin pair (only one of each is ever present in `fontVariables`
 // below, so there's no collision) — every existing component that consumes
 // `--font-display` via Tailwind's `font-display` utility keeps working
 // unchanged for both locales instead of needing a per-component locale check.
-const heebo = Heebo({ subsets: ["hebrew", "latin"], variable: "--font-sans" });
-const frankRuhlLibre = Frank_Ruhl_Libre({
-  subsets: ["hebrew", "latin"],
-  weight: ["400", "500", "700"],
+const heebo = localFont({ src: "../../fonts/Heebo.woff2", weight: "100 900", variable: "--font-sans" });
+const frankRuhlLibre = localFont({
+  src: "../../fonts/FrankRuhlLibre.woff2",
+  weight: "300 900",
   variable: "--font-display",
+  adjustFontFallback: "Times New Roman",
 });
 
 // "Workshop Rooms" is deliberately reserved for the /rooms hub specifically,
