@@ -7,7 +7,7 @@
  * creates the outside, internal cause vs. external effect, the five whys,
  * the journey stages, and the core question "Will I be loved if I do what's
  * right for me?"). Rewritten here as user-facing copy in the Library's
- * voice, drafted in Session 65 and **pending founder review**. Deliberately
+ * voice, drafted in Session 65 and approved by the founder (2026-09-23). Deliberately
  * left out: the DPNR Score / scoring rubrics (not built, so nothing here
  * promises a score) and the document's internal wording ("DocuPreneur",
  * "commoditizing needs", "manipulating the environment").
