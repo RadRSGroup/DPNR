@@ -2070,4 +2070,174 @@ export const LIBRARY_TOPIC_SEEDS_V2: TopicSeedV2[] = [
       `Always end deeper reflection with a realistic integration step when the user is ready.`,
     ],
   },
+  // Session 65: four topics added from the founder's own docx content
+  // (docs/reference-screens/theme_and_section_photos/Know Yourself/library_content/
+  // and .../Work & Money/Library content/), verbatim except for two sentences
+  // that were notes to the team rather than user-facing copy (Self-Acceptance:
+  // "This fits directly with the library's existing distinction...";
+  // Self-Respect: "Those relationships are already part of the existing DPNR
+  // architecture."). The docx has no Go Deeper section, so each
+  // `goDeeperGuidance` line is newly written in the catalog's existing style.
+  {
+    slug: `self-love`,
+    title: `Self-Love`,
+    exploreTheme: 'ME',
+    lifeDomains: [
+      `Self & Identity`,
+      `Emotional Well-Being`,
+    ],
+    level: 'Foundation',
+    contentType: [
+      `Concept`,
+    ],
+    relatedTopics: [
+      `self-worth-vs-performance`,
+      `inner-critic`,
+      `self-compassion`,
+    ],
+    body: `Self-love is the ongoing relationship you build with yourself. It means relating to your own needs, emotions, limits, strengths, and imperfections with care rather than making that care dependent on performance, approval, or getting everything right.
+
+Self-love is not constant confidence or always feeling good about yourself. It can include accountability, growth, and change while maintaining the basic position that you are still worthy of care.`,
+    expandTheLens: `It is possible to value yourself when things are going well and become much harsher toward yourself when you fail, disappoint someone, feel rejected, or do not meet your own expectations.
+
+Self-love becomes visible in those moments. It is the difference between wanting to grow because something matters to you and believing you must become different before you deserve your own care.
+
+This connects closely with self-worth, the inner critic, and self-compassion: your worth does not need to rise and fall with performance, and difficulty does not have to become a reason to turn against yourself.`,
+    howItMayShowUp: [
+      `You offer yourself care more easily when you feel successful or proud of yourself.`,
+      `A mistake quickly changes the way you speak to yourself.`,
+      `You give others understanding that you struggle to extend to yourself.`,
+    ],
+    reflectionQuestions: [
+      `What happens to the way you treat yourself when you are not the version of yourself you hoped to be?`,
+    ],
+    waysToWorkWithIt: [
+      `Notice one moment today when you become harsh with yourself. Ask what care and accountability could look like at the same time.`,
+    ],
+    goDeeperGuidance: [
+      `Help the user notice where their self-care is conditional on performance or approval, and practice holding accountability and care at the same time.`,
+    ],
+  },
+  {
+    slug: `self-acceptance`,
+    title: `Self-Acceptance`,
+    exploreTheme: 'ME',
+    lifeDomains: [
+      `Self & Identity`,
+      `Emotional Well-Being`,
+    ],
+    level: 'Foundation',
+    contentType: [
+      `Concept`,
+    ],
+    relatedTopics: [
+      `authenticity`,
+      `shame-vs-guilt`,
+      `self-compassion`,
+    ],
+    body: `Self-acceptance is the ability to acknowledge what is true about yourself in the present — including qualities you value, limitations, emotions, mistakes, needs, and parts you may still want to change.
+
+Acceptance does not mean approval, resignation, or deciding that change is unnecessary. It means beginning with reality rather than fighting, hiding, or rejecting parts of yourself.`,
+    expandTheLens: `Sometimes the hardest parts of ourselves to accept are the ones that conflict with who we believe we should be. An emotion, need, mistake, fear, limitation, or contradiction can feel threatening because of what we think it says about us.
+
+Self-acceptance creates room to see those parts without making them your entire identity. You can acknowledge a mistake without becoming the mistake. You can experience shame or guilt without reducing yourself to what happened. You can recognize an imperfect part of yourself and still choose what you want to do with it.
+
+Acceptance can therefore become a starting point for authenticity and change rather than the end of growth.`,
+    howItMayShowUp: [
+      `You hide or reject parts of yourself that do not fit the person you think you should be.`,
+      `A mistake becomes a judgment about who you are rather than something you did.`,
+      `You believe you can accept yourself only after you have changed.`,
+    ],
+    reflectionQuestions: [
+      `What part of yourself are you still trying to change before allowing it to belong?`,
+    ],
+    waysToWorkWithIt: [
+      `Name one thing about yourself that is difficult to accept. Describe it as something you experience or do rather than as a definition of who you are.`,
+    ],
+    goDeeperGuidance: [
+      `Help the user separate what they experience or do from who they are, and treat acceptance as a starting point for change rather than a verdict.`,
+    ],
+  },
+  {
+    slug: `self-respect`,
+    title: `Self-Respect`,
+    exploreTheme: 'ME',
+    lifeDomains: [
+      `Self & Identity`,
+      `Relationships & Love`,
+    ],
+    level: 'Foundation',
+    contentType: [
+      `Concept`,
+    ],
+    relatedTopics: [
+      `authenticity`,
+      `boundaries`,
+      `values`,
+    ],
+    body: `Self-respect is the way you treat your own values, needs, limits, and dignity as worthy of consideration. It is expressed not only in how you feel about yourself, but in the choices you make and the standards you are willing to uphold.
+
+Self-respect does not require superiority, rigidity, or controlling other people. It means taking yourself seriously enough to act in ways that remain aligned with what matters to you.`,
+    expandTheLens: `You can love someone and still say no. You can want connection and still protect a boundary. You can understand another person’s needs without abandoning your own.
+
+Self-respect often becomes most visible when honoring yourself has a cost — disappointing someone, tolerating discomfort, speaking honestly, or choosing not to agree automatically just to preserve connection.
+
+In that sense, self-respect connects the inner world with behavior. Values help clarify what matters, needs help identify what requires attention, authenticity helps you express what is true, and boundaries help define what you will and will not participate in.`,
+    howItMayShowUp: [
+      `You know something does not feel right but override yourself to avoid disappointing someone.`,
+      `You repeatedly abandon a need, value, or boundary to preserve approval or connection.`,
+      `You expect others to respect limits that you struggle to honor yourself.`,
+    ],
+    reflectionQuestions: [
+      `Where are you asking someone else to respect something you are not yet protecting yourself?`,
+    ],
+    waysToWorkWithIt: [
+      `Choose one small situation where your actions are not matching what you know matters to you. Define one response that would bring them back into alignment.`,
+    ],
+    goDeeperGuidance: [
+      `Explore where the user's actions drift from their values or boundaries to preserve approval, and define one small response that restores alignment.`,
+    ],
+  },
+  {
+    slug: `abundance`,
+    title: `Abundance`,
+    exploreTheme: 'CREATE',
+    lifeDomains: [
+      `Money & Financial Life`,
+      `Work & Career`,
+      `Personal Growth`,
+    ],
+    level: 'Foundation',
+    contentType: [
+      `Concept`,
+    ],
+    relatedTopics: [
+      `money-meaning`,
+      `success-and-enough`,
+      `self-worth-vs-performance`,
+      `gratitude`,
+    ],
+    body: `Abundance is an inner orientation toward enoughness, possibility, and what is available — rather than a constant focus on what is missing.
+
+External resources matter, but they do not fully determine our experience of abundance. A bank balance can describe a financial reality without defining personal worth, inner capacity, or how much life holds. Abundance grows through the ability to recognize, receive, and value what is present while still allowing yourself to want, build, and create more.`,
+    expandTheLens: `Scarcity can make “not enough” feel like “I am not enough.” Not enough money, progress, recognition, opportunity, or security can quietly become a judgment about your value.
+
+An abundance mindset creates separation between the two. You can acknowledge that something is genuinely missing or that you want more without turning that absence into evidence about who you are.
+
+This does not mean ignoring financial reality or convincing yourself that everything is plentiful. It means holding reality without allowing it to define your worth. Abundance can exist alongside desire, uncertainty, and even temporary lack. It begins with recognizing what is already here, allowing yourself to receive it, and relating to what is missing from possibility rather than from a belief that there will never be enough.`,
+    howItMayShowUp: [
+      `You interpret having less as being less.`,
+      `Your sense of worth rises and falls with money, achievement, recognition, or external security.`,
+      `You find it easier to notice what is missing than to fully receive what is already present.`,
+    ],
+    reflectionQuestions: [
+      `Where have you allowed “I don’t have enough” to become “I am not enough”?`,
+    ],
+    waysToWorkWithIt: [
+      `Name one thing that feels lacking right now. Separate the external fact from what you have made it mean about you, then notice what is already available to you from where you are.`,
+    ],
+    goDeeperGuidance: [
+      `Help the user separate external lack from conclusions about their worth, without dismissing real financial constraints.`,
+    ],
+  },
 ]

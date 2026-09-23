@@ -6,7 +6,7 @@ import type { ExploreTheme, GuidanceCardTopic } from '@dpnr/shared-types'
  * by `apps/web/scripts/build-library-images.py`, whose TOPIC_FILES map is
  * the other half of this list — keep the two in sync.
  *
- * 39 of the catalog's 54 topics have their own photo. The other 15
+ * 43 of the catalog's 58 topics have their own photo. The other 15
  * (Emotional Regulation, all 7 NEED topics, all 4 REPAIR topics, all 3
  * CHOOSE topics) have no art yet and fall back to their Explore Theme's own
  * art (the icon-free inner crop, `themes/<theme>-art.webp`), so every tile
@@ -17,13 +17,14 @@ import type { ExploreTheme, GuidanceCardTopic } from '@dpnr/shared-types'
  */
 const TOPICS_WITH_PHOTO = new Set([
   'identity-vs-roles', 'self-worth-vs-performance', 'self-trust', 'authenticity', 'inner-critic',
+  'self-love', 'self-acceptance', 'self-respect',
   'emotion-vs-reaction', 'emotional-triggers', 'anger', 'shame-vs-guilt', 'grief-and-letting-go',
   'avoidance', 'people-pleasing', 'perfectionism', 'control', 'overthinking-and-rumination', 'procrastination',
   'attachment-styles-overview', 'anxious-attachment-pattern', 'avoidant-attachment-pattern',
   'fearful-avoidant-push-pull-pattern', 'secure-relating', 'relationship-red-flags-vs-triggers',
   'boundaries', 'boundary-vs-ultimatum',
   'body-signals', 'fight-flight-freeze-and-fawn', 'window-of-tolerance', 'rest-recovery-and-depletion',
-  'ambition', 'money-meaning', 'creative-block', 'success-and-enough',
+  'ambition', 'money-meaning', 'creative-block', 'success-and-enough', 'abundance',
   'inner-child-a-practical-lens', 'limiting-beliefs', 'meaning-vs-happiness', 'gratitude',
   'joy-and-play', 'purpose', 'integration',
 ])

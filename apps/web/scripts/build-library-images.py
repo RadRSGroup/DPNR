@@ -20,15 +20,16 @@ OUT = ROOT / "apps" / "web" / "public" / "images" / "library"
 
 # Per-topic photos, keyed by the topic's real catalog slug
 # (infra/cdk/scripts/library-topics-v2.seed.ts). "Self - Self & Identity/"
-# is a byte-identical copy of "Know Yourself/", so only one is read. The
-# four photos for topics not yet in the catalog (Self Love, Self-Acceptance,
-# Self-Respect, Abundance) are deliberately left out until those topics exist.
+# is a byte-identical copy of "Know Yourself/", so only one is read.
 TOPIC_FILES = {
     "identity-vs-roles": "Know Yourself/Identity vs. Roles.png",
     "self-worth-vs-performance": "Know Yourself/Self-Worth vs. Performance.png",
     "self-trust": "Know Yourself/Self-Trust.png",
     "authenticity": "Know Yourself/Authenticity.png",
     "inner-critic": "Know Yourself/Inner Critic.png",
+    "self-love": "Know Yourself/Self Love - Not on My doc, but important to add.png",
+    "self-acceptance": "Know Yourself/Self-Acceptance Not on My doc, but important to add.png",
+    "self-respect": "Know Yourself/Self-Respect- Not on My doc, but important to add.png",
     "emotion-vs-reaction": "Emotional World/Emotion vs. Reaction.png",
     "emotional-triggers": "Emotional World/Emotional Triggers.png",
     "anger": "Emotional World/Anger.png",
@@ -56,6 +57,7 @@ TOPIC_FILES = {
     "money-meaning": "Work & Money/Money Meaning.png",
     "creative-block": "Work & Money/Creative Block.png",
     "success-and-enough": "Work & Money/Success & Enough.png",
+    "abundance": "Work & Money/Abundance - We need to add it to the platform ( not there now) _.png",
     "inner-child-a-practical-lens": "Meaning & Life/Inner Child - A Practical Lens.png",
     "limiting-beliefs": "Meaning & Life/Limiting Beliefs.png",
     "meaning-vs-happiness": "Meaning & Life/Meaning vs. Happiness.png",

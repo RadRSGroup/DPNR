@@ -23,8 +23,12 @@ const playfair = localFont({
 // Handwritten face for Pull a Card's question text, matching the designer's
 // card reference. Latin-only (no Google handwritten face has legible Hebrew),
 // so it's loaded for English only; Hebrew cards use `--font-display` instead
-// (PullACard's `rtl:font-display`).
-const handlee = localFont({ src: "../../fonts/Handlee.woff2", weight: "400", variable: "--font-hand" });
+// (PullACard's `rtl:font-display`). Not preloaded: it's used by one widget
+// only, so it loads when that widget renders instead of on every page. The
+// other four stay preloaded for both locales (user's call, Session 65 —
+// preload is static per font, not per visitor, so the alternative was
+// picking one language to favour).
+const handlee = localFont({ src: "../../fonts/Handlee.woff2", weight: "400", variable: "--font-hand", preload: false });
 
 // Hebrew-capable pairing, chosen to echo the existing Inter/Playfair Display
 // feel rather than match them glyph-for-glyph (Playfair has no Hebrew
