@@ -13,6 +13,7 @@ import { THEME_ORDER } from '@/lib/library/theme-meta'
 import {
   topicImage, themeCover, LIBRARY_HEADER_IMAGE, FOR_YOU_IMAGE, START_HERE_IMAGES,
 } from '@/lib/library/topic-images'
+import { DPNR_METHOD, readingMinutes, readMethodSlugs, type MethodPiece } from '@/lib/library/method-content'
 
 /**
  * Named homepage shelves (Content Library Master Architecture v2, Part I §2)
@@ -124,6 +125,26 @@ function TopicTile({
   )
 }
 
+/** A "The DPNR Method" card: wide art, reading time, title over a scrim. */
+function MethodTile({ piece, minutesLabel }: { piece: MethodPiece; minutesLabel: string }) {
+  return (
+    <Link href={`/library/method/${piece.slug}`} className="group shrink-0 w-64 lg:w-72">
+      <div className="relative overflow-hidden rounded-2xl aspect-[16/9] ring-1 ring-white/10 group-hover:ring-white/30 transition-all active:scale-[0.98]">
+        <Image
+          src={piece.image}
+          alt=""
+          fill
+          sizes="(min-width: 1024px) 288px, 256px"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+        <span className="absolute top-2.5 start-2.5 liquid-glass rounded-full px-2 py-0.5 text-[10px] text-white/85">{minutesLabel}</span>
+        <p className="absolute inset-x-0 bottom-0 p-3 text-start text-white text-sm leading-snug drop-shadow">{piece.title}</p>
+      </div>
+    </Link>
+  )
+}
+
 function Shelf({ title, action, panel = false, children }: {
   title: string
   action?: React.ReactNode
@@ -170,6 +191,11 @@ export default function LibraryPage() {
   const router = useRouter()
   const [topics, setTopics] = useState<LibraryTopicSummary[] | null>(null)
   const [recommendations, setRecommendations] = useState<LibraryRecommendationsResponse['recommendations']>([])
+  const [recommendationBasis, setRecommendationBasis] = useState<LibraryRecommendationsResponse['basis']>(undefined)
+  // Featured Today waits for recommendations to settle, so it doesn't flash
+  // the DPNR Method and then swap to a topic a moment later.
+  const [recommendationsSettled, setRecommendationsSettled] = useState(false)
+  const [readMethod, setReadMethod] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
   const [activeTheme, setActiveTheme] = useState<ExploreTheme | null>(null)
@@ -199,12 +225,17 @@ export default function LibraryPage() {
         const session = await getCurrentSession()
         if (!session) { router.push('/login'); return }
 
+        setReadMethod(readMethodSlugs())
         const data = await getLibraryTopics()
         setTopics(data.topics)
         setActiveTheme(themeFromUrl())
-        getLibraryRecommendations().then((r) => setRecommendations(r.recommendations)).catch(() => {})
+        getLibraryRecommendations()
+          .then((r) => { setRecommendations(r.recommendations); setRecommendationBasis(r.basis) })
+          .catch(() => {})
+          .finally(() => setRecommendationsSettled(true))
       } catch {
         // Degrades to an empty state — same tolerance every other page here uses.
+        setRecommendationsSettled(true)
       } finally {
         setLoading(false)
       }
@@ -235,19 +266,26 @@ export default function LibraryPage() {
     )
   }, [topics])
 
-  // Rotate through the real catalog by day-of-year rather than pinning to
-  // topics[0] (arbitrary Scan order) or inventing curated "featured"
-  // metadata that doesn't exist. Sort by slug first for a stable order, so
-  // the rotation is deterministic day to day rather than shuffling on every Scan.
-  function pickFeatured(list: LibraryTopicSummary[] | null): LibraryTopicSummary | undefined {
-    if (!list || list.length === 0) return undefined
-    const sorted = [...list].sort((a, b) => a.slug.localeCompare(b.slug))
+  // Featured Today (user request, Session 65): feature the DPNR Method until
+  // there's real user info to suggest something more relevant, so a new
+  // user gets comfortable with how DPNR works first. "Real user info" means
+  // recommendations ranked from confirmed Twin signals (`basis: 'signals'`);
+  // onboarding answers alone aren't enough (nearly every new account has
+  // those). Until then, show the first method piece this viewer hasn't
+  // opened yet, in order, then cycle by day once all six are read. Once
+  // signals exist, rotate daily through their recommended topics.
+  function pickFeatured(): { href: string; title: string; subtitle: string } | undefined {
     const now = new Date()
     const startOfYear = new Date(now.getFullYear(), 0, 0).getTime()
     const dayOfYear = Math.floor((now.getTime() - startOfYear) / 86_400_000)
-    return sorted[dayOfYear % sorted.length]
+    if (recommendationBasis === 'signals' && recommendations.length > 0) {
+      const { topic } = recommendations[dayOfYear % recommendations.length]
+      return { href: `/library/${topic.slug}`, title: topic.title, subtitle: t(`themes.${topic.exploreTheme}`) }
+    }
+    const piece = DPNR_METHOD.find((p) => !readMethod.has(p.slug)) ?? DPNR_METHOD[dayOfYear % DPNR_METHOD.length]
+    return { href: `/library/method/${piece.slug}`, title: piece.title, subtitle: t('method.shelfTitle') }
   }
-  const featured = pickFeatured(topics)
+  const featured = recommendationsSettled ? pickFeatured() : undefined
   const searching = query.trim().length > 0
 
   return (
@@ -285,7 +323,7 @@ export default function LibraryPage() {
         )}
 
         {!loading && featured && !searching && !activeTheme && (
-          <Link href={`/library/${featured.slug}`} className="group block mb-8">
+          <Link href={featured.href} className="group block mb-8">
             <div className="relative overflow-hidden rounded-[var(--radius-card-lg)] ring-1 ring-white/10 h-44 lg:h-64">
               <Image src={LIBRARY_HEADER_IMAGE} alt="" fill priority sizes="100vw" className="object-cover" />
               {/* Scrim on the text's (start) side only, so the art stays bright */}
@@ -293,7 +331,7 @@ export default function LibraryPage() {
               <div className="absolute inset-0 flex flex-col items-start justify-end lg:justify-center p-5 lg:p-10 lg:max-w-[55%]">
                 <span className="liquid-glass rounded-full px-2.5 py-0.5 text-[11px] text-white/85 mb-2">{t('featuredToday')}</span>
                 <h2 className="font-display text-2xl lg:text-4xl text-white leading-tight">{featured.title}</h2>
-                <p className="text-white/70 text-xs lg:text-sm mt-1.5">{t(`themes.${featured.exploreTheme}`)}</p>
+                <p className="text-white/70 text-xs lg:text-sm mt-1.5">{featured.subtitle}</p>
                 <span className="hidden lg:inline-flex items-center gap-1.5 mt-4 rounded-full bg-[var(--color-violet-600)] group-hover:bg-[var(--color-violet-500)] px-4 py-1.5 text-sm text-white transition-colors">
                   {t('openTopic')} <ArrowRight className="w-4 h-4 rtl:-scale-x-100" />
                 </span>
@@ -350,6 +388,14 @@ export default function LibraryPage() {
                     variant="startHere"
                     className="w-52 lg:w-56"
                   />
+                ))}
+              </Shelf>
+            )}
+
+            {!loading && !activeTheme && (
+              <Shelf title={t('method.shelfTitle')}>
+                {DPNR_METHOD.map((piece) => (
+                  <MethodTile key={piece.slug} piece={piece} minutesLabel={t('method.minRead', { minutes: readingMinutes(piece) })} />
                 ))}
               </Shelf>
             )}

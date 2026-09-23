@@ -224,6 +224,12 @@
     "openTopic": "לפתיחת הנושא",
     "viewAll": "הצגת הכל",
     "backToLibrary": "חזרה לכל התוכן",
+    "method": {
+      "shelfTitle": "שיטת DPNR",
+      "minRead": "{minutes} דק׳ קריאה",
+      "reflect": "להתבוננות",
+      "next": "הבא בשיטת DPNR"
+    },
     "shelves": {
       "knowYourself": "הכירו את עצמכם",
       "patternsWorthNoticing": "דפוסים ששווה לשים לב אליהם",

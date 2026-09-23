@@ -6,11 +6,9 @@ import type { ExploreTheme, GuidanceCardTopic } from '@dpnr/shared-types'
  * by `apps/web/scripts/build-library-images.py`, whose TOPIC_FILES map is
  * the other half of this list — keep the two in sync.
  *
- * 43 of the catalog's 58 topics have their own photo. The other 15
- * (Emotional Regulation, all 7 NEED topics, all 4 REPAIR topics, all 3
- * CHOOSE topics) have no art yet and fall back to their Explore Theme's own
- * art (the icon-free inner crop, `themes/<theme>-art.webp`), so every tile
- * still shows a real image, just not a topic-specific one.
+ * 43 of the catalog's 58 topics have their own photo. The other 15 borrow
+ * another topic's photo as a stopgap (PLACEHOLDER_TOPIC_PHOTOS below), and
+ * anything missing from both falls back to its Explore Theme's own art.
  *
  * Kept frontend-only (keyed by slug) rather than stored on the catalog
  * item, so swapping art never needs a catalog reseed or deploy.
@@ -29,10 +27,48 @@ const TOPICS_WITH_PHOTO = new Set([
   'joy-and-play', 'purpose', 'integration',
 ])
 
+/**
+ * PLACEHOLDER — REPLACE WHEN REAL ART ARRIVES. These 15 topics have no photo
+ * of their own yet, so each borrows the existing photo closest to it in
+ * meaning (user's call, Session 65: "use existing photos with a flag for
+ * them to be updated later"). The same list, for the designer, is in
+ * `docs/reference-screens/PHOTOS_NEEDED.md`.
+ * To replace one: add the real file under `theme_and_section_photos/` and to TOPIC_FILES in
+ * `apps/web/scripts/build-library-images.py`, re-run the script, move the
+ * slug into TOPICS_WITH_PHOTO above, and delete its line here.
+ */
+export const PLACEHOLDER_TOPIC_PHOTOS: Record<string, string> = {
+  'emotional-regulation': 'window-of-tolerance',
+  'needs-vs-neediness': 'anxious-attachment-pattern',
+  'six-broad-human-needs': 'integration',
+  'basic-everyday-needs': 'rest-recovery-and-depletion',
+  'competing-needs': 'relationship-red-flags-vs-triggers',
+  'values': 'self-trust',
+  'values-vs-rules': 'control',
+  'value-conflicts': 'fearful-avoidant-push-pull-pattern',
+  'assertiveness': 'self-respect',
+  'conflict-and-repair': 'attachment-styles-overview',
+  'forgiveness': 'grief-and-letting-go',
+  'self-compassion': 'inner-child-a-practical-lens',
+  'decision-making': 'meaning-vs-happiness',
+  'fear-vs-desire-in-decisions': 'avoidance',
+  'future-self': 'ambition',
+}
+
+export function hasPlaceholderPhoto(slug: string): boolean {
+  return slug in PLACEHOLDER_TOPIC_PHOTOS
+}
+
 export function topicImage(slug: string, theme: ExploreTheme): string {
-  return TOPICS_WITH_PHOTO.has(slug)
-    ? `/images/library/topics/${slug}.webp`
-    : `/images/library/themes/${theme.toLowerCase()}-art.webp`
+  if (TOPICS_WITH_PHOTO.has(slug)) return `/images/library/topics/${slug}.webp`
+  const borrowed = PLACEHOLDER_TOPIC_PHOTOS[slug]
+  if (borrowed) return `/images/library/topics/${borrowed}.webp`
+  return themeArt(theme)
+}
+
+/** A theme's icon-free inner art (used where no topic photo applies). */
+export function themeArt(theme: ExploreTheme): string {
+  return `/images/library/themes/${theme.toLowerCase()}-art.webp`
 }
 
 /** Explore by Theme card art, glass frame and icon included. */
@@ -66,7 +102,7 @@ const CARD_TOPIC_IMAGES: Record<GuidanceCardTopic, string> = {
   LOVE: topicImage('secure-relating', 'RELATE'),
   COURAGE: topicImage('ambition', 'CREATE'),
   BODY: topicImage('body-signals', 'BODY'),
-  NEXT: topicImage('decision-making', 'CHOOSE'), // no photo yet → Decisions & Direction's own art
+  NEXT: themeArt('CHOOSE'),
   CREATE: topicImage('creative-block', 'CREATE'),
   LIFE: topicImage('gratitude', 'LIFE'),
 }

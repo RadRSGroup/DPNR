@@ -224,6 +224,12 @@
     "openTopic": "Explore topic",
     "viewAll": "View all",
     "backToLibrary": "Back to all content",
+    "method": {
+      "shelfTitle": "The DPNR Method",
+      "minRead": "{minutes} min read",
+      "reflect": "Reflect",
+      "next": "Next in The DPNR Method"
+    },
     "shelves": {
       "knowYourself": "Know Yourself",
       "patternsWorthNoticing": "Patterns Worth Noticing",

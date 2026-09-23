@@ -77,5 +77,13 @@ export const LibraryRecommendationsResponseSchema = z.object({
   // review, not treated as final.
   noActionReason: z.enum(['integration_space']).optional(),
   message: z.string().optional(), // present only alongside noActionReason
+  // What the ranking was built from, present whenever `recommendations` is
+  // non-empty: 'signals' = confirmed Digital Twin signals (real session
+  // history); 'onboarding' = only the First-Time Onboarding intake. The
+  // Library's Featured Today keys off this: it features the DPNR Method
+  // until there is real signal history, rather than treating onboarding
+  // answers alone as enough to personalize it (user request, Session 65).
+  // Optional so older clients/servers stay compatible.
+  basis: z.enum(['signals', 'onboarding']).optional(),
 })
 export type LibraryRecommendationsResponse = z.infer<typeof LibraryRecommendationsResponseSchema>

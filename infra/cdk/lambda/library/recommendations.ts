@@ -164,7 +164,9 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const body: LibraryRecommendationsResponse =
       ranked.length === 0 && confirmedSignals.length > 0
         ? { recommendations: ranked, noActionReason: 'integration_space', message: INTEGRATION_SPACE_MESSAGE }
-        : { recommendations: ranked }
+        : ranked.length > 0
+          ? { recommendations: ranked, basis: rankedFromOnboarding ? 'onboarding' : 'signals' }
+          : { recommendations: ranked }
     return jsonResponse(200, body)
   } catch (err) {
     return errorResponse(err)
