@@ -425,8 +425,15 @@ function CompanionContent() {
           // doesn't cover this per-account, ever-changing host, same
           // reasoning as AvatarUpload.tsx's own <img>.
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={chatBackgroundUrl!} alt="" className="w-full h-full object-cover" />
+          // Light blur (scaled up so the blurred edges stay off-screen):
+          // a busy photo's own detail/text otherwise competes with the chat.
+          <img src={chatBackgroundUrl!} alt="" className="w-full h-full object-cover blur-[3px] scale-105" />
         )}
+        {/* Scrim for the person's own photo: the chat is white text on
+            5%-white glass bubbles, so a light photo made it unreadable
+            (user report). Uniform, not just the bottom gradient below,
+            so the top of the thread is covered too. */}
+        {showCustom && <div className="absolute inset-0 bg-[var(--color-bg-base)]/70" />}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
       </div>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />

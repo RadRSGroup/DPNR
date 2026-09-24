@@ -1403,6 +1403,11 @@ From there, wrote and got approval for a 6-slice plan, `C:\Users\rekkawi\.claude
 
 ## Session History
 
+### 2026-09-24 — Session 68, part 3: chat unreadable over light custom backgrounds — frontend-only, verified locally
+
+- User report: chat not visible over some light photos. Reproduced on the test account (its custom background is a light, text-heavy screenshot — which is also what the "ghost text" blamed on the Browser pane in part 2's delete-button check actually was). Cause: `companion/page.tsx` drew the custom photo at full strength with only a bottom `transparent → bg-base` gradient; chat is white text on 5%-white glass bubbles.
+- Fix (only when a custom photo is shown): uniform `bg-base/70` scrim over the photo, and the photo gets `blur-[3px] scale-105` so its own detail stops competing. Default background unchanged. Verified desktop 1440 + mobile 375; tsc/lint clean.
+
 ### 2026-09-24 — Session 68, part 2: Roadmap follows every session, all goals listed, desktop room steps, touch delete, 5000-char answers — deployed + pushed
 
 User-reported batch (one from a beta user). Two decisions made with the user (AskUserQuestion): **auto-update** the Roadmap after every session (not propose-then-accept), and **5000 chars for every room text box**.
