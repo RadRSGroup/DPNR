@@ -48,6 +48,10 @@ export function buildSecurityHeaders(nonce: string): Record<string, string> {
     // "violates ... connect-src"), since this header set first shipped.
     // Leftmost-label wildcard (the only valid position), same region.
     `connect-src 'self'${cognitoOrigin ? ` ${cognitoOrigin}` : ''}${apiOrigin ? ` ${apiOrigin}` : ''}${s3UploadOrigin ? ` ${s3UploadOrigin}` : ''}`,
+    // Session 68: Focus Mode's Spotify embed (components/companion/
+    // FocusMode.tsx). Only this one origin, and only framed — the embed is
+    // loaded on click, so nothing reaches Spotify for users who don't use it.
+    'frame-src https://open.spotify.com',
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

@@ -1403,6 +1403,14 @@ From there, wrote and got approval for a 6-slice plan, `C:\Users\rekkawi\.claude
 
 ## Session History
 
+### 2026-09-24 — Session 68, part 4: Spotify scope + mood-playlist Focus Mode (awaiting links); layout-shift regression from part 3 fixed
+
+- **Part 3 verified live** on dpnr-mvp.onrender.com (user signed in): custom photo `blur(3px)` + 70% scrim, chat readable.
+- **Spotify scoped** — `docs/SPOTIFY_FOCUS_MODE_SCOPE.md`. Key facts (checked on Spotify's docs 2026-09-24): dev-mode apps are capped at **5 users**; extended quota needs a registered business with **≥250k MAU**; the Web Playback SDK needs Premium per listener and **written approval for commercial use**. So "connect your Spotify" is not viable; the official **Embed** (no OAuth, full tracks if logged in to Spotify in that browser, else 30s previews) is.
+- **Built option A** (user: "we have multiple playlists for mood", links to follow): `lib/focus-playlist.ts` (`FOCUS_PLAYLISTS` — id, en/he label, share URL; `spotifyPlaylistId` parser) and `FocusMode.tsx` (embed loaded only on click → no Spotify request for non-users; mood chips on the settings button, remembered via `useSyncExternalStore` over localStorage; "Open in Spotify" link; preview note). CSP `frame-src https://open.spotify.com`. 7 new i18n keys en+he. **Empty list = unchanged stub**, so this ships safely before the links arrive. Verified locally with two public Spotify playlists as temporary stand-ins (removed before commit): embed loads, mood switch swaps playlist + subtitle, choice persists, no console/CSP errors. Mobile still has no Focus Mode (open decision).
+- **Regression found and fixed**: part 3's `scale-105` on the chat photo gave the page root (`overflow-hidden`) ~30px of scrollable overflow; the Spotify iframe's scrollIntoView then shifted the whole Companion layout. Clipped inside the background layer (`overflow-hidden` on it). Was already live via part 3.
+- Also fixed: part 3's comment had detached the `eslint-disable-next-line` from its `<img>` (2 lint warnings). tsc/lint (0 warnings)/build clean.
+
 ### 2026-09-24 — Session 68, part 3: chat unreadable over light custom backgrounds — frontend-only, verified locally
 
 - User report: chat not visible over some light photos. Reproduced on the test account (its custom background is a light, text-heavy screenshot — which is also what the "ghost text" blamed on the Browser pane in part 2's delete-button check actually was). Cause: `companion/page.tsx` drew the custom photo at full strength with only a bottom `transparent → bg-base` gradient; chat is white text on 5%-white glass bubbles.

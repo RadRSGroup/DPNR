@@ -634,7 +634,14 @@
       "subtitle": "עבודה עמוקה · פלייליסט DPNR",
       "comingSoon": "בקרוב",
       "playLabel": "הפעלה (בקרוב)",
-      "settingsLabel": "הגדרות מצב ריכוז (בקרוב)"
+      "settingsLabel": "הגדרות מצב ריכוז (בקרוב)",
+      "moodSubtitle": "{mood} · פלייליסט DPNR",
+      "openPlayer": "פתיחת הנגן",
+      "closePlayer": "סגירת הנגן",
+      "openInSpotify": "פתיחה ב-Spotify",
+      "chooseMood": "בחירת מצב רוח",
+      "playerTitle": "פלייליסט DPNR ב-Spotify",
+      "previewNote": "התחברו ל-Spotify בדפדפן הזה כדי לשמוע שירים מלאים — אחרת יושמעו קטעים של 30 שניות."
     },
     "edit": "עריכה",
     "editMessage": "עריכת ההודעה",

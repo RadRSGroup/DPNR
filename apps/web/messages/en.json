@@ -634,7 +634,14 @@
       "subtitle": "Deep Work · DPNR Playlist",
       "comingSoon": "Coming soon",
       "playLabel": "Play (coming soon)",
-      "settingsLabel": "Focus Mode settings (coming soon)"
+      "settingsLabel": "Focus Mode settings (coming soon)",
+      "moodSubtitle": "{mood} · DPNR Playlist",
+      "openPlayer": "Open the player",
+      "closePlayer": "Close the player",
+      "openInSpotify": "Open in Spotify",
+      "chooseMood": "Choose a mood",
+      "playerTitle": "DPNR playlist on Spotify",
+      "previewNote": "Log in to Spotify in this browser to hear full tracks — otherwise you'll hear 30-second previews."
     },
     "edit": "Edit",
     "editMessage": "Edit message",

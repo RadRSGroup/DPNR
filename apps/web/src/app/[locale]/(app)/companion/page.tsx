@@ -419,14 +419,18 @@ function CompanionContent() {
 
   return (
     <div className="relative h-[calc(100dvh-4rem)] lg:h-dvh flex flex-col overflow-hidden">
-      <div className="absolute inset-0 -z-10">
+      {/* overflow-hidden here, not just on the page: the custom photo is
+          scale-105, and unclipped it gave the page root scrollable overflow
+          — anything calling scrollIntoView (e.g. the Spotify embed loading)
+          then shifted the whole layout ~25px. */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
         {showCustom && (
           // A presigned S3 URL — next/image's remote-pattern allowlist
           // doesn't cover this per-account, ever-changing host, same
           // reasoning as AvatarUpload.tsx's own <img>.
-          // eslint-disable-next-line @next/next/no-img-element
           // Light blur (scaled up so the blurred edges stay off-screen):
           // a busy photo's own detail/text otherwise competes with the chat.
+          // eslint-disable-next-line @next/next/no-img-element
           <img src={chatBackgroundUrl!} alt="" className="w-full h-full object-cover blur-[3px] scale-105" />
         )}
         {/* Scrim for the person's own photo: the chat is white text on
