@@ -5,7 +5,10 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { AvatarUploadUrlRequestSchema, type AvatarUploadUrlResponse } from '@dpnr/shared-types'
 import { requireUserId, parseBody, jsonResponse, errorResponse } from '../lib/http'
 
-const s3 = new S3Client({})
+// WHEN_REQUIRED: newer SDK versions otherwise sign a CRC32 checksum of the
+// (empty) body into the presigned PUT URL (`x-amz-checksum-crc32=AAAAAA==`),
+// so S3 rejects the real image bytes the browser sends later.
+const s3 = new S3Client({ requestChecksumCalculation: 'WHEN_REQUIRED' })
 const BUCKET_NAME = process.env.AVATARS_BUCKET_NAME as string
 const UPLOAD_URL_EXPIRY_SECONDS = 300
 
