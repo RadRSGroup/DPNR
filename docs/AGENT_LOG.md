@@ -1173,6 +1173,8 @@ This project has **no human development team**. It is built entirely by Claude C
 
 *(This section is overwritten every session with the current, precise handoff. Do not append to it — replace it. As of Session 11, the long per-session condensed narrative that used to accumulate here was removed — every one of those sessions' full detail already lives in Session History below, verbatim; condensing it a second time up here had drifted from this section's own "replace it" rule for several sessions running. Keep this section to current status + what's next; look in Session History for how we got here.)*
 
+**Session 68 (small, latest): Pull a Card now scales with its container on large screens (`PullACard.tsx`, `@container` + `cqw` clamps + `lg:max-h-[58vh]`). Live-verified locally, not committed. See Session History.**
+
 **Session 67 (current): fixed the Recent Conversations truncation (+ mobile access), added conversation delete, real topic photos inside topics, a working "Need help?" menu, and the chat-background Vision feature (Stability AI, 3 free/month); also closed an S3-key IDOR in `PUT /v1/user/preferences`. Deployed + pushed.** Full detail in the "Prompt for next agent" blockquote.
 
 **Immediate next steps from Session 67**: part 1's five items are live-verified; part 2 added editable answers (Main Chat edit & resend, Room REOPEN) + title/greeting fixes, deployed — live-verify those if the Session History entry doesn't already say so; generate a real Vision only with the user's explicit OK.
@@ -1398,6 +1400,12 @@ From there, wrote and got approval for a 6-slice plan, `C:\Users\rekkawi\.claude
 ---
 
 ## Session History
+
+### 2026-09-24 — Session 68: Pull a Card scaling on large screens — frontend-only, built and live-verified locally, NOT committed
+
+- **Problem (from the code, then confirmed live)**: the desktop right column is `lg:grid-cols-3` (a third of the viewport), and the card was `lg:aspect-[4/5]` with no height cap, while the question maxed out at a fixed `xl:text-[1.7rem]`. On large screens the card got huge (~780px wide / ~975px tall at 2560), the text looked tiny inside it, and the button + Recent Conversations fell below the fold.
+- **Fix** (`apps/web/src/components/companion/PullACard.tsx` only): the `<section>` is now a Tailwind v4 `@container`. Question size, padding, divider width and tagline size use `clamp(<old size>, N cqw, <max>)`, so they scale with the card's own width and match the old sizes at the narrow end (1024–1280 column, mobile). The card gets `lg:max-h-[58vh]`, so on tall/wide screens it stops growing and goes squarer, which is closer to the designer's near-square reference. The button grows a bit at `@xl`. First use of container queries in the repo.
+- **Verified live** (user signed in themselves), measured in the DOM: 2560x1440 card 668x835, short question 47.5px, long 36px, button bottom 993/1440. 1920x1080 card 501x627, short 33.6px, long (real 101-char pulled card) 28.5px, no overlap with the tagline, right column fully visible. 1280x720 card 294x368, 18px long (unchanged from before). 1024x768 20px short (unchanged). tsc / `npm run lint` (eslint + RTL + i18n parity) / `next build` clean. Mobile landing and Hebrew not separately screenshotted; the clamp minimums keep them at or just above their old sizes.
 
 ### 2026-09-24 — Session 67, part 2: live verification, title/greeting fixes, editable answers (Main Chat edit & resend, Room REOPEN); deployed + pushed
 

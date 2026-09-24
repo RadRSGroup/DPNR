@@ -103,23 +103,28 @@ export default function MirrorRoomLanding({ userName, onStart, sourceTopicTitle 
             <div className="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
               {/* Main column */}
               <div className="lg:col-span-2 space-y-4 lg:space-y-6">
+                {/* Split card per the designer's Mirror Room reference (docs/reference-screens/
+                    platform_photos/refs/mirror-room-home-2.png): image beside the text rather than
+                    text over the image, so the photo shows at full strength. Stacks on mobile; in
+                    RTL the flex row mirrors, putting the image on the right. */}
                 <Card className="relative overflow-hidden !p-0">
-                  <div className="relative h-64 lg:h-80">
-                    <Image
-                      src="/images/mirror/mirror-room-hero.webp"
-                      alt=""
-                      fill
-                      sizes="(min-width: 1024px) 66vw, 100vw"
-                      className="object-cover"
-                      priority
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg-base)] via-transparent to-transparent" />
-                    <div className="absolute inset-0 flex flex-col items-start justify-end p-5 lg:p-8">
+                  <div className="flex flex-col sm:flex-row">
+                    <div className="relative h-56 sm:h-auto sm:min-h-80 sm:w-1/2 shrink-0">
+                      <Image
+                        src="/images/mirror/mirror-room-hero.webp"
+                        alt=""
+                        fill
+                        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                        className="object-cover"
+                        priority
+                      />
+                    </div>
+                    <div className="flex flex-col justify-center p-5 lg:p-8 sm:w-1/2">
                       <h2 className="font-display text-xl lg:text-2xl text-white">Welcome to Mirror Room</h2>
-                      <p className="text-white/60 text-sm mt-1 max-w-sm">
+                      <p className="text-white/70 text-sm mt-2 leading-relaxed">
                         This is your space to pause, observe, and explore your inner patterns. The more you see, the more you&apos;re free to choose.
                       </p>
-                      <div className="mt-4 flex items-center gap-3">
+                      <div className="mt-5 flex items-center gap-3">
                         <PrimaryButton label="Start Mirror" onClick={onStart} className="lg:w-auto lg:px-6" />
                         <span className="text-[var(--color-text-tertiary)] text-xs">
                           {ROOM_REFINE_COST} credit{ROOM_REFINE_COST === 1 ? '' : 's'} per refine

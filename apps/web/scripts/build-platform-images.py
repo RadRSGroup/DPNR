@@ -27,6 +27,8 @@ SECTIONS = {
     "growth/header.png": ("growth/growth-hero.webp", "backgrounds/growth-bg.webp", 19),
     "evolution-map/main.png": ("evolution-map/evolution-map-hero.webp", "backgrounds/evolution-map-bg.webp", 11),
     "wallet/1.png": ("wallet/wallet-hero.webp", "backgrounds/wallet-bg.webp", 10),
+    # User's pick of the three Drive options (option 1 matches the reference's "My InnerSelf" card).
+    "dashboard/option-1.png": ("dashboard/inner-self-hero.webp", "backgrounds/dashboard-bg.webp", 8),
 }
 
 BG_SIZE = (1728, 972)
@@ -40,7 +42,9 @@ BG_SIZE = (1728, 972)
 # than the previous image's was; 1.0 / 0.0 means untouched.
 TEXT_SAFE = {
     "decision/main.png": (0.9, 0.55),
-    "mirror/main.png": (0.62, 0.72),
+    # Mirror's hero moved to a split card (image beside the text, per the
+    # reference), so its photo no longer needs darkening.
+    "mirror/main.png": (1.0, 0.0),
     "growth/header.png": (0.85, 0.75),
     "evolution-map/main.png": (0.8, 0.9),
     "wallet/1.png": (1.0, 0.0),
