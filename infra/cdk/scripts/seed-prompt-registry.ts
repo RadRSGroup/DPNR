@@ -39,10 +39,11 @@ import { WEEKLY_RECAP_PROMPT_SEEDS } from './weekly-recap-prompts.seed'
 import { COMPANION_PROMPT_SEEDS } from './companion-prompts.seed'
 import { ROADMAP_PROMPT_SEEDS } from './roadmap-prompts.seed'
 import { SAFETY_PROMPT_SEEDS } from './safety-prompts.seed'
+import { applyReasoningLayer } from './reasoning-layer'
 
 const TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME ?? 'dpnr-prompt-registry'
 
-const DOMAINS: { domain: string; seeds: PromptSeed[]; author: string; sourceNote: string }[] = [
+export const DOMAINS: { domain: string; seeds: PromptSeed[]; author: string; sourceNote: string }[] = [
   {
     domain: 'decision_room',
     seeds: DECISION_ROOM_PROMPT_SEEDS,
@@ -153,7 +154,10 @@ async function main() {
   let count = 0
 
   for (const { domain, seeds, author, sourceNote } of DOMAINS) {
-    for (const seed of seeds) {
+    for (const rawSeed of seeds) {
+      // Shared reasoning layer (reasoning-layer.ts) — appended here, at seed
+      // time, for the prompts it targets; a no-op for every other prompt.
+      const seed = applyReasoningLayer(domain, rawSeed)
       const versionItem = buildVersionItem(domain, seed, now, author, sourceNote)
       const aliasItem = buildAliasItem(domain, seed.name, now)
 
@@ -167,7 +171,10 @@ async function main() {
   console.log(`Done: ${count} prompts seeded into ${TABLE_NAME}.`)
 }
 
-main().catch((err) => {
-  console.error('Prompt Registry seed failed:', err)
-  process.exit(1)
-})
+// Guarded so reasoning-layer.test.ts can import DOMAINS without writing to DynamoDB.
+if (require.main === module) {
+  main().catch((err) => {
+    console.error('Prompt Registry seed failed:', err)
+    process.exit(1)
+  })
+}

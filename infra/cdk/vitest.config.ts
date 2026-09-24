@@ -13,7 +13,7 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['lambda/**/*.test.ts'],
+    include: ['lambda/**/*.test.ts', 'scripts/**/*.test.ts'],
     // Every handler reads its table name(s) from process.env at MODULE
     // load time (`const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as
     // string`) — `test.env` sets these before any test file's static
