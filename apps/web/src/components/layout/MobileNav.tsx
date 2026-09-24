@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { usePathname } from '@/i18n/navigation'
 import { MessageCircle, LayoutGrid, Hexagon, Compass, BookOpen, User } from 'lucide-react'
-import { getPreferences } from '@/lib/api/v1-client'
+import { useAvatarUrl } from '@/lib/useAvatarUrl'
 
 // A condensed 6-item version of PRIMARY_NAV — a phone-width bottom bar has no
 // room for all 7 sidebar items plus the 3 mini-cards, so this picks the
@@ -24,14 +23,9 @@ const MOBILE_NAV = [
 export default function MobileNav() {
   const t = useTranslations('Nav.mobileItems')
   const pathname = usePathname()
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-
-  useEffect(() => {
-    // Same real-photo-when-set, degrade-to-generic-icon tolerance as
-    // Sidebar.tsx's own profile mini-card — the user flagged this was
-    // missing here, desktop/mobile should stay consistent.
-    getPreferences().then((p) => setAvatarUrl(p.avatarUrl)).catch(() => {})
-  }, [])
+  // Same real-photo-when-set, degrade-to-generic-icon tolerance as the
+  // Sidebar's profile card (shared, cached fetch — lib/useAvatarUrl.ts).
+  const avatarUrl = useAvatarUrl()
 
   return (
     <nav className="flex lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--color-border-glass)] bg-[#0a0a0f]/95 backdrop-blur-sm">

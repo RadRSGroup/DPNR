@@ -92,7 +92,7 @@
       }
     },
     "genderSaveError": "Could not save — please try again.",
-    "signOut": "Sign out"
+    "signOut": "Log Out"
   },
   "Wallet": {
     "title": "My Wallet",
@@ -627,7 +627,7 @@
       "searchPlaceholder": "Search anything...",
       "accountMenu": "Account menu",
       "myProfile": "My Profile",
-      "signOut": "Sign out"
+      "signOut": "Log Out"
     },
     "focusMode": {
       "title": "Focus Mode",
@@ -714,6 +714,8 @@
   },
   "Nav": {
     "tagline": "Human Operating System",
+    "logOut": "Log Out",
+    "accountMenu": "Account menu",
     "brandHome": "DPNR home",
     "items": {
       "mainChat": "Main Chat",

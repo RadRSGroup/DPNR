@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { Link } from '@/i18n/navigation'
-import { getCurrentSession, deleteCognitoUser, signOut, changePassword } from '@/lib/cognito/client'
-import { revokeCurrentSessionTicket, changePasswordAndRewrapDek } from '@/lib/auth/keyBootstrap'
+import { getCurrentSession, deleteCognitoUser, changePassword } from '@/lib/cognito/client'
+import { changePasswordAndRewrapDek } from '@/lib/auth/keyBootstrap'
+import { logOut } from '@/lib/auth/logout'
+import { setAvatarUrlEverywhere } from '@/lib/useAvatarUrl'
 import { exportUserData, deleteAccountData, getCredits, getPreferences, updatePreferences, getDashboard, ApiError } from '@/lib/api/v1-client'
 import type { CreditsResponse, GenderIdentity, ChatBackground } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
@@ -173,8 +175,7 @@ export default function AccountPage() {
       // session can no longer authenticate the /v1/account call.
       await deleteAccountData()
       await deleteCognitoUser()
-      await revokeCurrentSessionTicket().catch(() => {})
-      signOut()
+      await logOut()
       router.push('/?deleted=true')
     } catch {
       alert(t('data.delete.error'))
@@ -251,7 +252,13 @@ export default function AccountPage() {
               shown pre-selected to a guessed value. */}
           <Card className="space-y-3">
             <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">{t('preferences.label')}</p>
-            <AvatarUpload avatarUrl={avatarUrl} onUploaded={setAvatarUrl} />
+            <AvatarUpload
+              avatarUrl={avatarUrl}
+              onUploaded={(url) => {
+                setAvatarUrl(url)
+                setAvatarUrlEverywhere(url) // sidebar/header/nav update without a reload
+              }}
+            />
             <div className="flex items-center justify-between">
               <span className="text-white/80 text-sm">{t('preferences.language')}</span>
               <LanguageSelector />
@@ -412,8 +419,7 @@ export default function AccountPage() {
           {/* Sign out */}
           <button
             onClick={async () => {
-              await revokeCurrentSessionTicket().catch(() => {})
-              signOut()
+              await logOut()
               router.push('/login')
             }}
             className="w-full py-3.5 rounded-2xl border border-white/10 text-[var(--color-text-tertiary)] hover:text-white/60 hover:border-white/20 text-sm transition-all"

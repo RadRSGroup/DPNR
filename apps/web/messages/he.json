@@ -714,6 +714,8 @@
   },
   "Nav": {
     "tagline": "מערכת הפעלה אנושית",
+    "logOut": "התנתקות",
+    "accountMenu": "תפריט חשבון",
     "brandHome": "דף הבית של DPNR",
     "items": {
       "mainChat": "צ׳אט ראשי",

@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
-import { Link } from '@/i18n/navigation'
+import { Link, useRouter } from '@/i18n/navigation'
 import { usePathname } from '@/i18n/navigation'
-import { User, Wallet, ChevronRight } from 'lucide-react'
+import { Wallet, ChevronRight, LogOut } from 'lucide-react'
 import RingLogo from '@/components/icons/RingLogo'
-import { getCredits, getPreferences } from '@/lib/api/v1-client'
+import { getCredits } from '@/lib/api/v1-client'
+import { logOut } from '@/lib/auth/logout'
+import { Avatar } from './AccountMenu'
+import MobileHeader from './MobileHeader'
 import { PRIMARY_NAV } from './nav-items'
 import LanguageSelector from '@/components/shared/LanguageSelector'
 import HelpMenu from './HelpMenu'
@@ -14,21 +17,31 @@ import HelpMenu from './HelpMenu'
 export default function Sidebar() {
   const t = useTranslations('Nav')
   const pathname = usePathname()
+  const router = useRouter()
   const [credits, setCredits] = useState<number | null>(null)
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [loggingOut, setLoggingOut] = useState(false)
 
   useEffect(() => {
     getCredits().then((c) => setCredits(c.balance)).catch(() => {
       // Sidebar renders on every page, including ones with no session yet
       // (e.g. mid-redirect) — a failed fetch just leaves the generic label.
     })
-    // Session 51 — real photo when set, same tolerance as credits above
-    // (degrades to the generic User icon, never a broken image).
-    getPreferences().then((p) => setAvatarUrl(p.avatarUrl)).catch(() => {})
   }, [])
 
+  async function handleLogOut() {
+    if (loggingOut) return
+    setLoggingOut(true)
+    await logOut()
+    router.push('/login')
+  }
+
+  // Session 68: Sidebar is the one component every in-app screen renders
+  // (the (app) layout and every Decision/Mirror Room screen), so it also
+  // renders the mobile header — photo + account menu on every screen.
   return (
-    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 border-e border-[var(--color-border-glass)] bg-black/20 min-h-screen p-4">
+    <>
+    <MobileHeader />
+    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 lg:sticky lg:top-0 lg:h-dvh border-e border-[var(--color-border-glass)] bg-black/20 p-4">
       <Link href="/dashboard" className="flex items-center gap-2 px-2 py-3">
         <RingLogo className="w-8 h-8" />
         <div>
@@ -71,14 +84,7 @@ export default function Sidebar() {
         />
         <SidebarMiniCard
           href="/account"
-          icon={
-            avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- presigned S3 URL, not a next/image-eligible static host
-              <img src={avatarUrl} alt="" className="w-[18px] h-[18px] rounded-full object-cover" />
-            ) : (
-              <User className="w-[18px] h-[18px]" />
-            )
-          }
+          icon={<Avatar className="w-8 h-8" />}
           title={t('myProfile')}
           subtitle={t('settings')}
         />
@@ -86,17 +92,27 @@ export default function Sidebar() {
 
       <HelpMenu />
 
+      <button
+        onClick={handleLogOut}
+        disabled={loggingOut}
+        className="mt-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/60 hover:bg-white/5 hover:text-white transition-colors disabled:opacity-50"
+      >
+        <LogOut className="w-[18px] h-[18px] shrink-0 rtl:-scale-x-100" />
+        {t('logOut')}
+      </button>
+
       <div className="px-3 pt-3">
         <LanguageSelector className="w-full justify-center" />
       </div>
     </aside>
+    </>
   )
 }
 
 function SidebarMiniCard({ href, icon, title, subtitle }: { href: string; icon: React.ReactNode; title: string; subtitle: string }) {
   return (
     <Link href={href} className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors group">
-      <div className="w-8 h-8 rounded-full bg-white/5 border border-[var(--color-border-glass)] flex items-center justify-center shrink-0">
+      <div className="w-8 h-8 rounded-full bg-white/5 border border-[var(--color-border-glass)] flex items-center justify-center shrink-0 overflow-hidden">
         {icon}
       </div>
       <div className="flex-1 min-w-0">

@@ -1,12 +1,9 @@
 'use client'
-import { useState, useEffect, useRef, useSyncExternalStore } from 'react'
-import { Search, ChevronDown, User as UserIcon, LogOut } from 'lucide-react'
+import { useSyncExternalStore } from 'react'
+import { Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { Link, useRouter } from '@/i18n/navigation'
-import { getPreferences } from '@/lib/api/v1-client'
-import { signOut } from '@/lib/cognito/client'
-import { revokeCurrentSessionTicket } from '@/lib/auth/keyBootstrap'
 import LanguageSelector from '@/components/shared/LanguageSelector'
+import AccountMenu from '@/components/layout/AccountMenu'
 
 /**
  * `useSyncExternalStore` is the correct primitive for a value that changes
@@ -68,29 +65,8 @@ function useClock(): Date | null {
  * query yet (§3.7) — no search index exists anywhere in this codebase.
  */
 export default function TopBar() {
-  const router = useRouter()
   const t = useTranslations('Companion.topBar')
   const now = useClock()
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    getPreferences()
-      .then((p) => setAvatarUrl(p.avatarUrl))
-      .catch(() => {
-        // Honest degrade — same tolerance Sidebar.tsx already uses for this same call.
-      })
-  }, [])
-
-  useEffect(() => {
-    if (!menuOpen) return
-    function onClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
-    }
-    document.addEventListener('mousedown', onClickOutside)
-    return () => document.removeEventListener('mousedown', onClickOutside)
-  }, [menuOpen])
 
   return (
     <div className="hidden lg:flex items-center gap-4 pb-4">
@@ -121,45 +97,8 @@ export default function TopBar() {
           LanguageSelector placement already uses. */}
       <LanguageSelector className="shrink-0" />
 
-      <div className="relative shrink-0" ref={menuRef}>
-        <button
-          onClick={() => setMenuOpen((v) => !v)}
-          className="flex items-center gap-1.5 rounded-full hover:bg-white/5 p-1 transition-colors"
-          aria-label={t('accountMenu')}
-        >
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- presigned S3 URL, not a next/image-eligible static host
-            <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-              <UserIcon className="w-4 h-4 text-white/50" />
-            </div>
-          )}
-          <ChevronDown className="w-3.5 h-3.5 text-white/40" />
-        </button>
-
-        {menuOpen && (
-          <div className="absolute end-0 top-full mt-2 w-44 liquid-glass rounded-xl py-1.5 z-20">
-            <Link
-              href="/account"
-              className="flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:bg-white/5 transition-colors"
-              onClick={() => setMenuOpen(false)}
-            >
-              <UserIcon className="w-4 h-4" /> {t('myProfile')}
-            </Link>
-            <button
-              onClick={async () => {
-                await revokeCurrentSessionTicket().catch(() => {})
-                signOut()
-                router.push('/login')
-              }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:bg-white/5 transition-colors text-start"
-            >
-              <LogOut className="w-4 h-4" /> {t('signOut')}
-            </button>
-          </div>
-        )}
-      </div>
+      {/* Shared with MobileHeader (Session 68): photo + My Profile / Log Out. */}
+      <AccountMenu showChevron />
     </div>
   )
 }
