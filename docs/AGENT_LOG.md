@@ -1403,6 +1403,11 @@ From there, wrote and got approval for a 6-slice plan, `C:\Users\rekkawi\.claude
 
 ## Session History
 
+### 2026-09-24 — Session 68, part 7: room-suggestion card bleed-through (beta screenshot) — frontend-only, verified locally
+
+- Beta screenshot (iPad, custom photo chat background): the "Start a Mirror Room session · Tap to open →" card under Pull a Card showed the photo through it. `DirectiveCard`'s `open_room` variant was `bg-purple-600/20` (and `open_dashboard` `bg-white/5`) — translucent washes. Now a solid `--color-violet-900` base with the purple gradient layered on top (+ shadow); `open_dashboard` on `bg-base/90`. Same component serves the suggestions under chat replies, so those are fixed too. `text-left` → `text-start` (RTL baseline tightened: `scripts/rtl-baseline.json`).
+- Verified live on the user's account (light custom background): pulled a card that returned an `open_room` directive; computed background `rgb(26, 8, 38)` + gradient, no bleed. tsc/lint/build clean.
+
 ### 2026-09-24 — Session 68, part 6: Log Out button + profile photo on every screen — frontend-only, verified locally
 
 - User asked for a "Log Out" button and the profile thumbnail always visible. Before: desktop sidebar showed the photo as an 18px dot in the "My Profile" card and scrolled away on long pages; sign-out existed only in Main Chat's desktop TopBar menu and at the bottom of Account; mobile header was logo-only; Decision/Mirror Room screens had no mobile header at all.

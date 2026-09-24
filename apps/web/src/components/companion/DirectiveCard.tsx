@@ -37,10 +37,13 @@ export default function DirectiveCard({ directive, sourceSessionId }: Props) {
     return (
       <button
         onClick={() => router.push(`/${directive.roomType}/new`)}
-        className="mt-2 w-full text-left bg-purple-600/20 border border-purple-500/40 hover:bg-purple-600/30 rounded-2xl px-4 py-3 transition-colors"
+        // Solid base with the violet tint layered on top — it was a 20%
+        // purple wash, so a custom chat photo bled straight through it
+        // (beta report, Session 68).
+        className="mt-2 w-full text-start bg-[var(--color-violet-900)] bg-gradient-to-br from-purple-600/35 to-purple-800/25 border border-purple-500/40 hover:from-purple-600/45 hover:to-purple-800/35 rounded-2xl px-4 py-3 shadow-[0_8px_20px_-10px_rgba(0,0,0,0.6)] transition-colors"
       >
         <p className="text-purple-200 text-sm font-medium">{label}</p>
-        <p className="text-purple-300/60 text-xs mt-0.5">{t('tapToOpen')}</p>
+        <p className="text-purple-200/70 text-xs mt-0.5">{t('tapToOpen')}</p>
       </button>
     )
   }
@@ -49,7 +52,7 @@ export default function DirectiveCard({ directive, sourceSessionId }: Props) {
     return (
       <button
         onClick={() => router.push('/dashboard')}
-        className="mt-2 w-full text-left bg-white/5 border border-white/15 hover:border-white/30 rounded-2xl px-4 py-3 transition-colors"
+        className="mt-2 w-full text-start bg-[var(--color-bg-base)]/90 border border-white/15 hover:border-white/30 rounded-2xl px-4 py-3 transition-colors"
       >
         <p className="text-white/80 text-sm font-medium">{t('openInnerOS')}</p>
         <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">{t('tapToOpen')}</p>
