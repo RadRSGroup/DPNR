@@ -5,9 +5,9 @@ import { Link } from '@/i18n/navigation'
 import { useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
-import { Heart, Cloud, Shuffle, UserCircle, Plus, Mic, ImagePlus, X } from 'lucide-react'
+import { Heart, Cloud, Shuffle, UserCircle, Plus, Mic, ImagePlus, X, MessagesSquare } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
-import { getCompanionContext, sendCompanionMessage, getPreferences, ApiError } from '@/lib/api/v1-client'
+import { getCompanionContext, sendCompanionMessage, getPreferences, createCompanionConversation, ApiError } from '@/lib/api/v1-client'
 import type { CompanionDirective, ChatBackground } from '@dpnr/shared-types'
 import DirectiveCard from '@/components/companion/DirectiveCard'
 import PullACard from '@/components/companion/PullACard'
@@ -75,6 +75,7 @@ function CompanionContent() {
   const locale = useLocale()
   const t = useTranslations('Onboarding')
   const tc = useTranslations('Companion')
+  const tr = useTranslations('Companion.recentConversations')
   const onboarding = useOnboardingFlow()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   // Session 60 — a fresh, ephemeral "welcome back" line on every visit
@@ -87,6 +88,7 @@ function CompanionContent() {
   // "Explore in Mirror/Decision Room" action from a Library topic can carry
   // "source session" context, per the flow's own worked example.
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [historyOpen, setHistoryOpen] = useState(false) // mobile-only Recent Conversations sheet
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
@@ -234,6 +236,28 @@ function CompanionContent() {
     setReturnGreeting(null) // a brand-new thread has nothing to welcome the person back to yet
   }
 
+  /**
+   * A conversation was deleted from Recent Conversations. Only matters when
+   * it was the open one: switch to the most recent remaining conversation,
+   * or start a fresh one if none are left (the server already cleared its
+   * active-session pointer, so a stale id must not stay on screen).
+   */
+  async function handleDeletedConversation(deletedSessionId: string, nextSessionId: string | null) {
+    if (deletedSessionId !== sessionId) return
+    if (nextSessionId) {
+      await handleSelectConversation(nextSessionId)
+      return
+    }
+    try {
+      const { sessionId: freshId } = await createCompanionConversation()
+      handleNewConversation(freshId)
+    } catch {
+      setMessages([])
+      setSessionId(null)
+      setReturnGreeting(null)
+    }
+  }
+
   async function handleSend() {
     const text = input.trim()
     if (!text || sending) return
@@ -340,31 +364,66 @@ function CompanionContent() {
   const isLanding = !pageLoading && messages.length === 0 && !onboarding.active
   const showPrompts = !pageLoading && !onboarding.active
   const composerDisabled = pageLoading || (onboarding.active && !onboarding.awaitingIntention)
-  // 'custom' with no chatBackgroundUrl yet (selected but never finished an
-  // upload) falls back to the default preset, same tolerance the schema's
-  // own doc comment (`dynamo/account.ts`) already documents for that case.
+  // Session 67: the two generic preset images are retired — the person's own
+  // image (an upload or a generated Vision) or a plain default. 'custom' with
+  // no chatBackgroundUrl yet, and the legacy 'digital_twin'/'environment'
+  // values, all render the default.
   const showCustom = chatBackground === 'custom' && chatBackgroundUrl !== null
-  const backgroundSrc =
-    chatBackground === 'environment'
-      ? '/images/backgrounds/companion-bg-environment.webp'
-      : '/images/backgrounds/companion-bg.webp'
 
   return (
     <div className="relative h-[calc(100dvh-4rem)] lg:h-dvh flex flex-col overflow-hidden">
       <div className="absolute inset-0 -z-10">
-        {showCustom ? (
+        {showCustom && (
           // A presigned S3 URL — next/image's remote-pattern allowlist
           // doesn't cover this per-account, ever-changing host, same
           // reasoning as AvatarUpload.tsx's own <img>.
           // eslint-disable-next-line @next/next/no-img-element
           <img src={chatBackgroundUrl!} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <Image src={backgroundSrc} alt="" fill className="object-cover" />
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
       </div>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
       {creditsExhausted && <CreditsExhaustedModal onClose={() => setCreditsExhausted(false)} />}
+
+      {/* Mobile: Recent Conversations has no room in the single-column
+          layout (desktop shows it in the right column), so it lives behind
+          this button as a bottom sheet — same component, same actions. */}
+      {!onboarding.active && (
+        <button
+          onClick={() => setHistoryOpen(true)}
+          className="lg:hidden fixed top-14 end-4 z-30 inline-flex items-center gap-1.5 liquid-glass rounded-full px-3 py-1.5 text-xs text-white/80"
+          aria-label={tr('showHistory')}
+        >
+          <MessagesSquare className="w-3.5 h-3.5" /> {tr('showHistory')}
+        </button>
+      )}
+      {historyOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex items-end bg-black/50" onClick={() => setHistoryOpen(false)}>
+          <div className="w-full max-h-[75dvh] overflow-y-auto p-3 pb-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-end mb-2">
+              <button
+                onClick={() => setHistoryOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full liquid-glass text-white/70"
+                aria-label={tr('close')}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <RecentConversations
+              activeSessionId={sessionId}
+              onSelect={(id) => {
+                setHistoryOpen(false)
+                void handleSelectConversation(id)
+              }}
+              onCreated={(id) => {
+                setHistoryOpen(false)
+                handleNewConversation(id)
+              }}
+              onDeleted={handleDeletedConversation}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="lg:px-8 lg:pt-6">
         <TopBar />
@@ -707,12 +766,13 @@ function CompanionContent() {
 
         {/* Right column — desktop only, hidden while onboarding owns the thread (same reasoning as the mobile-only widgets above). */}
         {!onboarding.active && (
-          <div className="scrollbar-glass hidden lg:flex lg:flex-col lg:gap-4 lg:pb-6 lg:overflow-y-auto">
+          <div className="scrollbar-glass hidden lg:flex lg:flex-col lg:gap-4 lg:pb-6 lg:overflow-y-auto lg:[&>*]:shrink-0">
             <PullACard />
             <RecentConversations
               activeSessionId={sessionId}
               onSelect={handleSelectConversation}
               onCreated={handleNewConversation}
+              onDeleted={handleDeletedConversation}
             />
             <FocusMode />
           </div>

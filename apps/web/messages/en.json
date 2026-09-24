@@ -22,11 +22,32 @@
       "gender": "Gender",
       "genderHint": "Used only to address you correctly in Hebrew — has no effect in English.",
       "chatBackground": "Chat Background",
-      "chatBackgroundDigitalTwin": "Digital Twin",
-      "chatBackgroundEnvironment": "Environment",
-      "chatBackgroundCustom": "Custom",
-      "chatBackgroundUploadPrompt": "+ Upload your own",
-      "chatBackgroundHint": "Choose the background behind Main Chat."
+      "chatBackgroundDefault": "Default",
+      "chatBackgroundCustom": "My image",
+      "chatBackgroundUploadPrompt": "Upload a photo",
+      "chatBackgroundHint": "Choose what sits behind Main Chat — or create a Vision: you, in the life you’re moving toward.",
+      "vision": {
+        "create": "Create my Vision",
+        "title": "Create your Vision",
+        "intro": "Describe a scene — the life you’re moving toward, or anywhere you’d love to see yourself. We’ll place your profile photo in it.",
+        "placeholder": "e.g. Me on the balcony of my own studio by the sea, calm, doing work I love",
+        "useRoadmap": "Start from my Roadmap direction",
+        "roadmapPrefix": "The life I’m moving toward: {direction}. The place:",
+        "generate": "Create Vision",
+        "generating": "Creating your Vision — this takes about half a minute…",
+        "remaining": "{count, plural, =0 {No Visions left this month} one {# Vision left this month} other {# Visions left this month}}",
+        "privacy": "Your photo and description are processed by an AI image model on AWS just to create this image. It stays private to your account.",
+        "needsPhoto": "Add a profile photo above first — your Vision is built around it.",
+        "cancel": "Cancel",
+        "errors": {
+          "avatar_required": "Add a profile photo above first — your Vision is built around it.",
+          "vision_declined": "That’s not something we can turn into an image. If things feel heavy right now, the Companion is here to talk.",
+          "vision_limit_reached": "You’ve used this month’s Visions. More become available next month.",
+          "content_filtered": "The image model couldn’t create that scene. Try describing it a little differently — your Vision wasn’t counted.",
+          "generation_failed": "Something went wrong creating your Vision. Please try again — it wasn’t counted.",
+          "timeout": "This is taking longer than expected. Check back in a minute — your new background will appear once it’s ready."
+        }
+      }
     },
     "security": {
       "label": "Security",
@@ -615,6 +636,21 @@
       "playLabel": "Play (coming soon)",
       "settingsLabel": "Focus Mode settings (coming soon)"
     },
+    "recentConversations": {
+      "title": "Recent Conversations",
+      "new": "New",
+      "loading": "Loading…",
+      "empty": "Nothing here yet.",
+      "untitled": "New conversation",
+      "open": "Open conversation",
+      "delete": "Delete conversation",
+      "confirmDelete": "Delete this conversation? This can’t be undone.",
+      "confirm": "Delete",
+      "cancel": "Cancel",
+      "deleteFailed": "Couldn’t delete it. Please try again.",
+      "showHistory": "Conversations",
+      "close": "Close"
+    },
     "directiveCard": {
       "startDecisionRoom": "Start a Decision Room",
       "startMirrorRoom": "Start a Mirror Room session",
@@ -684,6 +720,13 @@
     "settings": "Settings",
     "needHelp": "Need help?",
     "needHelpSubtitle": "We're here for you",
+    "helpMenu": {
+      "title": "How can we help?",
+      "companion": "Talk it through with your Companion",
+      "companionHint": "Say what’s on your mind — no setup needed.",
+      "email": "Email support",
+      "crisis": "If you are in danger or crisis right now, please contact local emergency services or someone you trust nearby."
+    },
     "languageAriaLabel": "Language",
     "mobileItems": {
       "chat": "Chat",

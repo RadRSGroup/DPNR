@@ -5,6 +5,7 @@ import { Sk, userPk, UpdatePreferencesRequestSchema, type PreferencesResponse } 
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { getAvatarPresignedUrl } from '../lib/avatar'
 import { getChatBackgroundPresignedUrl } from '../lib/chat-background'
+import { getVisionRemaining } from '../lib/vision-quota'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
@@ -24,6 +25,12 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const userId = requireUserId(event)
     const { preferredLanguage, genderIdentity, avatarKey, profileSetupComplete, chatBackground, chatBackgroundKey } =
       parseBody(event, UpdatePreferencesRequestSchema)
+    // Ownership check: both keys are only ever issued under the caller's own
+    // prefix (avatar-upload-url.ts / chat-background-upload-url.ts /
+    // vision-worker.ts). Without this, a caller could store another user's
+    // object key and receive a presigned read URL for it on the next read.
+    assertOwnKey(avatarKey, `avatars/${userId}/`)
+    assertOwnKey(chatBackgroundKey, `chat-backgrounds/${userId}/`)
     const now = new Date().toISOString()
 
     const setClauses = ['updatedAt = :now']
@@ -78,9 +85,17 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       profileSetupCompletedAt: (result.Attributes?.profileSetupCompletedAt as string | null | undefined) ?? null,
       chatBackground: (result.Attributes?.chatBackground as PreferencesResponse['chatBackground']) ?? 'digital_twin',
       chatBackgroundUrl: await getChatBackgroundPresignedUrl(result.Attributes?.chatBackgroundKey as string | null | undefined),
+      visionRemainingThisMonth: await getVisionRemaining(ddb, TABLE_NAME, userPk(userId)),
     }
     return jsonResponse(200, response)
   } catch (err) {
     return errorResponse(err)
+  }
+}
+
+function assertOwnKey(key: string | null | undefined, ownPrefix: string): void {
+  if (key === undefined || key === null) return
+  if (!key.startsWith(ownPrefix) || key.includes('..')) {
+    throw new HttpError(400, 'validation_error', 'That image does not belong to this account.')
   }
 }

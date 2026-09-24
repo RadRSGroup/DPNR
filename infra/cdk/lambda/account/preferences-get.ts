@@ -5,6 +5,7 @@ import { Sk, userPk, type UserProfileItem, type PreferencesResponse } from '@dpn
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { getAvatarPresignedUrl } from '../lib/avatar'
 import { getChatBackgroundPresignedUrl } from '../lib/chat-background'
+import { getVisionRemaining } from '../lib/vision-quota'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
@@ -37,6 +38,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       profileSetupCompletedAt: profile.profileSetupCompletedAt,
       chatBackground: profile.chatBackground,
       chatBackgroundUrl: await getChatBackgroundPresignedUrl(profile.chatBackgroundKey),
+      visionRemainingThisMonth: await getVisionRemaining(ddb, TABLE_NAME, userPk(userId)),
     }
     return jsonResponse(200, response)
   } catch (err) {

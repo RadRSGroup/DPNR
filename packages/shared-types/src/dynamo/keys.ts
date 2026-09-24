@@ -8,6 +8,9 @@ export const userPk = (userId: string): string => `USER#${userId}`
 
 export const Sk = {
   profile: (): 'PROFILE' => 'PROFILE',
+  // Chat-background Vision generation (async job status + per-month quota).
+  visionJob: (jobId: string): string => `VISION#JOB#${jobId}`,
+  visionQuota: (yearMonth: string): string => `VISION#QUOTA#${yearMonth}`,
   keys: (): 'KEYS' => 'KEYS',
   credits: (): 'CREDITS' => 'CREDITS',
   creditsTxn: (isoTimestamp: string): string => `CREDITS#TXN#${isoTimestamp}`,

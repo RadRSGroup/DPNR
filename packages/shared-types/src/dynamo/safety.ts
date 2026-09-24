@@ -19,7 +19,7 @@ export const SafetyStateSchema = z.enum([
 ])
 export type SafetyState = z.infer<typeof SafetyStateSchema>
 
-export const SafetySourceSurfaceSchema = z.enum(['companion', 'decision_room', 'mirror_room'])
+export const SafetySourceSurfaceSchema = z.enum(['companion', 'decision_room', 'mirror_room', 'chat_background_vision'])
 export type SafetySourceSurface = z.infer<typeof SafetySourceSurfaceSchema>
 
 /**

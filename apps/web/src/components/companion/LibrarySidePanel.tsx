@@ -2,10 +2,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from '@/i18n/navigation'
 import { useRouter } from '@/i18n/navigation'
-import Image from 'next/image'
 import type { LibraryTopicDetailResponse } from '@dpnr/shared-types'
 import { getLibraryTopic } from '@/lib/api/v1-client'
 import { THEME_META } from '@/lib/library/theme-meta'
+import TopicCover from '@/components/library/TopicCover'
 
 interface Props {
   slug: string
@@ -84,10 +84,8 @@ export default function LibrarySidePanel({ slug, sourceSessionId, onClose }: Pro
 
           {topic && (
             <>
-              <div className="flex items-center gap-3">
-                <div className="relative w-10 h-10 rounded-full overflow-hidden shrink-0 ring-1 ring-white/15">
-                  <Image src={THEME_META[topic.exploreTheme].image} alt="" fill sizes="40px" className="object-cover" />
-                </div>
+              <div className="space-y-3">
+                <TopicCover slug={topic.slug} theme={topic.exploreTheme} className="h-40" sizes="420px" />
                 <div>
                   <p className="text-purple-300/70 text-xs uppercase tracking-wide">{THEME_META[topic.exploreTheme].label}</p>
                   <h2 className="font-display text-xl text-white">{topic.title}</h2>

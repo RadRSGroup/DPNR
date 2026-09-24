@@ -23,6 +23,8 @@ export default defineConfig({
       APPLICATION_TABLE_NAME: 'dpnr-application-test',
       SESSION_TICKETS_TABLE_NAME: 'dpnr-session-tickets-test',
       PROMPT_REGISTRY_TABLE_NAME: 'dpnr-prompt-registry-test',
+      AVATARS_BUCKET_NAME: 'dpnr-avatars-test',
+      VISION_WORKER_FUNCTION_NAME: 'vision-worker-test',
     },
   },
 })

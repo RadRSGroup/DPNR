@@ -52,6 +52,39 @@ export type GenderIdentity = z.infer<typeof GenderIdentitySchema>
 export const ChatBackgroundSchema = z.enum(['digital_twin', 'environment', 'custom'])
 export type ChatBackground = z.infer<typeof ChatBackgroundSchema>
 
+/**
+ * USER#<id> / VISION#JOB#<jobId> — status of one async chat-background
+ * "Vision" generation (`account/vision-start.ts` creates it, the worker
+ * `account/vision-worker.ts` finishes it, `account/vision-status.ts` reads
+ * it). Deliberately holds NO user text: the scene description only ever
+ * travels in the worker's invocation payload, never persisted (standing
+ * no-plaintext-personal-content rule). `ttl` lets DynamoDB expire old jobs.
+ */
+export const VisionJobStatusSchema = z.enum(['pending', 'done', 'failed'])
+export type VisionJobStatus = z.infer<typeof VisionJobStatusSchema>
+export const VisionJobItemSchema = z.object({
+  pk: z.string(),
+  sk: z.string(),
+  jobId: z.string(),
+  status: VisionJobStatusSchema,
+  quotaMonth: z.string(), // YYYY-MM the generation was counted against (for refunds)
+  resultKey: z.string().optional(),
+  errorCode: z.string().optional(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  ttl: z.number().int(),
+})
+export type VisionJobItem = z.infer<typeof VisionJobItemSchema>
+
+/** USER#<id> / VISION#QUOTA#<YYYY-MM> — generations used that month. */
+export const VisionQuotaItemSchema = z.object({
+  pk: z.string(),
+  sk: z.string(),
+  count: z.number().int().nonnegative(),
+  ttl: z.number().int(),
+})
+export type VisionQuotaItem = z.infer<typeof VisionQuotaItemSchema>
+
 /** USER#<id> / PROFILE — app-level profile, not the Cognito record itself. */
 export const UserProfileItemSchema = z.object({
   pk: z.string(),

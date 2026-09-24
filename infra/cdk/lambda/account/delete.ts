@@ -1,21 +1,17 @@
 import type { APIGatewayProxyHandlerV2WithJWTAuthorizer } from 'aws-lambda'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { DynamoDBDocumentClient, QueryCommand, BatchWriteCommand, type BatchWriteCommandInput } from '@aws-sdk/lib-dynamodb'
-
-type WriteRequests = NonNullable<BatchWriteCommandInput['RequestItems']>[string]
+import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { userPk, GlobalKeys, type DeleteAccountResponse } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
+import { batchDeleteKeys } from '../lib/batch-delete'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
 const SESSION_TICKETS_TABLE_NAME = process.env.SESSION_TICKETS_TABLE_NAME as string
-const BATCH_WRITE_LIMIT = 25 // DynamoDB's own per-BatchWriteItem-call limit
-const MAX_UNPROCESSED_RETRIES = 5
 
 /**
- * Queries every item under `pk` in `tableName` (paginated) and deletes it in
- * batches, retrying `UnprocessedItems` up to `MAX_UNPROCESSED_RETRIES`
- * times per batch — shared between the application table and the
+ * Queries every item under `pk` in `tableName` (paginated) and deletes it
+ * via `batchDeleteKeys` (lib/batch-delete.ts) — shared between the application table and the
  * session-tickets table below, since both need the identical
  * query-then-batch-delete shape.
  */
@@ -36,22 +32,7 @@ async function deletePartition(tableName: string, pk: string): Promise<void> {
     exclusiveStartKey = result.LastEvaluatedKey
   } while (exclusiveStartKey)
 
-  for (let i = 0; i < keys.length; i += BATCH_WRITE_LIMIT) {
-    let requestItems: WriteRequests = keys
-      .slice(i, i + BATCH_WRITE_LIMIT)
-      .map((key) => ({ DeleteRequest: { Key: key } }))
-
-    for (let attempt = 0; requestItems.length > 0 && attempt < MAX_UNPROCESSED_RETRIES; attempt++) {
-      const result = await ddb.send(new BatchWriteCommand({ RequestItems: { [tableName]: requestItems } }))
-      requestItems = result.UnprocessedItems?.[tableName] ?? []
-    }
-    if (requestItems.length > 0) {
-      // Deliberately only the count, never key contents — sk values can embed
-      // ids but never raw personal content, still err on the side documented
-      // in the "no raw payloads in logs" guardrail.
-      throw new Error(`Failed to delete ${requestItems.length} item(s) from ${tableName} after ${MAX_UNPROCESSED_RETRIES} retries.`)
-    }
-  }
+  await batchDeleteKeys(ddb, tableName, keys)
 }
 
 /**

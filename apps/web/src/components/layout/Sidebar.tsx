@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { usePathname } from '@/i18n/navigation'
-import { User, Wallet, Headphones, ChevronRight } from 'lucide-react'
+import { User, Wallet, ChevronRight } from 'lucide-react'
 import RingLogo from '@/components/icons/RingLogo'
 import { getCredits, getPreferences } from '@/lib/api/v1-client'
 import { PRIMARY_NAV } from './nav-items'
 import LanguageSelector from '@/components/shared/LanguageSelector'
+import HelpMenu from './HelpMenu'
 
 export default function Sidebar() {
   const t = useTranslations('Nav')
@@ -83,13 +84,7 @@ export default function Sidebar() {
         />
       </div>
 
-      <div className="mt-auto pt-4 flex items-center gap-3 px-3 py-2.5 text-white/50 text-sm">
-        <Headphones className="w-[18px] h-[18px]" />
-        <div>
-          <div>{t('needHelp')}</div>
-          <div className="text-xs text-[var(--color-text-tertiary)]">{t('needHelpSubtitle')}</div>
-        </div>
-      </div>
+      <HelpMenu />
 
       <div className="px-3 pt-3">
         <LanguageSelector className="w-full justify-center" />

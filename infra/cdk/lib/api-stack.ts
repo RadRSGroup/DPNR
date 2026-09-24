@@ -493,6 +493,16 @@ export class ApiStack extends Stack {
     })
     props.applicationTable.grantReadWriteData(companionCreateConversationFn)
 
+    // Permanently deletes one of the caller's own companion conversations
+    // (session item + messages/summary). No crypto needed — it only deletes
+    // keys, never reads content.
+    const companionDeleteConversationFn = new lambda.NodejsFunction(this, 'CompanionDeleteConversationFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/companion/delete-conversation.ts'),
+      description: 'DELETE /v1/companion/conversations/{sessionId} — deletes one conversation and its messages.',
+    })
+    props.applicationTable.grantReadWriteData(companionDeleteConversationFn)
+
     // Pull a Card (Session 42) — a stored, reusable card library, a
     // genuinely different mechanic from the scheduled Daily Card and
     // scoped to Companion only (confirmed with the user). Public-catalog
@@ -583,6 +593,70 @@ export class ApiStack extends Stack {
       description: 'POST /v1/user/chat-background/upload-url — presigned S3 PUT URL for a custom chat background.',
     })
     props.avatarsBucket.grantPut(chatBackgroundUploadUrlFn)
+
+    // Chat-background "Vision" (Session 67) — the caller's own profile photo
+    // placed inside a scene they describe, generated with Stability AI image
+    // models on Bedrock (Amazon Nova Canvas is 'Legacy' and blocked for this
+    // account). Async: vision-start validates + safety-classifies + reserves
+    // quota, then invokes vision-worker with InvocationType 'Event' (the
+    // pipeline runs ~20-40s, past the HTTP API's 30s ceiling); vision-status
+    // is what the UI polls.
+    const STABILITY_VISION_MODELS = ['stability.stable-image-remove-background-v1:0', 'stability.stable-image-inpaint-v1:0']
+    const STABILITY_PROFILE_REGIONS = ['us-east-1', 'us-east-2', 'us-west-2']
+    const visionWorkerFn = new lambda.NodejsFunction(this, 'VisionWorkerFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/account/vision-worker.ts'),
+      timeout: Duration.seconds(120),
+      memorySize: 2048, // jimp decodes/encodes full-size images in pure JS
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        AVATARS_BUCKET_NAME: props.avatarsBucket.bucketName,
+      },
+      description: 'Async worker: generates a chat-background Vision from the profile photo + a described scene.',
+    })
+    props.applicationTable.grantReadWriteData(visionWorkerFn)
+    props.avatarsBucket.grantReadWrite(visionWorkerFn)
+    visionWorkerFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['bedrock:InvokeModel'],
+        resources: STABILITY_VISION_MODELS.flatMap((model) => [
+          `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/us.${model}`,
+          ...STABILITY_PROFILE_REGIONS.map((region) => `arn:aws:bedrock:${region}::foundation-model/${model}`),
+        ]),
+      })
+    )
+
+    const visionStartFn = new lambda.NodejsFunction(this, 'VisionStartFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/account/vision-start.ts'),
+      timeout: bedrockCallTimeout, // the safety classification is a real model call
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
+        SAFETY_ALERT_TOPIC_ARN: safetyAlertTopic.topicArn,
+        ...safetyGuardrailEnv,
+        VISION_WORKER_FUNCTION_NAME: visionWorkerFn.functionName,
+      },
+      description: 'POST /v1/user/chat-background/vision — safety-checks the scene, reserves quota, starts the worker.',
+    })
+    props.applicationTable.grantReadWriteData(visionStartFn)
+    props.promptRegistryTable.grantReadData(visionStartFn)
+    grantHaikuConverse(visionStartFn)
+    grantApplyGuardrail(visionStartFn)
+    safetyAlertTopic.grantPublish(visionStartFn)
+    visionWorkerFn.grantInvoke(visionStartFn)
+
+    const visionStatusFn = new lambda.NodejsFunction(this, 'VisionStatusFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/account/vision-status.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        AVATARS_BUCKET_NAME: props.avatarsBucket.bucketName,
+      },
+      description: 'GET /v1/user/chat-background/vision/{jobId} — Vision job status (polled).',
+    })
+    props.applicationTable.grantReadData(visionStatusFn)
+    props.avatarsBucket.grantRead(visionStatusFn) // presigned GET for the finished image
 
     // First-Time Onboarding, Slice A (docs/FIRST_TIME_ONBOARDING_PLAN.md §4).
     // Needs a crypto/session-ticket grant, unlike userPreferencesFn — one
@@ -880,6 +954,20 @@ export class ApiStack extends Stack {
     })
 
     this.httpApi.addRoutes({
+      path: '/v1/user/chat-background/vision',
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new integrations.HttpLambdaIntegration('VisionStartIntegration', visionStartFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/user/chat-background/vision/{jobId}',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('VisionStatusIntegration', visionStatusFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
       path: '/v1/user/export',
       methods: [apigwv2.HttpMethod.GET],
       integration: new integrations.HttpLambdaIntegration('UserExportIntegration', userExportFn),
@@ -1026,6 +1114,13 @@ export class ApiStack extends Stack {
       path: '/v1/companion/conversations',
       methods: [apigwv2.HttpMethod.POST],
       integration: new integrations.HttpLambdaIntegration('CompanionCreateConversationIntegration', companionCreateConversationFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
+    this.httpApi.addRoutes({
+      path: '/v1/companion/conversations/{sessionId}',
+      methods: [apigwv2.HttpMethod.DELETE],
+      integration: new integrations.HttpLambdaIntegration('CompanionDeleteConversationIntegration', companionDeleteConversationFn),
       authorizer: this.cognitoAuthorizer,
     })
 

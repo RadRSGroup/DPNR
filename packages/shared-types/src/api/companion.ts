@@ -110,6 +110,19 @@ export const CompanionCreateConversationResponseSchema = z.object({
 export type CompanionCreateConversationResponse = z.infer<typeof CompanionCreateConversationResponseSchema>
 
 /**
+ * DELETE /v1/companion/conversations/{sessionId} — permanently deletes one of
+ * the caller's own Companion conversations (the session item and every
+ * message/summary under it). `wasActive` tells the client whether the
+ * deleted conversation was the one the server considered open, so it knows
+ * to switch to another.
+ */
+export const CompanionDeleteConversationResponseSchema = z.object({
+  deleted: z.literal(true),
+  wasActive: z.boolean(),
+})
+export type CompanionDeleteConversationResponse = z.infer<typeof CompanionDeleteConversationResponseSchema>
+
+/**
  * POST /v1/companion/pull-card — context-aware pull from the 300-card
  * library (`docs/DPNR_Pull_A_Card_300_Question_Bank_v2.pdf`). Metadata axes
  * mirror the source doc's own "Recommended metadata per card" (see

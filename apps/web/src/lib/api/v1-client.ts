@@ -12,6 +12,10 @@ import type {
   CompanionContextResponse,
   CompanionConversationsListResponse,
   CompanionCreateConversationResponse,
+  CompanionDeleteConversationResponse,
+  VisionStartRequest,
+  VisionStartResponse,
+  VisionStatusResponse,
   PullCardResponse,
   LibraryTopicDetailResponse,
   TwinListResponse,
@@ -196,6 +200,18 @@ export async function getChatBackgroundUploadUrl(
  * without a real key behind it). Returns the new `chatBackgroundUrl` (a
  * fresh presigned GET) so the caller can render it immediately.
  */
+/** POST /v1/user/chat-background/vision — starts an async Vision generation (202 + jobId). */
+export async function startVision(request: VisionStartRequest): Promise<VisionStartResponse> {
+  const res = await authedFetch('/v1/user/chat-background/vision', { method: 'POST', body: JSON.stringify(request) })
+  return parseOrThrow<VisionStartResponse>(res)
+}
+
+/** GET /v1/user/chat-background/vision/{jobId} — poll until status is 'done' or 'failed'. */
+export async function getVisionStatus(jobId: string): Promise<VisionStatusResponse> {
+  const res = await authedFetch(`/v1/user/chat-background/vision/${encodeURIComponent(jobId)}`)
+  return parseOrThrow<VisionStatusResponse>(res)
+}
+
 export async function uploadChatBackground(file: File): Promise<string | null> {
   const contentType = file.type as ChatBackgroundUploadUrlRequest['contentType']
   const { uploadUrl, key } = await getChatBackgroundUploadUrl({ contentType })
@@ -296,6 +312,12 @@ export async function getCompanionConversations(): Promise<CompanionConversation
 export async function createCompanionConversation(): Promise<CompanionCreateConversationResponse> {
   const res = await authedFetch('/v1/companion/conversations', { method: 'POST' })
   return parseOrThrow<CompanionCreateConversationResponse>(res)
+}
+
+/** DELETE /v1/companion/conversations/{sessionId} — permanently deletes one of the caller's conversations. */
+export async function deleteCompanionConversation(sessionId: string): Promise<CompanionDeleteConversationResponse> {
+  const res = await authedFetch(`/v1/companion/conversations/${encodeURIComponent(sessionId)}`, { method: 'DELETE' })
+  return parseOrThrow<CompanionDeleteConversationResponse>(res)
 }
 
 /** POST /v1/companion/pull-card — one random active card from the Pull-a-Card library. */

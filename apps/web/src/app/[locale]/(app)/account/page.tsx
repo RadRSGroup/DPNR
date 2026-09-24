@@ -6,7 +6,7 @@ import { useRouter } from '@/i18n/navigation'
 import { Link } from '@/i18n/navigation'
 import { getCurrentSession, deleteCognitoUser, signOut, changePassword } from '@/lib/cognito/client'
 import { revokeCurrentSessionTicket, changePasswordAndRewrapDek } from '@/lib/auth/keyBootstrap'
-import { exportUserData, deleteAccountData, getCredits, getPreferences, updatePreferences, ApiError } from '@/lib/api/v1-client'
+import { exportUserData, deleteAccountData, getCredits, getPreferences, updatePreferences, getDashboard, ApiError } from '@/lib/api/v1-client'
 import type { CreditsResponse, GenderIdentity, ChatBackground } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 import PasswordCreationField, { passwordsReadyToSubmit } from '@/components/auth/PasswordCreationField'
@@ -36,6 +36,8 @@ export default function AccountPage() {
   const [chatBackgroundUrl, setChatBackgroundUrl] = useState<string | null>(null)
   const [chatBackgroundSaving, setChatBackgroundSaving] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [visionRemaining, setVisionRemaining] = useState(0)
+  const [roadmapDirection, setRoadmapDirection] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
   const [deleteStep, setDeleteStep] = useState<'idle' | 'confirm' | 'deleting'>('idle')
   const [deleteConfirm, setDeleteConfirm] = useState('')
@@ -64,9 +66,16 @@ export default function AccountPage() {
         setAvatarUrl(preferences.avatarUrl)
         setChatBackground(preferences.chatBackground)
         setChatBackgroundUrl(preferences.chatBackgroundUrl)
+        setVisionRemaining(preferences.visionRemainingThisMonth)
       } catch {
         // Degrades to the selector showing nothing pre-selected rather than
         // guessing — same "don't fabricate state" rule as the Credits card.
+      }
+      try {
+        // Only used to offer "start from my Roadmap direction" in the Vision panel.
+        setRoadmapDirection((await getDashboard()).roadmap?.direction ?? null)
+      } catch {
+        // No suggestion chip — the Vision panel works the same without it.
       }
     }
     load()
@@ -267,6 +276,10 @@ export default function AccountPage() {
                   onChange={handleChatBackgroundChange}
                   customUrl={chatBackgroundUrl}
                   onCustomUploaded={handleCustomBackgroundUploaded}
+                  hasAvatar={avatarUrl !== null}
+                  visionRemaining={visionRemaining}
+                  onVisionRemainingChange={setVisionRemaining}
+                  roadmapDirection={roadmapDirection}
                   className={chatBackgroundSaving ? 'opacity-60 pointer-events-none' : ''}
                 />
               </div>

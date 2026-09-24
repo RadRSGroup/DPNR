@@ -233,6 +233,8 @@ export const PreferencesResponseSchema = z.object({
   profileSetupCompletedAt: z.string().nullable(),
   chatBackground: ChatBackgroundSchema,
   chatBackgroundUrl: z.string().nullable(),
+  // Vision generations left this calendar month (UTC) — see VISION_MONTHLY_LIMIT.
+  visionRemainingThisMonth: z.number().int().nonnegative(),
 })
 export type PreferencesResponse = z.infer<typeof PreferencesResponseSchema>
 
@@ -279,3 +281,33 @@ export const ChatBackgroundUploadUrlResponseSchema = z.object({
   key: z.string(),
 })
 export type ChatBackgroundUploadUrlResponse = z.infer<typeof ChatBackgroundUploadUrlResponseSchema>
+
+/** Free Vision generations per user per calendar month (UTC) — the user's product decision (Session 67). */
+export const VISION_MONTHLY_LIMIT = 3
+
+/**
+ * POST /v1/user/chat-background/vision — starts generating a chat
+ * background that places the caller's own profile photo inside a scene they
+ * describe (their goal state, or anything they like). Async: returns a
+ * `jobId` to poll via GET /v1/user/chat-background/vision/{jobId}, since the
+ * image pipeline takes longer than API Gateway's 30s limit.
+ */
+export const VisionStartRequestSchema = z.object({
+  prompt: z.string().trim().min(3).max(400),
+})
+export type VisionStartRequest = z.infer<typeof VisionStartRequestSchema>
+
+export const VisionStartResponseSchema = z.object({
+  jobId: z.string(),
+  remainingThisMonth: z.number().int().nonnegative(),
+})
+export type VisionStartResponse = z.infer<typeof VisionStartResponseSchema>
+
+export const VisionStatusResponseSchema = z.object({
+  status: z.enum(['pending', 'done', 'failed']),
+  // Set when status is 'failed': 'content_filtered' | 'generation_failed'
+  errorCode: z.string().nullable(),
+  // Set when status is 'done' — presigned, same as chatBackgroundUrl.
+  imageUrl: z.string().nullable(),
+})
+export type VisionStatusResponse = z.infer<typeof VisionStatusResponseSchema>
