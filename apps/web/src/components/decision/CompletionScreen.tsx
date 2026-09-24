@@ -51,7 +51,7 @@ export default function CompletionScreen({
     <div className="lg:flex lg:min-h-screen">
       <Sidebar />
       <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
-    <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] max-w-[393px] mx-auto flex flex-col overflow-hidden lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
+    <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] max-w-[393px] lg:max-w-3xl lg:w-full mx-auto flex flex-col overflow-hidden lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
       <div className="absolute inset-0 -z-10">
         <Image src="/images/backgrounds/decision-bg.webp" alt="" fill className="object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />

@@ -2,9 +2,10 @@ import { z } from 'zod'
 import { PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import type { DecisionOutcomeItem } from '@dpnr/shared-types'
 import { parseValue, HttpError } from '../../lib/http'
-import { ddb, TABLE_NAME } from './db'
+import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
 import { gatherDecisionContext } from './decision-context'
 import { extractCandidateSignals, persistSessionSummary } from '../twin-signals'
+import { refreshRoadmapAfterSession } from '../../lib/roadmap-refresh'
 import type { StepDefinition } from './types'
 
 const SubmitInput = z.object({ commitment: z.string().optional() })
@@ -81,6 +82,8 @@ export const commitmentStep: StepDefinition = {
       ctx.languageInstruction
     )
     await persistSessionSummary(ctx.crypto, ctx.pk, ctx.sessionId, summary, signalIds, 'decision_room.commitment_summary')
+    // Session 68: the Roadmap follows every completed session (never throws).
+    await refreshRoadmapAfterSession(ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME, ctx.pk, ctx.crypto, ctx.languageInstruction)
 
     return { nextStepId: null, result: { commitment: commitment ?? null }, sessionComplete: true }
   },

@@ -22,7 +22,9 @@ export type RoomCommandAction = z.infer<typeof RoomCommandActionSchema>
 // A ceiling on the serialized payload size closes the same unbounded-cost
 // gap CompanionMessageRequestSchema's own max() closes for chat text, without
 // constraining individual step input shapes.
-const ROOM_COMMAND_INPUT_MAX_SERIALIZED_CHARS = 20000
+// Session 68: 20000 → 60000 when every room text box went to 5000 chars —
+// Mirror's AUTOMATIC_REACTION step alone submits four such fields.
+const ROOM_COMMAND_INPUT_MAX_SERIALIZED_CHARS = 60000
 
 export const RoomCommandRequestSchema = z.object({
   sessionId: z.string(),

@@ -58,7 +58,7 @@ export default function Step02AutomaticReaction({
             <p className="text-white/70 text-sm leading-relaxed">What went through your mind in that moment?</p>
             <textarea
               value={thought}
-              onChange={e => setThought(e.target.value.slice(0, 400))}
+              onChange={e => setThought(e.target.value.slice(0, 5000))}
               placeholder="The first thought that crossed your mind..."
               rows={2}
               className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
@@ -69,7 +69,7 @@ export default function Step02AutomaticReaction({
             <p className="text-white/70 text-sm leading-relaxed">What did you feel?</p>
             <textarea
               value={emotion}
-              onChange={e => setEmotion(e.target.value.slice(0, 200))}
+              onChange={e => setEmotion(e.target.value.slice(0, 5000))}
               placeholder="Name the feeling..."
               rows={2}
               className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
@@ -80,7 +80,7 @@ export default function Step02AutomaticReaction({
             <p className="text-white/70 text-sm leading-relaxed">Where did you feel it in your body?</p>
             <textarea
               value={bodyResponse}
-              onChange={e => setBodyResponse(e.target.value.slice(0, 200))}
+              onChange={e => setBodyResponse(e.target.value.slice(0, 5000))}
               placeholder="Tight chest, clenched jaw, a knot in your stomach..."
               rows={2}
               className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
@@ -108,7 +108,7 @@ export default function Step02AutomaticReaction({
             <p className="text-white/70 text-sm leading-relaxed">What did you actually do or say?</p>
             <textarea
               value={automaticReaction}
-              onChange={e => setAutomaticReaction(e.target.value.slice(0, 400))}
+              onChange={e => setAutomaticReaction(e.target.value.slice(0, 5000))}
               placeholder="Your actual reaction, not what you wish you'd done..."
               rows={2}
               className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"

@@ -35,7 +35,7 @@ export default function Step03Pattern({
             <p className="text-white/70 text-sm leading-relaxed">How did you cope with it afterward?</p>
             <textarea
               value={copingResponse}
-              onChange={e => setCopingResponse(e.target.value.slice(0, 500))}
+              onChange={e => setCopingResponse(e.target.value.slice(0, 5000))}
               placeholder="Did you shut down, vent to someone, distract yourself..."
               rows={3}
               className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
@@ -46,7 +46,7 @@ export default function Step03Pattern({
             <p className="text-white/70 text-sm leading-relaxed">Does this happen with certain people or situations?</p>
             <textarea
               value={recurringPattern}
-              onChange={e => setRecurringPattern(e.target.value.slice(0, 500))}
+              onChange={e => setRecurringPattern(e.target.value.slice(0, 5000))}
               placeholder="Notice if this keeps showing up in a particular way..."
               rows={3}
               className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"

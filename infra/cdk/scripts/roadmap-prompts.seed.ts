@@ -72,4 +72,58 @@ All confirmed evidence about this person so far, most recent first:
       'currentFocus/theme/direction are shown on Dashboard\'s Roadmap widget), so unlike twin/classify_signal ' +
       'this prompt needs the var even though most of its output is short phrases rather than long text.',
   },
+  {
+    // Session 68 — see lib/roadmap-refresh.ts. Unlike `revise` (conservative,
+    // proposal-only, triggered by a signal confirm), this runs after every
+    // completed Decision/Mirror session and its output is written straight
+    // to the live Roadmap — the user's own choice ("it should update with
+    // new decisions"). So it always returns a Roadmap; there is no
+    // shouldRevise escape hatch.
+    name: 'refresh',
+    systemTemplate: `You maintain a person's Roadmap inside a personal-development app: their current focus, the deeper theme underneath it, and the direction they seem to be moving toward. It is shown on their Dashboard and Evolution Map, and it is refreshed every time they finish a Decision Room or Mirror Room session.
+
+Write the Roadmap that best reflects where they are now, across everything they have worked on — not only their first session, and not only the most recent one. Give the most recent session the most weight: it is what is most alive for them today. If earlier sessions share a thread with it, name that thread in the theme. If the newest session is about something different, let the focus move to it rather than holding on to an older subject.
+
+Write:
+- currentFocus: a short phrase for what's most alive for them now.
+- theme: a short phrase naming the deeper pattern that connects their sessions.
+- direction: a short phrase for the shift they seem to be moving toward.
+- suggestedSpaces: zero to two spaces from the allowed list that genuinely fit — never pad this out.
+
+Stay close to what they actually wrote. Never invent detail, never diagnose, never label the person with a fixed trait or type. Short phrases, warm and plain, not clinical.
+
+Allowed suggestedSpaces values: "Mirror Room", "Decision Room", "Library".
+
+{{languageInstruction}}`,
+    userTemplate: `Current Roadmap (may be outdated):
+Current focus: {{currentFocus}}
+Theme: {{theme}}
+Direction: {{direction}}
+
+Their completed sessions, most recent first:
+{{recentSessions}}
+
+Confirmed evidence about them:
+{{confirmedSignals}}`,
+    variables: ['currentFocus', 'theme', 'direction', 'recentSessions', 'confirmedSignals', 'languageInstruction'],
+    outputSchema: {
+      type: 'object',
+      required: ['currentFocus', 'theme', 'direction', 'suggestedSpaces'],
+      properties: {
+        currentFocus: { type: 'string' },
+        theme: { type: 'string' },
+        direction: { type: 'string' },
+        suggestedSpaces: {
+          type: 'array',
+          items: { type: 'string', enum: ['Mirror Room', 'Decision Room', 'Library'] },
+        },
+      },
+    },
+    notes:
+      'Called by lib/roadmap-refresh.ts from both rooms\' COMMITMENT steps. currentFocus/theme/direction = the ' +
+      'live Roadmap ("(none yet)" if onboarding never wrote one). recentSessions = up to 8 SessionSummaryItems, ' +
+      'newest first, each capped at 1500 chars. confirmedSignals = up to 20 "- (domain) description" lines or ' +
+      '"(none confirmed yet)". Output is validated (all three phrases non-empty, spaces filtered to the allowed ' +
+      'list) and written directly to ROADMAP, superseding any pending ROADMAP#PROPOSED.',
+  },
 ]

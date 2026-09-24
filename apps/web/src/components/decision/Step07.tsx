@@ -247,7 +247,7 @@ export default function Step07({
             <p className="text-white/50 text-xs text-center">In one sentence — what feels true right now? <span className="text-[var(--color-text-tertiary)]">(optional)</span></p>
             <textarea
               value={reflectionNote}
-              onChange={e => setReflectionNote(e.target.value.slice(0, 200))}
+              onChange={e => setReflectionNote(e.target.value.slice(0, 5000))}
               placeholder="Something in me knows..."
               rows={2}
               className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/50 transition-colors"

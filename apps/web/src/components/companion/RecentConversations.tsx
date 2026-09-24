@@ -152,7 +152,10 @@ export default function RecentConversations({ activeSessionId, onSelect, onCreat
                     setDeleteError(false)
                   }}
                   aria-label={`${t('delete')}: ${title}`}
-                  className="shrink-0 p-2 rounded-lg text-white/35 hover:text-red-300 hover:bg-white/5 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-visible:opacity-100 transition-opacity"
+                  // Hidden-until-hover only where hover actually exists (a
+                  // mouse). It used to key on `lg:` (screen width), which hid
+                  // it on iPads/touch laptops ≥1024px with no way to reveal it.
+                  className="shrink-0 p-2.5 [@media(hover:hover)_and_(pointer:fine)]:p-2 rounded-lg text-white/45 hover:text-red-300 hover:bg-white/5 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 transition-opacity"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

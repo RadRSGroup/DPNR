@@ -35,7 +35,7 @@ export default function Step04LifeImpact({
             <p className="text-white/70 text-sm leading-relaxed">How did this affect your energy or mood?</p>
             <textarea
               value={energyMoodEffect}
-              onChange={e => setEnergyMoodEffect(e.target.value.slice(0, 500))}
+              onChange={e => setEnergyMoodEffect(e.target.value.slice(0, 5000))}
               placeholder="Drained, on edge, foggy for the rest of the day..."
               rows={3}
               className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
@@ -46,7 +46,7 @@ export default function Step04LifeImpact({
             <p className="text-white/70 text-sm leading-relaxed">Which part of your life does this touch most?</p>
             <textarea
               value={lifeDomain}
-              onChange={e => setLifeDomain(e.target.value.slice(0, 300))}
+              onChange={e => setLifeDomain(e.target.value.slice(0, 5000))}
               placeholder="Work, a relationship, how you see yourself..."
               rows={2}
               className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"

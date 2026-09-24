@@ -90,7 +90,7 @@ export default function SectionSummaryScreen({
     <div className="lg:flex lg:min-h-screen">
       <Sidebar />
       <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
-    <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] flex flex-col overflow-hidden max-w-[393px] mx-auto lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
+    <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] flex flex-col overflow-hidden max-w-[393px] lg:max-w-3xl lg:w-full mx-auto lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
       {/* Warm mauve background — visually distinct from the dark galaxy of regular steps */}
       <div className="absolute inset-0 -z-10">
         <Image src="/images/backgrounds/decision-bg.webp" alt="" fill className="object-cover" />
@@ -108,7 +108,7 @@ export default function SectionSummaryScreen({
           className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white text-lg"
         >✕</button>
         <div className="flex items-center gap-2">
-          <span className="text-[var(--color-text-tertiary)] text-xs">Manifest yo...</span>
+          <span className="text-[var(--color-text-tertiary)] text-xs">Decision Room</span>
         </div>
         <div className="w-8 h-8" />
       </div>

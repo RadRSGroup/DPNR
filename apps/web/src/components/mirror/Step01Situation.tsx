@@ -28,24 +28,24 @@ export default function Step01Situation({ initialSituation = '', initialTrigger 
             <p className="text-white/70 text-sm leading-relaxed">What happened?</p>
             <textarea
               value={situation}
-              onChange={e => setSituation(e.target.value.slice(0, 800))}
+              onChange={e => setSituation(e.target.value.slice(0, 5000))}
               placeholder="Describe the moment, as plainly as you can..."
               rows={4}
               className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
             />
-            <p className="text-[var(--color-text-tertiary)] text-xs text-right">{situation.length}/800</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs text-right">{situation.length}/5000</p>
           </div>
 
           <div className="space-y-2">
             <p className="text-white/70 text-sm leading-relaxed">What triggered this for you?</p>
             <textarea
               value={trigger}
-              onChange={e => setTrigger(e.target.value.slice(0, 500))}
+              onChange={e => setTrigger(e.target.value.slice(0, 5000))}
               placeholder="What was it, specifically, that set this off?"
               rows={3}
               className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
             />
-            <p className="text-[var(--color-text-tertiary)] text-xs text-right">{trigger.length}/500</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs text-right">{trigger.length}/5000</p>
           </div>
         </div>
 

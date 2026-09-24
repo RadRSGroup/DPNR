@@ -41,12 +41,12 @@ export default function Step01({ initialTitle = '', initialSubtitle, onRefine, o
           <div className="space-y-2">
             <textarea
               value={title}
-              onChange={e => setTitle(e.target.value.slice(0, 500))}
+              onChange={e => setTitle(e.target.value.slice(0, 5000))}
               placeholder="Name your decision..."
               rows={2}
               className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
             />
-            <p className="text-[var(--color-text-tertiary)] text-xs text-right">{title.length}/500</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs text-right">{title.length}/5000</p>
           </div>
 
           {/* AI subtitle */}

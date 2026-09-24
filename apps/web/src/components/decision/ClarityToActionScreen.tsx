@@ -78,7 +78,7 @@ export default function ClarityToActionScreen({
             ) : (
               <textarea
                 value={nextStep}
-                onChange={e => setNextStep(e.target.value.slice(0, 300))}
+                onChange={e => setNextStep(e.target.value.slice(0, 5000))}
                 rows={3}
                 className="w-full bg-white/8 border border-white/10 rounded-xl px-3 py-2.5 text-white/80 text-sm resize-none focus:outline-none focus:border-purple-500/50 transition-colors placeholder-[var(--color-text-tertiary)]"
                 placeholder="Describe your next small step…"

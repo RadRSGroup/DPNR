@@ -121,6 +121,7 @@ export const REASONING_LAYER_TARGETS: Readonly<Record<string, ReasoningLayerTier
   'daily_card/compose': 'core',
   'weekly_recap/compose': 'core',
   'roadmap/revise': 'core',
+  'roadmap/refresh': 'core',
 }
 
 /** Returns the seed with its tier's block appended to `systemTemplate`, or the seed unchanged if untargeted. */

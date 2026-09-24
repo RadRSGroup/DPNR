@@ -18,15 +18,17 @@ interface Step02Props {
   onSkip?: () => void
 }
 
-const CHAR_LIMITS: Record<string, number> = { free: 500, core: 1500, pro: 3000 }
+// One limit for everyone (Session 68: was 500/1500/3000 by plan tier; the
+// user raised every room text box to 5000).
+const CHAR_LIMIT = 5000
 
-export default function Step02({ decisionTitle, tier = 'free', initialNarrative = '', initialOptionA, initialOptionB, onRefine, onComplete, onBack, onSkip }: Step02Props) {
+export default function Step02({ decisionTitle, initialNarrative = '', initialOptionA, initialOptionB, onRefine, onComplete, onBack, onSkip }: Step02Props) {
   const [narrative, setNarrative] = useState(initialNarrative)
   const [optionA, setOptionA] = useState<DecisionOption>(initialOptionA ?? { label: 'A', content: '', approved: false })
   const [optionB, setOptionB] = useState<DecisionOption>(initialOptionB ?? { label: 'B', content: '', approved: false })
   const [parsed, setParsed] = useState(!!(initialOptionA?.content && initialOptionB?.content))
   const { callAI, loading, error, tokenCapReached, dismissTokenCap } = useAI(onRefine)
-  const charLimit = CHAR_LIMITS[tier] ?? 500
+  const charLimit = CHAR_LIMIT
 
   async function handleParse() {
     const res = await callAI<{ optionA: string; optionB: string }>(
@@ -67,9 +69,6 @@ export default function Step02({ decisionTitle, tier = 'free', initialNarrative 
             />
             <div className="flex justify-between items-center">
               <span className="text-white/20 text-xs">{narrative.length}/{charLimit} chars</span>
-              {tier === 'free' && (
-                <span className="text-[var(--color-text-tertiary)] text-xs">Upgrade for longer narratives</span>
-              )}
             </div>
             {error && error !== 'token_cap_reached' && (
               <p className="text-red-400 text-xs text-center">AI error: {error}. Please try again.</p>

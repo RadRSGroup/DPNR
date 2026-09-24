@@ -17,7 +17,7 @@ const SubmitInput = z.object({
   projectionsA: z.array(ProjectionEntry).min(1),
   projectionsB: z.array(ProjectionEntry).min(1),
   chosenLean: z.enum(['A', 'B', 'undecided']),
-  reflectionNote: z.string().max(200).optional(),
+  reflectionNote: z.string().max(5000).optional(),
 })
 
 async function buildProjectionItem(

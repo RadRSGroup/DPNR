@@ -85,9 +85,14 @@ function EvolutionMapContent() {
     [twin, selectedDomain]
   )
 
+  // Every open goal, always — goals in the selected domain first. This used
+  // to filter to the selected domain (auto-set to the first one on load), so
+  // a goal saved with no domain or a different one was counted in "Active
+  // Goals" above but never listed (beta report, Session 68).
   const openGoals = useMemo(() => {
-    const open = commitments.filter((c) => c.status === 'open')
-    return selectedDomain ? open.filter((c) => c.lifeDomain === selectedDomain) : open
+    const open = commitments.filter((c) => c.status === 'open').sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    if (!selectedDomain) return open
+    return [...open.filter((c) => c.lifeDomain === selectedDomain), ...open.filter((c) => c.lifeDomain !== selectedDomain)]
   }, [commitments, selectedDomain])
 
   function openAddGoal() {
@@ -276,7 +281,7 @@ function EvolutionMapContent() {
             <Card>
               <div className="flex items-center justify-between mb-1">
                 <p className="text-sm text-white">
-                  {t('goals.title')}{selectedDomain ? ` — ${LIFE_DOMAIN_LABELS[selectedDomain]}` : ''}
+                  {t('goals.title')}
                 </p>
                 <button
                   onClick={openAddGoal}
@@ -347,7 +352,7 @@ function EvolutionMapContent() {
                       <div className="flex items-center justify-between mt-1">
                         <p className="text-xs text-[var(--color-text-tertiary)]">
                           {t('goals.target', { date: g.reviewDate ?? t('goals.ongoing') })}
-                          {!selectedDomain && g.lifeDomain && ` · ${LIFE_DOMAIN_LABELS[g.lifeDomain]}`}
+                          {g.lifeDomain && ` · ${LIFE_DOMAIN_LABELS[g.lifeDomain]}`}
                         </p>
                         <button
                           onClick={() => markGoalComplete(g.commitmentId)}
