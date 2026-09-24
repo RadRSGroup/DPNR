@@ -44,9 +44,12 @@ export const commitmentStep: StepDefinition = {
         throw new HttpError(404, 'outcome_not_found', 'No outcome exists yet — submit FUTURE_PROJECTION first.')
       }
       const existingReflection = (await ctx.crypto.decryptField<{ reflection: string }>(latestOutcome.content)).reflection
+      // Strip an earlier " Commitment: …" (a redo after REOPEN) so it's
+      // replaced rather than appended a second time.
+      const baseReflection = existingReflection.replace(/ Commitment: [\s\S]*$/, '')
       const updatedOutcome: DecisionOutcomeItem = {
         ...latestOutcome,
-        content: await ctx.crypto.encryptField({ reflection: `${existingReflection} Commitment: ${commitment}` }),
+        content: await ctx.crypto.encryptField({ reflection: `${baseReflection} Commitment: ${commitment}` }),
       }
       await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: updatedOutcome }))
     }

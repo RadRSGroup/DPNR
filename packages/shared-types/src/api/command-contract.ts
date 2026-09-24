@@ -11,7 +11,9 @@ import { z } from 'zod'
 export const FlowIdSchema = z.enum(['DECISION', 'MIRROR'])
 export type FlowId = z.infer<typeof FlowIdSchema>
 
-export const RoomCommandActionSchema = z.enum(['SUBMIT_STEP', 'REFINE', 'SKIP', 'RESUME'])
+// REOPEN (Session 67): reopens a COMPLETED session at an earlier answer step
+// (`stepId`) so the person can change their answers and redo from there.
+export const RoomCommandActionSchema = z.enum(['SUBMIT_STEP', 'REFINE', 'SKIP', 'RESUME', 'REOPEN'])
 export type RoomCommandAction = z.infer<typeof RoomCommandActionSchema>
 
 // Security review 2026-09-14 (DPNR-05): `input`'s shape varies per step

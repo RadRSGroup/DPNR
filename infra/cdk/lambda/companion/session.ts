@@ -209,7 +209,10 @@ export async function maybeSetConversationTitle(
   pk: string,
   sessionId: string,
   crypto: SessionCrypto,
-  firstUserMessageText: string
+  firstUserMessageText: string,
+  // Edit & resend of the conversation's first user message — the title
+  // should follow the edited text, so the "only if unset" guard is dropped.
+  overwrite = false
 ): Promise<void> {
   try {
     const title = await crypto.encryptField<{ title: string }>({ title: deriveConversationTitle(firstUserMessageText) })
@@ -218,7 +221,7 @@ export async function maybeSetConversationTitle(
         TableName: tableName,
         Key: { pk, sk: Sk.session(sessionId) },
         UpdateExpression: 'SET title = :title',
-        ConditionExpression: 'attribute_not_exists(title)',
+        ...(overwrite ? {} : { ConditionExpression: 'attribute_not_exists(title)' }),
         ExpressionAttributeValues: { ':title': title },
       })
     )

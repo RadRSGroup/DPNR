@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { PutCommand } from '@aws-sdk/lib-dynamodb'
+import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, type MirrorSessionItem } from '@dpnr/shared-types'
 import { parseValue } from '../../lib/http'
 import { ddb, TABLE_NAME } from '../db'
@@ -29,7 +29,15 @@ export const situationStep: StepDefinition = {
   handle: async (ctx) => {
     const { situation, trigger, sourceLibraryTopic } = parseValue(ctx.input, SubmitInput)
     const now = new Date().toISOString()
-    const content: MirrorContent = {
+    // A resubmit (Back, or redo after REOPEN) keeps the existing session's
+    // later answers, creation date and credit marker — later steps overwrite
+    // their own fields as the person moves forward again.
+    const existingResult = await ddb.send(
+      new GetCommand({ TableName: TABLE_NAME, Key: { pk: ctx.pk, sk: Sk.mirrorRoom(ctx.sessionId) } })
+    )
+    const existing = existingResult.Item as MirrorSessionItem | undefined
+    const existingContent = existing ? await ctx.crypto.decryptField<MirrorContent>(existing.content) : null
+    const content: MirrorContent = existingContent ? { ...existingContent, situation, trigger } : {
       situation,
       trigger,
       thought: '',
@@ -49,8 +57,9 @@ export const situationStep: StepDefinition = {
       status: 'active',
       currentStepId: 'SITUATION',
       content: await ctx.crypto.encryptField<MirrorContent>(content),
-      sourceLibraryTopic,
-      createdAt: now,
+      sourceLibraryTopic: sourceLibraryTopic ?? existing?.sourceLibraryTopic,
+      ...(existing?.reflectionCreditGrantedAt ? { reflectionCreditGrantedAt: existing.reflectionCreditGrantedAt } : {}),
+      createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: session }))

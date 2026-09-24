@@ -18,6 +18,8 @@ import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
 import { decisionFlow } from './decision-steps'
 import { mirrorFlow } from './mirror-steps'
 import type { FlowDefinition, StepResult } from './types'
+import type { SessionCrypto } from '../lib/session-crypto'
+import type { RoomCommandRequest } from '@dpnr/shared-types'
 
 /**
  * The "single flow-engine Lambda" (migration plan §11, MVP_ARCHITECTURE.md
@@ -79,6 +81,10 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     if (existingSession?.lastIdempotencyKey === body.idempotencyKey && existingSession.lastResponse) {
       const cachedResponse = await crypto.decryptField<RoomCommandResponse>(existingSession.lastResponse)
       return jsonResponse(200, cachedResponse)
+    }
+
+    if (body.action === 'REOPEN') {
+      return jsonResponse(200, await reopenSession(flow, existingSession, body, pk, crypto))
     }
 
     if (existingSession) {
@@ -224,4 +230,80 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   } catch (err) {
     return errorResponse(err)
   }
+}
+
+/**
+ * REOPEN (Session 67): puts a COMPLETED session back in progress at one of
+ * its answer steps (`body.stepId`, from the flow's `reopenableSteps`), after
+ * the flow's `onReopen` has undone what completing it produced (see
+ * rooms/reopen.ts). Free — no model call, no credits; the person then moves
+ * forward through the normal steps again, and finishing re-creates the
+ * summary and Twin signals from their edited answers.
+ *
+ * Same guarantees as every other command: structural ownership (pk from the
+ * JWT), optimistic concurrency (expectedSessionVersion, re-asserted by the
+ * conditional write), idempotent replay via lastIdempotencyKey.
+ */
+async function reopenSession(
+  flow: FlowDefinition,
+  existingSession: SessionItem | undefined,
+  body: RoomCommandRequest,
+  pk: string,
+  crypto: SessionCrypto
+): Promise<RoomCommandResponse> {
+  if (!existingSession) {
+    throw new HttpError(404, 'session_not_found', 'No session exists for this id.')
+  }
+  if (existingSession.status !== 'completed') {
+    throw new HttpError(409, 'session_not_completed', 'Only a finished session can be reopened — use Back instead.')
+  }
+  if (existingSession.sessionVersion !== body.expectedSessionVersion) {
+    throw new HttpError(
+      409,
+      'session_version_conflict',
+      `Expected session version ${existingSession.sessionVersion}, got ${body.expectedSessionVersion}.`
+    )
+  }
+  if (!flow.reopenableSteps.includes(body.stepId)) {
+    throw new HttpError(400, 'step_not_reopenable', `"${body.stepId}" can't be reopened.`)
+  }
+
+  await flow.onReopen({ pk, sessionId: body.sessionId })
+
+  const newSessionVersion = existingSession.sessionVersion + 1
+  const response: RoomCommandResponse = {
+    sessionId: body.sessionId,
+    sessionVersion: newSessionVersion,
+    nextStepId: body.stepId,
+    result: {},
+    safetyIntervention: null,
+  }
+  const reopened: SessionItem = {
+    pk,
+    sk: Sk.session(body.sessionId),
+    sessionId: body.sessionId,
+    roomType: existingSession.roomType,
+    status: 'active',
+    currentStepId: body.stepId,
+    sessionVersion: newSessionVersion,
+    startedAt: existingSession.startedAt,
+    lastIdempotencyKey: body.idempotencyKey,
+    lastResponse: await crypto.encryptField<RoomCommandResponse>(response),
+  }
+  try {
+    await ddb.send(
+      new PutCommand({
+        TableName: TABLE_NAME,
+        Item: reopened,
+        ConditionExpression: 'sessionVersion = :expectedVersion',
+        ExpressionAttributeValues: { ':expectedVersion': body.expectedSessionVersion },
+      })
+    )
+  } catch (err) {
+    if (err instanceof Error && err.name === 'ConditionalCheckFailedException') {
+      throw new HttpError(409, 'session_version_conflict', 'Another command for this session was written first — reload and retry.')
+    }
+    throw err
+  }
+  return response
 }

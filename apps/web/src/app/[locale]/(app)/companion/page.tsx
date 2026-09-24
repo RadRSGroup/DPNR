@@ -5,7 +5,7 @@ import { Link } from '@/i18n/navigation'
 import { useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
-import { Heart, Cloud, Shuffle, UserCircle, Plus, Mic, ImagePlus, X, MessagesSquare } from 'lucide-react'
+import { Heart, Cloud, Shuffle, UserCircle, Plus, Mic, ImagePlus, X, MessagesSquare, Pencil } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getCompanionContext, sendCompanionMessage, getPreferences, createCompanionConversation, ApiError } from '@/lib/api/v1-client'
 import type { CompanionDirective, ChatBackground } from '@dpnr/shared-types'
@@ -25,6 +25,10 @@ interface ChatMessage {
   createdAt: string
   directive?: CompanionDirective | null
   failed?: boolean
+  // True once the server has stored this message — `createdAt` is then its
+  // real sort key, which is what edit & resend needs. Local-only bubbles
+  // (attachment notice, onboarding answer, failures) are never editable.
+  persisted?: boolean
 }
 
 // Icons paired with their `Companion.quickPrompts.<key>` i18n namespace —
@@ -89,6 +93,8 @@ function CompanionContent() {
   // "source session" context, per the flow's own worked example.
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false) // mobile-only Recent Conversations sheet
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [editText, setEditText] = useState('')
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
@@ -185,7 +191,7 @@ function CompanionContent() {
         setFirstName(namePart.charAt(0).toUpperCase() + namePart.slice(1))
 
         const context = await getCompanionContext()
-        setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt })))
+        setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt, persisted: true })))
         setSessionId(context.sessionId)
         setReturnGreeting(context.greeting)
       } catch {
@@ -219,7 +225,7 @@ function CompanionContent() {
     setLoading(true)
     try {
       const context = await getCompanionContext(targetSessionId)
-      setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt })))
+      setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt, persisted: true })))
       setSessionId(context.sessionId)
       setReturnGreeting(context.greeting)
     } catch {
@@ -297,8 +303,8 @@ function CompanionContent() {
       const res = await sendCompanionMessage({ text, clientMessageId, sessionId: sessionId ?? undefined })
       setSessionId(res.sessionId)
       setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', text: res.reply, createdAt: new Date().toISOString(), directive: res.directive },
+        ...markLastUserPersisted(prev, res.userMessageCreatedAt),
+        { role: 'assistant', text: res.reply, createdAt: res.replyCreatedAt ?? new Date().toISOString(), directive: res.directive, persisted: true },
       ])
     } catch (err) {
       if (err instanceof ApiError && err.code === 'credits_exhausted') {
@@ -312,6 +318,47 @@ function CompanionContent() {
           ...prev,
           { role: 'assistant', text: tc('sendError'), createdAt: new Date().toISOString(), failed: true },
         ])
+      }
+    } finally {
+      setSending(false)
+    }
+  }
+
+  /**
+   * Edit & resend: replaces message `index` and everything after it. The
+   * server only deletes the old tail once the new reply exists, so on any
+   * failure the original thread is restored exactly as it was.
+   */
+  async function handleEditSubmit(index: number) {
+    const original = messages[index]
+    const text = editText.trim()
+    if (!original || !text || sending) return
+    if (text === original.text) {
+      setEditingIndex(null)
+      return
+    }
+    const snapshot = messages
+    setEditingIndex(null)
+    setReturnGreeting(null)
+    setMessages([...messages.slice(0, index), { role: 'user', text, createdAt: new Date().toISOString() }])
+    setSending(true)
+    try {
+      const res = await sendCompanionMessage({
+        text,
+        clientMessageId: crypto.randomUUID(),
+        sessionId: sessionId ?? undefined,
+        replaceFromCreatedAt: original.createdAt,
+      })
+      setMessages((prev) => [
+        ...markLastUserPersisted(prev, res.userMessageCreatedAt),
+        { role: 'assistant', text: res.reply, createdAt: res.replyCreatedAt ?? new Date().toISOString(), directive: res.directive, persisted: true },
+      ])
+    } catch (err) {
+      setMessages(snapshot)
+      if (err instanceof ApiError && err.code === 'credits_exhausted') {
+        setCreditsExhausted(true)
+      } else {
+        alert(tc('editFailed'))
       }
     } finally {
       setSending(false)
@@ -608,8 +655,55 @@ function CompanionContent() {
                         : `bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] text-white/85 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed ${m.failed ? 'border-red-500/30 text-red-300/80' : ''}`
                     }
                   >
-                    {m.text}
+                    {editingIndex === i ? (
+                      <div className="space-y-2">
+                        <textarea
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault()
+                              void handleEditSubmit(i)
+                            }
+                            if (e.key === 'Escape') setEditingIndex(null)
+                          }}
+                          autoFocus
+                          rows={Math.min(6, Math.max(2, Math.ceil(editText.length / 40)))}
+                          maxLength={8000}
+                          aria-label={tc('editMessage')}
+                          className="w-full min-w-[220px] bg-black/20 rounded-lg px-2 py-1.5 text-sm text-white resize-none focus:outline-none"
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => setEditingIndex(null)} className="text-xs px-3 py-1 rounded-full bg-white/10 hover:bg-white/20">
+                            {tc('editCancel')}
+                          </button>
+                          <button
+                            onClick={() => void handleEditSubmit(i)}
+                            disabled={!editText.trim()}
+                            className="text-xs px-3 py-1 rounded-full bg-white text-[var(--color-violet-700)] font-medium disabled:opacity-50"
+                          >
+                            {tc('editSend')}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      m.text
+                    )}
                   </div>
+                  {m.role === 'user' && m.persisted && !m.failed && editingIndex !== i && !sending && (
+                    <div className="flex justify-end mt-1">
+                      <button
+                        onClick={() => {
+                          setEditingIndex(i)
+                          setEditText(m.text)
+                        }}
+                        className="inline-flex items-center gap-1 text-[11px] text-white/40 hover:text-white/75 px-1"
+                        aria-label={tc('editMessage')}
+                      >
+                        <Pencil className="w-3 h-3" /> {tc('edit')}
+                      </button>
+                    </div>
+                  )}
                   {m.directive && <DirectiveCard directive={m.directive} sourceSessionId={sessionId} />}
                 </div>
               </div>
@@ -788,4 +882,12 @@ export default function CompanionPage() {
       <CompanionContent />
     </Suspense>
   )
+}
+
+/** Marks the most recent user bubble as stored, adopting the server's real timestamp (its sort key). */
+function markLastUserPersisted(messages: ChatMessage[], serverCreatedAt: string | undefined): ChatMessage[] {
+  if (!serverCreatedAt) return messages
+  const lastUser = messages.map((m) => m.role).lastIndexOf('user')
+  if (lastUser === -1) return messages
+  return messages.map((m, i) => (i === lastUser ? { ...m, createdAt: serverCreatedAt, persisted: true } : m))
 }

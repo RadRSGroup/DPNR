@@ -31,6 +31,11 @@ export const CompanionMessageRequestSchema = z.object({
   // whatever the caller's pointer currently points at. Omitted = today's
   // pointer-based behavior (back-compat).
   sessionId: z.string().optional(),
+  // Edit & resend (Session 67): the `createdAt` of one of the caller's own
+  // earlier USER messages in this conversation. That message and everything
+  // after it are replaced by this turn — deleted only once the new reply
+  // has been generated, so a failed edit never loses the original thread.
+  replaceFromCreatedAt: z.string().datetime().optional(),
 })
 export type CompanionMessageRequest = z.infer<typeof CompanionMessageRequestSchema>
 
@@ -49,6 +54,10 @@ export const CompanionMessageResponseSchema = z.object({
   sessionId: z.string(),
   reply: z.string(),
   directive: CompanionDirectiveSchema.nullable(),
+  // Server timestamps of the two stored messages (their sort keys), so the
+  // client can later edit a message it sent in this same page session.
+  userMessageCreatedAt: z.string().datetime().optional(),
+  replyCreatedAt: z.string().datetime().optional(),
 })
 export type CompanionMessageResponse = z.infer<typeof CompanionMessageResponseSchema>
 

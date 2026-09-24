@@ -219,7 +219,10 @@ async function synthesizeReturnGreeting(
   pk: string,
   messages: { role: 'user' | 'assistant'; text: string; createdAt: string }[]
 ): Promise<string | null> {
-  if (messages.length === 0) return null
+  // Nothing of the person's own yet (empty, or only the Companion's opener):
+  // there's no one to welcome back — greeting an unanswered opener is what
+  // stacked "welcome back"s on top of each other (Session 67).
+  if (!messages.some((m) => m.role === 'user')) return null
 
   try {
     const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'companion', 'continuation')

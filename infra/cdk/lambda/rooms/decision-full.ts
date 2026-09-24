@@ -169,6 +169,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       summary,
       currentStepId: sessionItem?.currentStepId,
       sessionVersion: sessionItem?.sessionVersion,
+      sessionStatus: sessionItem?.status,
       createdAt: decisionItem.createdAt,
       updatedAt: decisionItem.updatedAt,
     }

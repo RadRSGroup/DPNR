@@ -77,6 +77,10 @@ export const DecisionRoomFullResponseSchema = z.object({
   // VALUES_NEEDS from VALUES_NEEDS_SUMMARY or SESSION_SUMMARY from COMMITMENT.
   currentStepId: z.string().optional(),
   sessionVersion: z.number().int().min(0).optional(),
+  // The flow-engine SessionItem's own status (Session 67) — 'completed' only
+  // once the whole session finished (COMMITMENT), which is what REOPEN needs;
+  // `status` above is the room record's own, which differs for Decision Room.
+  sessionStatus: z.enum(['active', 'completed', 'abandoned']).optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })
@@ -96,6 +100,10 @@ export const MirrorRoomFullResponseSchema = z.object({
   // DecisionRoomFullResponseSchema's own field — lets a client resume
   // exactly (POST /v1/rooms/mirror requires expectedSessionVersion).
   sessionVersion: z.number().int().min(0).optional(),
+  // The flow-engine SessionItem's own status (Session 67) — 'completed' only
+  // once the whole session finished (COMMITMENT), which is what REOPEN needs;
+  // `status` above is the room record's own, which differs for Decision Room.
+  sessionStatus: z.enum(['active', 'completed', 'abandoned']).optional(),
   situation: z.string().optional(),
   trigger: z.string().optional(),
   thought: z.string().optional(),

@@ -11,6 +11,7 @@ import { sessionSummaryStep } from './session-summary'
 import { summaryInsightStep } from './summary-insight'
 import { clarityActionStep } from './clarity-action'
 import { commitmentStep } from './commitment'
+import { reopenDecision } from '../reopen'
 
 /**
  * The complete original Decision Room flow, ported across Session 5:
@@ -55,4 +56,15 @@ export const decisionFlow: FlowDefinition = {
     CLARITY_ACTION: clarityActionStep,
     COMMITMENT: commitmentStep,
   },
+  reopenableSteps: [
+    'NAME_DECISION',
+    'MAP_OPTIONS',
+    'BODY_EMOTION',
+    'CHOOSE_LENS',
+    'DEEP_EXPLORATION',
+    'VALUES_NEEDS',
+    'FUTURE_PROJECTION',
+    'COMMITMENT',
+  ],
+  onReopen: ({ pk, sessionId }) => reopenDecision(pk, sessionId),
 }

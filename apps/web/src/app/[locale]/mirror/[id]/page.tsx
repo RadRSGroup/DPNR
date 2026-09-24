@@ -3,11 +3,12 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { useParams } from 'next/navigation'
-import { useLocale } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
 import Card from '@/components/ui/Card'
+import ReopenPanel from '@/components/rooms/ReopenPanel'
 import { getMirrorFull, ApiError } from '@/lib/api/v1-client'
 import type { MirrorRoomFullResponse } from '@dpnr/shared-types'
 
@@ -36,8 +37,12 @@ function Field({ label, value }: { label: string; value?: string }) {
   )
 }
 
+// Must match the flow's `reopenableSteps` (infra/cdk/lambda/rooms/*-steps/index.ts).
+const MIRROR_REOPEN_STEPS = ['SITUATION', 'AUTOMATIC_REACTION', 'PATTERN', 'LIFE_IMPACT', 'COMMITMENT']
+
 export default function MirrorDetailPage() {
   const locale = useLocale()
+  const tr = useTranslations('RoomsReopen')
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [session, setSession] = useState<MirrorRoomFullResponse | null>(null)
@@ -61,6 +66,9 @@ export default function MirrorDetailPage() {
     }
     load()
   }, [id, router])
+
+  // The whole session finished (not just the room record) — only then can it be reopened.
+  const sessionFinished = session ? (session.sessionStatus ? session.sessionStatus === 'completed' : session.status === 'completed') : false
 
   return (
     <div className="lg:flex lg:min-h-screen">
@@ -102,7 +110,17 @@ export default function MirrorDetailPage() {
                   </h1>
                 </div>
 
-                {session.status !== 'completed' && (
+                {sessionFinished && session.sessionVersion !== undefined && (
+                  <ReopenPanel
+                    flowId="MIRROR"
+                    sessionId={session.mirrorId}
+                    sessionVersion={session.sessionVersion}
+                    steps={MIRROR_REOPEN_STEPS.map((id) => ({ id, label: tr(`steps.mirror.${id}`) }))}
+                    resumeHref={`/mirror/new?resume=${session.mirrorId}`}
+                  />
+                )}
+
+                {!sessionFinished && (
                   <Link
                     href={`/mirror/new?resume=${session.mirrorId}`}
                     className="inline-flex items-center gap-2 rounded-full bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] px-4 py-2 text-sm text-white transition-colors"

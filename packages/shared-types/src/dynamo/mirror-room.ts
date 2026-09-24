@@ -30,6 +30,10 @@ export const MirrorSessionItemSchema = z.object({
   // Traceability only this pass — not yet threaded into the room's own AI
   // prompts (a separate, deeper prompt-engineering task).
   sourceLibraryTopic: z.string().optional(),
+  // Set the first time COMMITMENT grants the "Complete a Reflection" credit,
+  // so a reopened-and-refinished session (REOPEN, Session 67) can't earn it
+  // again. Carried over by every step's write.
+  reflectionCreditGrantedAt: z.string().datetime().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })

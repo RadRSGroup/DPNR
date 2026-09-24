@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { PutCommand } from '@aws-sdk/lib-dynamodb'
+import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, DECISION_ROOM_STEP_NUMBER, type DecisionItem } from '@dpnr/shared-types'
 import { parseValue } from '../../lib/http'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
@@ -37,17 +37,29 @@ export const nameDecisionStep: StepDefinition = {
 
     const { title, subtitle, sourceLibraryTopic } = parseValue(ctx.input, SubmitInput)
     const now = new Date().toISOString()
+    // A resubmit (Back, or redo after REOPEN) keeps the existing decision's
+    // narrative, lens, review date and creation date — later steps overwrite
+    // their own parts as the person moves forward again.
+    const existingResult = await ddb.send(
+      new GetCommand({ TableName: TABLE_NAME, Key: { pk: ctx.pk, sk: Sk.decisionRoom(ctx.sessionId) } })
+    )
+    const existing = existingResult.Item as DecisionItem | undefined
+    const existingContent = existing ? await ctx.crypto.decryptField<DecisionContent>(existing.content) : null
     const decision: DecisionItem = {
       pk: ctx.pk,
       sk: Sk.decisionRoom(ctx.sessionId),
       decisionId: ctx.sessionId,
       status: 'active',
       currentStep: DECISION_ROOM_STEP_NUMBER.MAP_OPTIONS, // matches original: completing step 1 sets current_step to 2
-      lens: null,
-      reviewDate: null,
-      content: await ctx.crypto.encryptField<DecisionContent>({ title, subtitle: subtitle ?? null, narrative: '' }),
-      sourceLibraryTopic,
-      createdAt: now,
+      lens: existing?.lens ?? null,
+      reviewDate: existing?.reviewDate ?? null,
+      content: await ctx.crypto.encryptField<DecisionContent>({
+        title,
+        subtitle: subtitle ?? null,
+        narrative: existingContent?.narrative ?? '',
+      }),
+      sourceLibraryTopic: sourceLibraryTopic ?? existing?.sourceLibraryTopic,
+      createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: decision }))

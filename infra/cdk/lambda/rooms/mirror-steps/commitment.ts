@@ -25,9 +25,9 @@ const SubmitInput = z.object({ commitment: z.string().optional() })
  *
  * As of Slice 6 (My Wallet), this is also the real, one-time grant point for
  * the "Complete a Reflection" Earn-More-Credits tile — this step is the
- * genuine, single completion point for a whole Mirror Room session (never
- * re-entered once `sessionComplete` is set), so there's no double-grant risk
- * to guard against here the way `complete-commitment.ts` has to.
+ * genuine completion point for a whole Mirror Room session. Since Session 67
+ * a completed session can be reopened (REOPEN) and finished again, so the
+ * grant is now guarded by `reflectionCreditGrantedAt` — once per session.
  */
 export const commitmentStep: StepDefinition = {
   allowedActions: ['SUBMIT_STEP'],
@@ -36,8 +36,10 @@ export const commitmentStep: StepDefinition = {
     const session = await getMirrorSession(ctx.pk, ctx.sessionId)
     const content = await ctx.crypto.decryptField<MirrorContent>(session.content)
     const now = new Date().toISOString()
+    const alreadyGranted = Boolean(session.reflectionCreditGrantedAt)
     const updatedSession = {
       ...session,
+      ...(alreadyGranted ? {} : { reflectionCreditGrantedAt: now }),
       status: 'completed' as const,
       currentStepId: 'COMMITMENT',
       content: await ctx.crypto.encryptField<MirrorContent>({ ...content, commitment: commitment?.trim() ?? '' }),
@@ -45,7 +47,11 @@ export const commitmentStep: StepDefinition = {
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: updatedSession }))
 
-    await grantCredits(ddb, TABLE_NAME, ctx.pk, EARN_REFLECTION_COMPLETED_CREDITS, 'grant_earned', 'reflection_completed')
+    // Once per session: a reopened-and-refinished session (REOPEN) must not
+    // earn the "Complete a Reflection" credit again.
+    if (!alreadyGranted) {
+      await grantCredits(ddb, TABLE_NAME, ctx.pk, EARN_REFLECTION_COMPLETED_CREDITS, 'grant_earned', 'reflection_completed')
+    }
 
     const summary = [
       `Situation: ${content.situation}`,

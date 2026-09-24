@@ -48,6 +48,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       // here.
       currentStepId: sessionItem?.currentStepId,
       sessionVersion: sessionItem?.sessionVersion,
+      sessionStatus: sessionItem?.status,
       situation: orUndefined(content.situation),
       trigger: orUndefined(content.trigger),
       thought: orUndefined(content.thought),

@@ -1,7 +1,7 @@
 import type { APIGatewayProxyHandlerV2WithJWTAuthorizer } from 'aws-lambda'
 import { randomUUID } from 'node:crypto'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
+import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import {
   Sk,
   userPk,
@@ -22,6 +22,7 @@ import { requireConsent } from '../lib/consent'
 import { getLocaleClaim, resolveLocale, toLanguageInstruction, type Locale } from '../lib/locale'
 import { getOnboardingSnapshotContext } from '../lib/onboarding-snapshot-context'
 import { consumeCredits, COMPANION_MESSAGE_COST } from '../lib/credits'
+import { batchDeleteKeys } from '../lib/batch-delete'
 import { getSessionCrypto, type SessionCrypto } from '../lib/session-crypto'
 import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
@@ -100,13 +101,31 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const languageInstruction = toLanguageInstruction(locale, profile.genderIdentity)
 
     const sessionId = await resolveOrCreateSession(ddb, TABLE_NAME, pk, body.sessionId)
-    const recentMessages = await queryRecentMessages(pk, sessionId, MODEL_CONTEXT_MESSAGES)
-    // Discrete conversations: this is the conversation's first turn — derive
-    // and persist its title from it. Fires once per conversation (the
-    // ConditionExpression inside makes every later call a no-op), so this
-    // check doesn't need to be exact, just cheap.
-    if (recentMessages.length === 0) {
-      await maybeSetConversationTitle(ddb, TABLE_NAME, pk, sessionId, crypto, body.text)
+
+    // Edit & resend (Session 67): the edited message must be one of the
+    // caller's own USER messages in this conversation (the key is built from
+    // their own pk + this session, so ownership is structural). Context is
+    // built only from what came before it; the replaced tail is deleted
+    // further down, only after a reply exists.
+    const replaceFromSk = body.replaceFromCreatedAt ? Sk.sessionMessage(sessionId, body.replaceFromCreatedAt) : null
+    if (replaceFromSk) {
+      const target = await ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: replaceFromSk } }))
+      const targetItem = target.Item as SessionMessageItem | undefined
+      if (!targetItem || targetItem.role !== 'user') {
+        throw new HttpError(404, 'message_not_found', 'That message can’t be edited.')
+      }
+    }
+    const recentMessages = replaceFromSk
+      ? await queryMessagesBefore(pk, sessionId, replaceFromSk, MODEL_CONTEXT_MESSAGES)
+      : await queryRecentMessages(pk, sessionId, MODEL_CONTEXT_MESSAGES)
+
+    // Discrete conversations: the conversation's first USER turn names it.
+    // Checked by role, not message count — a conversation that opens with
+    // the Companion's own onboarding question used to never get a title here
+    // (count was 1), and the lazy fallback then titled it with that opener.
+    // An edit of the first user message re-titles it (overwrite).
+    if (!recentMessages.some((m) => m.role === 'user')) {
+      await maybeSetConversationTitle(ddb, TABLE_NAME, pk, sessionId, crypto, body.text, replaceFromSk !== null)
     }
 
     const duplicate = recentMessages
@@ -231,6 +250,13 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       directive = result.directive
     }
 
+    // Edit & resend: the new reply exists, so now drop the replaced tail —
+    // the edited message and everything after it, up to (not including) the
+    // new user message written above.
+    if (replaceFromSk) {
+      await deleteMessagesInRange(pk, replaceFromSk, userMessage.sk)
+    }
+
     const replyAt = new Date().toISOString()
     const assistantMessage: SessionMessageItem = {
       pk,
@@ -242,11 +268,57 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: assistantMessage }))
     await touchSessionLastMessage(ddb, TABLE_NAME, pk, sessionId)
 
-    const response: CompanionMessageResponse = { sessionId, reply, directive }
+    const response: CompanionMessageResponse = {
+      sessionId,
+      reply,
+      directive,
+      userMessageCreatedAt: userMessage.createdAt,
+      replyCreatedAt: replyAt,
+    }
     return jsonResponse(200, response)
   } catch (err) {
     return errorResponse(err)
   }
+}
+
+/** Up to `limit` messages strictly before `beforeSk` in this session, chronological. */
+async function queryMessagesBefore(
+  pk: string,
+  sessionId: string,
+  beforeSk: string,
+  limit: number
+): Promise<SessionMessageItem[]> {
+  const result = await ddb.send(
+    new QueryCommand({
+      TableName: TABLE_NAME,
+      KeyConditionExpression: 'pk = :pk AND sk BETWEEN :from AND :before',
+      ExpressionAttributeValues: { ':pk': pk, ':from': Sk.sessionMessage(sessionId, ''), ':before': beforeSk },
+      ScanIndexForward: false,
+      Limit: limit + 1, // BETWEEN is inclusive — the edited message itself may come back
+    })
+  )
+  const items = ((result.Items ?? []) as SessionMessageItem[]).filter((m) => m.sk !== beforeSk).slice(0, limit)
+  return items.reverse()
+}
+
+/** Deletes every message with `fromSk <= sk < untilSk` (same session prefix — both keys are Sk.sessionMessage). */
+async function deleteMessagesInRange(pk: string, fromSk: string, untilSk: string): Promise<void> {
+  const keys: { pk: string; sk: string }[] = []
+  let exclusiveStartKey: Record<string, unknown> | undefined
+  do {
+    const result = await ddb.send(
+      new QueryCommand({
+        TableName: TABLE_NAME,
+        KeyConditionExpression: 'pk = :pk AND sk BETWEEN :from AND :until',
+        ExpressionAttributeValues: { ':pk': pk, ':from': fromSk, ':until': untilSk },
+        ProjectionExpression: 'pk, sk',
+        ExclusiveStartKey: exclusiveStartKey,
+      })
+    )
+    keys.push(...((result.Items ?? []) as { pk: string; sk: string }[]).filter((k) => k.sk !== untilSk))
+    exclusiveStartKey = result.LastEvaluatedKey
+  } while (exclusiveStartKey)
+  await batchDeleteKeys(ddb, TABLE_NAME, keys)
 }
 
 /** Most recent `limit` messages for this session, in chronological order. */

@@ -1,8 +1,9 @@
 import { z } from 'zod'
 import { randomUUID } from 'node:crypto'
-import { PutCommand } from '@aws-sdk/lib-dynamodb'
+import { PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, DECISION_ROOM_STEP_NUMBER, type DecisionProjectionItem, type DecisionOutcomeItem } from '@dpnr/shared-types'
 import { parseValue } from '../../lib/http'
+import { batchDeleteKeys } from '../../lib/batch-delete'
 import type { SessionCrypto } from '../../lib/session-crypto'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModel } from '../../lib/model-call'
@@ -103,6 +104,18 @@ export const futureProjectionStep: StepDefinition = {
       currentStep: DECISION_ROOM_STEP_NUMBER.FUTURE_PROJECTION,
       updatedAt: now,
     }
+
+    // Replace, don't accumulate: projection keys carry a random id, so a
+    // resubmit (Back, or redo after REOPEN) used to add a second full set.
+    const existingProjections = await ddb.send(
+      new QueryCommand({
+        TableName: TABLE_NAME,
+        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+        ExpressionAttributeValues: { ':pk': ctx.pk, ':prefix': `ROOM#DECISION#${ctx.sessionId}#PROJECTION#` },
+        ProjectionExpression: 'pk, sk',
+      })
+    )
+    await batchDeleteKeys(ddb, TABLE_NAME, (existingProjections.Items ?? []) as { pk: string; sk: string }[])
 
     await Promise.all([
       ...projectionItems.map((item) => ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: item }))),

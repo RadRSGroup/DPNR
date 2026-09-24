@@ -636,6 +636,11 @@
       "playLabel": "Play (coming soon)",
       "settingsLabel": "Focus Mode settings (coming soon)"
     },
+    "edit": "Edit",
+    "editMessage": "Edit message",
+    "editCancel": "Cancel",
+    "editSend": "Save & resend",
+    "editFailed": "Couldn’t update that message — your conversation is unchanged. Please try again.",
     "recentConversations": {
       "title": "Recent Conversations",
       "new": "New",
@@ -901,5 +906,35 @@
     "dataController": "Data controller: DPNR Ltd · Tel Aviv, Israel · <email></email>",
     "termsLink": "Terms of Use →",
     "accountLink": "Account Settings →"
+  },
+  "RoomsReopen": {
+    "editAnswers": "Edit answers",
+    "title": "Change your answers",
+    "redoFrom": "Redo from",
+    "explain": "This reopens the session at that step with your answers filled in. You’ll go through the later steps again, and when you finish, your summary and suggested insights are created fresh from your new answers. Insights you’ve already confirmed stay. AI suggestions along the way use credits as usual.",
+    "confirm": "Reopen and edit",
+    "reopening": "Reopening…",
+    "cancel": "Cancel",
+    "conflict": "This session changed somewhere else — reload the page and try again.",
+    "failed": "Couldn’t reopen it. Please try again.",
+    "steps": {
+      "decision": {
+        "NAME_DECISION": "Your decision",
+        "MAP_OPTIONS": "Your story & options",
+        "BODY_EMOTION": "Body & emotion",
+        "CHOOSE_LENS": "Your lens",
+        "DEEP_EXPLORATION": "Exploration",
+        "VALUES_NEEDS": "Values & needs",
+        "FUTURE_PROJECTION": "Future projection & leaning",
+        "COMMITMENT": "Commitment"
+      },
+      "mirror": {
+        "SITUATION": "The moment",
+        "AUTOMATIC_REACTION": "In the moment",
+        "PATTERN": "The pattern",
+        "LIFE_IMPACT": "Life impact",
+        "COMMITMENT": "Commitment"
+      }
+    }
   }
 }

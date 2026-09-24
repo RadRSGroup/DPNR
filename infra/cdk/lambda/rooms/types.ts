@@ -33,4 +33,15 @@ export interface StepDefinition {
 export interface FlowDefinition {
   firstStepId: string
   steps: Record<string, StepDefinition>
+  /**
+   * REOPEN (Session 67): the answer steps a completed session can be
+   * reopened at. Summary/interstitial steps are deliberately excluded —
+   * they hold no answers of their own and re-run on the way forward.
+   */
+  reopenableSteps: string[]
+  /**
+   * Undoes what completing the session produced, before it goes back to
+   * in-progress: see rooms/reopen.ts. Runs once per REOPEN.
+   */
+  onReopen(ctx: { pk: string; sessionId: string }): Promise<void>
 }

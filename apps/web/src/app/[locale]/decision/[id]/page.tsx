@@ -3,11 +3,12 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { useParams } from 'next/navigation'
-import { useLocale } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
 import Card from '@/components/ui/Card'
+import ReopenPanel from '@/components/rooms/ReopenPanel'
 import { getDecisionFull, ApiError } from '@/lib/api/v1-client'
 import type { DecisionRoomFullResponse, DecisionRoomOptionView, TagType } from '@dpnr/shared-types'
 
@@ -98,8 +99,12 @@ function OptionSection({ option }: { option: DecisionRoomOptionView }) {
   )
 }
 
+// Must match the flow's `reopenableSteps` (infra/cdk/lambda/rooms/*-steps/index.ts).
+const DECISION_REOPEN_STEPS = ['NAME_DECISION', 'MAP_OPTIONS', 'BODY_EMOTION', 'CHOOSE_LENS', 'DEEP_EXPLORATION', 'VALUES_NEEDS', 'FUTURE_PROJECTION', 'COMMITMENT']
+
 export default function DecisionDetailPage() {
   const locale = useLocale()
+  const tr = useTranslations('RoomsReopen')
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [decision, setDecision] = useState<DecisionRoomFullResponse | null>(null)
@@ -123,6 +128,9 @@ export default function DecisionDetailPage() {
     }
     load()
   }, [id, router])
+
+  // The whole session finished (not just the room record) — only then can it be reopened.
+  const sessionFinished = decision ? (decision.sessionStatus ? decision.sessionStatus === 'completed' : decision.status === 'completed') : false
 
   return (
     <div className="lg:flex lg:min-h-screen">
@@ -163,7 +171,17 @@ export default function DecisionDetailPage() {
                   {decision.subtitle && <p className="text-[var(--color-text-tertiary)] text-sm italic mt-1">{decision.subtitle}</p>}
                 </div>
 
-                {decision.status !== 'completed' && (
+                {sessionFinished && decision.sessionVersion !== undefined && (
+                  <ReopenPanel
+                    flowId="DECISION"
+                    sessionId={decision.decisionId}
+                    sessionVersion={decision.sessionVersion}
+                    steps={DECISION_REOPEN_STEPS.map((id) => ({ id, label: tr(`steps.decision.${id}`) }))}
+                    resumeHref={`/decision/new?resume=${decision.decisionId}`}
+                  />
+                )}
+
+                {!sessionFinished && (
                   <Link
                     href={`/decision/new?resume=${decision.decisionId}`}
                     className="inline-flex items-center gap-2 rounded-full bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] px-4 py-2 text-sm text-white transition-colors"

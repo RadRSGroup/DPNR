@@ -12,6 +12,8 @@ const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
 type MessageContent = { text: string }
 type TitleContent = { title: string }
 
+const TITLE_LOOKAHEAD_MESSAGES = 10
+
 /**
  * GET /v1/companion/conversations — Recent Conversations, newest first.
  * Same "no GSI, filter a broad prefix Query client-side" shape
@@ -71,15 +73,19 @@ async function resolveTitle(crypto: SessionCrypto, pk: string, session: SessionI
     return (await crypto.decryptField<TitleContent>(session.title)).title
   }
 
-  const firstMessageResult = await ddb.send(
+  // The first USER message names the conversation — not simply the first
+  // message, which is often the Companion's own opener (Session 67: titles
+  // like "Hello — I'm DPNR's Companion…"). Looks a little way in; a
+  // conversation with no user message yet stays untitled ("New conversation").
+  const firstMessagesResult = await ddb.send(
     new QueryCommand({
       TableName: TABLE_NAME,
       KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
       ExpressionAttributeValues: { ':pk': pk, ':prefix': `SESSION#${session.sessionId}#MSG#` },
-      Limit: 1,
+      Limit: TITLE_LOOKAHEAD_MESSAGES,
     })
   )
-  const first = (firstMessageResult.Items ?? [])[0] as SessionMessageItem | undefined
+  const first = ((firstMessagesResult.Items ?? []) as SessionMessageItem[]).find((m) => m.role === 'user')
   if (!first) return null
 
   const { text } = await crypto.decryptField<MessageContent>(first.content)

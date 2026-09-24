@@ -5,6 +5,7 @@ import { patternStep } from './pattern'
 import { lifeImpactStep } from './life-impact'
 import { synthesisStep } from './synthesis'
 import { commitmentStep } from './commitment'
+import { reopenMirror } from '../reopen'
 
 /**
  * Mirror Room's step map — SITUATION → AUTOMATIC_REACTION → PATTERN →
@@ -35,4 +36,6 @@ export const mirrorFlow: FlowDefinition = {
     SYNTHESIS: synthesisStep,
     COMMITMENT: commitmentStep,
   },
+  reopenableSteps: ['SITUATION', 'AUTOMATIC_REACTION', 'PATTERN', 'LIFE_IMPACT', 'COMMITMENT'],
+  onReopen: ({ pk, sessionId }) => reopenMirror(pk, sessionId),
 }
