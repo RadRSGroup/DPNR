@@ -1,8 +1,7 @@
 'use client'
-import Image from 'next/image'
 import { useState } from 'react'
 import { CalendarButtons } from '@/components/ui/CalendarButtons'
-import Sidebar from '@/components/layout/Sidebar'
+import RoomScreenFrame from '@/components/shared/RoomScreenFrame'
 import InvertedButton from '@/components/ui/InvertedButton'
 
 interface Props {
@@ -28,17 +27,9 @@ export default function CommitmentScreen({ sessionTitle, onDone, onBack }: Props
   const calendarDate = addDays(7)
 
   return (
-    <div className="lg:flex lg:min-h-screen">
-      <Sidebar />
-      <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
-    <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] max-w-[393px] lg:max-w-3xl lg:w-full mx-auto flex flex-col bg-[#0a0a0f] overflow-hidden lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
-      <div className="absolute inset-0 -z-10">
-        <Image src="/images/backgrounds/mirror-bg.webp" alt="" fill className="object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
-      </div>
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.45)_0%,_rgba(80,20,140,0.25)_45%,_transparent_75%)] -z-10" />
+    <RoomScreenFrame backgroundSrc="/images/backgrounds/mirror-bg.webp" glows={['bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.45)_0%,_rgba(80,20,140,0.25)_45%,_transparent_75%)]']}>
 
-      <div className="pt-14 px-5 pb-4 text-center space-y-1">
+      <div className="pt-14 lg:pt-8 px-5 pb-4 text-center space-y-1">
         <h1 className="text-white text-lg font-medium">&quot;{sessionTitle}&quot;</h1>
         <p className="text-white/50 text-sm">Last Step: Before You Leave</p>
       </div>
@@ -82,8 +73,6 @@ export default function CommitmentScreen({ sessionTitle, onDone, onBack }: Props
         </button>
         <InvertedButton onClick={() => onDone(commitment.trim())} className="flex-1 py-3.5" label="Done" />
       </div>
-    </div>
-      </main>
-    </div>
+    </RoomScreenFrame>
   )
 }

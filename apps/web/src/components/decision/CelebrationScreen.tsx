@@ -1,5 +1,5 @@
 'use client'
-import Sidebar from '@/components/layout/Sidebar'
+import RoomScreenFrame from '@/components/shared/RoomScreenFrame'
 import InvertedButton from '@/components/ui/InvertedButton'
 
 const AFFIRMATIONS = [
@@ -26,13 +26,7 @@ export default function CelebrationScreen({ userName, decisionTitle, onContinue 
   const affirmation = AFFIRMATIONS[Math.floor(decisionTitle.length % AFFIRMATIONS.length)]
 
   return (
-    <div className="lg:flex lg:min-h-screen">
-      <Sidebar />
-      <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
-    <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] max-w-[393px] lg:max-w-3xl lg:w-full mx-auto flex flex-col items-center justify-center overflow-hidden px-8 lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
-      {/* Background */}
-      <div className="absolute inset-0 bg-[#0a0a0f] -z-10" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_55%_at_50%_45%,_rgba(167,139,250,0.22)_0%,_rgba(139,92,246,0.10)_50%,_transparent_80%)] -z-10" />
+    <RoomScreenFrame glows={['bg-[radial-gradient(ellipse_60%_55%_at_50%_45%,_rgba(167,139,250,0.22)_0%,_rgba(139,92,246,0.10)_50%,_transparent_80%)]']} className="items-center justify-center px-8">
 
       <div className="flex flex-col items-center text-center space-y-8 fade-up">
         {/* Glow orb */}
@@ -68,8 +62,6 @@ export default function CelebrationScreen({ userName, decisionTitle, onContinue 
           Skip
         </button>
       </div>
-    </div>
-      </main>
-    </div>
+    </RoomScreenFrame>
   )
 }

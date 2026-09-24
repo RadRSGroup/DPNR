@@ -2,7 +2,7 @@
 import Image from 'next/image'
 import { useRouter } from '@/i18n/navigation'
 import PrimaryButton from '@/components/ui/PrimaryButton'
-import Sidebar from '@/components/layout/Sidebar'
+import RoomScreenFrame from '@/components/shared/RoomScreenFrame'
 
 interface Props {
   onNext: () => void
@@ -12,37 +12,34 @@ interface Props {
 export default function MomentScreen({ onNext, onBack }: Props) {
   const router = useRouter()
   return (
-    <div className="lg:flex lg:min-h-screen">
-      <Sidebar />
-      <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
-    <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] flex flex-col bg-[#0a0a0f] overflow-hidden max-w-[393px] lg:max-w-3xl lg:w-full mx-auto lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
-      <div className="absolute inset-0 -z-10">
-        <Image src="/images/backgrounds/decision-bg.webp" alt="" fill className="object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
-      </div>
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
+    <RoomScreenFrame backgroundSrc="/images/backgrounds/decision-bg.webp" glows={['bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)]']}>
 
-      {/* Top bar — matches StepShell */}
-      <div className="flex items-center justify-between px-5 pt-14 pb-2">
+      {/* Top bar — matches RoomStepLayout */}
+      <div className="flex items-center justify-between px-5 pt-14 pb-2 lg:px-8 lg:pt-6">
         <button
           onClick={() => router.push('/dashboard')}
           className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white text-lg"
         >✕</button>
         <div className="flex items-center gap-2">
           <span className="text-[var(--color-text-tertiary)] text-xs">Decision Room</span>
-          <span className="text-[var(--color-text-tertiary)] text-xs">28 min</span>
+          <span className="text-[var(--color-text-tertiary)] text-xs">25 min</span>
         </div>
-        <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white/60 text-sm">?</div>
+        {/* Balances the close button (the old "?" here was a dead, non-button div). */}
+        <div className="w-8 h-8" aria-hidden />
       </div>
 
       {/* Content */}
-      <div className="scrollbar-glass flex-1 overflow-y-auto flex flex-col items-center justify-center px-6 pb-8 fade-up">
-        <div className="w-full text-center space-y-6">
-          <h1 className="text-white text-2xl font-light leading-snug">
+      <div className="scrollbar-glass flex-1 overflow-y-auto flex flex-col items-center justify-center px-6 pb-8 lg:px-12 lg:pb-10 fade-up">
+        <div className="w-full max-w-md text-center space-y-6">
+          {/* The Decision Room hero art (same as the landing), as a calm focal point before step 1. */}
+          <div className="relative mx-auto w-40 h-40 lg:w-56 lg:h-56 rounded-full overflow-hidden border border-white/15 shadow-[0_0_60px_rgba(139,92,246,0.35)]">
+            <Image src="/images/decision/decision-room-hero.webp" alt="" fill sizes="224px" className="object-cover" priority />
+          </div>
+          <h1 className="text-white text-2xl lg:text-4xl font-light lg:font-display leading-snug">
             A moment before<br />We Begin
           </h1>
 
-          <p className="text-white/50 text-sm leading-relaxed">
+          <p className="text-white/60 text-sm lg:text-base leading-relaxed">
             Take a breath. You&apos;re about to give yourself the gift of real clarity. There&apos;s no rush here — just honest reflection, one step at a time.
           </p>
 
@@ -54,7 +51,7 @@ export default function MomentScreen({ onNext, onBack }: Props) {
               className="w-12 h-12 flex items-center justify-center rounded-full border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-all"
               aria-label="Back"
             >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="rtl:-scale-x-100">
                 <path d="M11 4L6 9L11 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
@@ -63,15 +60,13 @@ export default function MomentScreen({ onNext, onBack }: Props) {
               className="w-12 h-12 flex items-center justify-center rounded-full border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-all"
               aria-label="Next"
             >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="rtl:-scale-x-100">
                 <path d="M7 4L12 9L7 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
           </div>
         </div>
       </div>
-    </div>
-      </main>
-    </div>
+    </RoomScreenFrame>
   )
 }

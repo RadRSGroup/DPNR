@@ -1,9 +1,8 @@
 'use client'
-import Image from 'next/image'
 import { useState } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import StepShell from './StepShell'
-import Sidebar from '@/components/layout/Sidebar'
+import RoomScreenFrame from '@/components/shared/RoomScreenFrame'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
@@ -58,22 +57,12 @@ export default function Step03({ decisionTitle, initialBodyLocation, initialEmot
 
   if (reflection) {
     return (
-      <div className="lg:flex lg:min-h-screen">
-      <Sidebar />
-      <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
-      <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] flex flex-col overflow-hidden max-w-[393px] lg:max-w-3xl lg:w-full mx-auto lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
-        {/* Warm mauve background — matches SectionSummaryScreen */}
-        <div className="absolute inset-0 -z-10">
-        <Image src="/images/backgrounds/decision-bg.webp" alt="" fill className="object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
-      </div>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_55%_at_50%_0%,_rgba(210,80,230,0.22)_0%,_transparent_70%)] -z-10" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_80%_80%,_rgba(160,40,200,0.12)_0%,_transparent_60%)] -z-10" />
+      <RoomScreenFrame backgroundSrc="/images/backgrounds/decision-bg.webp" glows={['bg-[radial-gradient(ellipse_90%_55%_at_50%_0%,_rgba(210,80,230,0.22)_0%,_transparent_70%)]', 'bg-[radial-gradient(ellipse_60%_40%_at_80%_80%,_rgba(160,40,200,0.12)_0%,_transparent_60%)]']}>
 
         {tokenCapReached && <TokenCapModal onClose={dismissTokenCap} />}
 
         {/* Top bar */}
-        <div className="flex items-center justify-between px-5 pt-14 pb-2">
+        <div className="flex items-center justify-between px-5 pt-14 lg:pt-8 pb-2">
           <button
             onClick={() => router.push('/dashboard')}
             className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white text-lg"
@@ -189,9 +178,7 @@ export default function Step03({ decisionTitle, initialBodyLocation, initialEmot
             Keep Exploring →
           </button>
         </div>
-      </div>
-      </main>
-    </div>
+      </RoomScreenFrame>
     )
   }
 

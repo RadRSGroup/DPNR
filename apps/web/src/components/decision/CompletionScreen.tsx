@@ -1,7 +1,6 @@
 'use client'
-import Image from 'next/image'
 import { useRouter } from '@/i18n/navigation'
-import Sidebar from '@/components/layout/Sidebar'
+import RoomScreenFrame from '@/components/shared/RoomScreenFrame'
 import InvertedButton from '@/components/ui/InvertedButton'
 import Card from '@/components/ui/Card'
 
@@ -48,18 +47,10 @@ export default function CompletionScreen({
     : chosenLean === 'undecided' ? 'Still undecided' : null
 
   return (
-    <div className="lg:flex lg:min-h-screen">
-      <Sidebar />
-      <main className="flex-1 lg:flex lg:items-center lg:justify-center lg:p-10">
-    <div className="relative h-dvh lg:h-auto lg:min-h-[80vh] lg:max-h-[900px] max-w-[393px] lg:max-w-3xl lg:w-full mx-auto flex flex-col overflow-hidden lg:rounded-[28px] lg:border lg:border-white/10 lg:shadow-2xl">
-      <div className="absolute inset-0 -z-10">
-        <Image src="/images/backgrounds/decision-bg.webp" alt="" fill className="object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
-      </div>
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.5)_0%,_rgba(80,20,140,0.3)_45%,_transparent_75%)] -z-10" />
+    <RoomScreenFrame backgroundSrc="/images/backgrounds/decision-bg.webp" glows={['bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.5)_0%,_rgba(80,20,140,0.3)_45%,_transparent_75%)]']}>
 
       {/* Scrollable content */}
-      <div className="scrollbar-glass flex-1 overflow-y-auto px-6 pt-16 pb-32 space-y-6">
+      <div className="scrollbar-glass flex-1 overflow-y-auto px-6 pt-16 lg:pt-10 pb-32 space-y-6">
 
         {/* Hero */}
         <div className="text-center space-y-3">
@@ -137,8 +128,6 @@ export default function CompletionScreen({
         )}
         <InvertedButton onClick={onDone} className="w-full py-3.5" label="Back to InnerOS" />
       </div>
-    </div>
-      </main>
-    </div>
+    </RoomScreenFrame>
   )
 }

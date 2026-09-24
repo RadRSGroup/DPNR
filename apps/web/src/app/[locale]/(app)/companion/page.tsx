@@ -418,7 +418,15 @@ function CompanionContent() {
   const showCustom = chatBackground === 'custom' && chatBackgroundUrl !== null
 
   return (
-    <div className="relative h-[calc(100dvh-4rem)] lg:h-dvh flex flex-col overflow-hidden">
+    // With the person's own photo, chat surfaces (bubbles, composer — all
+    // --color-surface-glass) get a dark backing instead of the whole photo
+    // being flattened: readability lives on the bubbles, the photo stays
+    // visible (user feedback on the first, too-heavy scrim).
+    <div
+      className={`relative h-[calc(100dvh-4rem)] lg:h-dvh flex flex-col overflow-hidden ${
+        showCustom ? '[--color-surface-glass:rgba(10,10,15,0.62)] [--color-border-glass:rgba(255,255,255,0.14)]' : ''
+      }`}
+    >
       {/* overflow-hidden here, not just on the page: the custom photo is
           scale-105, and unclipped it gave the page root scrollable overflow
           — anything calling scrollIntoView (e.g. the Spotify embed loading)
@@ -431,13 +439,12 @@ function CompanionContent() {
           // Light blur (scaled up so the blurred edges stay off-screen):
           // a busy photo's own detail/text otherwise competes with the chat.
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={chatBackgroundUrl!} alt="" className="w-full h-full object-cover blur-[3px] scale-105" />
+          <img src={chatBackgroundUrl!} alt="" className="w-full h-full object-cover blur-[1.5px] scale-[1.03]" />
         )}
-        {/* Scrim for the person's own photo: the chat is white text on
-            5%-white glass bubbles, so a light photo made it unreadable
-            (user report). Uniform, not just the bottom gradient below,
-            so the top of the thread is covered too. */}
-        {showCustom && <div className="absolute inset-0 bg-[var(--color-bg-base)]/70" />}
+        {/* Light scrim for the person's own photo — just enough to calm a
+            very bright image; the bubbles carry their own dark backing
+            (see the container above), so this no longer has to flatten it. */}
+        {showCustom && <div className="absolute inset-0 bg-[var(--color-bg-base)]/35" />}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
       </div>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
