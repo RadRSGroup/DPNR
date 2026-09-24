@@ -49,6 +49,13 @@ export function resolveLocale(
  * grammatically-unmarked default), not neutral/plural phrasing — simpler
  * to instruct reliably, and the user's own explicit choice over the
  * neutral-phrasing alternative that was offered.
+ *
+ * First-person voice (Session 66, the user's explicit product decision):
+ * DPNR speaks as the user's digital twin, so its OWN first-person Hebrew
+ * forms mirror the user's gender too (e.g. "שומעת"/"מחזיקה" to a female
+ * user). The model already tended to do this unprompted, but only the
+ * second person was specified — now both are, so it's reliable rather
+ * than incidental. `unspecified` → masculine for both, same fallback.
  */
 /**
  * For call sites with no existing profile read to reuse (e.g.
@@ -85,6 +92,8 @@ export function toLanguageInstruction(locale: Locale, gender: GenderIdentity): s
   const grammaticalForm = gender === 'female' ? 'feminine' : 'masculine'
   return (
     'Respond to the user entirely in Hebrew (עברית). ' +
-    `Address the user using ${grammaticalForm} grammatical forms for second-person verb conjugation.`
+    `Address the user using ${grammaticalForm} grammatical forms for second-person verb conjugation, ` +
+    `and use the same ${grammaticalForm} forms when referring to yourself in the first person — ` +
+    "you speak as the user's digital twin, so your own voice mirrors their gender."
   )
 }
