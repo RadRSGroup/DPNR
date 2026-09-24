@@ -271,7 +271,7 @@ export default function ChatBackgroundSelector({
                 </button>
                 <span className="text-xs text-[var(--color-text-tertiary)]">{tv('remaining', { count: visionRemaining })}</span>
               </div>
-              {generating && <p className="text-xs text-[var(--color-violet-200)] animate-pulse">{tv('generating')}</p>}
+              {generating && <p className="text-xs text-[var(--color-violet-200)] animate-soft-pulse">{tv('generating')}</p>}
               <p className="text-[11px] text-[var(--color-text-tertiary)]">{tv('privacy')}</p>
             </>
           )}

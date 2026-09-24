@@ -47,7 +47,7 @@ export default function Step04({ decisionTitle, optionA, optionB, initialLens, o
             <button
               key={lens.id}
               onClick={() => setSelected(lens.id)}
-              className={`w-full rounded-2xl border p-4 text-left transition-all duration-200 ${
+              className={`w-full rounded-2xl border p-4 text-left transition-all ${
                 selected === lens.id
                   ? 'bg-purple-900/30 border-purple-600/60'
                   : 'bg-white/5 border-white/10 hover:bg-white/8 hover:border-white/20'

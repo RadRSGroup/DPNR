@@ -24,6 +24,100 @@
   --radius-card-lg: 1.75rem;
 
   --shadow-glow-violet: 0 0 24px 0 rgba(139, 92, 246, 0.35);
+
+  /*
+   * Motion — calm and minimal (docs/MOTION.md). Things settle into place;
+   * nothing bounces or overshoots. Durations/distances live in :root below
+   * (plain vars, so reduced-motion can zero the distances at runtime).
+   *
+   * `ease-settle`: fast start, long soft landing — for anything arriving.
+   * `ease-breath`: symmetric sine — for anything that breathes or loops.
+   * The two defaults retune every plain `transition-*` utility in the app.
+   */
+  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-breath: cubic-bezier(0.37, 0, 0.63, 1);
+  --default-transition-duration: 160ms;
+  --default-transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* The only named animations. Add new ones here, not in components. */
+  --animate-settle-in: settle-in var(--motion-calm) var(--ease-settle) both;
+  --animate-settle-in-quick: settle-in var(--motion-quick) var(--ease-settle) both;
+  --animate-fade-in: fade-in var(--motion-calm) var(--ease-settle) both;
+  --animate-soft-pulse: soft-pulse 1.8s var(--ease-breath) infinite;
+  /* Room steps: content arrives from the direction of travel (RTL-aware). */
+  --animate-step-in-forward: step-in-forward var(--motion-calm) var(--ease-settle) both;
+  --animate-step-in-back: step-in-back var(--motion-calm) var(--ease-settle) both;
+  /* A progress segment drawing in along the inline axis (pair with origin-left rtl:origin-right). */
+  --animate-journey-fill: journey-fill var(--motion-slow) var(--ease-settle) both;
+  /* Pull a Card: the face flips away, two card backs shuffle, the new card is dealt face-up. */
+  --animate-card-flip-out: card-flip-out 220ms var(--ease-settle) forwards;
+  --animate-card-shuffle-a: card-shuffle-a 720ms var(--ease-breath) infinite;
+  --animate-card-shuffle-b: card-shuffle-b 720ms var(--ease-breath) infinite;
+  --animate-card-deal: card-deal 560ms var(--ease-settle) both;
+  /* Slow opacity-only glow, e.g. a completion orb. */
+  --animate-soft-glow: soft-glow 5s var(--ease-breath) infinite;
+
+  @keyframes settle-in {
+    from { opacity: 0; transform: translateY(var(--motion-distance-sm)); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  /* Opacity-only breathing — for "working on it" states (never bounce/ping). */
+  @keyframes soft-pulse {
+    0%, 100% { opacity: 0.35; }
+    50%      { opacity: 1; }
+  }
+  @keyframes step-in-forward {
+    from { opacity: 0; transform: translateX(calc(var(--motion-distance-md) * var(--motion-dir))); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes step-in-back {
+    from { opacity: 0; transform: translateX(calc(var(--motion-distance-md) * var(--motion-dir) * -1)); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes journey-fill {
+    from { transform: scaleX(var(--motion-grow-from)); }
+    to   { transform: scaleX(1); }
+  }
+  @keyframes card-flip-out {
+    to { opacity: 0; transform: rotateY(80deg) scale(0.94); }
+  }
+  /* Two backs slide out to opposite sides and come back on top of each other
+     (z-index switches at the far point), like an overhand shuffle. Kept
+     scaled down so they stay close to the card's own footprint. */
+  @keyframes card-shuffle-a {
+    0%     { z-index: 1; transform: translateX(0) rotate(0deg) scale(0.86); }
+    50%    { z-index: 1; transform: translateX(10%) rotate(6deg) scale(0.86); }
+    50.01% { z-index: 3; }
+    100%   { z-index: 3; transform: translateX(0) rotate(0deg) scale(0.86); }
+  }
+  @keyframes card-shuffle-b {
+    0%     { z-index: 3; transform: translateX(0) rotate(0deg) scale(0.86); }
+    50%    { z-index: 3; transform: translateX(-10%) rotate(-6deg) scale(0.86); }
+    50.01% { z-index: 1; }
+    100%   { z-index: 1; transform: translateX(0) rotate(0deg) scale(0.86); }
+  }
+  @keyframes card-deal {
+    0%   { opacity: 0; transform: translateY(-3%) rotateY(-80deg) scale(0.92); }
+    55%  { opacity: 1; }
+    100% { opacity: 1; transform: none; }
+  }
+  @keyframes soft-glow {
+    0%, 100% { opacity: 0.45; }
+    50%      { opacity: 0.9; }
+  }
+}
+
+/*
+ * Stagger: `stagger-0`, `stagger-1`, … delay an animation by N steps of
+ * 150ms — one shared rhythm for anything that animates in sequence (the
+ * chat "thinking" dots, later lists). Motion vocabulary, docs/MOTION.md.
+ */
+@utility stagger-* {
+  animation-delay: calc(--value(integer) * 150ms);
 }
 
 /*
@@ -66,6 +160,52 @@
     var(--color-magenta-500),
     var(--color-amber-400)
   );
+
+  /*
+   * Motion scale (docs/MOTION.md). Use via `duration-(--motion-calm)` etc.
+   * quick: taps, menus, hovers. calm: content arriving. slow: moments
+   * (a session finishing). Distances stay small — things settle, not fly.
+   */
+  --motion-quick: 160ms;
+  --motion-calm: 320ms;
+  --motion-slow: 600ms;
+  --motion-distance-sm: 8px;
+  --motion-distance-md: 16px;
+  /* 1 in LTR, -1 in RTL: multiplies horizontal travel so "forward" follows reading direction. */
+  --motion-dir: 1;
+  /* Start scale for grow-in animations (journey-fill); 1 under reduced motion = no growth. */
+  --motion-grow-from: 0;
+}
+
+:root[dir="rtl"] {
+  --motion-dir: -1;
+}
+
+/*
+ * Reduced motion: movement becomes fades. Zeroing the distances turns every
+ * `settle-in` (and anything else built on these vars) into a plain fade;
+ * fades themselves are fine for motion-sensitive people. Stock Tailwind
+ * bounce/ping are stopped outright (lint also blocks new uses), and the
+ * glass hover lift is dropped. Spinners keep turning — they're status.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-distance-sm: 0px;
+    --motion-distance-md: 0px;
+    --motion-grow-from: 1;
+  }
+  html {
+    scroll-behavior: auto !important;
+  }
+  .animate-bounce,
+  .animate-ping,
+  .animate-card-shuffle-a,
+  .animate-card-shuffle-b {
+    animation: none !important;
+  }
+  .liquid-glass:hover {
+    transform: none;
+  }
 }
 
 body {
@@ -87,18 +227,6 @@ body {
   padding-bottom: 4px;
 }
 .chips-row::-webkit-scrollbar { display: none; }
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.fade-up { animation: fadeUp 0.35s ease both; }
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
-  50%       { box-shadow: 0 0 20px 4px rgba(139, 92, 246, 0.35); }
-}
-.glow-pulse { animation: pulse-glow 2.5s ease-in-out infinite; }
 
 /*
  * Liquid-glass surface — a more textured take on --color-surface-glass for
@@ -127,7 +255,7 @@ body {
       inset 0 1px 0 rgba(255, 255, 255, 0.16),
       inset 0 -16px 28px -20px rgba(139, 92, 246, 0.3),
       0 8px 20px -10px rgba(0, 0, 0, 0.45);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    transition: border-color var(--motion-quick) var(--ease-settle), box-shadow var(--motion-quick) var(--ease-settle), transform var(--motion-quick) var(--ease-settle);
   }
   .liquid-glass::before {
     content: '';

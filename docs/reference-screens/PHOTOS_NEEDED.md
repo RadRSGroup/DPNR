@@ -58,3 +58,18 @@ light, open landscapes, horizon.
 | Decision-Making | Meaning vs. Happiness | A figure standing at a crossroads of glowing paths at dawn, one path gently lit brighter. |
 | Fear vs. Desire in Decisions | Avoidance | Half the scene in shadow with a closed door, half in warm light with an open archway; the figure between them. |
 | Future Self | Ambition | A figure looking at a translucent, luminous version of themselves standing further along the path. |
+
+# Room and Dashboard art cropped from the mockups (Session 69)
+
+These small pieces were **cropped out of the flattened reference screens** because no
+separate files exist. They're fine at icon size but blurry on high-density screens.
+Please send the originals (transparent PNG or at least 512×512 on a dark background).
+Regenerate with `python apps/web/scripts/build-reference-crops.py` once replaced.
+
+| Where | Current file | From |
+|---|---|---|
+| Mirror "Start Your Reflection": By Pattern / By Situation / Trigger Archetypes orbs | `public/images/mirror/orb-pattern.webp`, `orb-situation.webp`, `orb-archetype.webp` | `refs/mirror-room-home-2.png` |
+| Mirror "Your Patterns" + Dashboard "Patterns Track" row orbs (4) | `public/images/mirror/pattern-orb-1…4.webp` | `refs/mirror-room-home-2.png` |
+| Mirror "Today's Insight" line-art lotus | `public/images/mirror/lotus-line.webp` | `refs/mirror-room-home-2.png` |
+| Decision "Step 1" card lotus | `public/images/decision/lotus-violet.webp` (the NEED theme art, recolored violet) | stand-in, not the reference's own lotus |
+| Dashboard "Today's Insight" landscape | `public/images/library/header.webp` (Library header, reused) | stand-in for the reference's mountain sunrise |

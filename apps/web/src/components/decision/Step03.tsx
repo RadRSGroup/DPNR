@@ -78,7 +78,7 @@ export default function Step03({ decisionTitle, initialBodyLocation, initialEmot
           {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
             <div
               key={i}
-              className={`h-1.5 rounded-full transition-all duration-500 ${
+              className={`h-1.5 rounded-full transition-all duration-(--motion-slow) ${
                 i + 1 < 3
                   ? 'bg-purple-400 w-5'
                   : i + 1 === 3
@@ -98,7 +98,7 @@ export default function Step03({ decisionTitle, initialBodyLocation, initialEmot
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto no-scrollbar px-5 space-y-4 pb-4 fade-up">
+        <div className="flex-1 overflow-y-auto no-scrollbar px-5 space-y-4 pb-4 animate-settle-in">
           <div className="bg-fuchsia-950/40 border border-fuchsia-600/25 rounded-2xl px-4 py-4 space-y-3">
             <p className="text-fuchsia-300 text-xs uppercase tracking-widest font-semibold">
               Your selection: {bodyLocation} · {resolvedEmotion}
@@ -139,7 +139,7 @@ export default function Step03({ decisionTitle, initialBodyLocation, initialEmot
               ))}
             </div>
             {response === 'refine' && (
-              <div className="pt-1 space-y-1 fade-up">
+              <div className="pt-1 space-y-1 animate-settle-in">
                 <p className="text-[var(--color-text-tertiary)] text-xs">Add or edit — make it yours:</p>
                 <textarea
                   autoFocus

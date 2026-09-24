@@ -103,7 +103,7 @@ function TopicTile({
           alt=""
           fill
           sizes="(min-width: 1024px) 240px, 50vw"
-          className={`object-cover ${framed ? '' : 'transition-transform duration-500 group-hover:scale-105'}`}
+          className={`object-cover ${framed ? '' : 'transition-transform duration-(--motion-slow) group-hover:scale-105'}`}
         />
         {framed ? (
           <div className="absolute inset-0 flex items-center justify-center px-5 text-center">
@@ -135,7 +135,7 @@ function MethodTile({ piece, minutesLabel }: { piece: MethodPiece; minutesLabel:
           alt=""
           fill
           sizes="(min-width: 1024px) 288px, 256px"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="object-cover transition-transform duration-(--motion-slow) group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
         <span className="absolute top-2.5 start-2.5 liquid-glass rounded-full px-2 py-0.5 text-[10px] text-white/85">{minutesLabel}</span>

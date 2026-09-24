@@ -1,4 +1,4 @@
-import { Heart, Users, Briefcase, Activity, Wallet, Palette, Flower2 } from 'lucide-react'
+import { Flower2, Heart, Briefcase, Flower, CircleDollarSign, Orbit, Moon } from 'lucide-react'
 import type { LifeDomainCategory } from '@dpnr/shared-types'
 
 /**
@@ -11,12 +11,14 @@ import type { LifeDomainCategory } from '@dpnr/shared-types'
  * complete literal strings in source, so building `stroke-[${color}]` at
  * runtime would silently fail to generate the CSS.
  */
+// Icons and colors follow the designer's Dashboard reference (Life Domains
+// row, docs/reference-screens/platform_photos/refs/dashboard.png), Session 69.
 export const DOMAIN_META: Record<LifeDomainCategory, { icon: typeof Heart; color: string; ringClass: string }> = {
-  self_inner_world: { icon: Heart, color: 'var(--color-magenta-500)', ringClass: 'stroke-[var(--color-magenta-500)]' },
-  relationships: { icon: Users, color: 'var(--color-violet-400)', ringClass: 'stroke-[var(--color-violet-400)]' },
+  self_inner_world: { icon: Flower2, color: 'var(--color-violet-400)', ringClass: 'stroke-[var(--color-violet-400)]' },
+  relationships: { icon: Heart, color: '#fb7185', ringClass: 'stroke-[#fb7185]' },
   career_purpose: { icon: Briefcase, color: 'var(--color-violet-500)', ringClass: 'stroke-[var(--color-violet-500)]' },
-  health_body: { icon: Activity, color: 'var(--color-amber-400)', ringClass: 'stroke-[var(--color-amber-400)]' },
-  money_abundance: { icon: Wallet, color: 'var(--color-amber-300)', ringClass: 'stroke-[var(--color-amber-300)]' },
-  creativity_expression: { icon: Palette, color: 'var(--color-violet-300)', ringClass: 'stroke-[var(--color-violet-300)]' },
-  spirituality: { icon: Flower2, color: 'var(--color-violet-600)', ringClass: 'stroke-[var(--color-violet-600)]' },
+  health_body: { icon: Flower, color: 'var(--color-amber-400)', ringClass: 'stroke-[var(--color-amber-400)]' },
+  money_abundance: { icon: CircleDollarSign, color: '#4ade80', ringClass: 'stroke-[#4ade80]' },
+  creativity_expression: { icon: Orbit, color: '#60a5fa', ringClass: 'stroke-[#60a5fa]' },
+  spirituality: { icon: Moon, color: 'var(--color-amber-300)', ringClass: 'stroke-[var(--color-amber-300)]' },
 }

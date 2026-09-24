@@ -6,6 +6,7 @@ import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { TOTAL_STEPS } from '@/lib/types'
 import RoomScreenFrame from '@/components/shared/RoomScreenFrame'
 import Card from '@/components/ui/Card'
+import AiThinking from '@/components/shared/AiThinking'
 
 export type SummaryType = 'pros_cons' | 'fears_desires' | 'values_needs' | 'values' | 'needs' | 'projections'
 
@@ -107,7 +108,7 @@ export default function SectionSummaryScreen({
         {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
           <div
             key={i}
-            className={`h-1.5 rounded-full transition-all duration-500 ${
+            className={`h-1.5 rounded-full transition-all duration-(--motion-slow) ${
               i + 1 < step
                 ? 'bg-purple-400 w-5'
                 : i + 1 === step
@@ -127,7 +128,7 @@ export default function SectionSummaryScreen({
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto no-scrollbar px-5 space-y-4 pb-4 fade-up">
+      <div className="flex-1 overflow-y-auto no-scrollbar px-5 space-y-4 pb-4 animate-settle-in">
 
         {/* Intro quote for fears/desires and values/needs */}
         {quote && (
@@ -203,14 +204,10 @@ export default function SectionSummaryScreen({
         )}
 
         {/* AI reflection */}
-        {loading && !wordFromUs && (
-          <div className="flex items-center justify-center gap-2 text-fuchsia-400/50 text-xs py-3 animate-pulse">
-            Reflecting on your selections…
-          </div>
-        )}
+        {loading && !wordFromUs && <AiThinking label="Reflecting on your selections…" className="py-3" />}
 
         {wordFromUs && (
-          <div className="bg-fuchsia-950/40 border border-fuchsia-600/25 rounded-2xl px-4 py-4 space-y-3">
+          <div className="bg-fuchsia-950/40 border border-fuchsia-600/25 rounded-2xl px-4 py-4 space-y-3 animate-settle-in">
             <p className="text-fuchsia-300 text-xs uppercase tracking-widest font-semibold">A word from Us</p>
             <p className="text-white/80 text-sm leading-relaxed">{wordFromUs}</p>
             {reflection && (

@@ -6,7 +6,7 @@ import { useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import { useTranslations } from 'next-intl'
-import { ArrowRight, Heart, Compass } from 'lucide-react'
+import { ArrowRight, Compass, Plus } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import {
   getDashboard,
@@ -17,34 +17,18 @@ import {
   updateRoadmapLifecycle,
 } from '@/lib/api/v1-client'
 import type { DashboardResponse, TwinListResponse, CompanionContextResponse } from '@dpnr/shared-types'
-import { LIFE_DOMAIN_LABELS } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
-import ProgressRing from '@/components/ui/ProgressRing'
-import DailyGuidanceCard from '@/components/companion/DailyGuidanceCard'
 import RoadmapTimelineCard from '@/components/shared/RoadmapTimelineCard'
 import TwinCalibrationCard from '@/components/shared/TwinCalibrationCard'
-import ArchetypeBadge from '@/components/shared/ArchetypeBadge'
 import CheckInModal from '@/components/shared/CheckInModal'
-
-/**
- * Labels for continuityCue kinds OTHER than 'daily_card' — that one now
- * renders via the real, feedback-capable `DailyGuidanceCard` instead (see
- * below), fetched independently via `getCompanionContext()` since
- * `DashboardResponse.continuityCue` only ever carries `{kind, text}`, not
- * the real item's `feedback` field DailyGuidanceCard needs. The backend
- * picks continuityCue's kind as 'daily_card' whenever a real Daily Card
- * exists for today (infra/cdk/lambda/dashboard/handler.ts's own priority
- * comment), so this is never a second, different concept — it's the same
- * item continuityCue was already describing, just shown once, correctly.
- */
-// Values are keys into Dashboard.cueLabels, resolved via t() at render
-// time — module scope has no hook access.
-const CUE_LABEL_KEY: Record<Exclude<NonNullable<DashboardResponse['continuityCue']>['kind'], 'daily_card'>, string> = {
-  continuation: 'continuation',
-  commitment: 'commitment',
-  roadmap_cue: 'worthExploring',
-  recommended_space: 'worthExploring',
-}
+import AccountMenu from '@/components/layout/AccountMenu'
+import PullACard from '@/components/companion/PullACard'
+import InnerSelfHero from '@/components/dashboard/InnerSelfHero'
+import LifeDomainsCarousel from '@/components/dashboard/LifeDomainsCarousel'
+import PatternsTrackCard from '@/components/dashboard/PatternsTrackCard'
+import ArchetypesCard from '@/components/dashboard/ArchetypesCard'
+import EvolutionCard from '@/components/dashboard/EvolutionCard'
+import InsightCard from '@/components/dashboard/InsightCard'
 
 const ROOM_LINK: Record<'decision' | 'mirror' | 'library', { href: string; labelKey: string }> = {
   decision: { href: '/decision/new', labelKey: 'decision' },
@@ -61,6 +45,7 @@ const ROOM_LINK: Record<'decision' | 'mirror' | 'library', { href: string; label
 
 function DashboardContent() {
   const t = useTranslations('Dashboard')
+  const tc = useTranslations('Companion')
   const router = useRouter()
   const params = useSearchParams()
   const justCompleted = params.get('completed') === 'true'
@@ -136,6 +121,43 @@ function DashboardContent() {
     .filter((s) => s.domain === 'pattern' && s.status === 'confirmed')
     .sort((a, b) => b.confidence - a.confidence)
 
+  const hour = new Date().getHours()
+  const greeting = tc(hour < 12 ? 'greeting.morning' : hour < 18 ? 'greeting.afternoon' : 'greeting.evening')
+  const cueText = dashboard?.continuityCue && dashboard.continuityCue.kind !== 'daily_card' ? dashboard.continuityCue.text : null
+  const roadmap = dashboard?.roadmap ?? null
+
+  const lifecycleActions = roadmap && (
+    <div className="flex items-center gap-3 text-xs text-[var(--color-text-tertiary)]">
+      <span>{t('roadmap.label', { state: t(`roadmap.states.${roadmap.lifecycleState}`) })}</span>
+      {(roadmap.lifecycleState === 'active' || roadmap.lifecycleState === 'evolving') && (
+        <button onClick={() => handleLifecycleAction('pause')} disabled={lifecyclePending} className="hover:text-white/70 transition-colors disabled:opacity-50">
+          {t('roadmap.pause')}
+        </button>
+      )}
+      {(roadmap.lifecycleState === 'paused' || roadmap.lifecycleState === 'archived') && (
+        <button onClick={() => handleLifecycleAction('resume')} disabled={lifecyclePending} className="hover:text-white/70 transition-colors disabled:opacity-50">
+          {t('roadmap.resume')}
+        </button>
+      )}
+      {roadmap.lifecycleState !== 'archived' && (
+        <button onClick={() => handleLifecycleAction('archive')} disabled={lifecyclePending} className="hover:text-white/70 transition-colors disabled:opacity-50">
+          {t('roadmap.archive')}
+        </button>
+      )}
+    </div>
+  )
+
+  // Layout follows the designer's Dashboard reference
+  // (docs/reference-screens/platform_photos/refs/dashboard.png, Session 69):
+  // main column (InnerSelf hero, Roadmap, Life Domains, then Patterns /
+  // Archetypes / Evolution) + a side column (Today's Insight, Suggested Next
+  // Step, Daily Card). User decision: every widget is always shown, with an
+  // honest empty state instead of hiding — nothing here is fabricated.
+  // Not in the reference, kept on purpose: the Roadmap proposal and Twin
+  // calibration cards (they appear only when there's something to act on;
+  // confirming signals is what fills Life Domains/Patterns/Archetypes).
+  // Left out of the reference with reason: the notification bell (no
+  // notifications exist) and a 4th "Intention" Roadmap node (no such field).
   return (
     <div className="relative min-h-screen">
       <div className="absolute inset-0 -z-10">
@@ -144,19 +166,24 @@ function DashboardContent() {
       </div>
 
       <div className="max-w-[393px] lg:max-w-none mx-auto px-5 lg:px-8 pb-10 lg:pb-12">
-        <div className="pt-14 lg:pt-8 pb-6 flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-2xl lg:text-3xl text-white">
-              {t('greeting', { name: firstName ? `, ${firstName}` : '' })}
+        <div className="pt-14 lg:pt-7 pb-5 flex items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="font-display text-2xl lg:text-4xl text-white">
+              {greeting}
+              {firstName ? `, ${firstName}` : ''}
             </h1>
-            <p className="text-sm text-[var(--color-text-secondary)] mt-1">{t('subtitle')}</p>
+            <p className="text-sm lg:text-base text-[var(--color-text-secondary)] mt-1">{t('subtitle')}</p>
           </div>
           <button
             onClick={() => setCheckInOpen(true)}
-            className="liquid-glass hidden lg:inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-white/80"
+            className="hidden lg:inline-flex items-center gap-2 rounded-full border border-[var(--color-amber-400)]/70 px-5 py-2.5 text-sm text-white/90 hover:bg-[var(--color-amber-400)]/10 transition-colors"
           >
+            <Plus className="w-4 h-4" aria-hidden />
             {t('checkIn')}
           </button>
+          <div className="hidden lg:block">
+            <AccountMenu />
+          </div>
         </div>
 
         {checkInOpen && <CheckInModal onClose={() => setCheckInOpen(false)} />}
@@ -167,134 +194,12 @@ function DashboardContent() {
           </div>
         )}
 
-        <div className="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_330px] lg:gap-6 lg:items-start">
           {/* Main column */}
-          <div className="lg:col-span-2 space-y-4 lg:space-y-6">
-            {/* My InnerSelf hero — the caption is the real roadmap theme, and
-                the ring is the real Alignment Score (see below). This page
-                has real users; unlike the dedicated Growth Tracker (Phase 5,
-                still static demo data), nothing here is fabricated. */}
-            <Card className="relative overflow-hidden !p-0">
-              <div className="flex flex-col sm:flex-row">
-                {/* Alignment Score — real, computed server-side from commitment
-                    follow-through + confirmed value-signal clarity (see
-                    DashboardResponseSchema's doc comment). Confidence-gated
-                    (ADR 0011): only rendered as a number when
-                    alignmentScoreState === 'eligible'; 'insufficient'/
-                    'developing' get an honest qualitative state instead of
-                    a fabricated or premature number. */}
-                <div className="p-5 lg:p-6 sm:w-56 shrink-0 flex flex-col">
-                  <p className="text-sm text-white/70">{t('innerSelf.title')}</p>
-                  <p className="text-xs text-[var(--color-text-tertiary)]">{t('innerSelf.subtitle')}</p>
-                  <div className="mt-4">
-                    {dashboard?.alignmentScoreState === 'eligible' && dashboard.alignmentScore != null ? (
-                      <ProgressRing percent={dashboard.alignmentScore} size={84} colorClassName="stroke-[var(--color-violet-500)]">
-                        <span className="text-lg font-medium text-white">{dashboard.alignmentScore}%</span>
-                      </ProgressRing>
-                    ) : (
-                      <div className="w-[84px] h-[84px] rounded-full border-2 border-dashed border-white/15 flex items-center justify-center">
-                        <span className="text-[10px] text-[var(--color-text-tertiary)] text-center px-2">
-                          {dashboard?.alignmentScoreState === 'developing' ? t('innerSelf.pictureForming') : t('innerSelf.stillLearning')}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-[var(--color-text-tertiary)] mt-2">{t('innerSelf.alignmentScore')}</p>
-                </div>
+          <div className="space-y-4 lg:space-y-5 min-w-0">
+            <InnerSelfHero dashboard={dashboard} loading={loading} />
 
-                <div className="relative h-40 sm:h-auto sm:flex-1">
-                  <Image
-                    src="/images/dashboard/inner-self-hero.webp"
-                    alt=""
-                    fill
-                    sizes="(min-width: 1024px) 50vw, 100vw"
-                    className="object-cover"
-                    style={{ objectPosition: 'left center' }}
-                    preload
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[var(--color-bg-base)]" />
-                  {dashboard?.roadmap && (
-                    <div className="absolute inset-0 flex flex-col items-end justify-center text-end px-6 lg:px-10">
-                      <p className="text-white/60 text-sm">{t('innerSelf.phaseOf')}</p>
-                      <p className="font-display text-xl lg:text-2xl text-[var(--color-amber-300)]">{dashboard.roadmap.theme}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Card>
-
-            {/* My Roadmap — real currentFocus/theme/direction, shared with
-                Growth Tracker (Slice 4) via RoadmapTimelineCard. */}
-            {dashboard?.roadmap && <RoadmapTimelineCard roadmap={dashboard.roadmap} />}
-
-            {/* Intelligence Spec §17 — Roadmap Lifecycle state + the one
-                genuinely new action (pause/resume/archive); everything else
-                about the lifecycle just labels transitions that already
-                happen elsewhere. Minimal by design — a label plus whichever
-                one or two actions are actually valid from the current state,
-                not a full lifecycle-management UI. */}
-            {dashboard?.roadmap && (
-              <div className="flex items-center justify-between px-1">
-                <span className="text-xs text-[var(--color-text-tertiary)]">{t('roadmap.label', { state: t(`roadmap.states.${dashboard.roadmap.lifecycleState}`) })}</span>
-                <div className="flex gap-2">
-                  {(dashboard.roadmap.lifecycleState === 'active' || dashboard.roadmap.lifecycleState === 'evolving') && (
-                    <button
-                      onClick={() => handleLifecycleAction('pause')}
-                      disabled={lifecyclePending}
-                      className="text-xs text-[var(--color-text-tertiary)] hover:text-white/70 transition-colors disabled:opacity-50"
-                    >
-                      {t('roadmap.pause')}
-                    </button>
-                  )}
-                  {(dashboard.roadmap.lifecycleState === 'paused' || dashboard.roadmap.lifecycleState === 'archived') && (
-                    <button
-                      onClick={() => handleLifecycleAction('resume')}
-                      disabled={lifecyclePending}
-                      className="text-xs text-[var(--color-text-tertiary)] hover:text-white/70 transition-colors disabled:opacity-50"
-                    >
-                      {t('roadmap.resume')}
-                    </button>
-                  )}
-                  {dashboard.roadmap.lifecycleState !== 'archived' && (
-                    <button
-                      onClick={() => handleLifecycleAction('archive')}
-                      disabled={lifecyclePending}
-                      className="text-xs text-[var(--color-text-tertiary)] hover:text-white/70 transition-colors disabled:opacity-50"
-                    >
-                      {t('roadmap.archive')}
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Life Domains — real aggregate over confirmed, classified Twin
-                signals (twin/classify_signal, Session 19). Only domains the
-                person has actually explored appear; the list grows on its
-                own as more signals get confirmed and classified — never
-                padded to a fixed 7. */}
-            {!loading && (dashboard?.lifeDomains?.length ?? 0) > 0 && (
-              <Card>
-                <p className="text-sm text-white mb-1">{t('lifeDomains.title')}</p>
-                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">{t('lifeDomains.subtitle')}</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {dashboard!.lifeDomains.map((d) => (
-                    <div key={d.domain} className="bg-white/5 rounded-xl px-3 py-2.5">
-                      <p className="text-xs text-white/70 mb-1.5 line-clamp-1">{LIFE_DOMAIN_LABELS[d.domain]}</p>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-[var(--color-violet-500)] to-[var(--color-amber-400)]"
-                            style={{ width: `${d.percent}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-[var(--color-text-tertiary)] shrink-0">{d.percent}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
+            <RoadmapTimelineCard roadmap={roadmap} actions={lifecycleActions} loading={loading} />
 
             {!loading && dashboard?.roadmapProposal && (
               <Card className="border-[var(--color-violet-600)]/40 bg-[var(--color-violet-900)]/20">
@@ -323,6 +228,14 @@ function DashboardContent() {
               </Card>
             )}
 
+            <LifeDomainsCarousel lifeDomains={dashboard?.lifeDomains ?? []} loading={loading} />
+
+            <div className="grid gap-4 lg:gap-5 md:grid-cols-2 2xl:grid-cols-3">
+              <PatternsTrackCard patterns={confirmedPatterns} theme={roadmap?.theme ?? null} loading={loading} />
+              <ArchetypesCard archetypes={dashboard?.archetypes ?? []} loading={loading} />
+              <EvolutionCard history={dashboard?.alignmentHistory ?? []} loading={loading} />
+            </div>
+
             {!loading && twin && (
               <TwinCalibrationCard
                 signals={twin.signals}
@@ -336,83 +249,18 @@ function DashboardContent() {
               />
             )}
 
-            <Card>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-[var(--color-text-tertiary)]">{t('credits.label')}</p>
-                  <p className="text-white text-lg font-light mt-0.5">{loading ? '…' : (dashboard?.creditsBalance ?? 0)}</p>
-                </div>
-                {!loading && dashboard?.creditsLow && (
-                  <Link href="/pricing" className="text-[var(--color-violet-400)] hover:text-[var(--color-violet-300)] text-xs underline">
-                    {t('credits.runningLowUpgrade')}
-                  </Link>
-                )}
-              </div>
-            </Card>
-
-            {/* Patterns Track — real domain='pattern' Twin signals, ranked by
-                confidence, using each signal's own real description. Not the
-                reference's fixed Overthinking/Pleasing/Avoidance/Control
-                labels (no classifier sorts signals into those buckets) —
-                shows the person's own actual confirmed patterns instead. */}
-            {!loading && confirmedPatterns.length > 0 && (
-              <Card>
-                <p className="text-sm text-white mb-1">{t('patterns.title')}</p>
-                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">{t('patterns.subtitle')}</p>
-                <div className="space-y-3">
-                  {confirmedPatterns.slice(0, 4).map((signal) => (
-                    <div key={signal.signalId}>
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm text-white/80 line-clamp-1 pe-2">{signal.description}</p>
-                        <span className="text-xs text-[var(--color-text-tertiary)] shrink-0">{Math.round(signal.confidence * 100)}%</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-[var(--color-violet-500)] to-[var(--color-magenta-500)]"
-                          style={{ width: `${Math.round(signal.confidence * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            {!loading && dashboard?.creditsLow && (
+              <Card className="flex items-center justify-between">
+                <p className="text-xs text-[var(--color-text-tertiary)]">
+                  {t('credits.label')} · <span className="text-white">{dashboard.creditsBalance}</span>
+                </p>
+                <Link href="/pricing" className="text-[var(--color-violet-400)] hover:text-[var(--color-violet-300)] text-xs underline">
+                  {t('credits.runningLowUpgrade')}
+                </Link>
               </Card>
             )}
 
-            {/* Leading Archetypes — real aggregate over confirmed, classified
-                Twin signals, same classifier as Life Domains (Session 19).
-                Only archetypes the person has actually shown evidence of
-                appear. */}
-            {!loading && (dashboard?.archetypes?.length ?? 0) > 0 && (
-              <Card>
-                <p className="text-sm text-white mb-1">{t('archetypes.title')}</p>
-                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">{t('archetypes.subtitle')}</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {dashboard!.archetypes.map((a) => (
-                    <ArchetypeBadge key={a.archetype} archetype={a.archetype} percent={a.percent} />
-                  ))}
-                </div>
-              </Card>
-            )}
-
-            {/* My Evolution — real daily snapshots of the Alignment Score
-                (snapshot-alignment-score.ts, scheduled daily). Short/sparse
-                for any real user until enough days accumulate — that's
-                honest, not padded with fabricated history. */}
-            {!loading && (dashboard?.alignmentHistory?.length ?? 0) >= 2 && (
-              <Card>
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm text-white">{t('evolution.title')}</p>
-                  <span className="text-xs text-[var(--color-text-tertiary)]">{t('evolution.lastDays', { count: dashboard!.alignmentHistory.length })}</span>
-                </div>
-                <AlignmentSparkline points={dashboard!.alignmentHistory} />
-              </Card>
-            )}
-
-            {/* Explore — on desktop the sidebar already covers Chat/Mirror/
-                Decision/Library/InnerSelf, so only what it doesn't cover
-                (the combined Work Rooms hub) shows here. On mobile the
-                bottom nav only has 5 slots, so Library + InnerSelf still
-                need a way in. */}
+            {/* Mobile only: the bottom nav has 5 slots, so Library + Growth need a way in. */}
             <div className="grid grid-cols-2 gap-3 lg:hidden">
               <ExploreTile href="/library" title={t('explore.library.title')} subtitle={t('explore.library.subtitle')} />
               <ExploreTile href="/growth" title={t('explore.growth.title')} subtitle={t('explore.growth.subtitle')} />
@@ -420,72 +268,39 @@ function DashboardContent() {
           </div>
 
           {/* Side column */}
-          <div className="space-y-4 lg:space-y-6 mt-4 lg:mt-0">
-            {!loading && dashboard?.continuityCue?.kind === 'daily_card' && dailyCard && (
-              <DailyGuidanceCard dailyCard={dailyCard} />
-            )}
+          <div className="space-y-4 lg:space-y-5 mt-4 lg:mt-0">
+            <InsightCard key={dailyCard?.text ?? 'none'} dailyCard={dailyCard} cueText={cueText} loading={loading} />
 
-            {!loading && dashboard?.continuityCue && dashboard.continuityCue.kind !== 'daily_card' && (
-              <Card className="relative overflow-hidden">
-                <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-3">{t(`cueLabels.${CUE_LABEL_KEY[dashboard.continuityCue.kind]}`)}</p>
-                {/* Same art the 'daily_card' variant of this exact widget slot
-                    already uses (DailyGuidanceCard) — reused rather than a new
-                    crop, so "Today's Insight" always shows art regardless of
-                    which continuityCue kind actually rendered, matching the
-                    reference (Scenery Parity Pass Phase 2). */}
-                <div className="relative rounded-xl overflow-hidden h-40 mb-3">
-                  <Image src="/images/companion/pull-a-card.webp" alt="" fill sizes="320px" className="object-cover" />
+            <Card className="lg:px-5">
+              <p className="text-white text-base lg:text-lg mb-3">{t('suggestedNextStep')}</p>
+              <Link
+                href={suggestedSpace && ROOM_LINK[suggestedSpace] ? ROOM_LINK[suggestedSpace].href : '/companion'}
+                className="flex items-center gap-3 rounded-2xl bg-white/[0.04] border border-[var(--color-border-glass)] px-3 py-3 hover:bg-white/10 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-full border border-[var(--color-violet-500)]/60 shadow-[0_0_12px_-2px_var(--color-violet-500)] flex items-center justify-center shrink-0">
+                  <Compass className="w-5 h-5 text-[var(--color-violet-300)]" />
                 </div>
-                <p className="text-white/70 text-sm leading-relaxed italic">&ldquo;{dashboard.continuityCue.text}&rdquo;</p>
-                <Heart className="w-4 h-4 text-[var(--color-amber-400)] mt-3" />
-              </Card>
-            )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white">
+                    {suggestedSpace && ROOM_LINK[suggestedSpace] ? t(`roomLink.${ROOM_LINK[suggestedSpace].labelKey}`) : t('suggested.defaultTitle')}
+                  </p>
+                  <p className="text-xs text-[var(--color-text-tertiary)] truncate">
+                    {suggestedSpace && ROOM_LINK[suggestedSpace] ? roadmap?.direction : t('suggested.defaultSubtitle')}
+                  </p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-[var(--color-text-tertiary)] rtl:-scale-x-100 shrink-0" />
+              </Link>
+            </Card>
 
-            {suggestedSpace && ROOM_LINK[suggestedSpace] && (
-              <Card>
-                <p className="text-sm text-white mb-3">{t('suggestedNextStep')}</p>
-                <Link
-                  href={ROOM_LINK[suggestedSpace].href}
-                  className="flex items-center gap-3 rounded-xl bg-white/5 border border-[var(--color-border-glass)] px-3 py-3 hover:bg-white/10 transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-full border border-[var(--color-violet-500)]/50 flex items-center justify-center shrink-0">
-                    <Compass className="w-4 h-4 text-[var(--color-violet-400)]" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-white">{t(`roomLink.${ROOM_LINK[suggestedSpace].labelKey}`)}</p>
-                    <p className="text-xs text-[var(--color-text-tertiary)]">{dashboard?.roadmap?.direction}</p>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-[var(--color-text-tertiary)] rtl:-scale-x-100" />
-                </Link>
-              </Card>
-            )}
-
-            <div className="hidden lg:grid gap-3">
-              <ExploreTile href="/rooms" title={t('explore.workRooms.title')} subtitle={t('explore.workRooms.subtitle')} />
-            </div>
+            <Card className="lg:px-5">
+              <p className="text-white text-base lg:text-lg">{t('dailyCard.title')}</p>
+              <p className="text-xs text-[var(--color-violet-300)]/80 mt-0.5 mb-3">{t('dailyCard.subtitle')}</p>
+              <PullACard />
+            </Card>
           </div>
         </div>
       </div>
     </div>
-  )
-}
-
-function AlignmentSparkline({ points }: { points: { date: string; score: number }[] }) {
-  const width = 280
-  const height = 64
-  const scores = points.map((p) => p.score)
-  const min = Math.min(...scores)
-  const max = Math.max(...scores)
-  const range = max - min || 1
-  const coords = points.map((p, i) => {
-    const x = (i / (points.length - 1)) * width
-    const y = height - ((p.score - min) / range) * height
-    return `${x},${y}`
-  })
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-16" preserveAspectRatio="none">
-      <polyline points={coords.join(' ')} fill="none" stroke="var(--color-amber-400)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   )
 }
 

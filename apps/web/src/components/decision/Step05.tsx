@@ -6,6 +6,7 @@ import Chip from '@/components/ui/Chip'
 import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { Lens, DecisionOption, PRESET_TAGS } from '@/lib/types'
+import AiThinking from '@/components/shared/AiThinking'
 
 interface Step05Props {
   decisionTitle: string
@@ -185,11 +186,7 @@ export default function Step05({ decisionTitle, optionA, optionB, lens, initialT
             ))}
           </div>
 
-          {loading && (
-            <p className="text-purple-400/50 text-xs text-center animate-pulse">
-              Loading AI suggestions...
-            </p>
-          )}
+          {loading && <AiThinking shape="chips" count={5} label="Finding suggestions…" />}
 
           {/* Custom input */}
           <div className="flex gap-2">

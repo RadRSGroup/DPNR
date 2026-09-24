@@ -1,3 +1,5 @@
+'use client'
+import { useTranslations } from 'next-intl'
 import Card from '@/components/ui/Card'
 import type { DashboardResponse } from '@dpnr/shared-types'
 
@@ -7,39 +9,72 @@ import type { DashboardResponse } from '@dpnr/shared-types'
  * Dashboard (Session 19) so Growth Tracker (Slice 4) renders the exact same
  * real Roadmap rather than a second, drifting copy of this markup.
  *
- * Stacks vertically (one full-width node per row) below `lg:` and only goes
- * horizontal at `lg:`, where the card is actually wide enough for three
- * columns to hold real content without truncating it almost immediately —
- * squeezing three columns into a ~350px mobile card left real values like
- * "Building steadier boundaries at work" clipped to a couple of words even
- * with `line-clamp-2` (caught live, see docs/AGENT_LOG.md Session 26).
+ * Session 69: restyled to the designer's Dashboard reference (hollow glowing
+ * nodes on one gradient line, colored step labels) and localized. `roadmap`
+ * may be null — the card then keeps its place with an honest empty line
+ * (user decision: every reference widget always shows). `actions` is an
+ * optional slot in the header (Dashboard puts the lifecycle controls there).
+ *
+ * Stacks vertically below `lg:` and only goes horizontal at `lg:`, where the
+ * card is wide enough for three columns to hold real content without
+ * truncating it (caught live, see docs/AGENT_LOG.md Session 26).
  */
-export default function RoadmapTimelineCard({ roadmap }: { roadmap: NonNullable<DashboardResponse['roadmap']> }) {
+export default function RoadmapTimelineCard({
+  roadmap,
+  actions,
+  loading = false,
+}: {
+  roadmap: DashboardResponse['roadmap']
+  actions?: React.ReactNode
+  /** While the Dashboard is still loading, show a soft placeholder, not the empty line. */
+  loading?: boolean
+}) {
+  const t = useTranslations('Dashboard.roadmap')
   return (
-    <Card>
-      <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-4">My Roadmap</p>
-      <div className="flex flex-col lg:flex-row lg:items-start gap-3 lg:gap-2">
-        <RoadmapNode label="Current Focus" value={roadmap.currentFocus} color="var(--color-amber-400)" />
-        {/* bg-gradient-to-r needs an explicit RTL mirror: the connector's
-            color stops are visually fixed (amber->violet), but the flex row
-            itself reverses direction under dir="rtl" (Tailwind flex-row has
-            no built-in RTL awareness), so the gradient must flip with it or
-            the color transition would visually point the wrong way. */}
-        <div className="hidden lg:block w-6 h-px shrink-0 bg-gradient-to-r rtl:bg-gradient-to-l from-[var(--color-amber-400)] to-[var(--color-violet-500)] mt-2" />
-        <RoadmapNode label="Theme" value={roadmap.theme} color="var(--color-violet-400)" />
-        <div className="hidden lg:block w-6 h-px shrink-0 bg-gradient-to-r rtl:bg-gradient-to-l from-[var(--color-violet-500)] to-[var(--color-magenta-500)] mt-2" />
-        <RoadmapNode label="Direction" value={roadmap.direction} color="var(--color-magenta-500)" align="end" />
+    <Card className="lg:px-6 lg:py-5">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-4">
+        <p className="text-white text-base lg:text-lg whitespace-nowrap">{t('title')}</p>
+        {actions}
       </div>
+      {roadmap ? (
+        <div className="relative">
+          {/* One continuous line behind the three nodes (desktop). Gradient
+              flips under RTL because the row itself reverses. */}
+          <div
+            aria-hidden
+            className="hidden lg:block absolute top-[11px] start-3 end-3 h-0.5 rounded-full bg-gradient-to-r rtl:bg-gradient-to-l from-[var(--color-violet-500)] via-[var(--color-magenta-500)] to-[var(--color-amber-400)] opacity-70"
+          />
+          <div className="relative flex flex-col lg:flex-row lg:items-start gap-4 lg:gap-6">
+            <RoadmapNode label={t('currentFocus')} value={roadmap.currentFocus} color="var(--color-violet-400)" />
+            <RoadmapNode label={t('theme')} value={roadmap.theme} color="var(--color-violet-500)" />
+            <RoadmapNode label={t('direction')} value={roadmap.direction} color="var(--color-magenta-500)" />
+          </div>
+        </div>
+      ) : loading ? (
+        <span aria-hidden className="block h-3 w-2/3 rounded-full bg-white/[0.07] animate-soft-pulse" />
+      ) : (
+        <p className="text-sm text-[var(--color-text-tertiary)]">{t('empty')}</p>
+      )}
     </Card>
   )
 }
 
-function RoadmapNode({ label, value, color, align = 'start' }: { label: string; value: string; color: string; align?: 'start' | 'end' }) {
+function RoadmapNode({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className={`flex flex-col min-w-0 lg:flex-1 items-start text-start ${align === 'end' ? 'lg:items-end lg:text-end' : ''}`}>
-      <div className="w-3 h-3 rounded-full mb-2 shrink-0" style={{ backgroundColor: color, boxShadow: `0 0 8px 0 ${color}` }} />
-      <p className="text-[10px] uppercase tracking-wide text-[var(--color-text-tertiary)]">{label}</p>
-      <p className="text-sm text-white mt-0.5 lg:line-clamp-2">{value}</p>
+    <div className="flex lg:flex-col gap-3 lg:gap-2 min-w-0 lg:flex-1">
+      <span
+        aria-hidden
+        className="w-6 h-6 shrink-0 rounded-full border-2 bg-[var(--color-bg-base)] flex items-center justify-center"
+        style={{ borderColor: color, boxShadow: `0 0 10px 0 ${color}` }}
+      >
+        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+      </span>
+      <div className="min-w-0">
+        <p className="text-[10px] uppercase tracking-wider" style={{ color }}>
+          {label}
+        </p>
+        <p className="text-sm text-white mt-0.5 lg:line-clamp-2">{value}</p>
+      </div>
     </div>
   )
 }

@@ -137,7 +137,7 @@ function OptionCard({
   }
 
   return (
-    <div className={`rounded-2xl border p-4 space-y-3 transition-all duration-300 ${
+    <div className={`rounded-2xl border p-4 space-y-3 transition-all duration-(--motion-calm) ${
       option.approved
         ? 'bg-purple-900/20 border-purple-600/50'
         : 'bg-white/5 border-white/15'

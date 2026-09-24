@@ -12,7 +12,7 @@ export default function Chip({ label, selected, onClick, aiSuggested }: ChipProp
     <button
       onClick={onClick}
       className={`
-        flex-shrink-0 px-3 py-1.5 rounded-full text-sm border transition-all duration-150
+        flex-shrink-0 px-3 py-1.5 rounded-full text-sm border transition-all
         ${selected
           ? 'bg-purple-600 border-purple-500 text-white'
           : aiSuggested

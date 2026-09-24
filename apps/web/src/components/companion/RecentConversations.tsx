@@ -33,6 +33,9 @@ interface Props {
  * full width — side by side, the timestamp's shrink-0 was squeezing titles
  * down to a few words in the narrow right column.
  */
+// Matches --motion-calm (320ms), the row-collapse transition below.
+const LEAVE_MS = 320
+
 export default function RecentConversations({ activeSessionId, onSelect, onCreated, onDeleted, className }: Props) {
   const locale = useLocale()
   const t = useTranslations('Companion.recentConversations')
@@ -42,6 +45,8 @@ export default function RecentConversations({ activeSessionId, onSelect, onCreat
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState(false)
+  // A just-deleted row collapses out before it's removed (docs/MOTION.md).
+  const [leavingId, setLeavingId] = useState<string | null>(null)
 
   useEffect(() => {
     getCompanionConversations()
@@ -72,9 +77,16 @@ export default function RecentConversations({ activeSessionId, onSelect, onCreat
     try {
       await deleteCompanionConversation(sessionId)
       const remaining = conversations.filter((c) => c.sessionId !== sessionId)
-      setConversations(remaining)
-      setConfirmingId(null)
-      onDeleted(sessionId, remaining[0]?.sessionId ?? null)
+      setLeavingId(sessionId) // the confirm row stays up while it collapses
+      // Let the row fade and the list close up first, THEN tell the page:
+      // switching threads changes activeSessionId, whose refetch above would
+      // otherwise pull the row out mid-animation.
+      window.setTimeout(() => {
+        setConversations(remaining)
+        setLeavingId(null)
+        setConfirmingId(null)
+        onDeleted(sessionId, remaining[0]?.sessionId ?? null)
+      }, LEAVE_MS)
     } catch {
       setDeleteError(true)
     } finally {
@@ -104,61 +116,75 @@ export default function RecentConversations({ activeSessionId, onSelect, onCreat
           {conversations.slice(0, 10).map((c) => {
             const title = c.title ?? t('untitled')
             const active = c.sessionId === activeSessionId
-
-            if (confirmingId === c.sessionId) {
-              return (
-                <li key={c.sessionId} className="rounded-xl bg-white/5 px-2 py-2">
-                  <p className="text-xs text-white/80 mb-2">{t('confirmDelete')}</p>
-                  {deleteError && <p className="text-xs text-red-300 mb-2">{t('deleteFailed')}</p>}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleDelete(c.sessionId)}
-                      disabled={deletingId === c.sessionId}
-                      className="text-xs px-3 py-1 rounded-full bg-red-500/80 hover:bg-red-500 text-white disabled:opacity-50"
-                    >
-                      {t('confirm')}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setConfirmingId(null)
-                        setDeleteError(false)
-                      }}
-                      className="text-xs px-3 py-1 rounded-full bg-white/10 hover:bg-white/15 text-white/80"
-                    >
-                      {t('cancel')}
-                    </button>
-                  </div>
-                </li>
-              )
-            }
+            // Row collapse on delete: grid rows 1fr → 0fr closes the gap
+            // smoothly. Both states (row / inline confirm) share this one
+            // wrapper so the collapse always starts from the height that's
+            // actually showing. A height change — the one documented
+            // exception to transform/opacity (MOTION.md): one small row,
+            // once. Instant under reduced motion.
+            const leaving = leavingId === c.sessionId
 
             return (
               <li
                 key={c.sessionId}
-                className={`group flex items-center gap-1 rounded-xl transition-colors ${active ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                className={`grid transition-[grid-template-rows,opacity] duration-(--motion-calm) motion-reduce:transition-none ${
+                  leaving ? 'grid-rows-[0fr] opacity-0 pointer-events-none' : 'grid-rows-[1fr] opacity-100'
+                }`}
+                aria-hidden={leaving || undefined}
               >
-                <button
-                  onClick={() => onSelect(c.sessionId)}
-                  aria-label={`${t('open')}: ${title}`}
-                  aria-current={active ? 'true' : undefined}
-                  className="flex-1 min-w-0 text-start px-2 py-2"
-                >
-                  <p className="text-sm text-white/85 truncate" title={title}>{title}</p>
-                  <p className="text-xs text-[var(--color-text-tertiary)]">{timeAgo(c.lastMessageAt, locale)}</p>
-                </button>
-                <button
-                  onClick={() => {
-                    setConfirmingId(c.sessionId)
-                    setDeleteError(false)
-                  }}
-                  aria-label={`${t('delete')}: ${title}`}
-                  // Hidden-until-hover only where hover actually exists (a
-                  // mouse). It used to key on `lg:` (screen width), which hid
-                  // it on iPads/touch laptops ≥1024px with no way to reveal it.
-                  className="shrink-0 p-2.5 [@media(hover:hover)_and_(pointer:fine)]:p-2 rounded-lg text-white/45 hover:text-red-300 hover:bg-white/5 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 transition-opacity"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {confirmingId === c.sessionId ? (
+                  <div className="min-h-0 overflow-hidden rounded-xl bg-white/5">
+                    <div className="px-2 py-2">
+                      <p className="text-xs text-white/80 mb-2">{t('confirmDelete')}</p>
+                      {deleteError && <p className="text-xs text-red-300 mb-2">{t('deleteFailed')}</p>}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleDelete(c.sessionId)}
+                          disabled={deletingId === c.sessionId || leaving}
+                          className="text-xs px-3 py-1 rounded-full bg-red-500/80 hover:bg-red-500 text-white disabled:opacity-50"
+                        >
+                          {t('confirm')}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setConfirmingId(null)
+                            setDeleteError(false)
+                          }}
+                          className="text-xs px-3 py-1 rounded-full bg-white/10 hover:bg-white/15 text-white/80"
+                        >
+                          {t('cancel')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className={`min-h-0 overflow-hidden group flex items-center gap-1 rounded-xl transition-colors ${active ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                  >
+                    <button
+                      onClick={() => onSelect(c.sessionId)}
+                      aria-label={`${t('open')}: ${title}`}
+                      aria-current={active ? 'true' : undefined}
+                      className="flex-1 min-w-0 text-start px-2 py-2"
+                    >
+                      <p className="text-sm text-white/85 truncate" title={title}>{title}</p>
+                      <p className="text-xs text-[var(--color-text-tertiary)]">{timeAgo(c.lastMessageAt, locale)}</p>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setConfirmingId(c.sessionId)
+                        setDeleteError(false)
+                      }}
+                      aria-label={`${t('delete')}: ${title}`}
+                      // Hidden-until-hover only where hover actually exists (a
+                      // mouse). It used to key on `lg:` (screen width), which hid
+                      // it on iPads/touch laptops ≥1024px with no way to reveal it.
+                      className="shrink-0 p-2.5 [@media(hover:hover)_and_(pointer:fine)]:p-2 rounded-lg text-white/45 hover:text-red-300 hover:bg-white/5 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 transition-opacity"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </li>
             )
           })}

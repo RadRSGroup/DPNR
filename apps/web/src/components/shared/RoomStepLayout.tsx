@@ -9,6 +9,12 @@ import Sidebar from '@/components/layout/Sidebar'
 // time budget — see the history in decision/StepShell.tsx (Session 8/22).
 const STOPPING_CUE_FRACTION = 0.8
 
+// Last step number shown per room, so a newly mounted step knows which way
+// the person travelled (docs/MOTION.md). Each step is its own component, so
+// this layout remounts on every step change and can't compare props.
+// Module scope on purpose: it only has to outlive one step's unmount.
+const lastStepShown: Record<string, number> = {}
+
 export interface RoomStepLayoutProps {
   /** Shown in the top bar, e.g. "Mirror Room". */
   roomLabel: string
@@ -59,6 +65,17 @@ export default function RoomStepLayout({
   const [infoOpen, setInfoOpen] = useState(false)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [stoppingCueDismissed, setStoppingCueDismissed] = useState(false)
+  // Read once per mount (stable across Strict Mode's double render; the
+  // effect below records the step only after it's committed).
+  const [direction] = useState<'forward' | 'back' | 'none'>(() => {
+    const last = lastStepShown[roomLabel]
+    if (last === undefined || last === step) return 'none'
+    return step > last ? 'forward' : 'back'
+  })
+
+  useEffect(() => {
+    lastStepShown[roomLabel] = step
+  }, [roomLabel, step])
 
   useEffect(() => {
     const interval = setInterval(() => setElapsedSeconds((s) => s + 1), 1000)
@@ -115,7 +132,9 @@ export default function RoomStepLayout({
             {Array.from({ length: totalSteps }).map((_, i) => (
               <div
                 key={i}
-                className={`h-1.5 rounded-full transition-all duration-500 ${
+                className={`h-1.5 rounded-full transition-all duration-(--motion-slow) origin-left rtl:origin-right ${
+                  direction === 'forward' && i + 1 === step ? 'animate-journey-fill ' : ''
+                }${
                   i + 1 < step
                     ? 'bg-[var(--color-violet-400)] w-5'
                     : i + 1 === step
@@ -144,12 +163,21 @@ export default function RoomStepLayout({
               return (
                 <li key={n} className="flex-1 flex flex-col items-center text-center relative min-w-0">
                   {n < totalSteps && (
-                    <span
-                      aria-hidden
-                      className={`absolute top-5 start-[calc(50%+1.5rem)] end-[calc(-50%+1.5rem)] h-px ${
-                        n < step ? 'bg-[var(--color-violet-400)]' : 'border-t border-dashed border-white/15'
-                      }`}
-                    />
+                    <>
+                      {/* The segment just completed draws in over its dashed track. */}
+                      {direction === 'forward' && n === step - 1 && (
+                        <span
+                          aria-hidden
+                          className="absolute top-5 start-[calc(50%+1.5rem)] end-[calc(-50%+1.5rem)] h-px border-t border-dashed border-white/15"
+                        />
+                      )}
+                      <span
+                        aria-hidden
+                        className={`absolute top-5 start-[calc(50%+1.5rem)] end-[calc(-50%+1.5rem)] h-px ${
+                          n < step ? 'bg-[var(--color-violet-400)]' : 'border-t border-dashed border-white/15'
+                        } ${direction === 'forward' && n === step - 1 ? 'origin-left rtl:origin-right animate-journey-fill' : ''}`}
+                      />
+                    </>
                   )}
                   <span
                     aria-current={state === 'current' ? 'step' : undefined}
@@ -174,7 +202,12 @@ export default function RoomStepLayout({
           {/* Body: step card + (desktop) side column */}
           <div className="flex-1 min-h-0 flex flex-col lg:flex-none lg:grid lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_340px] lg:gap-8 lg:items-start lg:px-10 lg:pb-10">
             <div className="flex-1 min-h-0 flex flex-col lg:min-h-[520px] lg:rounded-3xl lg:border lg:border-white/12 lg:bg-white/[0.04] lg:backdrop-blur-xl lg:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_20px_40px_-20px_rgba(0,0,0,0.6)] lg:p-8">
-              <div className="scrollbar-glass flex-1 overflow-y-auto flex flex-col px-5 pb-4 lg:px-0 lg:overflow-visible fade-up">
+              {/* Only the content moves, never the glass card around it (MOTION.md). */}
+              <div
+                className={`scrollbar-glass flex-1 overflow-y-auto flex flex-col px-5 pb-4 lg:px-0 lg:overflow-visible ${
+                  direction === 'back' ? 'animate-step-in-back' : direction === 'forward' ? 'animate-step-in-forward' : 'animate-settle-in'
+                }`}
+              >
                 {children}
               </div>
 

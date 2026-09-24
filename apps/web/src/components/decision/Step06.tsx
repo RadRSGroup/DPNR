@@ -6,6 +6,7 @@ import Chip from '@/components/ui/Chip'
 import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { DecisionOption, PRESET_TAGS } from '@/lib/types'
+import AiThinking from '@/components/shared/AiThinking'
 
 interface Step06Props {
   decisionTitle: string
@@ -167,11 +168,7 @@ export default function Step06({ decisionTitle, optionA, optionB, initialValuesA
               onClick={() => toggle(item)}
             />
           ))}
-          {loading && (
-            <p className="text-purple-400/50 text-xs w-full text-center animate-pulse pt-2">
-              Loading AI suggestions...
-            </p>
-          )}
+          {loading && <AiThinking shape="chips" count={5} label="Finding suggestions…" className="pt-2" />}
         </div>
 
         {/* Custom input */}

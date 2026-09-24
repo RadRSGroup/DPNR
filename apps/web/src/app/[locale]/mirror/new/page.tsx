@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
 import MirrorRoomLanding from '@/components/mirror/MirrorRoomLanding'
+import { DEFAULT_OPENING, type MirrorOpening } from '@/components/mirror/openings'
 import Step01Situation from '@/components/mirror/Step01Situation'
 import Step02AutomaticReaction from '@/components/mirror/Step02AutomaticReaction'
 import Step03Pattern from '@/components/mirror/Step03Pattern'
@@ -66,6 +67,7 @@ function NewMirrorContent() {
   const sourceTopicTitle = params.get('topicTitle')
 
   const [showWelcome, setShowWelcome] = useState(!resumeId)
+  const [opening, setOpening] = useState<MirrorOpening>(DEFAULT_OPENING)
   const [completed, setCompleted] = useState(false)
   const [userName, setUserName] = useState('')
   const [state, setState] = useState<LocalMirrorState>(INITIAL_STATE)
@@ -301,7 +303,16 @@ function NewMirrorContent() {
     }
 
     if (showWelcome) {
-      return <MirrorRoomLanding userName={userName} onStart={() => setShowWelcome(false)} sourceTopicTitle={sourceTopicTitle} />
+      return (
+        <MirrorRoomLanding
+          userName={userName}
+          onStart={(o) => {
+            setOpening(o)
+            setShowWelcome(false)
+          }}
+          sourceTopicTitle={sourceTopicTitle}
+        />
+      )
     }
 
     switch (currentStepId) {
@@ -310,6 +321,7 @@ function NewMirrorContent() {
           <Step01Situation
             initialSituation={state.situation}
             initialTrigger={state.trigger}
+            opening={opening}
             onComplete={completeStep01}
             onBack={goBack}
           />
@@ -370,6 +382,7 @@ function NewMirrorContent() {
           <Step01Situation
             initialSituation={state.situation}
             initialTrigger={state.trigger}
+            opening={opening}
             onComplete={completeStep01}
             onBack={goBack}
           />

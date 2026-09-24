@@ -29,7 +29,7 @@ export default function MomentScreen({ onNext, onBack }: Props) {
       </div>
 
       {/* Content */}
-      <div className="scrollbar-glass flex-1 overflow-y-auto flex flex-col items-center justify-center px-6 pb-8 lg:px-12 lg:pb-10 fade-up">
+      <div className="scrollbar-glass flex-1 overflow-y-auto flex flex-col items-center justify-center px-6 pb-8 lg:px-12 lg:pb-10 animate-settle-in">
         <div className="w-full max-w-md text-center space-y-6">
           {/* The Decision Room hero art (same as the landing), as a calm focal point before step 1. */}
           <div className="relative mx-auto w-40 h-40 lg:w-56 lg:h-56 rounded-full overflow-hidden border border-white/15 shadow-[0_0_60px_rgba(139,92,246,0.35)]">

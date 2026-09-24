@@ -5,6 +5,8 @@ import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { DecisionOption } from '@/lib/types'
+import AiThinking from '@/components/shared/AiThinking'
+import { staggerClass } from '@/lib/motion'
 interface Step07Props {
   decisionTitle: string
   optionA: DecisionOption
@@ -131,16 +133,13 @@ export default function Step07({
 
           <div className="flex-1 space-y-2 no-scrollbar overflow-y-auto">
             {loading && statements.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-32 space-y-2">
-                <div className="w-8 h-8 border-2 border-purple-500/40 border-t-purple-500 rounded-full animate-spin" />
-                <p className="text-purple-400/50 text-xs animate-pulse">Imagining your future...</p>
-              </div>
+              <AiThinking shape="cards" count={3} label="Imagining your future…" />
             ) : (
-              statements.map(s => (
+              statements.map((s, i) => (
                 <button
                   key={s}
                   onClick={() => toggleStatement(s)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all animate-settle-in ${staggerClass(i)} ${
                     selected.includes(s)
                       ? 'bg-purple-900/20 border-purple-600/50'
                       : 'bg-white/5 border-white/10 hover:bg-white/8'

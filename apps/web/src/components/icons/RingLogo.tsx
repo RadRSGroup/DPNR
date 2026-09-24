@@ -1,5 +1,10 @@
+import { useId } from 'react'
+
 export default function RingLogo({ className = 'w-8 h-8' }: { className?: string }) {
-  const gradientId = 'dpnr-ring-gradient'
+  // Unique per instance: with a shared id every ring on the page used the
+  // first one's gradient, which disappears if that SVG is hidden (e.g. the
+  // desktop sidebar on mobile). Stripped to characters safe inside url(#…).
+  const gradientId = `dpnr-ring-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
   return (
     <svg viewBox="0 0 32 32" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>

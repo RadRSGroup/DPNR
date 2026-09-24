@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint && node scripts/check-rtl-classes.mjs && node scripts/check-i18n-parity.mjs",
+    "lint": "eslint && node scripts/check-rtl-classes.mjs && node scripts/check-i18n-parity.mjs && node scripts/check-motion.mjs",
     "test": "vitest run"
   },
   "dependencies": {

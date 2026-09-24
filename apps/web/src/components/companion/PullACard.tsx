@@ -2,8 +2,8 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
-import { Sparkle } from 'lucide-react'
 import DirectiveCard from './DirectiveCard'
+import RingLogo from '@/components/icons/RingLogo'
 import { pullCompanionCard } from '@/lib/api/v1-client'
 import { cardImage, CARD_DEFAULT_IMAGE } from '@/lib/library/topic-images'
 import type { PullCardResponse } from '@dpnr/shared-types'
@@ -30,25 +30,49 @@ import type { PullCardResponse } from '@dpnr/shared-types'
  * card) rather than a second navigation UI — it only ever arrives as
  * `open_room` or `null` for this endpoint (companion/pull-card.ts's own
  * resolver), which `DirectiveCard` already renders correctly.
+ *
+ * Motion (Session 69, docs/MOTION.md): pulling looks like drawing from a
+ * deck. Two card backs always peek out behind the face; on pull the face
+ * flips away, the backs shuffle past each other for at least SHUFFLE_MS
+ * (longer if the request is slower), then the new card is dealt face-up.
+ * Under reduced motion there's no shuffle and the new card just fades in.
  */
+const SHUFFLE_MS = 1100
 export default function PullACard() {
   const t = useTranslations('Companion.pullACard')
   const [card, setCard] = useState<PullCardResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
+  // Bumped on every finished pull so the deal animation replays even when
+  // the same card comes back.
+  const [dealCount, setDealCount] = useState(0)
+  const [reduced, setReduced] = useState(false)
 
   async function pull() {
     if (loading) return
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    setReduced(reduceMotion)
     setLoading(true)
     setError(false)
-    try {
-      setCard(await pullCompanionCard())
-    } catch {
-      setError(true)
-    } finally {
-      setLoading(false)
-    }
+    const [result] = await Promise.allSettled([
+      pullCompanionCard(),
+      new Promise((r) => setTimeout(r, reduceMotion ? 0 : SHUFFLE_MS)),
+    ])
+    if (result.status === 'fulfilled') setCard(result.value)
+    else setError(true)
+    setLoading(false)
+    setDealCount((n) => n + 1)
   }
+
+  const faceAnimation = loading
+    ? reduced
+      ? 'opacity-0 transition-opacity'
+      : 'animate-card-flip-out'
+    : dealCount > 0
+      ? reduced
+        ? 'animate-fade-in'
+        : 'animate-card-deal'
+      : ''
 
   const text = card ? card.text : error ? t('error') : t('prompt')
 
@@ -60,12 +84,18 @@ export default function PullACard() {
   // end), and the card's height is capped to the viewport — past the cap it
   // simply goes squarer, which is closer to the designer's reference anyway.
   return (
-    <section aria-label={t('heading')} className="@container">
-      <div
-        className="relative aspect-[4/3] lg:aspect-[4/5] lg:max-h-[58vh] rounded-3xl overflow-hidden border border-white/40 shadow-[0_0_0_1px_rgba(167,139,250,0.35),0_0_28px_2px_rgba(139,92,246,0.45)]"
-      >
-        {/* Keyed so each new card fades in rather than swapping abruptly */}
-        <div key={card?.cardId ?? 'empty'} className="fade-up absolute inset-0">
+    // overflow-x-clip: shuffling backs can poke a little past the card's
+    // sides; clip them here instead of scrolling the parent column sideways.
+    <section aria-label={t('heading')} className="@container overflow-x-clip">
+      <div className="relative aspect-[4/3] lg:aspect-[4/5] lg:max-h-[58vh] [perspective:1200px]" aria-busy={loading}>
+        {/* The deck: two card backs behind the face — peeking out at rest, shuffling while pulling. */}
+        <CardBack className={loading && !reduced ? 'animate-card-shuffle-a' : 'translate-y-2 rotate-2 scale-[0.97]'} />
+        <CardBack className={loading && !reduced ? 'animate-card-shuffle-b stagger-2' : 'translate-y-1 -rotate-1 scale-[0.985]'} />
+
+        <div
+          key={dealCount}
+          className={`absolute inset-0 z-[4] rounded-3xl overflow-hidden border border-white/40 shadow-[0_0_0_1px_rgba(167,139,250,0.35),0_0_28px_2px_rgba(139,92,246,0.45)] ${faceAnimation}`}
+        >
           <Image
             src={card ? cardImage(card.topic) : CARD_DEFAULT_IMAGE}
             alt=""
@@ -100,16 +130,38 @@ export default function PullACard() {
         </div>
       </div>
 
-      {card?.directive && <DirectiveCard directive={card.directive} />}
+      {!loading && card?.directive && <DirectiveCard directive={card.directive} />}
 
       <button
         onClick={pull}
         disabled={loading}
         className="mt-4 w-full inline-flex items-center justify-center gap-3 rounded-3xl border border-white/25 bg-gradient-to-b from-[var(--color-violet-500)] to-[var(--color-violet-600)] shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_0_24px_rgba(139,92,246,0.55)] hover:brightness-110 disabled:opacity-60 px-4 py-3.5 @xl:py-4 text-base lg:text-lg @xl:text-xl text-white transition-all"
       >
-        <Sparkle className="w-5 h-5 @xl:w-6 @xl:h-6" strokeWidth={1.5} />
         {loading ? t('pulling') : card ? t('pullAgain') : t('pullFirst')}
       </button>
     </section>
+  )
+}
+
+/** Back of a card in the deck — a stylized DPNR mark: the gradient ring, glowing, with faint echo rings and the wordmark. */
+function CardBack({ className }: { className: string }) {
+  return (
+    <div
+      aria-hidden
+      className={`absolute inset-0 z-[1] rounded-3xl overflow-hidden border border-white/25 bg-[radial-gradient(ellipse_at_center,var(--color-violet-800)_0%,var(--color-violet-950)_75%)] shadow-[0_0_20px_rgba(139,92,246,0.35)] transition-transform duration-(--motion-calm) ${className}`}
+    >
+      <div className="absolute inset-3 rounded-2xl border border-white/10" />
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div className="relative w-[42%] aspect-square flex items-center justify-center">
+          <span className="absolute inset-[-18%] rounded-full border border-white/[0.06]" />
+          <span className="absolute inset-[-40%] rounded-full border border-white/[0.04]" />
+          <span className="absolute inset-[12%] rounded-full bg-[radial-gradient(circle,rgba(236,72,153,0.28)_0%,transparent_70%)] blur-md" />
+          <RingLogo className="relative w-full h-full drop-shadow-[0_0_10px_rgba(236,72,153,0.55)]" />
+        </div>
+        <p className="mt-[clamp(0.75rem,6cqw,2rem)] font-display text-white/85 tracking-[0.45em] ps-[0.45em] text-[clamp(0.85rem,5cqw,1.6rem)]">
+          DPNR
+        </p>
+      </div>
+    </div>
   )
 }

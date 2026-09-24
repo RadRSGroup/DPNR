@@ -88,7 +88,7 @@ export default function Step02AutomaticReaction({
           </div>
 
           {reflection ? (
-            <div className="bg-purple-900/20 border border-purple-700/30 rounded-2xl px-4 py-3 space-y-1 fade-up">
+            <div className="bg-purple-900/20 border border-purple-700/30 rounded-2xl px-4 py-3 space-y-1 animate-settle-in">
               <p className="text-purple-300 text-xs uppercase tracking-wide">Reflection</p>
               <p className="text-white/80 text-sm italic">&quot;{reflection}&quot;</p>
             </div>

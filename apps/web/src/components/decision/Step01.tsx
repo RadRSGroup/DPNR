@@ -51,7 +51,7 @@ export default function Step01({ initialTitle = '', initialSubtitle, onRefine, o
 
           {/* AI subtitle */}
           {subtitle ? (
-            <div className="bg-purple-900/20 border border-purple-700/30 rounded-2xl px-4 py-3 space-y-1 fade-up">
+            <div className="bg-purple-900/20 border border-purple-700/30 rounded-2xl px-4 py-3 space-y-1 animate-settle-in">
               <p className="text-purple-300 text-xs uppercase tracking-wide">AI Frame</p>
               <p className="text-white/80 text-sm italic">&quot;{subtitle}&quot;</p>
               <button

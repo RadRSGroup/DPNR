@@ -308,21 +308,70 @@
       "pictureForming": "התמונה מתגבשת…",
       "stillLearning": "עדיין לומדים את החלק הזה בכם",
       "alignmentScore": "ציון ההתאמה",
-      "phaseOf": "אתם נמצאים בשלב של"
+      "phaseOf": "אתם נמצאים בשלב של",
+      "viewEvolution": "להתפתחות שלי",
+      "info": "על האני הפנימי",
+      "phaseEmpty": "השלב שלכם יתגבש אחרי המפגש הראשון."
     },
     "roadmap": {
       "label": "מפת דרכים: {state}",
       "states": { "active": "פעילה", "evolving": "מתפתחת", "paused": "מושהית", "archived": "בארכיון" },
       "pause": "השהיה",
       "resume": "המשך",
-      "archive": "העברה לארכיון"
+      "archive": "העברה לארכיון",
+      "title": "מפת הדרכים שלי",
+      "empty": "מפת הדרכים שלכם תיווצר אחרי המפגש הראשון בחדר ההחלטות או בחדר המראה.",
+      "currentFocus": "מיקוד נוכחי",
+      "theme": "נושא",
+      "direction": "כיוון"
     },
-    "lifeDomains": { "title": "תחומי חיים", "subtitle": "מה חקרתם לאחרונה" },
+    "lifeDomains": {
+      "title": "תחומי חיים",
+      "subtitle": "מה חקרתם לאחרונה",
+      "currentArea": "התחום הנוכחי",
+      "empty": "התחומים יתמלאו ככל שתאשרו את מה ש-DPNR מבחין בו.",
+      "scrollPrev": "התחומים הקודמים",
+      "scrollNext": "תחומים נוספים",
+      "notYet": "טרם נחקר",
+      "labels": {
+        "self_inner_world": "עצמי ועולם פנימי",
+        "relationships": "מערכות יחסים",
+        "career_purpose": "קריירה ותכלית",
+        "health_body": "בריאות וגוף",
+        "money_abundance": "כסף ושפע",
+        "creativity_expression": "יצירתיות וביטוי",
+        "spirituality": "רוחניות"
+      }
+    },
     "proposal": { "title": "שינוי ששווה לתת לו שם?", "updateRoadmap": "עדכון מפת הדרכים שלי", "notNow": "לא עכשיו" },
     "credits": { "label": "קרדיטים", "runningLowUpgrade": "היתרה נמוכה · שדרוג" },
-    "patterns": { "title": "מסלול הדפוסים", "subtitle": "מה ש-DPNR הבחין בו, לפי רמת ביטחון" },
-    "archetypes": { "title": "הארכיטיפים המובילים", "subtitle": "האנרגיות שבאות לידי ביטוי אצלכם" },
-    "evolution": { "title": "ההתפתחות שלי", "lastDays": "{count, plural, one {היום האחרון} other {# הימים האחרונים}}" },
+    "patterns": {
+      "title": "מסלול הדפוסים",
+      "subtitle": "לראות מה חוזר על עצמו",
+      "empty": "דפוסים יופיעו כאן אחרי שתאשרו את אלה ש-DPNR מזהה.",
+      "mainTheme": "הנושא המרכזי: {theme}"
+    },
+    "archetypes": {
+      "title": "הארכיטיפים המובילים",
+      "subtitle": "האנרגיות המרכזיות שלכם",
+      "footer": "האנרגיות האלה מעצבות את הדרך שבה אתם מופיעים בעולם.",
+      "empty": "הארכיטיפים שלכם יתבהרו ככל ש-DPNR יכיר אתכם.",
+      "names": {
+        "healer": "המרפא",
+        "seeker": "המחפש",
+        "visionary": "בעל החזון",
+        "protector": "המגן"
+      }
+    },
+    "evolution": {
+      "title": "ההתפתחות שלי",
+      "lastDays": "{count, plural, one {היום האחרון} other {# הימים האחרונים}}",
+      "subtitle": "הדרך שלכם נפרשת",
+      "range": "30 ימים",
+      "today": "היום",
+      "footer": "מבוסס על ציון ההתאמה היומי שלכם.",
+      "empty": "הקו שלכם יתחיל אחרי כמה ימים של ציון התאמה."
+    },
     "explore": {
       "library": { "title": "ספרייה", "subtitle": "קראו משהו" },
       "growth": { "title": "מעקב צמיחה", "subtitle": "מה משתנה" },
@@ -330,7 +379,20 @@
     },
     "suggestedNextStep": "הצעד הבא המומלץ",
     "cueLabels": { "continuation": "בהמשך ל...", "commitment": "התחייבות קרובה", "worthExploring": "שווה לבדוק" },
-    "roomLink": { "decision": "חדר ההחלטות", "mirror": "חדר המראה", "library": "תוכן ולמידה" }
+    "roomLink": { "decision": "חדר ההחלטות", "mirror": "חדר המראה", "library": "תוכן ולמידה" },
+    "insight": {
+      "title": "התובנה של היום",
+      "empty": "התובנה הראשונה תגיע אחרי שיחה או שתיים.",
+      "resonates": "זה מדבר אליי"
+    },
+    "suggested": {
+      "defaultTitle": "הצ'אט הראשי",
+      "defaultSubtitle": "להתחיל בשיחה"
+    },
+    "dailyCard": {
+      "title": "כרטיס יומי",
+      "subtitle": "תזכורת עדינה בשבילכם"
+    }
   },
   "CheckInModal": {
     "title": "נשימה וצ'ק-אין",
@@ -340,6 +402,9 @@
     "holdLabel": "עצרו…",
     "breatheOutLabel": "נשפו…",
     "doneLabel": "יפה מאוד.",
+    "breathCount": "נשימה {current} מתוך {total}",
+    "pause": "השהיה",
+    "resume": "המשך",
     "moodPrompt": "איך אתם מרגישים כרגע?",
     "moodThanks": "תודה שסיפרתם.",
     "skip": "דלגו לעכשיו",
@@ -560,6 +625,7 @@
     }
   },
   "Companion": {
+    "replying": "התגובה בדרך…",
     "loading": "טוענים…",
     "greeting": {
       "morning": "בוקר טוב",

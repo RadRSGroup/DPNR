@@ -25,6 +25,10 @@ interface ChatMessage {
   createdAt: string
   directive?: CompanionDirective | null
   failed?: boolean
+  // Added during this visit (sent, replied, errored) rather than loaded with
+  // the thread — only these get an entrance animation (docs/MOTION.md: only
+  // new things animate; opening a conversation doesn't replay 40 bubbles).
+  fresh?: boolean
   // True once the server has stored this message — `createdAt` is then its
   // real sort key, which is what edit & resend needs. Local-only bubbles
   // (attachment notice, onboarding answer, failures) are never editable.
@@ -98,6 +102,12 @@ function CompanionContent() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  // Bumped when a different conversation is shown; keys the thread so it
+  // fades in as a whole (0 = first load, no fade).
+  const [threadKey, setThreadKey] = useState(0)
+  // Next scroll-to-bottom: instant after loading/switching a thread, smooth
+  // only when a new message arrives (and never smooth under reduced motion).
+  const nextScrollInstant = useRef(true)
   const [firstName, setFirstName] = useState('')
   // Main Chat UX Update (docs/MAIN_CHAT_UX_UPDATE_PLAN.md §3.1) — 'digital_twin'
   // matches the schema's own default, so this is the correct value to render
@@ -191,6 +201,7 @@ function CompanionContent() {
         setFirstName(namePart.charAt(0).toUpperCase() + namePart.slice(1))
 
         const context = await getCompanionContext()
+        nextScrollInstant.current = true
         setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt, persisted: true })))
         setSessionId(context.sessionId)
         setReturnGreeting(context.greeting)
@@ -216,8 +227,11 @@ function CompanionContent() {
   }, [])
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messages, sending])
+    const instant =
+      nextScrollInstant.current || window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    nextScrollInstant.current = false
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: instant ? 'auto' : 'smooth' })
+  }, [messages, sending, threadKey])
 
   /** Discrete conversations — switch to an existing one from Recent Conversations. */
   async function handleSelectConversation(targetSessionId: string) {
@@ -225,6 +239,8 @@ function CompanionContent() {
     setLoading(true)
     try {
       const context = await getCompanionContext(targetSessionId)
+      nextScrollInstant.current = true
+      setThreadKey((k) => k + 1)
       setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt, persisted: true })))
       setSessionId(context.sessionId)
       setReturnGreeting(context.greeting)
@@ -237,6 +253,8 @@ function CompanionContent() {
 
   /** Discrete conversations — "New conversation" already created the empty session server-side; just reset local state to it. */
   function handleNewConversation(newSessionId: string) {
+    nextScrollInstant.current = true
+    setThreadKey((k) => k + 1)
     setMessages([])
     setSessionId(newSessionId)
     setReturnGreeting(null) // a brand-new thread has nothing to welcome the person back to yet
@@ -269,7 +287,7 @@ function CompanionContent() {
     if (!text || sending) return
 
     setInput('')
-    setMessages((prev) => [...prev, { role: 'user', text, createdAt: new Date().toISOString() }])
+    setMessages((prev) => [...prev, { role: 'user', text, createdAt: new Date().toISOString(), fresh: true }])
 
     // An attachment never actually reaches Companion — no vision/multimodal
     // path exists server-side yet (§3.6) — disclosed locally rather than
@@ -282,6 +300,7 @@ function CompanionContent() {
           role: 'assistant',
           text: tc('attachmentNotSupported'),
           createdAt: new Date().toISOString(),
+          fresh: true,
         },
       ])
     }
@@ -304,7 +323,7 @@ function CompanionContent() {
       setSessionId(res.sessionId)
       setMessages((prev) => [
         ...markLastUserPersisted(prev, res.userMessageCreatedAt),
-        { role: 'assistant', text: res.reply, createdAt: res.replyCreatedAt ?? new Date().toISOString(), directive: res.directive, persisted: true },
+        { role: 'assistant', text: res.reply, createdAt: res.replyCreatedAt ?? new Date().toISOString(), directive: res.directive, persisted: true, fresh: true },
       ])
     } catch (err) {
       if (err instanceof ApiError && err.code === 'credits_exhausted') {
@@ -316,7 +335,7 @@ function CompanionContent() {
       } else {
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant', text: tc('sendError'), createdAt: new Date().toISOString(), failed: true },
+          { role: 'assistant', text: tc('sendError'), createdAt: new Date().toISOString(), failed: true, fresh: true },
         ])
       }
     } finally {
@@ -340,7 +359,7 @@ function CompanionContent() {
     const snapshot = messages
     setEditingIndex(null)
     setReturnGreeting(null)
-    setMessages([...messages.slice(0, index), { role: 'user', text, createdAt: new Date().toISOString() }])
+    setMessages([...messages.slice(0, index), { role: 'user', text, createdAt: new Date().toISOString(), fresh: true }])
     setSending(true)
     try {
       const res = await sendCompanionMessage({
@@ -351,7 +370,7 @@ function CompanionContent() {
       })
       setMessages((prev) => [
         ...markLastUserPersisted(prev, res.userMessageCreatedAt),
-        { role: 'assistant', text: res.reply, createdAt: res.replyCreatedAt ?? new Date().toISOString(), directive: res.directive, persisted: true },
+        { role: 'assistant', text: res.reply, createdAt: res.replyCreatedAt ?? new Date().toISOString(), directive: res.directive, persisted: true, fresh: true },
       ])
     } catch (err) {
       setMessages(snapshot)
@@ -557,7 +576,8 @@ function CompanionContent() {
               this page has no other fixed header providing that space. */}
           <div
             ref={scrollRef}
-            className={`scrollbar-glass flex-1 overflow-y-auto px-5 lg:px-0 pb-2 flex flex-col ${isLanding ? 'pt-2' : 'pt-14 lg:pt-2'} ${
+            key={threadKey}
+            className={`${threadKey > 0 ? 'animate-fade-in ' : ''}scrollbar-glass flex-1 overflow-y-auto px-5 lg:px-0 pb-2 flex flex-col ${isLanding ? 'pt-2' : 'pt-14 lg:pt-2'} ${
               !pageLoading && messages.length === 0 && !onboarding.active ? 'justify-center' : 'space-y-3'
             }`}
           >
@@ -664,7 +684,12 @@ function CompanionContent() {
             )}
 
             {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div
+                key={i}
+                className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} ${
+                  m.fresh ? (m.role === 'user' ? 'animate-settle-in-quick' : 'animate-settle-in') : ''
+                }`}
+              >
                 <div className={m.role === 'user' ? 'max-w-[85%] lg:max-w-[400px]' : 'max-w-[90%] lg:max-w-[480px]'}>
                   <div
                     className={
@@ -728,12 +753,13 @@ function CompanionContent() {
             ))}
 
             {sending && (
-              <div className="flex justify-start">
-                <div className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] rounded-2xl rounded-bl-md px-4 py-2.5">
-                  <span className="flex gap-1">
-                    <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                    <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                    <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" />
+              <div className="flex justify-start animate-fade-in" role="status" aria-label={tc('replying')}>
+                <div className="bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] rounded-2xl rounded-es-md px-4 py-3">
+                  {/* Soft opacity wave, not a bounce (docs/MOTION.md, user-approved). */}
+                  <span className="flex gap-1.5" aria-hidden="true">
+                    <span className="w-1.5 h-1.5 bg-white/70 rounded-full animate-soft-pulse stagger-0" />
+                    <span className="w-1.5 h-1.5 bg-white/70 rounded-full animate-soft-pulse stagger-1" />
+                    <span className="w-1.5 h-1.5 bg-white/70 rounded-full animate-soft-pulse stagger-2" />
                   </span>
                 </div>
               </div>

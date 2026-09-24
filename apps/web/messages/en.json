@@ -308,21 +308,70 @@
       "pictureForming": "Picture forming…",
       "stillLearning": "Still learning this part of you",
       "alignmentScore": "Alignment Score",
-      "phaseOf": "You're in a phase of"
+      "phaseOf": "You're in a phase of",
+      "viewEvolution": "View My Evolution",
+      "info": "About your InnerSelf",
+      "phaseEmpty": "Your phase takes shape after your first session."
     },
     "roadmap": {
       "label": "Roadmap: {state}",
       "states": { "active": "Active", "evolving": "Evolving", "paused": "Paused", "archived": "Archived" },
       "pause": "Pause",
       "resume": "Resume",
-      "archive": "Archive"
+      "archive": "Archive",
+      "title": "My Roadmap",
+      "empty": "Your roadmap forms after your first Decision or Mirror session.",
+      "currentFocus": "Current focus",
+      "theme": "Theme",
+      "direction": "Direction"
     },
-    "lifeDomains": { "title": "Life Domains", "subtitle": "What you've been exploring" },
+    "lifeDomains": {
+      "title": "Life Domains",
+      "subtitle": "What you've been exploring",
+      "currentArea": "Current area",
+      "empty": "These fill in as you confirm what DPNR notices about you.",
+      "scrollPrev": "Previous domains",
+      "scrollNext": "More domains",
+      "notYet": "Not explored yet",
+      "labels": {
+        "self_inner_world": "Self & Inner World",
+        "relationships": "Relationships",
+        "career_purpose": "Career & Purpose",
+        "health_body": "Health & Body",
+        "money_abundance": "Money & Abundance",
+        "creativity_expression": "Creativity & Expression",
+        "spirituality": "Spirituality"
+      }
+    },
     "proposal": { "title": "A shift worth naming?", "updateRoadmap": "Update my Roadmap", "notNow": "Not now" },
     "credits": { "label": "Credits", "runningLowUpgrade": "Running low · Upgrade" },
-    "patterns": { "title": "Patterns Track", "subtitle": "What DPNR has noticed, by confidence" },
-    "archetypes": { "title": "Leading Archetypes", "subtitle": "The energies that show up for you" },
-    "evolution": { "title": "My Evolution", "lastDays": "{count, plural, one {Last # day} other {Last # days}}" },
+    "patterns": {
+      "title": "Patterns Track",
+      "subtitle": "See what's repeating",
+      "empty": "Patterns show up here once you confirm the ones DPNR notices.",
+      "mainTheme": "Main theme: {theme}"
+    },
+    "archetypes": {
+      "title": "Leading Archetypes",
+      "subtitle": "Your core energies",
+      "footer": "These energies shape how you show up in the world.",
+      "empty": "Your archetypes emerge as DPNR gets to know you.",
+      "names": {
+        "healer": "Healer",
+        "seeker": "Seeker",
+        "visionary": "Visionary",
+        "protector": "Protector"
+      }
+    },
+    "evolution": {
+      "title": "My Evolution",
+      "lastDays": "{count, plural, one {Last # day} other {Last # days}}",
+      "subtitle": "Your path unfolds",
+      "range": "30 days",
+      "today": "Today",
+      "footer": "Based on your daily Alignment Score.",
+      "empty": "Your line begins once your Alignment Score has a few days of history."
+    },
     "explore": {
       "library": { "title": "Library", "subtitle": "Read something" },
       "growth": { "title": "Growth Tracker", "subtitle": "What's changing" },
@@ -330,7 +379,20 @@
     },
     "suggestedNextStep": "Suggested Next Step",
     "cueLabels": { "continuation": "Continuing on", "commitment": "Upcoming commitment", "worthExploring": "Worth exploring" },
-    "roomLink": { "decision": "Decision Room", "mirror": "Mirror Room", "library": "Content & Learning" }
+    "roomLink": { "decision": "Decision Room", "mirror": "Mirror Room", "library": "Content & Learning" },
+    "insight": {
+      "title": "Today's Insight",
+      "empty": "Your first insight arrives after a conversation or two.",
+      "resonates": "This resonates"
+    },
+    "suggested": {
+      "defaultTitle": "Main Chat",
+      "defaultSubtitle": "Start with a conversation"
+    },
+    "dailyCard": {
+      "title": "Daily Card",
+      "subtitle": "A gentle reminder for you"
+    }
   },
   "CheckInModal": {
     "title": "Breathe & Check In",
@@ -340,6 +402,9 @@
     "holdLabel": "Hold…",
     "breatheOutLabel": "Breathe out…",
     "doneLabel": "Nicely done.",
+    "breathCount": "Breath {current} of {total}",
+    "pause": "Pause",
+    "resume": "Resume",
     "moodPrompt": "How are you feeling right now?",
     "moodThanks": "Thanks for sharing.",
     "skip": "Skip for now",
@@ -560,6 +625,7 @@
     }
   },
   "Companion": {
+    "replying": "Reply on the way…",
     "loading": "Loading…",
     "greeting": {
       "morning": "Good morning",

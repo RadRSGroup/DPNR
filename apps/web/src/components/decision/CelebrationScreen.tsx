@@ -28,11 +28,12 @@ export default function CelebrationScreen({ userName, decisionTitle, onContinue 
   return (
     <RoomScreenFrame glows={['bg-[radial-gradient(ellipse_60%_55%_at_50%_45%,_rgba(167,139,250,0.22)_0%,_rgba(139,92,246,0.10)_50%,_transparent_80%)]']} className="items-center justify-center px-8">
 
-      <div className="flex flex-col items-center text-center space-y-8 fade-up">
+      <div className="flex flex-col items-center text-center space-y-8 animate-settle-in">
         {/* Glow orb */}
-        <div className="relative">
+        <div className="relative isolate">
           <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500/30 to-yellow-400/20 border border-purple-400/30 shadow-[0_0_60px_rgba(167,139,250,0.3)]" />
-          <div className="absolute inset-0 rounded-full animate-ping bg-purple-500/10" style={{ animationDuration: '2.5s' }} />
+          {/* A slow breathing glow — calm, not a celebration burst (docs/MOTION.md). */}
+          <div aria-hidden className="absolute -inset-6 -z-10 rounded-full bg-[radial-gradient(circle,_rgba(167,139,250,0.35)_0%,_transparent_70%)] blur-xl animate-soft-glow" />
         </div>
 
         {/* Heading */}

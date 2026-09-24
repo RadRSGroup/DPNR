@@ -12,7 +12,7 @@ export default function PrimaryButton({ label, onClick, disabled, loading, class
       onClick={onClick}
       disabled={disabled || loading}
       className={`
-        w-full py-4 rounded-2xl font-medium text-base transition-all duration-150
+        w-full py-4 rounded-2xl font-medium text-base transition-all
         ${disabled || loading
           ? 'bg-white/10 text-[var(--color-text-tertiary)] cursor-not-allowed'
           : 'bg-purple-600 hover:bg-purple-500 active:scale-[0.98] text-white shadow-lg shadow-purple-900/30'

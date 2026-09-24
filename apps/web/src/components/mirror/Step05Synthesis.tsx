@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import MirrorStepShell from './MirrorStepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI, RefineFn } from '@/lib/useAI'
+import AiThinking from '@/components/shared/AiThinking'
 
 interface Props {
   sessionTitle: string
@@ -40,16 +41,11 @@ export default function Step05Synthesis({ sessionTitle, initialSynthesis, onRefi
           </p>
 
           {loading && !synthesis && (
-            <div className="flex justify-center py-8">
-              <svg className="animate-spin h-6 w-6 text-purple-400" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-              </svg>
-            </div>
+            <AiThinking count={4} label="Reflecting on what you shared…" className="py-4" />
           )}
 
           {synthesis && (
-            <div className="bg-purple-900/20 border border-purple-700/30 rounded-2xl px-5 py-5 space-y-1 fade-up">
+            <div className="bg-purple-900/20 border border-purple-700/30 rounded-2xl px-5 py-5 space-y-1 animate-settle-in">
               <p className="text-purple-300 text-xs uppercase tracking-wide">Synthesis</p>
               <p className="text-white/85 text-sm italic leading-relaxed">&quot;{synthesis}&quot;</p>
             </div>
