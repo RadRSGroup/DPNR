@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import Sidebar from '@/components/layout/Sidebar'
+import { useRoomSessionClock } from '@/components/shared/RoomSessionClock'
 
 // "After sustained intensive reflection, offer to integrate, stop, or
 // continue later" (spec §6). Threshold is a fraction of the room's own
@@ -63,8 +64,9 @@ export default function RoomStepLayout({
 }: RoomStepLayoutProps) {
   const router = useRouter()
   const [infoOpen, setInfoOpen] = useState(false)
-  const [elapsedSeconds, setElapsedSeconds] = useState(0)
-  const [stoppingCueDismissed, setStoppingCueDismissed] = useState(false)
+  // The room page's clock (RoomSessionClock), so the countdown and the
+  // stopping cue carry across steps instead of restarting on each remount.
+  const { elapsedSeconds, stoppingCueDismissed, dismissStoppingCue } = useRoomSessionClock()
   // Read once per mount (stable across Strict Mode's double render; the
   // effect below records the step only after it's committed).
   const [direction] = useState<'forward' | 'back' | 'none'>(() => {
@@ -76,11 +78,6 @@ export default function RoomStepLayout({
   useEffect(() => {
     lastStepShown[roomLabel] = step
   }, [roomLabel, step])
-
-  useEffect(() => {
-    const interval = setInterval(() => setElapsedSeconds((s) => s + 1), 1000)
-    return () => clearInterval(interval)
-  }, [])
 
   const minutesLeft = Math.max(0, initialMinutes - Math.floor(elapsedSeconds / 60))
   const showStoppingCue = !stoppingCueDismissed && elapsedSeconds >= initialMinutes * 60 * STOPPING_CUE_FRACTION
@@ -299,7 +296,7 @@ export default function RoomStepLayout({
                 </p>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setStoppingCueDismissed(true)}
+                    onClick={dismissStoppingCue}
                     className="flex-1 py-3 rounded-2xl bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] text-white text-sm font-medium transition-colors"
                   >
                     Keep going

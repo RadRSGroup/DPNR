@@ -94,6 +94,7 @@ export default function FocusMode() {
   }
 
   const moodLabel = (m: (typeof FOCUS_MOODS)[number]) => (locale === 'he' ? m.label.he : m.label.en)
+  const moodTagline = locale === 'he' ? mood.tagline.he : mood.tagline.en
   const playlistUrl = `https://open.spotify.com/playlist/${mood.spotifyId}`
 
   return (
@@ -156,6 +157,7 @@ export default function FocusMode() {
               {moodLabel(m)}
             </button>
           ))}
+          <p className="w-full text-xs text-[var(--color-text-tertiary)]">{moodTagline}</p>
         </div>
       )}
 

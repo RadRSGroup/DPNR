@@ -128,7 +128,7 @@ export default function PullACard() {
     // overflow-x-clip: shuffling backs can poke a little past the card's
     // sides; clip them here instead of scrolling the parent column sideways.
     <section aria-label={t('heading')} className="@container overflow-x-clip">
-      <div className="relative aspect-[4/3] lg:aspect-[4/5] lg:max-h-[58vh] [perspective:1200px]" aria-busy={shuffling}>
+      <div className="relative mx-auto aspect-[4/3] lg:aspect-[4/5] lg:max-h-[58vh] [perspective:1200px]" aria-busy={shuffling}>
         {/* The deck: two card backs behind the face — peeking out at rest, shuffling while pulling. */}
         <CardBack pose={BACK_POSE.a} shuffleClass={shuffling && !reduced ? 'animate-card-shuffle-a' : ''} />
         <CardBack pose={BACK_POSE.b} shuffleClass={shuffling && !reduced ? 'animate-card-shuffle-b' : ''} />
@@ -137,18 +137,32 @@ export default function PullACard() {
           key={dealCount}
           className={`absolute inset-0 z-[4] rounded-3xl overflow-hidden bg-[var(--color-violet-950)] border border-white/40 shadow-[0_0_0_1px_rgba(167,139,250,0.35),0_0_28px_2px_rgba(139,92,246,0.45)] ${faceAnimation}`}
         >
+          {/* The photos come in mixed shapes (3:2, portrait, square), so a
+              cover crop cut off the important part of some (feedback log,
+              2026-09-25). The whole photo sits on top with object-contain,
+              over a blurred copy of itself that fills the card, same as
+              TopicCover. The blur is static, never animated (MOTION.md). */}
+          <Image
+            src={card ? cardImage(card.topic) : CARD_DEFAULT_IMAGE}
+            alt=""
+            aria-hidden
+            fill
+            sizes="(min-width: 1024px) 33vw, 100vw"
+            className="object-cover scale-110 blur-2xl brightness-75"
+          />
           <Image
             src={card ? cardImage(card.topic) : CARD_DEFAULT_IMAGE}
             alt=""
             fill
             sizes="(min-width: 1024px) 33vw, 100vw"
-            className="object-cover"
+            className="object-contain"
             onLoad={() => {
               if (!faceReady) deal()
             }}
           />
-          {/* Darkens the middle band where the text sits, keeping the edges of the photo bright */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.55)_0%,rgba(0,0,0,0.25)_55%,rgba(0,0,0,0.05)_100%)]" />
+          {/* Lighter than before: the question now has its own glass panel
+              (below), so the photo no longer needs darkening as a whole. */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.3)_0%,rgba(0,0,0,0.12)_55%,transparent_100%)]" />
           <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
 
           {/* Question and tagline stack in normal flow (not both absolutely
@@ -156,6 +170,10 @@ export default function PullACard() {
               the tagline instead of running over it. */}
           <div className="absolute inset-0 flex flex-col items-center px-[clamp(1.25rem,7cqw,3.5rem)] pt-[clamp(1.5rem,7cqw,3.5rem)] pb-[clamp(1.25rem,5cqw,2.5rem)] text-center">
             <div className="flex-1 min-h-0 flex flex-col items-center justify-center">
+              {/* Glass behind the question: a translucent glossy gradient with a
+                  top highlight, no backdrop-filter (the face flips on every
+                  deal, and MOTION.md rules out blurring while moving). */}
+              <div className="flex flex-col items-center rounded-2xl border border-white/15 bg-gradient-to-b from-white/[0.12] to-black/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_24px_rgba(0,0,0,0.25)] px-[clamp(1rem,5cqw,2rem)] py-[clamp(0.75rem,4cqw,1.75rem)]">
               <p
                 className={`font-hand rtl:font-display text-white leading-snug drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] ${
                   text.length > 70
@@ -166,6 +184,7 @@ export default function PullACard() {
                 {text}
               </p>
               <span className="mt-[clamp(1rem,4cqw,2rem)] h-px w-[clamp(3rem,12cqw,6rem)] shrink-0 bg-white/80" />
+              </div>
             </div>
             <p className="mt-3 text-white/90 text-[clamp(10px,2cqw,15px)] uppercase tracking-[0.2em] @md:tracking-[0.25em] leading-relaxed drop-shadow">
               {t('tagline')}

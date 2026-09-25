@@ -210,6 +210,22 @@
   }
 }
 
+/*
+ * The app is dark-only. Without this, native form popups (a <select>'s
+ * option list, the date picker) render in the OS light scheme while
+ * inheriting our white text — white-on-white, unreadable (Evolution Map's
+ * goal domain picker). `color-scheme: dark` gives them the dark native UI;
+ * the <option> colors cover browsers that ignore it for the list.
+ */
+:root {
+  color-scheme: dark;
+}
+option,
+optgroup {
+  background-color: var(--color-violet-950);
+  color: var(--color-text-primary);
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

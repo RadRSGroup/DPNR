@@ -25,6 +25,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import { DecisionOption, Lens } from '@/lib/types'
 import type { RefineFn } from '@/lib/useAI'
 import { getCurrentSession } from '@/lib/cognito/client'
+import { RoomSessionClockProvider } from '@/components/shared/RoomSessionClock'
 import { submitRoomCommand, getDecisionFull, ApiError } from '@/lib/api/v1-client'
 import type {
   RoomCommandResponse,
@@ -714,7 +715,9 @@ export default function NewDecisionPage() {
         </main>
       </div>
     }>
-      <NewDecisionContent />
+      <RoomSessionClockProvider>
+        <NewDecisionContent />
+      </RoomSessionClockProvider>
     </Suspense>
   )
 }

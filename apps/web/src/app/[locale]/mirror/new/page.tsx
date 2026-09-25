@@ -17,6 +17,7 @@ import SafetyInterventionScreen from '@/components/shared/SafetyInterventionScre
 import Sidebar from '@/components/layout/Sidebar'
 import type { RefineFn } from '@/lib/useAI'
 import { getCurrentSession } from '@/lib/cognito/client'
+import { RoomSessionClockProvider } from '@/components/shared/RoomSessionClock'
 import { submitRoomCommand, getMirrorFull, ApiError } from '@/lib/api/v1-client'
 import type { RoomCommandResponse, MirrorRoomStepId } from '@dpnr/shared-types'
 
@@ -422,7 +423,9 @@ export default function NewMirrorPage() {
         </main>
       </div>
     }>
-      <NewMirrorContent />
+      <RoomSessionClockProvider>
+        <NewMirrorContent />
+      </RoomSessionClockProvider>
     </Suspense>
   )
 }

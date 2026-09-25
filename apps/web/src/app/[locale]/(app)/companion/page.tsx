@@ -443,7 +443,7 @@ function CompanionContent() {
     // visible (user feedback on the first, too-heavy scrim).
     <div
       className={`relative h-[calc(100dvh-4rem)] lg:h-dvh flex flex-col overflow-hidden ${
-        showCustom ? '[--color-surface-glass:rgba(10,10,15,0.62)] [--color-border-glass:rgba(255,255,255,0.14)]' : ''
+        showCustom ? '[--color-surface-glass:rgba(10,10,15,0.62)] lg:[--color-surface-glass:rgba(12,10,22,0.7)] [--color-border-glass:rgba(255,255,255,0.14)]' : ''
       }`}
     >
       {/* overflow-hidden here, not just on the page: the custom photo is
@@ -464,6 +464,24 @@ function CompanionContent() {
             very bright image; the bubbles carry their own dark backing
             (see the container above), so this no longer has to flatten it. */}
         {showCustom && <div className="absolute inset-0 bg-[var(--color-bg-base)]/35" />}
+        {/* Wide screens: the chat column sits over a large, often busy part
+            of the photo. A soft dark wash centred on that column (a gradient,
+            not a blur: bubbles settle in as they arrive, and MOTION.md rules
+            out moving blurred glass) keeps text readable; the photo's edges
+            and the right column stay as they are. */}
+        {showCustom && (
+          <div className="hidden lg:block absolute inset-0 bg-[radial-gradient(ellipse_42%_75%_at_36%_58%,rgba(10,10,15,0.5)_0%,rgba(10,10,15,0.22)_60%,transparent_100%)]" />
+        )}
+        {/* Default: back to the earlier Main Chat atmosphere (feedback log,
+            2026-09-25: "deep blue / indigo / blue-purple") — the original
+            companion-bg art, which Session 67 had dropped for a plain
+            background, plus a soft indigo wash toward blue. */}
+        {!showCustom && (
+          <>
+            <Image src="/images/backgrounds/companion-bg.webp" alt="" fill sizes="100vw" className="object-cover" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_55%_at_60%_35%,rgba(79,70,229,0.22)_0%,transparent_70%),linear-gradient(to_bottom,rgba(30,27,75,0.35),transparent_60%)]" />
+          </>
+        )}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
       </div>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
