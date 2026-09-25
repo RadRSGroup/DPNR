@@ -19,6 +19,10 @@
     "preferences": {
       "label": "העדפות",
       "language": "שפה",
+      "name": "איך לקרוא לך?",
+      "nameHint": "כך נפנה אליך, למשל \"היי ליטל,\". אפשר להשאיר ריק ונשתמש בתחילת כתובת המייל.",
+      "namePlaceholder": "השם הפרטי שלך",
+      "nameSaveError": "לא ניתן היה לשמור — נסו שוב.",
       "gender": "מגדר",
       "genderHint": "משמש רק כדי לפנות אליכם בצורה נכונה בעברית — אין לו השפעה באנגלית.",
       "chatBackground": "רקע הצ'אט",
@@ -525,6 +529,9 @@
     "errorGeneric": "משהו השתבש. נסו שוב.",
     "title": "עוד כמה דברים קטנים",
     "subtitle": "עזרו לנו להתאים אישית את החוויה שלכם — תמיד תוכלו לשנות זאת מאוחר יותר בהגדרות החשבון.",
+    "name": "איך לקרוא לך?",
+    "nameHint": "כך DPNR יפנה אליך.",
+    "namePlaceholder": "השם הפרטי שלך",
     "gender": "מגדר",
     "genderHint": "משמש רק כדי לפנות אליכם בצורה נכונה בעברית — אין לו השפעה באנגלית.",
     "saving": "שומרים…",
@@ -625,6 +632,8 @@
     }
   },
   "Companion": {
+    "returnGreetingHi": "היי {name},",
+    "returnGreetingHiNoName": "היי,",
     "replying": "התגובה בדרך…",
     "loading": "טוענים…",
     "greeting": {
@@ -689,6 +698,12 @@
       "tagline": "נקודת מבט חדשה יכולה לשנות הכל.",
       "pullFirst": "משכו קלף"
     },
+    "timeToday": {
+      "underAMinute": "פחות מדקה היום",
+      "minutes": "{minutes} דק׳ היום",
+      "hoursMinutes": "{hours} שע׳ {minutes} דק׳ היום",
+      "breakdown": "פעיל {active} דק׳ · ברקע {ambient} דק׳ (נספר במכשיר הזה)"
+    },
     "topBar": {
       "searchPlaceholder": "חיפוש בכל דבר...",
       "accountMenu": "תפריט חשבון",
@@ -701,6 +716,9 @@
       "comingSoon": "בקרוב",
       "playLabel": "הפעלה (בקרוב)",
       "settingsLabel": "הגדרות מצב ריכוז (בקרוב)",
+      "expandPlayer": "הצגת הנגן",
+      "collapsePlayer": "הסתרת הנגן",
+      "stopMusic": "עצירת המוזיקה",
       "moodSubtitle": "{mood} · פלייליסט DPNR",
       "openPlayer": "פתיחת הנגן",
       "closePlayer": "סגירת הנגן",

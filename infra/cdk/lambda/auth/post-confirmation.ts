@@ -52,6 +52,8 @@ export const handler = async (
     // has to be set via a profile-update API call after signup, same as
     // `preferredLanguage` will be. Defaults to 'unspecified' until then.
     genderIdentity: 'unspecified',
+    // Asked on the profile-setup screen (Session 70).
+    firstName: null,
     avatarKey: null,
     // Main Chat UX Update (docs/MAIN_CHAT_UX_UPDATE_PLAN.md §3.1) — matches
     // `UserProfileItemSchema`'s own default; no upload endpoint exists yet

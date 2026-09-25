@@ -9,7 +9,7 @@ import { changePasswordAndRewrapDek } from '@/lib/auth/keyBootstrap'
 import { logOut } from '@/lib/auth/logout'
 import { setAvatarUrlEverywhere } from '@/lib/useAvatarUrl'
 import { exportUserData, deleteAccountData, getCredits, getPreferences, updatePreferences, getDashboard, ApiError } from '@/lib/api/v1-client'
-import type { CreditsResponse, GenderIdentity, ChatBackground } from '@dpnr/shared-types'
+import { PREFERRED_NAME_MAX_LENGTH, type CreditsResponse, type GenderIdentity, type ChatBackground } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 import PasswordCreationField, { passwordsReadyToSubmit } from '@/components/auth/PasswordCreationField'
 import LanguageSelector from '@/components/shared/LanguageSelector'
@@ -33,6 +33,9 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true)
   const [credits, setCredits] = useState<CreditsResponse | null>(null)
   const [gender, setGender] = useState<GenderIdentity | null>(null)
+  const [firstName, setFirstName] = useState<string | null>(null) // null = not loaded yet
+  const [savedFirstName, setSavedFirstName] = useState('')
+  const [firstNameSaving, setFirstNameSaving] = useState(false)
   const [genderSaving, setGenderSaving] = useState(false)
   const [chatBackground, setChatBackground] = useState<ChatBackground | null>(null)
   const [chatBackgroundUrl, setChatBackgroundUrl] = useState<string | null>(null)
@@ -65,6 +68,8 @@ export default function AccountPage() {
       try {
         const preferences = await getPreferences()
         setGender(preferences.genderIdentity)
+        setFirstName(preferences.firstName ?? '')
+        setSavedFirstName(preferences.firstName ?? '')
         setAvatarUrl(preferences.avatarUrl)
         setChatBackground(preferences.chatBackground)
         setChatBackgroundUrl(preferences.chatBackgroundUrl)
@@ -82,6 +87,23 @@ export default function AccountPage() {
     }
     load()
   }, [router])
+
+  // Session 70: the name DPNR greets the person by. Saved on blur/Enter,
+  // only when it actually changed; empty clears it (back to the email name).
+  async function saveFirstName() {
+    const next = (firstName ?? '').trim()
+    if (firstName === null || next === savedFirstName) return
+    setFirstNameSaving(true)
+    try {
+      const res = await updatePreferences({ firstName: next })
+      setSavedFirstName(res.firstName ?? '')
+      setFirstName(res.firstName ?? '')
+    } catch {
+      alert(t('preferences.nameSaveError'))
+    } finally {
+      setFirstNameSaving(false)
+    }
+  }
 
   async function handleGenderChange(next: GenderIdentity) {
     setGender(next) // optimistic — this is a low-stakes preference, not a destructive action
@@ -263,6 +285,27 @@ export default function AccountPage() {
               <span className="text-white/80 text-sm">{t('preferences.language')}</span>
               <LanguageSelector />
             </div>
+            {firstName !== null && (
+              <div>
+                <label htmlFor="account-first-name" className="block text-white/80 text-sm mb-2">{t('preferences.name')}</label>
+                <p className="text-[var(--color-text-tertiary)] text-xs mb-3">{t('preferences.nameHint')}</p>
+                <input
+                  id="account-first-name"
+                  type="text"
+                  autoComplete="given-name"
+                  value={firstName}
+                  maxLength={PREFERRED_NAME_MAX_LENGTH}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  onBlur={saveFirstName}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.currentTarget.blur()
+                  }}
+                  disabled={firstNameSaving}
+                  placeholder={t('preferences.namePlaceholder')}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60 disabled:opacity-60"
+                />
+              </div>
+            )}
             {gender !== null && (
               <div>
                 <p className="text-white/80 text-sm mb-2">{t('preferences.gender')}</p>

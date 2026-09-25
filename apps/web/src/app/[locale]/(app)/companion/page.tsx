@@ -5,6 +5,7 @@ import { Link } from '@/i18n/navigation'
 import { useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
+import { displayFirstName } from '@/lib/displayName'
 import { Heart, Cloud, Shuffle, UserCircle, Plus, Mic, ImagePlus, X, MessagesSquare, Pencil } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getCompanionContext, sendCompanionMessage, getPreferences, createCompanionConversation, ApiError } from '@/lib/api/v1-client'
@@ -108,7 +109,10 @@ function CompanionContent() {
   // Next scroll-to-bottom: instant after loading/switching a thread, smooth
   // only when a new message arrives (and never smooth under reduced motion).
   const nextScrollInstant = useRef(true)
-  const [firstName, setFirstName] = useState('')
+  // The profile's own name (Session 70) wins over the email-derived one.
+  const [emailName, setEmailName] = useState('')
+  const [profileName, setProfileName] = useState<string | null>(null)
+  const firstName = profileName ?? emailName
   // Main Chat UX Update (docs/MAIN_CHAT_UX_UPDATE_PLAN.md §3.1) — 'digital_twin'
   // matches the schema's own default, so this is the correct value to render
   // with before the real preference loads, not a placeholder guess.
@@ -197,8 +201,7 @@ function CompanionContent() {
         const session = await getCurrentSession()
         if (!session) { router.push('/login'); return }
         const email = session.getIdToken().payload.email as string | undefined
-        const namePart = email?.split('@')[0] ?? ''
-        setFirstName(namePart.charAt(0).toUpperCase() + namePart.slice(1))
+        setEmailName(displayFirstName(null, email))
 
         const context = await getCompanionContext()
         nextScrollInstant.current = true
@@ -219,6 +222,7 @@ function CompanionContent() {
       .then((p) => {
         setChatBackground(p.chatBackground)
         setChatBackgroundUrl(p.chatBackgroundUrl)
+        if (p.firstName) setProfileName(p.firstName)
       })
       .catch(() => {
         // Honest degrade to the schema's own default — same tolerance every
@@ -287,7 +291,15 @@ function CompanionContent() {
     if (!text || sending) return
 
     setInput('')
-    setMessages((prev) => [...prev, { role: 'user', text, createdAt: new Date().toISOString(), fresh: true }])
+    // The return greeting joins the thread (local only; it was never stored)
+    // so it stays above the person's reply instead of below it.
+    const greetingLine = returnGreetingLine
+    setReturnGreeting(null)
+    setMessages((prev) => [
+      ...prev,
+      ...(greetingLine ? [{ role: 'assistant' as const, text: greetingLine, createdAt: new Date().toISOString() }] : []),
+      { role: 'user', text, createdAt: new Date().toISOString(), fresh: true },
+    ])
 
     // An attachment never actually reaches Companion — no vision/multimodal
     // path exists server-side yet (§3.6) — disclosed locally rather than
@@ -428,6 +440,12 @@ function CompanionContent() {
   // ask — showPrompts no longer implies isLanding.
   const pageLoading = loading || onboarding.loading
   const isLanding = !pageLoading && messages.length === 0 && !onboarding.active
+  // Greet → check in → reconnect → invite (feedback log, 2026-09-25): the
+  // model writes everything after the greeting (companion/continuation), the
+  // name is added here so it never reaches the model.
+  const returnGreetingLine = returnGreeting
+    ? `${firstName ? tc('returnGreetingHi', { name: firstName }) : tc('returnGreetingHiNoName')} ${returnGreeting}`
+    : null
   const showPrompts = !pageLoading && !onboarding.active
   const composerDisabled = pageLoading || (onboarding.active && !onboarding.awaitingIntention)
   // Session 67: the two generic preset images are retired — the person's own
@@ -702,14 +720,6 @@ function CompanionContent() {
                 read as a different kind of thing) since it's never
                 persisted server-side — re-synthesized on every load, not
                 carried in the stored thread the way a real reply is. */}
-            {!pageLoading && !onboarding.active && returnGreeting && (
-              <div className="flex justify-start">
-                <div className="max-w-[90%] lg:max-w-[480px] bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] text-white/85 rounded-2xl rounded-es-md px-4 py-2.5 text-sm leading-relaxed">
-                  {returnGreeting}
-                </div>
-              </div>
-            )}
-
             {messages.map((m, i) => (
               <div
                 key={i}
@@ -778,6 +788,15 @@ function CompanionContent() {
                 </div>
               </div>
             ))}
+
+            {/* After the history, not above it: it's the newest thing said. */}
+            {!pageLoading && !onboarding.active && returnGreetingLine && (
+              <div className="flex justify-start animate-settle-in">
+                <div className="max-w-[90%] lg:max-w-[480px] bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] text-white/85 rounded-2xl rounded-es-md px-4 py-2.5 text-sm leading-relaxed">
+                  {returnGreetingLine}
+                </div>
+              </div>
+            )}
 
             {sending && (
               <div className="flex justify-start animate-fade-in" role="status" aria-label={tc('replying')}>

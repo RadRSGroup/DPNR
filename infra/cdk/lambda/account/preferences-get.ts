@@ -34,6 +34,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const response: PreferencesResponse = {
       preferredLanguage: profile.preferredLanguage,
       genderIdentity: profile.genderIdentity,
+      firstName: profile.firstName ?? null,
       avatarUrl: await getAvatarPresignedUrl(profile.avatarKey),
       profileSetupCompletedAt: profile.profileSetupCompletedAt,
       chatBackground: profile.chatBackground,

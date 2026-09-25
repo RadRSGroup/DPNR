@@ -23,7 +23,7 @@ const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
     const userId = requireUserId(event)
-    const { preferredLanguage, genderIdentity, avatarKey, profileSetupComplete, chatBackground, chatBackgroundKey } =
+    const { preferredLanguage, genderIdentity, firstName, avatarKey, profileSetupComplete, chatBackground, chatBackgroundKey } =
       parseBody(event, UpdatePreferencesRequestSchema)
     // Ownership check: both keys are only ever issued under the caller's own
     // prefix (avatar-upload-url.ts / chat-background-upload-url.ts /
@@ -42,6 +42,10 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     if (genderIdentity !== undefined) {
       setClauses.push('genderIdentity = :gender')
       values[':gender'] = genderIdentity
+    }
+    if (firstName !== undefined) {
+      setClauses.push('firstName = :firstName')
+      values[':firstName'] = firstName ? firstName : null
     }
     if (avatarKey !== undefined) {
       setClauses.push('avatarKey = :avatarKey')
@@ -81,6 +85,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const response: PreferencesResponse = {
       preferredLanguage: result.Attributes?.preferredLanguage as PreferencesResponse['preferredLanguage'],
       genderIdentity: result.Attributes?.genderIdentity as PreferencesResponse['genderIdentity'],
+      firstName: (result.Attributes?.firstName as string | null | undefined) ?? null,
       avatarUrl: await getAvatarPresignedUrl(result.Attributes?.avatarKey as string | null | undefined),
       profileSetupCompletedAt: (result.Attributes?.profileSetupCompletedAt as string | null | undefined) ?? null,
       chatBackground: (result.Attributes?.chatBackground as PreferencesResponse['chatBackground']) ?? 'digital_twin',

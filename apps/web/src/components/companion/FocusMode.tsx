@@ -1,9 +1,10 @@
 'use client'
-import { useState, useSyncExternalStore } from 'react'
+import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { ExternalLink, Music, Play, SlidersHorizontal, X } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import { FOCUS_MOODS } from '@/lib/focus-playlist'
+import { closeFocusPlayer, openFocusPlayer, setFocusPlayerDock, useFocusPlayer } from '@/lib/focus-player'
 
 const MOOD_STORAGE_KEY = 'dpnr.focusMood'
 
@@ -43,7 +44,7 @@ function subscribeToStorage(onChange: () => void) {
 export default function FocusMode() {
   const t = useTranslations('Companion.focusMode')
   const locale = useLocale()
-  const [open, setOpen] = useState(false)
+  const player = useFocusPlayer()
   const [pickerOpen, setPickerOpen] = useState(false)
   const savedMood = useSyncExternalStore(subscribeToStorage, readSavedMood, () => null)
   const [chosenMood, setChosenMood] = useState<string | null>(null)
@@ -52,6 +53,7 @@ export default function FocusMode() {
   function chooseMood(id: string) {
     setChosenMood(id)
     setPickerOpen(false)
+    if (player.moodId) openFocusPlayer(id) // already playing: switch playlist
     try {
       localStorage.setItem(MOOD_STORAGE_KEY, id)
     } catch {
@@ -59,7 +61,10 @@ export default function FocusMode() {
     }
   }
 
-  const mood = FOCUS_MOODS.find((m) => m.id === moodId) ?? FOCUS_MOODS[0]
+  // While music plays, the card shows what's playing (it may have been
+  // started elsewhere, e.g. before a reload of this page's state).
+  const mood = FOCUS_MOODS.find((m) => m.id === (player.moodId ?? moodId)) ?? FOCUS_MOODS[0]
+  const open = player.moodId !== null
 
   if (!mood) {
     return (
@@ -108,7 +113,7 @@ export default function FocusMode() {
           <p className="text-xs text-[var(--color-text-tertiary)] truncate">{t('moodSubtitle', { mood: moodLabel(mood) })}</p>
         </div>
         <button
-          onClick={() => setOpen((o) => !o)}
+          onClick={() => (open ? closeFocusPlayer() : openFocusPlayer(mood.id))}
           aria-expanded={open}
           className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-[var(--color-violet-600)]/40 hover:bg-[var(--color-violet-600)]/60 text-white transition-colors"
           aria-label={open ? t('closePlayer') : t('openPlayer')}
@@ -163,19 +168,57 @@ export default function FocusMode() {
 
       {open && (
         <div className="mt-3">
-          <iframe
-            title={t('playerTitle')}
-            key={mood.spotifyId}
-            src={`https://open.spotify.com/embed/playlist/${mood.spotifyId}?theme=0`}
-            width="100%"
-            height="152"
-            loading="lazy"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            className="block rounded-xl border-0"
-          />
+          {/* The player itself is GlobalMusicPlayer (root layout), drawn over
+              this slot so it keeps playing on other pages. */}
+          <PlayerDock />
           <p className="mt-2 text-[11px] leading-snug text-[var(--color-text-tertiary)]">{t('previewNote')}</p>
         </div>
       )}
     </Card>
   )
+}
+
+/**
+ * Reserves the player's space in the card and reports where it is on screen
+ * (viewport coordinates, clipped to the scrolling column) so the global
+ * player can be drawn exactly here. Re-measured on resize and on any scroll.
+ */
+function PlayerDock() {
+  const ref = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    let scroller: HTMLElement | null = el.parentElement
+    while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement
+    const measure = () => {
+      const r = el.getBoundingClientRect()
+      const bounds = scroller?.getBoundingClientRect() ?? { top: 0, bottom: window.innerHeight }
+      setFocusPlayerDock({
+        top: r.top,
+        left: r.left,
+        width: r.width,
+        height: r.height,
+        clipTop: Math.max(0, bounds.top - r.top),
+        clipBottom: Math.max(0, r.bottom - bounds.bottom),
+      })
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    // Cards above this one (e.g. Recent Conversations finishing its load)
+    // move the slot without resizing it or the column, so watch them too.
+    if (scroller) {
+      observer.observe(scroller)
+      Array.from(scroller.children).forEach((child) => observer.observe(child))
+    }
+    window.addEventListener('scroll', measure, true)
+    window.addEventListener('resize', measure)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('scroll', measure, true)
+      window.removeEventListener('resize', measure)
+      setFocusPlayerDock(null)
+    }
+  }, [])
+  return <div ref={ref} className="h-[152px] rounded-xl bg-white/5" />
 }

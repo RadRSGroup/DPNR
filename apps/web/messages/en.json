@@ -19,6 +19,10 @@
     "preferences": {
       "label": "Preferences",
       "language": "Language",
+      "name": "What should we call you?",
+      "nameHint": "Used to greet you, e.g. \"Hi Lital,\". Leave empty to use the start of your email.",
+      "namePlaceholder": "Your first name",
+      "nameSaveError": "Could not save — please try again.",
       "gender": "Gender",
       "genderHint": "Used only to address you correctly in Hebrew — has no effect in English.",
       "chatBackground": "Chat Background",
@@ -525,6 +529,9 @@
     "errorGeneric": "Something went wrong. Please try again.",
     "title": "A couple of quick things",
     "subtitle": "Help us personalize your experience — you can always change these later in Account Settings.",
+    "name": "What should we call you?",
+    "nameHint": "DPNR will greet you by this name.",
+    "namePlaceholder": "Your first name",
     "gender": "Gender",
     "genderHint": "Used only to address you correctly in Hebrew — has no effect in English.",
     "saving": "Saving…",
@@ -625,6 +632,8 @@
     }
   },
   "Companion": {
+    "returnGreetingHi": "Hi {name},",
+    "returnGreetingHiNoName": "Hi,",
     "replying": "Reply on the way…",
     "loading": "Loading…",
     "greeting": {
@@ -689,6 +698,12 @@
       "tagline": "A new perspective can change everything.",
       "pullFirst": "Pull a Card"
     },
+    "timeToday": {
+      "underAMinute": "Under a minute today",
+      "minutes": "{minutes} min today",
+      "hoursMinutes": "{hours} h {minutes} min today",
+      "breakdown": "Active {active} min · Ambient {ambient} min (counted on this device)"
+    },
     "topBar": {
       "searchPlaceholder": "Search anything...",
       "accountMenu": "Account menu",
@@ -701,6 +716,9 @@
       "comingSoon": "Coming soon",
       "playLabel": "Play (coming soon)",
       "settingsLabel": "Focus Mode settings (coming soon)",
+      "expandPlayer": "Show player",
+      "collapsePlayer": "Hide player",
+      "stopMusic": "Stop music",
       "moodSubtitle": "{mood} · DPNR Playlist",
       "openPlayer": "Open the player",
       "closePlayer": "Close the player",

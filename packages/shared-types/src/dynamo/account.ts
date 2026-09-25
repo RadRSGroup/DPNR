@@ -95,6 +95,13 @@ export const UserProfileItemSchema = z.object({
   consentVersion: z.string().nullable(),
   preferredLanguage: z.enum(['en', 'he']).default('en'),
   genderIdentity: GenderIdentitySchema.default('unspecified'),
+  // Session 70 — the name the person wants to be called, asked on the
+  // profile-setup screen (editable in Account). Identity data like the
+  // email Cognito already holds in plaintext, not session content; shown
+  // by the frontend only ("Hi <name>," before the return greeting) and
+  // never sent to a model. `null` = not given (UI falls back to the email
+  // local part, the pre-Session-70 behavior).
+  firstName: z.string().nullable().default(null),
   // S3 object key (never a URL — the bucket is private, a fresh presigned
   // GET is generated per read). `null` = no photo set.
   avatarKey: z.string().nullable().default(null),

@@ -5,6 +5,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import "../globals.css";
+import GlobalMusicPlayer from "@/components/layout/GlobalMusicPlayer";
+import TimeOnDpnrTracker from "@/components/layout/TimeOnDpnrTracker";
 
 // All fonts are self-hosted from `src/fonts/` (variable .woff2 files built
 // from google/fonts' OFL sources, subset to Latin + Hebrew — licences in
@@ -97,7 +99,12 @@ export default async function RootLayout({
   return (
     <html lang={locale} dir={dir}>
       <body className={`${fontVariables} bg-[#0a0a0f] text-white min-h-screen`}>
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          {children}
+          {/* Outside every page so the music and the time count survive navigation (Session 70). */}
+          <GlobalMusicPlayer />
+          <TimeOnDpnrTracker />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

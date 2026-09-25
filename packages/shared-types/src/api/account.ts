@@ -190,10 +190,22 @@ export type ConsentResponse = z.infer<typeof ConsentResponseSchema>
  * user filled it in or explicitly skipped it — this is what stops
  * `proxy.ts`'s gate from showing it again.
  */
+/** Session 70 — the profile's `firstName` cap. */
+export const PREFERRED_NAME_MAX_LENGTH = 40
+
 export const UpdatePreferencesRequestSchema = z
   .object({
     preferredLanguage: z.enum(['en', 'he']).optional(),
     genderIdentity: GenderIdentitySchema.optional(),
+    // Trimmed; an empty string clears it (stored as null). No control
+    // characters — it is rendered in greetings.
+    firstName: z
+      .string()
+      .trim()
+      .max(PREFERRED_NAME_MAX_LENGTH)
+      .regex(/^[^\p{Cc}]*$/u, 'Name contains invalid characters.')
+      .nullable()
+      .optional(),
     avatarKey: z.string().nullable().optional(),
     profileSetupComplete: z.literal(true).optional(),
     chatBackground: ChatBackgroundSchema.optional(),
@@ -203,13 +215,14 @@ export const UpdatePreferencesRequestSchema = z
     (v) =>
       v.preferredLanguage !== undefined ||
       v.genderIdentity !== undefined ||
+      v.firstName !== undefined ||
       v.avatarKey !== undefined ||
       v.profileSetupComplete !== undefined ||
       v.chatBackground !== undefined ||
       v.chatBackgroundKey !== undefined,
     {
       message:
-        'At least one of preferredLanguage, genderIdentity, avatarKey, profileSetupComplete, chatBackground, or chatBackgroundKey is required.',
+        'At least one of preferredLanguage, genderIdentity, firstName, avatarKey, profileSetupComplete, chatBackground, or chatBackgroundKey is required.',
     }
   )
 export type UpdatePreferencesRequest = z.infer<typeof UpdatePreferencesRequestSchema>
@@ -229,6 +242,7 @@ export type UpdatePreferencesRequest = z.infer<typeof UpdatePreferencesRequestSc
 export const PreferencesResponseSchema = z.object({
   preferredLanguage: z.enum(['en', 'he']),
   genderIdentity: GenderIdentitySchema,
+  firstName: z.string().nullable(),
   avatarUrl: z.string().nullable(),
   profileSetupCompletedAt: z.string().nullable(),
   chatBackground: ChatBackgroundSchema,

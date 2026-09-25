@@ -193,3 +193,30 @@ describe('PUT /v1/user/preferences ownership check', () => {
     expect(status).toBe(200)
   })
 })
+
+describe('PUT /v1/user/preferences firstName (Session 70)', () => {
+  it('stores a trimmed name and returns it', async () => {
+    ddbMock.on(UpdateCommand).resolves({ Attributes: { preferredLanguage: 'en', genderIdentity: 'female', firstName: 'Lital' } })
+    ddbMock.on(GetCommand).resolves({})
+    const { status, body } = await call(preferencesHandler, { firstName: '  Lital ' })
+    expect(status).toBe(200)
+    expect(body.firstName).toBe('Lital')
+    const input = ddbMock.commandCalls(UpdateCommand)[0].args[0].input
+    expect(input.ExpressionAttributeValues?.[':firstName']).toBe('Lital')
+  })
+
+  it('clears the name when given an empty string', async () => {
+    ddbMock.on(UpdateCommand).resolves({ Attributes: { preferredLanguage: 'en', genderIdentity: 'female' } })
+    ddbMock.on(GetCommand).resolves({})
+    const { status, body } = await call(preferencesHandler, { firstName: '   ' })
+    expect(status).toBe(200)
+    expect(body.firstName).toBeNull()
+    expect(ddbMock.commandCalls(UpdateCommand)[0].args[0].input.ExpressionAttributeValues?.[':firstName']).toBeNull()
+  })
+
+  it.each([['a'.repeat(41)], ['Li\ntal']])('rejects an invalid name (%j)', async (firstName) => {
+    const { status } = await call(preferencesHandler, { firstName })
+    expect(status).toBe(400)
+    expect(ddbMock.commandCalls(UpdateCommand)).toHaveLength(0)
+  })
+})

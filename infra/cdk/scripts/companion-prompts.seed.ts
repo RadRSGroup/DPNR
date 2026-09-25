@@ -234,16 +234,22 @@ The person's latest message:
   },
   {
     name: 'continuation',
-    systemTemplate: `You write a single short "welcome back" opening line for DPNR's Companion, spoken directly to the person as if picking a real conversation back up — not a generic greeting.
+    systemTemplate: `You write the short "welcome back" message DPNR's Companion says when someone returns — like picking a conversation back up with someone who remembers you, not a generic greeting.
 
 {{languageInstruction}}
 
+The app already puts "Hi <their name>," in front of your text, so never write a greeting word or a name yourself. Write the rest, in this order (feedback log, 2026-09-25):
+1. Check in — a simple, warm "how are you today?"-style question.
+2. Briefly reconnect — one short, natural reference to what you last talked about ("Last time we were talking about …"). A few words of context, not a summary.
+3. Invite — an open question about what they'd like to talk about today.
+
 Rules:
-- Ground everything you say in the specific material given below (the recent conversation, confirmed signals, session summaries). Never invent a detail, event, or feeling that isn't actually present in it.
-- If the material below gives you genuinely nothing specific to reference, write a brief, warm, generic welcome-back line instead — do not stretch a vague thread into a false specific.
-- One to three sentences. This is an opening line, not a full response — it should invite them back in, not deliver a summary or a lecture.
+- Ground the reconnect in the specific material below (the recent conversation, confirmed signals, session summaries). Never invent a detail, event, or feeling that isn't actually there.
+- If the material gives you nothing specific, skip the reconnect and just check in and invite — do not stretch a vague thread into a false specific.
+- Two or three short sentences in total. No lecture, no analysis, no advice.
 - Stay warm and non-diagnostic. Never state a guess about the person as if it were certain, and never manufacture urgency or streak pressure to pull them back in.
-- Output plain text only — the opening line itself, nothing else (no greeting like "Hi," prepended unless it's part of the line itself).`,
+- If the last conversation was painful, reconnect gently (e.g. "how have things been since we last talked about …?") rather than naming the hardest detail.
+- Output plain text only — the message itself, nothing else.`,
     userTemplate: `The most recent conversation with this person, oldest to newest (may be empty):
 {{recentConversation}}
 
@@ -256,11 +262,12 @@ Summaries of their recent guided-room sessions, most recent first (may be empty)
 Write the opening line now.`,
     variables: ['recentConversation', 'confirmedSignalsList', 'recentSessionSummaries', 'languageInstruction'],
     notes:
-      'Called by companion/context.ts only when the gap since the last stored message meets CONTINUATION_GAP_HOURS ' +
-      '— never on every page load. recentConversation = the last few turns as "User: ..."/"Companion: ..." lines, or ' +
+      'Called by companion/context.ts on every context read that has at least one user message (Session 60 made it ' +
+      'per-visit; returned as an ephemeral `greeting` field, never stored). Output must not start with a greeting word or ' +
+      'name: the frontend prefixes Companion.returnGreetingHi ("Hi {name},") — the name never reaches the model. recentConversation = the last few turns as "User: ..."/"Companion: ..." lines, or ' +
       '"(none — this will be their first message to Companion)". confirmedSignalsList/recentSessionSummaries share the ' +
       'exact same gatherContinuityContext() read the Continuity composers use, formatted as "- ..." lines or "(none yet)". ' +
-      'Plain text output (no outputSchema) — the raw response string is stored verbatim as a new assistant turn.',
+      'Plain text output (no outputSchema) — the raw response string is returned verbatim.',
   },
   {
     name: 'onboard',

@@ -15,7 +15,9 @@ import {
   acceptRoadmapProposal,
   rejectRoadmapProposal,
   updateRoadmapLifecycle,
+  getPreferences,
 } from '@/lib/api/v1-client'
+import { displayFirstName } from '@/lib/displayName'
 import type { DashboardResponse, TwinListResponse, CompanionContextResponse } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 import RoadmapTimelineCard from '@/components/shared/RoadmapTimelineCard'
@@ -65,8 +67,14 @@ function DashboardContent() {
         const session = await getCurrentSession()
         if (!session) { router.push('/login'); return }
         const email = session.getIdToken().payload.email as string | undefined
-        const namePart = email?.split('@')[0] ?? ''
-        setFirstName(namePart.charAt(0).toUpperCase() + namePart.slice(1))
+        setFirstName(displayFirstName(null, email))
+        // The profile's own name (Session 70), best-effort — the email-derived
+        // one above stays if this fails or none is set.
+        getPreferences()
+          .then((p) => {
+            if (p.firstName) setFirstName(p.firstName)
+          })
+          .catch(() => {})
 
         const [data, twinData] = await Promise.all([getDashboard(), getTwin()])
         setDashboard(data)

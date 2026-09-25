@@ -4,6 +4,7 @@ import { Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import LanguageSelector from '@/components/shared/LanguageSelector'
 import AccountMenu from '@/components/layout/AccountMenu'
+import TimeTodayIndicator from '@/components/companion/TimeTodayIndicator'
 
 /**
  * `useSyncExternalStore` is the correct primitive for a value that changes
@@ -58,10 +59,9 @@ function useClock(): Date | null {
  * Main Chat UX Update (docs/MAIN_CHAT_UX_UPDATE_PLAN.md §0/§3) — net-new
  * chrome, confirmed directly against the two reference mockups
  * (docs/CHAT UX.png / docs/CHAT UX 2.png), not a relocation of anything
- * that exists elsewhere. Deliberately does NOT include the mockups'
- * "12 min today" pill — that needs a real, honest backend metric this
- * pass doesn't have (§3.3), and this project doesn't fabricate displayed
- * data. The search input is a real, focusable control but doesn't run a
+ * that exists elsewhere. The mockups'
+ * "12 min today" is TimeTodayIndicator (Session 70): a real count, kept in
+ * this browser (lib/time-on-dpnr.ts). The search input is a real, focusable control but doesn't run a
  * query yet (§3.7) — no search index exists anywhere in this codebase.
  */
 export default function TopBar() {
@@ -87,6 +87,7 @@ export default function TopBar() {
               {now.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
             </p>
             <p>{now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
+            <TimeTodayIndicator className="mt-0.5 text-white/40" />
           </>
         )}
       </div>

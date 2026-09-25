@@ -9,7 +9,7 @@ import { markProfileSetupCompleteLocally } from '@/lib/cognito/client'
 import { resolveSafeNext } from '@/lib/navigation/safeNext'
 import GenderSelector from '@/components/shared/GenderSelector'
 import AvatarUpload from '@/components/shared/AvatarUpload'
-import type { GenderIdentity } from '@dpnr/shared-types'
+import { PREFERRED_NAME_MAX_LENGTH, type GenderIdentity } from '@dpnr/shared-types'
 
 /**
  * Session 51 — dedicated, one-time post-signin screen (gender + optional
@@ -27,6 +27,7 @@ function ProfileSetupContent() {
   // Untrusted until validated — see resolveSafeNext's own doc comment (DPNR-03).
   const next = resolveSafeNext(params.get('next'))
 
+  const [name, setName] = useState('')
   const [gender, setGender] = useState<GenderIdentity>('unspecified')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -42,7 +43,12 @@ function ProfileSetupContent() {
     setSaving(true)
     setError(null)
     try {
-      await updatePreferences({ genderIdentity: gender, profileSetupComplete: true })
+      const firstName = name.trim()
+      await updatePreferences({
+        genderIdentity: gender,
+        ...(firstName ? { firstName } : {}),
+        profileSetupComplete: true,
+      })
       await finish()
     } catch {
       setError(t('errorGeneric'))
@@ -80,6 +86,24 @@ function ProfileSetupContent() {
 
         <div className="flex-1 space-y-6">
           <AvatarUpload avatarUrl={avatarUrl} onUploaded={setAvatarUrl} />
+
+          {/* Session 70: the name DPNR greets the person by ("Hi <name>,"). */}
+          <div>
+            <label htmlFor="profile-first-name" className="block text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide mb-1.5">
+              {t('name')}
+            </label>
+            <p className="text-white/40 text-xs mb-2">{t('nameHint')}</p>
+            <input
+              id="profile-first-name"
+              type="text"
+              autoComplete="given-name"
+              value={name}
+              maxLength={PREFERRED_NAME_MAX_LENGTH}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t('namePlaceholder')}
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60"
+            />
+          </div>
 
           <div>
             <label className="block text-xs text-[var(--color-text-tertiary)] uppercase tracking-wide mb-1.5">
