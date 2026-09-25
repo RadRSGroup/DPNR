@@ -1177,7 +1177,9 @@ This project has **no human development team**. It is built entirely by Claude C
 
 *(This section is overwritten every session with the current, precise handoff. Do not append to it — replace it. As of Session 11, the long per-session condensed narrative that used to accumulate here was removed — every one of those sessions' full detail already lives in Session History below, verbatim; condensing it a second time up here had drifted from this section's own "replace it" rule for several sessions running. Keep this section to current status + what's next; look in Session History for how we got here.)*
 
-**Session 70 part 2 (latest): return greeting + profile name, global music player, Time on DPNR — deployed + pushed. Open: live check of the new greeting wording on a real returning visit (needs a user message in the thread); Hebrew strings for name/time/player need native review; mobile can't start music (Focus Mode is desktop-only).**
+**Session 70 part 3 (latest): scoped Provider Summaries & Therapist Channel — `docs/PROVIDER_SUMMARY_PLAN.md`, draft awaiting the user's answers to its §9 questions; start with S0/S1 once approved.**
+
+**Session 70 part 2: return greeting + profile name, global music player, Time on DPNR — deployed + pushed. Open: live check of the new greeting wording on a real returning visit (needs a user message in the thread); Hebrew strings for name/time/player need native review; mobile can't start music (Focus Mode is desktop-only).**
 
 **Session 70 part 1: fixed the room countdown/stopping-cue reset (`RoomSessionClock.tsx`) and worked round 1 of the founder's Google Doc "DPNR – Living Bugs, Fixes & Product Feedback Log" (the living backlog; follow its Implementation Rule, flag anything non-UI). Built + verified locally, NOT committed: app-wide dark native dropdowns, 8 Spotify playlists, Pull a Card centering/uncropping/glass, default indigo chat background, wide-screen photo readability. Waiting on the user: approval for the 3 flagged items (return greeting prompt, Time on DPNR, global player), and commit/push. The user said not to edit the Google Doc (read it; report status in chat instead). See Session 70 in Session History.**
 
@@ -1416,6 +1418,12 @@ From there, wrote and got approval for a 6-slice plan, `C:\Users\rekkawi\.claude
 ---
 
 ## Session History
+
+### 2026-09-25 — Session 70, part 3: Provider Summaries & Therapist Channel scoped — docs only
+
+- New `docs/PROVIDER_SUMMARY_PLAN.md` (draft for review). User decisions: Israel first; providers read-only; business goal = a channel where therapists recommend DPNR; the person may export a PDF they own (DPNR keeps no copy); anything DPNR stores/displays to a provider needs a very high security bar.
+- Shape: S0 legal (Israeli privacy counsel) + ADR 0017 → S1 client-only summary builder + PDF (assembly of confirmed signals, Room session summaries, Roadmap, commitments + a note to the provider; no AI, no new storage) → S2 provider accounts (separate Cognito pool with MFA required, X25519 keypair reusing `lib/crypto` + ADR 0014 wrapping, manual license verification against Israeli registries) → S3 E2E shares (browser-built snapshot, random share key, sealed-box wrapped to provider + client public keys, ciphertext-only S3, revoke/expiry, audit log visible to the client, hardened viewer) → S4 channel (referral links, "Recommended by your therapist", counts only).
+- Open questions for the user are listed in the plan's §9 (eligibility of unlicensed therapists, incentives vs professional ethics, pricing, default expiry, verification ops, regulatory classification). Nothing built; no ADR written yet (0017 is S0).
 
 ### 2026-09-25 — Session 70, part 2: the three flagged feedback items (return greeting + profile name, global music player, Time on DPNR) — built, verified locally, DEPLOYED (user-authorized) + pushed
 
