@@ -50,10 +50,11 @@
   /* A progress segment drawing in along the inline axis (pair with origin-left rtl:origin-right). */
   --animate-journey-fill: journey-fill var(--motion-slow) var(--ease-settle) both;
   /* Pull a Card: the face flips away, two card backs shuffle, the new card is dealt face-up. */
-  --animate-card-flip-out: card-flip-out 220ms var(--ease-settle) forwards;
-  --animate-card-shuffle-a: card-shuffle-a 720ms var(--ease-breath) infinite;
-  --animate-card-shuffle-b: card-shuffle-b 720ms var(--ease-breath) infinite;
-  --animate-card-deal: card-deal 560ms var(--ease-settle) both;
+  --animate-card-flip-out: card-flip-out 240ms var(--ease-settle) forwards;
+  /* 700ms per pass — keep in sync with SHUFFLE_PASS_MS in PullACard.tsx. */
+  --animate-card-shuffle-a: card-shuffle-a 700ms var(--ease-breath) infinite alternate;
+  --animate-card-shuffle-b: card-shuffle-b 700ms var(--ease-breath) infinite alternate;
+  --animate-card-deal: card-deal 620ms var(--ease-settle) both;
   /* Slow opacity-only glow, e.g. a completion orb. */
   --animate-soft-glow: soft-glow 5s var(--ease-breath) infinite;
 
@@ -85,20 +86,21 @@
   @keyframes card-flip-out {
     to { opacity: 0; transform: rotateY(80deg) scale(0.94); }
   }
-  /* Two backs slide out to opposite sides and come back on top of each other
-     (z-index switches at the far point), like an overhand shuffle. Kept
-     scaled down so they stay close to the card's own footprint. */
+  /* Two backs swing out to opposite sides and back. Each pass starts and ends
+     on the back's own resting pose (--card-y/--card-rot/--card-scale, set by
+     PullACard), and with `alternate` the z-index swap lands at the far point
+     of every swing, so which card is on top changes only while they're apart. */
   @keyframes card-shuffle-a {
-    0%     { z-index: 1; transform: translateX(0) rotate(0deg) scale(0.86); }
-    50%    { z-index: 1; transform: translateX(10%) rotate(6deg) scale(0.86); }
+    0%     { z-index: 1; transform: translateY(var(--card-y)) rotate(var(--card-rot)) scale(var(--card-scale)); }
+    50%    { z-index: 1; transform: translateX(8%) translateY(-2%) rotate(5deg) scale(0.9); }
     50.01% { z-index: 3; }
-    100%   { z-index: 3; transform: translateX(0) rotate(0deg) scale(0.86); }
+    100%   { z-index: 3; transform: translateY(var(--card-y)) rotate(var(--card-rot)) scale(var(--card-scale)); }
   }
   @keyframes card-shuffle-b {
-    0%     { z-index: 3; transform: translateX(0) rotate(0deg) scale(0.86); }
-    50%    { z-index: 3; transform: translateX(-10%) rotate(-6deg) scale(0.86); }
+    0%     { z-index: 3; transform: translateY(var(--card-y)) rotate(var(--card-rot)) scale(var(--card-scale)); }
+    50%    { z-index: 3; transform: translateX(-8%) translateY(-2%) rotate(-5deg) scale(0.9); }
     50.01% { z-index: 1; }
-    100%   { z-index: 1; transform: translateX(0) rotate(0deg) scale(0.86); }
+    100%   { z-index: 1; transform: translateY(var(--card-y)) rotate(var(--card-rot)) scale(var(--card-scale)); }
   }
   @keyframes card-deal {
     0%   { opacity: 0; transform: translateY(-3%) rotateY(-80deg) scale(0.92); }

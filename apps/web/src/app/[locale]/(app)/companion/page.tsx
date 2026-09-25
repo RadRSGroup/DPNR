@@ -515,7 +515,16 @@ function CompanionContent() {
 
       <div className="flex-1 overflow-hidden lg:grid lg:grid-cols-3 lg:gap-6 lg:px-8 lg:pt-0">
         {/* Main column */}
-        <div className="lg:col-span-2 h-full flex flex-col overflow-hidden max-w-[393px] lg:max-w-none mx-auto w-full">
+        {/* Mobile landing: greeting + Pull a Card + Explore + prompts + composer
+            are taller than a phone, and only the thread used to scroll, so the
+            bottom (prompts, composer) was clipped (user report, Session 69).
+            On the mobile landing the whole column scrolls instead, the thread
+            keeps its natural height, and the composer sticks to the bottom. */}
+        <div
+          className={`lg:col-span-2 h-full flex flex-col overflow-hidden max-w-[393px] lg:max-w-none mx-auto w-full ${
+            isLanding ? 'max-lg:overflow-y-auto no-scrollbar' : ''
+          }`}
+        >
           {/* Mobile: plain text greeting, no room for hero art here. Only on
               the true landing state — see isLanding's doc comment above. */}
           {isLanding && (
@@ -577,7 +586,7 @@ function CompanionContent() {
           <div
             ref={scrollRef}
             key={threadKey}
-            className={`${threadKey > 0 ? 'animate-fade-in ' : ''}scrollbar-glass flex-1 overflow-y-auto px-5 lg:px-0 pb-2 flex flex-col ${isLanding ? 'pt-2' : 'pt-14 lg:pt-2'} ${
+            className={`${threadKey > 0 ? 'animate-fade-in ' : ''}scrollbar-glass flex-1 overflow-y-auto px-5 lg:px-0 pb-2 flex flex-col ${isLanding ? 'pt-2 max-lg:flex-none max-lg:overflow-visible' : 'pt-14 lg:pt-2'} ${
               !pageLoading && messages.length === 0 && !onboarding.active ? 'justify-center' : 'space-y-3'
             }`}
           >
@@ -841,7 +850,11 @@ function CompanionContent() {
             onChange={handleFileSelected}
             className="hidden"
           />
-          <div className="px-5 lg:px-0 pb-4 pt-3 flex items-end gap-2">
+          <div
+            className={`px-5 lg:px-0 pb-4 pt-3 flex items-end gap-2 ${
+              isLanding ? 'max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:mt-auto max-lg:bg-gradient-to-t max-lg:from-[var(--color-bg-base)] max-lg:via-[var(--color-bg-base)]/90 max-lg:to-transparent' : ''
+            }`}
+          >
             <button
               onClick={handleAttachClick}
               disabled={composerDisabled}
@@ -850,7 +863,7 @@ function CompanionContent() {
             >
               <Plus className="w-5 h-5" />
             </button>
-            <div className="flex-1 relative flex items-end">
+            <div className="flex-1 min-w-0 relative flex items-end">
               <textarea
                 ref={textareaRef}
                 value={input}
@@ -859,7 +872,7 @@ function CompanionContent() {
                 placeholder={onboarding.awaitingIntention ? t('cards.currentIntention.placeholder') : tc('composer.placeholder')}
                 rows={1}
                 disabled={composerDisabled}
-                className="flex-1 bg-[var(--color-surface-glass)] border border-white/15 rounded-2xl ps-4 pe-20 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors max-h-32"
+                className="flex-1 min-w-0 bg-[var(--color-surface-glass)] border border-white/15 rounded-2xl ps-4 pe-20 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors max-h-32"
               />
               <div className="absolute end-3 bottom-3 flex items-center gap-2.5">
                 {speechSupported && (

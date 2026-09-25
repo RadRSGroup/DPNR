@@ -111,5 +111,7 @@ const CARD_TOPIC_IMAGES: Record<GuidanceCardTopic, string> = {
 export const CARD_DEFAULT_IMAGE = CARD_TOPIC_IMAGES.NEEDS
 
 export function cardImage(topic: GuidanceCardTopic): string {
-  return CARD_TOPIC_IMAGES[topic]
+  // Fallback for a topic this build doesn't know (e.g. one added to the
+  // seed before the frontend): an empty src rendered no photo at all.
+  return CARD_TOPIC_IMAGES[topic] ?? CARD_DEFAULT_IMAGE
 }
