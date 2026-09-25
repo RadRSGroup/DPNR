@@ -27,7 +27,7 @@ How DPNR moves. Decided with the user in Session 69 (2026-09-24): **calm and min
 | `animate-soft-pulse` | opacity 0.35↔1, 1.8s | "working on it" (replaces bounce dots / `animate-pulse`) |
 | `animate-step-in-forward` / `-back` | fade + 16px along the inline axis, calm | room step content; follows reading direction via `--motion-dir` (1 LTR, −1 RTL) |
 | `animate-journey-fill` | scaleX from `--motion-grow-from` (0; 1 under reduced motion), slow | a progress segment drawing in; pair with `origin-left rtl:origin-right` |
-| `animate-card-flip-out` / `-shuffle-a` / `-shuffle-b` / `-deal` | face flips away, two backs shuffle (z-index swaps at the far point), new card dealt face-up | Pull a Card only; shuffles are stopped under reduced motion and the component fades instead |
+| `animate-card-flip-out` / `-shuffle-a` / `-shuffle-b` / `-deal` / `-sheen` | old face tucks into the deck; two backs swing in 3D arcs (lift, slight rotateY, 800ms passes, z-index swaps at the far point); new card turns in face-up (720ms, no overshoot); one soft light sweep across it after landing (Session 70) | Pull a Card only; shuffles and the sheen are stopped under reduced motion and the component fades instead |
 | `animate-soft-glow` | opacity 0.45↔0.9, 5s breath | a slow glow (Celebration orb) |
 | `animate-spin` | stock | spinners only (buttons, page loads) — AI waits use `<AiThinking>` |
 | `stagger-<n>` | `animation-delay: n × 150ms` | things that animate in sequence (the chat thinking dots) |

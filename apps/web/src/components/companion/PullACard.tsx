@@ -43,7 +43,7 @@ import type { PullCardResponse } from '@dpnr/shared-types'
  */
 const MIN_SHUFFLE_MS = 1100
 // One shuffle pass: must match the card-shuffle-* duration in globals.css.
-const SHUFFLE_PASS_MS = 700
+const SHUFFLE_PASS_MS = 800
 // Deal anyway if the photo is slow, rather than shuffling forever.
 const IMAGE_WAIT_MS = 3000
 
@@ -164,6 +164,12 @@ export default function PullACard() {
               (below), so the photo no longer needs darkening as a whole. */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.3)_0%,rgba(0,0,0,0.12)_55%,transparent_100%)]" />
           <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
+          {/* One soft light sweep as the card lands (transform/opacity only; none under reduced motion). */}
+          {phase === 'dealt' && !reduced && (
+            <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+              <div className="absolute inset-y-0 -inset-x-1/4 animate-card-sheen bg-[linear-gradient(105deg,transparent_38%,rgba(255,255,255,0.22)_50%,transparent_62%)]" />
+            </div>
+          )}
 
           {/* Question and tagline stack in normal flow (not both absolutely
               placed), so a long question in a narrow column pushes against

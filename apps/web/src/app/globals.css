@@ -50,11 +50,13 @@
   /* A progress segment drawing in along the inline axis (pair with origin-left rtl:origin-right). */
   --animate-journey-fill: journey-fill var(--motion-slow) var(--ease-settle) both;
   /* Pull a Card: the face flips away, two card backs shuffle, the new card is dealt face-up. */
-  --animate-card-flip-out: card-flip-out 240ms var(--ease-settle) forwards;
+  --animate-card-flip-out: card-flip-out 280ms var(--ease-settle) forwards;
   /* 700ms per pass — keep in sync with SHUFFLE_PASS_MS in PullACard.tsx. */
-  --animate-card-shuffle-a: card-shuffle-a 700ms var(--ease-breath) infinite alternate;
-  --animate-card-shuffle-b: card-shuffle-b 700ms var(--ease-breath) infinite alternate;
-  --animate-card-deal: card-deal 620ms var(--ease-settle) both;
+  --animate-card-shuffle-a: card-shuffle-a 800ms var(--ease-breath) infinite alternate;
+  --animate-card-shuffle-b: card-shuffle-b 800ms var(--ease-breath) infinite alternate;
+  --animate-card-deal: card-deal 720ms var(--ease-settle) both;
+  /* A soft light passing across the card just after it lands. */
+  --animate-card-sheen: card-sheen 1100ms var(--ease-settle) 380ms both;
   /* Slow opacity-only glow, e.g. a completion orb. */
   --animate-soft-glow: soft-glow 5s var(--ease-breath) infinite;
 
@@ -83,29 +85,42 @@
     from { transform: scaleX(var(--motion-grow-from)); }
     to   { transform: scaleX(1); }
   }
+  /* The old card tucks back into the deck: down, turning away, shrinking to the backs' size. */
   @keyframes card-flip-out {
-    to { opacity: 0; transform: rotateY(80deg) scale(0.94); }
+    to { opacity: 0; transform: translateY(3%) rotateY(70deg) scale(0.92); }
   }
   /* Two backs swing out to opposite sides and back. Each pass starts and ends
      on the back's own resting pose (--card-y/--card-rot/--card-scale, set by
      PullACard), and with `alternate` the z-index swap lands at the far point
      of every swing, so which card is on top changes only while they're apart. */
+  /* Each swing is an arc in depth, not a flat slide: the card lifts and
+     turns slightly away on the way out, and comes back in lower. */
   @keyframes card-shuffle-a {
     0%     { z-index: 1; transform: translateY(var(--card-y)) rotate(var(--card-rot)) scale(var(--card-scale)); }
-    50%    { z-index: 1; transform: translateX(8%) translateY(-2%) rotate(5deg) scale(0.9); }
+    25%    { transform: translateX(5%) translateY(-5%) rotate(3deg) rotateY(-9deg) scale(0.94); }
+    50%    { z-index: 1; transform: translateX(10%) translateY(-1%) rotate(6deg) rotateY(-14deg) scale(0.9); }
     50.01% { z-index: 3; }
+    75%    { transform: translateX(5%) translateY(1.5%) rotate(4deg) rotateY(-7deg) scale(0.93); }
     100%   { z-index: 3; transform: translateY(var(--card-y)) rotate(var(--card-rot)) scale(var(--card-scale)); }
   }
   @keyframes card-shuffle-b {
     0%     { z-index: 3; transform: translateY(var(--card-y)) rotate(var(--card-rot)) scale(var(--card-scale)); }
-    50%    { z-index: 3; transform: translateX(-8%) translateY(-2%) rotate(-5deg) scale(0.9); }
+    25%    { transform: translateX(-5%) translateY(1.5%) rotate(-3deg) rotateY(7deg) scale(0.95); }
+    50%    { z-index: 3; transform: translateX(-10%) translateY(-1%) rotate(-6deg) rotateY(14deg) scale(0.9); }
     50.01% { z-index: 1; }
+    75%    { transform: translateX(-5%) translateY(-5%) rotate(-4deg) rotateY(9deg) scale(0.94); }
     100%   { z-index: 1; transform: translateY(var(--card-y)) rotate(var(--card-rot)) scale(var(--card-scale)); }
   }
+  /* Dealt face-up: turns in from the side and settles, no overshoot. */
   @keyframes card-deal {
-    0%   { opacity: 0; transform: translateY(-3%) rotateY(-80deg) scale(0.92); }
-    55%  { opacity: 1; }
+    0%   { opacity: 0; transform: translateY(4%) rotateY(-90deg) scale(0.94); }
+    40%  { opacity: 1; }
     100% { opacity: 1; transform: none; }
+  }
+  @keyframes card-sheen {
+    0%   { opacity: 0; transform: translateX(calc(-110% * var(--motion-dir))); }
+    30%  { opacity: 1; }
+    100% { opacity: 0; transform: translateX(calc(110% * var(--motion-dir))); }
   }
   @keyframes soft-glow {
     0%, 100% { opacity: 0.45; }
@@ -202,7 +217,8 @@
   .animate-bounce,
   .animate-ping,
   .animate-card-shuffle-a,
-  .animate-card-shuffle-b {
+  .animate-card-shuffle-b,
+  .animate-card-sheen {
     animation: none !important;
   }
   .liquid-glass:hover {
@@ -224,6 +240,34 @@ option,
 optgroup {
   background-color: var(--color-violet-950);
   color: var(--color-text-primary);
+}
+
+/*
+ * Printing (Summary for my therapist, Session 70): the printable document
+ * is portaled into `.print-root`, a direct child of <body>. On screen it's
+ * hidden; in print it's the only thing shown, on white, so "Save as PDF"
+ * produces just the summary with no app chrome.
+ */
+.print-root {
+  display: none;
+}
+@media print {
+  @page {
+    margin: 16mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  body > *:not(.print-root) {
+    display: none !important;
+  }
+  .print-root {
+    display: block;
+  }
+  .print-root .summary-doc {
+    padding: 0 !important;
+  }
 }
 
 body {

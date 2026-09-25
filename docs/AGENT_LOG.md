@@ -1177,7 +1177,9 @@ This project has **no human development team**. It is built entirely by Claude C
 
 *(This section is overwritten every session with the current, precise handoff. Do not append to it — replace it. As of Session 11, the long per-session condensed narrative that used to accumulate here was removed — every one of those sessions' full detail already lives in Session History below, verbatim; condensing it a second time up here had drifted from this section's own "replace it" rule for several sessions running. Keep this section to current status + what's next; look in Session History for how we got here.)*
 
-**Session 70 part 3 (latest): scoped Provider Summaries & Therapist Channel — `docs/PROVIDER_SUMMARY_PLAN.md`, draft awaiting the user's answers to its §9 questions; start with S0/S1 once approved.**
+**Session 70 part 4 (latest): Provider Summaries Slice 1 (summary builder + PDF, `/therapist-summary`) and the premium shuffle are committed locally; `Dpnr-Api` deploy (new `GET /v1/rooms/session-summaries`) + push await the user's go-ahead. Slices 2–4 are blocked until the formal provider approval pipeline is defined.**
+
+**Session 70 part 3: scoped Provider Summaries & Therapist Channel — `docs/PROVIDER_SUMMARY_PLAN.md`, draft awaiting the user's answers to its §9 questions; start with S0/S1 once approved.**
 
 **Session 70 part 2: return greeting + profile name, global music player, Time on DPNR — deployed + pushed. Open: live check of the new greeting wording on a real returning visit (needs a user message in the thread); Hebrew strings for name/time/player need native review; mobile can't start music (Focus Mode is desktop-only).**
 
@@ -1418,6 +1420,15 @@ From there, wrote and got approval for a 6-slice plan, `C:\Users\rekkawi\.claude
 ---
 
 ## Session History
+
+### 2026-09-25 — Session 70, part 4: Provider Summaries Slice 1 (summary builder + PDF) and a more premium Pull a Card shuffle — built + verified locally, committed, NOT deployed/pushed
+
+- **Plan decisions recorded** in `docs/PROVIDER_SUMMARY_PLAN.md` (pushed `b1690f9`): licensed professionals only; sharing free; **a formal provider approval pipeline must be defined before any provider-side development** (blocks Slices 2–4; §4.2 lists what it must cover).
+- **Slice 1 built**: `(app)/therapist-summary/page.tsx` (entry card on Account). Edit view: date range (30/90/180 presets + custom), name on the summary (profile name / email fallback), "What I'd like to talk about" note (2,000 chars), sections with include toggles and per-line edit/remove: Roadmap focus/theme/direction, confirmed patterns only, Decision/Mirror session summaries in range, open + completed commitments. Preview = the same `SummaryDocument` as the print copy (white paper, non-diagnostic disclaimer, footer). "Save as PDF" → responsibility warning → `window.print()`; the print copy is portaled as `.print-root` under `<body>` and `globals.css` prints only that. No AI; no writes. Verified in the pane: real account data + mocked sessions; editing/removing updates the document; a request log across edit → preview → Save found **zero requests**; Hebrew RTL renders. The native print dialog itself was not opened (it can hang the pane).
+- **New endpoint** `GET /v1/rooms/session-summaries?from&to` (`lambda/rooms/session-summaries.ts`, `SessionSummariesFn`): own partition only, paginated over `SESSION#` (chat messages share the prefix), room type from the parent SessionItem, Companion excluded, ranges validated (max 366 days, default last 30). 3 tests. `cdk diff`: additive only (new Lambda + role with the same read grants as ListMirrorsFn + route); other Lambdas code-only. **Not deployed yet**; until it is, the sessions section shows its empty state.
+- **Pull a Card shuffle (user: smoother, premium, Pareto)**: backs swing in 3D arcs (lift, slight rotateY, 800ms passes, `SHUFFLE_PASS_MS` kept in sync), old face tucks into the deck, the new card turns in over 720ms without overshoot, then one soft light sweep (`animate-card-sheen`, RTL-aware). Transform/opacity only; sheen stopped under reduced motion. Sampled live: shuffle+flip-out → shuffle → deal+sheen at ~1.66s. MOTION.md table updated.
+- **Checks**: web tsc/lint (809 keys)/46 tests/`next build`; infra tsc + 76/76 tests.
+- **Next**: with the user's go-ahead, `cdk deploy Dpnr-Api` (same context flags as part 2), then push. Hebrew copy on the summary page needs native review.
 
 ### 2026-09-25 — Session 70, part 3: Provider Summaries & Therapist Channel scoped — docs only
 

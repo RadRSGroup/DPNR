@@ -194,3 +194,28 @@ export const MirrorsListResponseSchema = z.object({
   mirrors: z.array(MirrorSummaryViewSchema),
 })
 export type MirrorsListResponse = z.infer<typeof MirrorsListResponseSchema>
+
+/**
+ * GET /v1/rooms/session-summaries?from=YYYY-MM-DD&to=YYYY-MM-DD — the
+ * person's own Decision/Mirror session summaries in a date range (inclusive,
+ * UTC days, by summary createdAt), newest first. Session 70: feeds the
+ * "Summary for my therapist" builder (docs/PROVIDER_SUMMARY_PLAN.md §3,
+ * Slice 1). Both params optional; `from` defaults to 30 days before `to`,
+ * `to` to today; the range is capped at SESSION_SUMMARIES_MAX_RANGE_DAYS.
+ */
+export const SESSION_SUMMARIES_MAX_RANGE_DAYS = 366
+
+export const SessionSummaryViewSchema = z.object({
+  sessionId: z.string(),
+  roomType: z.enum(['decision', 'mirror']),
+  summary: z.string(),
+  createdAt: z.string(),
+})
+export type SessionSummaryView = z.infer<typeof SessionSummaryViewSchema>
+
+export const SessionSummariesResponseSchema = z.object({
+  from: z.string().date(),
+  to: z.string().date(),
+  sessions: z.array(SessionSummaryViewSchema),
+})
+export type SessionSummariesResponse = z.infer<typeof SessionSummariesResponseSchema>

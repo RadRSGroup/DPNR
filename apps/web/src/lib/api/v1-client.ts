@@ -55,6 +55,7 @@ import type {
   ChatBackgroundUploadUrlResponse,
   UpdateOnboardingSnapshotRequest,
   OnboardingSnapshotResponse,
+  SessionSummariesResponse,
 } from '@dpnr/shared-types'
 import { getIdToken } from '../cognito/client'
 
@@ -96,6 +97,12 @@ export async function submitRoomCommand(request: RoomCommandRequest): Promise<Ro
   const path = request.flowId === 'DECISION' ? '/v1/rooms/decision' : '/v1/rooms/mirror'
   const res = await authedFetch(path, { method: 'POST', body: JSON.stringify(request) })
   return parseOrThrow<RoomCommandResponse>(res)
+}
+
+/** GET /v1/rooms/session-summaries — Decision/Mirror session summaries in a date range (Summary for my therapist, Session 70). */
+export async function getSessionSummaries(from: string, to: string): Promise<SessionSummariesResponse> {
+  const res = await authedFetch(`/v1/rooms/session-summaries?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)
+  return parseOrThrow<SessionSummariesResponse>(res)
 }
 
 /** GET /v1/rooms/decision/{id}/full — used both by `decision/new/page.tsx`'s `?resume=` handling and, eventually, `decision/[id]/page.tsx`. */

@@ -3,6 +3,11 @@
     "appName": "InnerOS"
   },
   "Account": {
+    "therapistSummary": {
+      "title": "Summary for my therapist",
+      "body": "Create a PDF of your reflections to share with your therapist or psychiatrist.",
+      "cta": "Create summary"
+    },
     "title": "Account",
     "credits": {
       "label": "Credits",
@@ -1028,6 +1033,75 @@
         "LIFE_IMPACT": "Life impact",
         "COMMITMENT": "Commitment"
       }
+    }
+  },
+  "TherapistSummary": {
+    "title": "Summary for my therapist",
+    "subtitle": "Put together what you'd like your therapist or psychiatrist to know, edit anything, and save it as a PDF to share yourself.",
+    "privacy": "This summary is created on this device. DPNR doesn't keep a copy, and nothing here is sent to anyone.",
+    "mode": {
+      "edit": "Edit",
+      "preview": "Preview"
+    },
+    "loadError": "Some of your material couldn't be loaded. Please try again.",
+    "range": {
+      "label": "Period",
+      "lastDays": "Last {days} days",
+      "from": "From",
+      "to": "To"
+    },
+    "nameLabel": "Your name on the summary",
+    "include": "Include",
+    "remove": "Remove",
+    "sections": {
+      "note": "What I'd like to talk about",
+      "noteHint": "A note to your therapist, in your own words. Often the most useful part.",
+      "notePlaceholder": "For example: what's been on your mind, what you'd like to focus on next session…",
+      "focus": "My current focus",
+      "patterns": "Patterns I've recognized",
+      "patternsHint": "Only the patterns you confirmed yourself.",
+      "sessions": "Reflection sessions in this period",
+      "commitments": "Commitments & goals"
+    },
+    "focus": {
+      "currentFocus": "Focus",
+      "theme": "Theme",
+      "direction": "Direction"
+    },
+    "empty": {
+      "focus": "No focus yet. It appears after onboarding.",
+      "patterns": "No confirmed patterns yet.",
+      "sessions": "No Decision or Mirror Room sessions in this period.",
+      "commitments": "No commitments or goals yet."
+    },
+    "room": {
+      "decision": "Decision Room",
+      "mirror": "Mirror Room"
+    },
+    "commitmentStatus": {
+      "open": "In progress",
+      "completed": "Completed",
+      "dropped": "Dropped"
+    },
+    "toPreview": "Preview summary",
+    "backToEdit": "Edit",
+    "downloadPdf": "Save as PDF",
+    "pdfHowTo": "In the print window, choose \"Save as PDF\" as the destination.",
+    "pdfWarning": {
+      "title": "This file will leave DPNR",
+      "body": "Once saved, the PDF is yours and your responsibility. Anyone who has the file can read it, so share it only with people you trust.",
+      "confirm": "I understand, save PDF",
+      "cancel": "Cancel"
+    },
+    "doc": {
+      "title": "Reflection summary: {name}",
+      "theClient": "the client",
+      "period": "Period: {from} – {to}",
+      "createdOn": "Created {date}",
+      "disclaimer": "Prepared by {name} using DPNR, a self-reflection tool. This is a personal reflection summary, not a clinical assessment or diagnosis.",
+      "nothing": "Nothing is included yet.",
+      "reviewBy": "review by {date}",
+      "footer": "Created with DPNR. The content was written and approved by the person named above."
     }
   }
 }

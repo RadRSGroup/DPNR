@@ -1270,6 +1270,28 @@ export class ApiStack extends Stack {
       authorizer: this.cognitoAuthorizer,
     })
 
+    // Session 70 — "Summary for my therapist" builder (docs/PROVIDER_SUMMARY_PLAN.md, Slice 1).
+    const sessionSummariesFn = new lambda.NodejsFunction(this, 'SessionSummariesFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/rooms/session-summaries.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
+      description: "GET /v1/rooms/session-summaries — the caller's Decision/Mirror session summaries in a date range.",
+    })
+    props.applicationTable.grantReadData(sessionSummariesFn)
+    props.sessionTicketsKmsKey.grantDecrypt(sessionSummariesFn)
+    props.sessionTicketsTable.grantReadData(sessionSummariesFn)
+
+    this.httpApi.addRoutes({
+      path: '/v1/rooms/session-summaries',
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new integrations.HttpLambdaIntegration('SessionSummariesIntegration', sessionSummariesFn),
+      authorizer: this.cognitoAuthorizer,
+    })
+
     this.httpApi.addRoutes({
       path: '/v1/rooms/mirrors',
       methods: [apigwv2.HttpMethod.GET],

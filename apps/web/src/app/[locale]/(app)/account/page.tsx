@@ -265,6 +265,18 @@ export default function AccountPage() {
             </div>
           </Card>
 
+          {/* Summary for my therapist (docs/PROVIDER_SUMMARY_PLAN.md, Slice 1). */}
+          <Card className="space-y-2">
+            <p className="text-white/85 text-sm">{t('therapistSummary.title')}</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs">{t('therapistSummary.body')}</p>
+            <Link
+              href="/therapist-summary"
+              className="inline-block rounded-full bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] text-white text-xs px-4 py-2 transition-colors"
+            >
+              {t('therapistSummary.cta')}
+            </Link>
+          </Card>
+
           {/* Preferences — docs/HEBREW_LOCALIZATION_PLAN.md Slice B. Language
               switches immediately (LanguageSelector re-routes the whole page);
               gender is used only to pick correct Hebrew grammatical gender in
