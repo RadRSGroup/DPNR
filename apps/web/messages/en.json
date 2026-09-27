@@ -307,6 +307,23 @@
     "mirror": { "title": "Start a Mirror Room session", "subtitle": "~12 minutes · 6 guided steps" }
   },
   "Dashboard": {
+    "calibration": {
+      "title": "What I'm Noticing",
+      "subtitle": "Confirm what's right, correct what isn't",
+      "confirm": "Confirm",
+      "notQuite": "Not quite",
+      "confirmedAck": "Got it. I'll keep this in mind as I continue learning what feels true for you.",
+      "rejectedAck": "Thanks for correcting me.",
+      "failed": "Couldn't save that. Please try again.",
+      "domains": {
+        "pattern": "Pattern",
+        "trigger": "Trigger",
+        "value": "Value",
+        "current_focus": "Current Focus",
+        "direction": "Direction",
+        "commitment": "Commitment"
+      }
+    },
     "greeting": "Good morning{name}",
     "subtitle": "Your journey. Your awareness. Your evolution.",
     "checkIn": "Check in",
@@ -355,12 +372,23 @@
     "proposal": { "title": "A shift worth naming?", "updateRoadmap": "Update my Roadmap", "notNow": "Not now" },
     "credits": { "label": "Credits", "runningLowUpgrade": "Running low · Upgrade" },
     "patterns": {
+      "readMore": "Read more",
+      "showLess": "Show less",
       "title": "Patterns Track",
       "subtitle": "See what's repeating",
       "empty": "Patterns show up here once you confirm the ones DPNR notices.",
       "mainTheme": "Main theme: {theme}"
     },
     "archetypes": {
+      "about": "About {name}",
+      "presence": "Linked to {percent}% of the observations you've confirmed. An energy that may be active right now, not a label for who you are.",
+      "notYet": "Not showing up in what you've confirmed so far.",
+      "meanings": {
+        "healer": "Caring for or repairing something: yourself, a relationship, a wound.",
+        "seeker": "Exploring, questioning, searching for meaning or understanding.",
+        "visionary": "Imagining, building toward, or moving toward a future you want.",
+        "protector": "Safety, boundaries, and guarding what matters from harm."
+      },
       "title": "Leading Archetypes",
       "subtitle": "Your core energies",
       "footer": "These energies shape how you show up in the world.",
@@ -716,6 +744,8 @@
       "signOut": "Log Out"
     },
     "focusMode": {
+      "music": "Music",
+      "openMusic": "Open DPNR music",
       "title": "Focus Mode",
       "subtitle": "Deep Work · DPNR Playlist",
       "comingSoon": "Coming soon",
@@ -750,7 +780,15 @@
       "cancel": "Cancel",
       "deleteFailed": "Couldn’t delete it. Please try again.",
       "showHistory": "Conversations",
-      "close": "Close"
+      "close": "Close",
+      "search": "Search conversations",
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "groups": {
+        "today": "Today",
+        "week": "Past 7 days",
+        "earlier": "Earlier"
+      }
     },
     "directiveCard": {
       "startDecisionRoom": "Start a Decision Room",
@@ -832,6 +870,12 @@
     },
     "languageAriaLabel": "Language",
     "mobileItems": {
+      "growth": "Growth Tracker",
+      "evolution": "Evolution Map",
+      "pullCard": "Pull a Card",
+      "wallet": "Wallet",
+      "openMenu": "More destinations",
+      "closeMenu": "Close menu",
       "chat": "Chat",
       "dashboard": "Dashboard",
       "mirror": "Mirror",

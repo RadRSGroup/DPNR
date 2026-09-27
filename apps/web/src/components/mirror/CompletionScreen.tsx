@@ -15,13 +15,16 @@ interface Props {
   userName: string
   situation: string
   trigger?: string
+  /** Step 2's own answers (already saved) — shown back so the ending reflects what was felt, not only what happened. */
+  emotion?: string
+  bodyResponse?: string
   synthesis?: string
   commitment?: string
   onDone: () => void
 }
 
 /** Adapted from components/decision/CompletionScreen.tsx. No "view full summary" link — no Mirror Room detail/review page exists (out of scope, same as decision/[id]/page.tsx's precedent). */
-export default function CompletionScreen({ userName, situation, trigger, synthesis, commitment, onDone }: Props) {
+export default function CompletionScreen({ userName, situation, trigger, emotion, bodyResponse, synthesis, commitment, onDone }: Props) {
   const firstName = userName.includes('@')
     ? userName.split('@')[0]
     : userName.split(' ')[0] || userName
@@ -49,6 +52,23 @@ export default function CompletionScreen({ userName, situation, trigger, synthes
             <p className="text-white/50 text-xs leading-relaxed">Triggered by: {trigger}</p>
           )}
         </Card>
+
+        {(emotion?.trim() || bodyResponse?.trim()) && (
+          <Card className="space-y-3">
+            {emotion?.trim() && (
+              <div className="space-y-1">
+                <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">What you felt</p>
+                <p className="text-white/70 text-sm leading-relaxed">{emotion}</p>
+              </div>
+            )}
+            {bodyResponse?.trim() && (
+              <div className="space-y-1">
+                <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">Where your body felt it</p>
+                <p className="text-white/70 text-sm leading-relaxed">{bodyResponse}</p>
+              </div>
+            )}
+          </Card>
+        )}
 
         {synthesis && (
           <div className="bg-purple-900/15 border border-purple-700/25 rounded-2xl p-4 space-y-1">

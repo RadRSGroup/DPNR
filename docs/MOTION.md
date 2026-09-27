@@ -29,6 +29,7 @@ How DPNR moves. Decided with the user in Session 69 (2026-09-24): **calm and min
 | `animate-journey-fill` | scaleX from `--motion-grow-from` (0; 1 under reduced motion), slow | a progress segment drawing in; pair with `origin-left rtl:origin-right` |
 | `animate-card-flip-out` / `-shuffle-a` / `-shuffle-b` / `-deal` / `-sheen` | old face tucks into the deck; two backs swing in 3D arcs (lift, slight rotateY, 800ms passes, z-index swaps at the far point); new card turns in face-up (720ms, no overshoot); one soft light sweep across it after landing (Session 70) | Pull a Card only; shuffles and the sheen are stopped under reduced motion and the component fades instead |
 | `animate-soft-glow` | opacity 0.45↔0.9, 5s breath | a slow glow (Celebration orb) |
+| `animate-ring-orbit` / `-slow` | rotate 360° with breathing opacity (0.25↔0.95), 17s and 29s reverse, `ease-breath` | Dashboard InnerSelf ring while DPNR is still learning (insufficient / developing only; Session 71). Two short arcs on co-prime durations so light travels without a visible loop; no progress, no spinner speed. Stopped under reduced motion (static arcs) |
 | `animate-spin` | stock | spinners only (buttons, page loads) — AI waits use `<AiThinking>` |
 | `stagger-<n>` | `animation-delay: n × 150ms` | things that animate in sequence (the chat thinking dots) |
 

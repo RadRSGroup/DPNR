@@ -317,10 +317,12 @@ function EvolutionMapContent() {
                       type="date"
                       value={goalReviewDate}
                       onChange={(e) => setGoalReviewDate(e.target.value)}
-                      title={t('goals.leaveBlankOngoing')}
+                      aria-describedby="goal-date-hint"
                       className="bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white/80 focus:outline-none focus:border-[var(--color-violet-500)]/60"
                     />
                   </div>
+                  {/* Was a hover-only title on the date input; visible now so touch users see it too. */}
+                  <p id="goal-date-hint" className="text-[11px] text-[var(--color-text-tertiary)]">{t('goals.leaveBlankOngoing')}</p>
                   <div className="flex items-center gap-2 pt-1">
                     <button
                       type="submit"

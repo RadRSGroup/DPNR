@@ -190,8 +190,21 @@ function PlayerDock() {
     if (!el) return
     let scroller: HTMLElement | null = el.parentElement
     while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement
+    // A dock that isn't displayed (Focus Mode's desktop column on a phone,
+    // where the mobile music sheet has its own) must not claim the player,
+    // or the player would be drawn into a 0×0 slot. Only a dock that has
+    // claimed it releases it.
+    let claimed = false
     const measure = () => {
       const r = el.getBoundingClientRect()
+      if (r.width === 0 && r.height === 0) {
+        if (claimed) {
+          claimed = false
+          setFocusPlayerDock(null)
+        }
+        return
+      }
+      claimed = true
       const bounds = scroller?.getBoundingClientRect() ?? { top: 0, bottom: window.innerHeight }
       setFocusPlayerDock({
         top: r.top,
@@ -217,7 +230,7 @@ function PlayerDock() {
       observer.disconnect()
       window.removeEventListener('scroll', measure, true)
       window.removeEventListener('resize', measure)
-      setFocusPlayerDock(null)
+      if (claimed) setFocusPlayerDock(null)
     }
   }, [])
   return <div ref={ref} className="h-[152px] rounded-xl bg-white/5" />

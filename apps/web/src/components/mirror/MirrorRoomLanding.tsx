@@ -2,13 +2,14 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { ArrowRight, Check, Heart, Plus } from 'lucide-react'
+import { Link } from '@/i18n/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
 import Card from '@/components/ui/Card'
 import LotusIcon from '@/components/icons/LotusIcon'
 import { getCompanionContext, getTwin, getMirrorsList } from '@/lib/api/v1-client'
 import { ROOM_REFINE_COST } from '@dpnr/shared-types'
-import type { CompanionContextResponse, TwinListResponse } from '@dpnr/shared-types'
+import type { CompanionContextResponse, TwinListResponse, MirrorSummaryView } from '@dpnr/shared-types'
 import type { MirrorOpening } from './openings'
 
 interface Props {
@@ -50,6 +51,9 @@ const INSIGHTS = [
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
+/** Recent Mirror Reflections shown before "Show more" (founder feedback 2026-09-27). */
+const RECENT_REFLECTIONS_SHOWN = 3
+
 const PATTERN_ORBS = ['/images/mirror/pattern-orb-1.webp', '/images/mirror/pattern-orb-2.webp', '/images/mirror/pattern-orb-3.webp', '/images/mirror/pattern-orb-4.webp']
 
 function startOfWeek(d: Date): Date {
@@ -62,16 +66,19 @@ function startOfWeek(d: Date): Date {
 export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) {
   const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
   const [twin, setTwin] = useState<TwinListResponse | null>(null)
-  const [sessionDates, setSessionDates] = useState<Date[] | null>(null)
+  const [mirrors, setMirrors] = useState<MirrorSummaryView[] | null>(null)
+  const [showAllReflections, setShowAllReflections] = useState(false)
   const [tab, setTab] = useState<'confirmed' | 'candidate'>('confirmed')
 
   useEffect(() => {
     getCompanionContext().then((c) => setDailyCard(c.dailyCard)).catch(() => {})
     getTwin().then(setTwin).catch(() => {})
     getMirrorsList()
-      .then((res) => setSessionDates(res.mirrors.map((m) => new Date(m.createdAt))))
-      .catch(() => setSessionDates([]))
+      .then((res) => setMirrors([...res.mirrors].sort((a, b) => b.createdAt.localeCompare(a.createdAt))))
+      .catch(() => setMirrors([]))
   }, [])
+
+  const sessionDates = mirrors ? mirrors.map((m) => new Date(m.createdAt)) : null
 
   const patterns = (twin?.signals ?? [])
     .filter((s) => s.domain === 'pattern' && s.status === tab)
@@ -325,6 +332,49 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                 </button>
               </Card>
             </div>
+
+            {/* Recent Mirror Reflections: the existing list read + review
+                page (mirror/[id]: read, continue, reopen). Read/continue
+                only here; nothing edits past evidence from this list. */}
+            <Card className="mt-4 lg:mt-6 lg:px-6 lg:py-6">
+              <p className="font-display text-xl text-white">Recent Reflections</p>
+              <p className="text-sm text-white/70 mt-1">Come back to what you looked at.</p>
+              {mirrors === null ? (
+                <span aria-hidden className="block h-3 w-1/2 rounded-full bg-white/[0.07] animate-soft-pulse mt-4" />
+              ) : mirrors.length === 0 ? (
+                <p className="text-sm text-[var(--color-text-tertiary)] mt-3">Your reflections will appear here once you&apos;ve started your first one.</p>
+              ) : (
+                <>
+                  <ul className={`mt-3 divide-y divide-white/[0.06] ${showAllReflections ? 'max-h-96 overflow-y-auto scrollbar-glass pe-1' : ''}`}>
+                    {(showAllReflections ? mirrors : mirrors.slice(0, RECENT_REFLECTIONS_SHOWN)).map((m) => (
+                      <li key={m.mirrorId}>
+                        <Link
+                          href={`/mirror/${m.mirrorId}`}
+                          className="group flex items-center gap-3 py-3 text-start"
+                        >
+                          <span className="w-16 shrink-0 text-xs text-[var(--color-text-tertiary)]">
+                            {new Date(m.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                          </span>
+                          <span className="flex-1 min-w-0 text-sm text-white/85 truncate">{m.label}</span>
+                          <span className="shrink-0 rounded-full bg-white/[0.06] text-white/60 text-[11px] px-2 py-0.5">
+                            {m.status === 'completed' ? 'Read' : 'Continue'}
+                          </span>
+                          <ArrowRight className="w-4 h-4 shrink-0 text-white/40 group-hover:text-white/80 transition-colors rtl:-scale-x-100" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  {mirrors.length > RECENT_REFLECTIONS_SHOWN && (
+                    <button
+                      onClick={() => setShowAllReflections((v) => !v)}
+                      className="mt-3 text-sm text-[var(--color-violet-300)] hover:text-white transition-colors"
+                    >
+                      {showAllReflections ? 'Show less' : 'Show more'}
+                    </button>
+                  )}
+                </>
+              )}
+            </Card>
           </div>
         </div>
       </main>

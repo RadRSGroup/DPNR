@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import FittedImage from '@/components/ui/FittedImage'
 import type { ExploreTheme } from '@dpnr/shared-types'
 import { topicImage } from '@/lib/library/topic-images'
 
@@ -13,6 +13,10 @@ import { topicImage } from '@/lib/library/topic-images'
  * Replaces the tiny circular Explore-Theme badges (`THEME_META` crops from
  * the old reference PDF) that the topic page and the chat side panel still
  * showed after Session 65 moved the Library tiles to real photos.
+ *
+ * Since 2026-09-27 the photo is also scaled up toward filling the box, up to
+ * a small, bounded trim (FittedImage): whole-but-small read as "too small"
+ * in the wide cover boxes.
  */
 export default function TopicCover({
   slug,
@@ -28,8 +32,7 @@ export default function TopicCover({
   const src = topicImage(slug, theme)
   return (
     <div className={`relative overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border-glass)] ${className}`}>
-      <Image src={src} alt="" fill sizes={sizes} className="object-cover scale-110 blur-2xl brightness-50" aria-hidden />
-      <Image src={src} alt="" fill sizes={sizes} className="object-contain" priority />
+      <FittedImage src={src} sizes={sizes} priority />
     </div>
   )
 }

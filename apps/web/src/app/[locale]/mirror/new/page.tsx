@@ -18,6 +18,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import type { RefineFn } from '@/lib/useAI'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { RoomSessionClockProvider } from '@/components/shared/RoomSessionClock'
+import { RoomExitProvider } from '@/components/shared/RoomExit'
 import { submitRoomCommand, getMirrorFull, ApiError } from '@/lib/api/v1-client'
 import type { RoomCommandResponse, MirrorRoomStepId } from '@dpnr/shared-types'
 
@@ -207,10 +208,18 @@ function NewMirrorContent() {
     }
   }
 
+  // Back from the first step, and the step layout's ✕ on any step, return
+  // to the Mirror Room's own main screen rather than leaving the room for
+  // Dashboard (founder feedback 2026-09-27). Answers stay in state, so
+  // starting again picks up at the same step.
+  function returnToMirrorMain() {
+    setShowWelcome(true)
+  }
+
   function goBack() {
     const prev = BACK_MAP[currentStepId]
     if (prev && prev !== 'WELCOME') setCurrentStepId(prev)
-    else router.push('/dashboard')
+    else returnToMirrorMain()
   }
 
   async function completeStep01(situation: string, trigger: string) {
@@ -296,6 +305,8 @@ function NewMirrorContent() {
           userName={userName}
           situation={state.situation}
           trigger={state.trigger}
+          emotion={state.emotion}
+          bodyResponse={state.bodyResponse}
           synthesis={state.synthesis}
           commitment={state.commitment}
           onDone={() => router.push('/dashboard')}
@@ -404,7 +415,7 @@ function NewMirrorContent() {
         </div>
       )}
       {creditsExhausted && <CreditsExhaustedModal onClose={() => setCreditsExhausted(false)} />}
-      {renderStep()}
+      <RoomExitProvider onExit={returnToMirrorMain}>{renderStep()}</RoomExitProvider>
     </>
   )
 }

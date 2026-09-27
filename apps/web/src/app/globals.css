@@ -59,6 +59,11 @@
   --animate-card-sheen: card-sheen 1100ms var(--ease-settle) 380ms both;
   /* Slow opacity-only glow, e.g. a completion orb. */
   --animate-soft-glow: soft-glow 5s var(--ease-breath) infinite;
+  /* Light travelling slowly around the InnerSelf ring while DPNR is still
+     learning (Dashboard). Two arcs on co-prime durations so the pattern
+     never visibly repeats; speed and brightness breathe rather than tick. */
+  --animate-ring-orbit: ring-orbit 17s var(--ease-breath) infinite;
+  --animate-ring-orbit-slow: ring-orbit 29s var(--ease-breath) infinite reverse;
 
   @keyframes settle-in {
     from { opacity: 0; transform: translateY(var(--motion-distance-sm)); }
@@ -125,6 +130,13 @@
   @keyframes soft-glow {
     0%, 100% { opacity: 0.45; }
     50%      { opacity: 0.9; }
+  }
+  @keyframes ring-orbit {
+    0%   { transform: rotate(0deg);   opacity: 0.25; }
+    35%  { opacity: 0.95; }
+    55%  { transform: rotate(200deg); opacity: 0.6; }
+    80%  { opacity: 0.9; }
+    100% { transform: rotate(360deg); opacity: 0.25; }
   }
 }
 
@@ -218,7 +230,9 @@
   .animate-ping,
   .animate-card-shuffle-a,
   .animate-card-shuffle-b,
-  .animate-card-sheen {
+  .animate-card-sheen,
+  .animate-ring-orbit,
+  .animate-ring-orbit-slow {
     animation: none !important;
   }
   .liquid-glass:hover {

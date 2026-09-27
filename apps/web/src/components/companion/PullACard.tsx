@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import Image from 'next/image'
+import FittedImage from '@/components/ui/FittedImage'
 import { useTranslations } from 'next-intl'
 import DirectiveCard from './DirectiveCard'
 import RingLogo from '@/components/icons/RingLogo'
@@ -139,23 +139,14 @@ export default function PullACard() {
         >
           {/* The photos come in mixed shapes (3:2, portrait, square), so a
               cover crop cut off the important part of some (feedback log,
-              2026-09-25). The whole photo sits on top with object-contain,
-              over a blurred copy of itself that fills the card, same as
-              TopicCover. The blur is static, never animated (MOTION.md). */}
-          <Image
+              2026-09-25), and whole-but-small then felt too small
+              (2026-09-27). FittedImage fills the card up to a bounded trim,
+              over a blurred copy of itself; same as TopicCover. The blur
+              and scale are static, never animated (MOTION.md). */}
+          <FittedImage
             src={card ? cardImage(card.topic) : CARD_DEFAULT_IMAGE}
-            alt=""
-            aria-hidden
-            fill
             sizes="(min-width: 1024px) 33vw, 100vw"
-            className="object-cover scale-110 blur-2xl brightness-75"
-          />
-          <Image
-            src={card ? cardImage(card.topic) : CARD_DEFAULT_IMAGE}
-            alt=""
-            fill
-            sizes="(min-width: 1024px) 33vw, 100vw"
-            className="object-contain"
+            backdropClassName="brightness-75"
             onLoad={() => {
               if (!faceReady) deal()
             }}

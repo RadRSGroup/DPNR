@@ -47,7 +47,7 @@ function subscribeToClock(callback: () => void) {
     }
   }
 }
-function useClock(): Date | null {
+export function useClock(): Date | null {
   return useSyncExternalStore(
     subscribeToClock,
     () => cachedNow,

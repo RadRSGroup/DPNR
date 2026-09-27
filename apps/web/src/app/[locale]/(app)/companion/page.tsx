@@ -1,12 +1,12 @@
 'use client'
-import { useState, useEffect, useRef, Suspense } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, Suspense } from 'react'
 import Image from 'next/image'
 import { Link } from '@/i18n/navigation'
 import { useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
 import { displayFirstName } from '@/lib/displayName'
-import { Heart, Cloud, Shuffle, UserCircle, Plus, Mic, ImagePlus, X, MessagesSquare, Pencil } from 'lucide-react'
+import { Heart, Cloud, Shuffle, UserCircle, Plus, Mic, ImagePlus, X, MessagesSquare, Pencil, Music } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getCompanionContext, sendCompanionMessage, getPreferences, createCompanionConversation, ApiError } from '@/lib/api/v1-client'
 import type { CompanionDirective, ChatBackground } from '@dpnr/shared-types'
@@ -14,7 +14,8 @@ import DirectiveCard from '@/components/companion/DirectiveCard'
 import PullACard from '@/components/companion/PullACard'
 import RecentConversations from '@/components/companion/RecentConversations'
 import FocusMode from '@/components/companion/FocusMode'
-import TopBar from '@/components/companion/TopBar'
+import TimeTodayIndicator from '@/components/companion/TimeTodayIndicator'
+import TopBar, { useClock } from '@/components/companion/TopBar'
 import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
 import { useOnboardingFlow } from '@/components/companion/onboarding/useOnboardingFlow'
 import OnboardingCardPanel from '@/components/companion/onboarding/OnboardingCardPanel'
@@ -45,6 +46,9 @@ const QUICK_PROMPT_KEYS = [
   { icon: Shuffle, key: 'decision' as const },
   { icon: UserCircle, key: 'guide' as const },
 ]
+
+/** Tallest the composer grows before it scrolls — matches its `max-h-32` (8rem). */
+const COMPOSER_MAX_HEIGHT = 128
 
 function timeGreeting(t: (key: string) => string) {
   const h = new Date().getHours()
@@ -81,6 +85,10 @@ function timeGreeting(t: (key: string) => string) {
 function CompanionContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const cardSheetOpen = searchParams.get('card') === '1'
+  function closeCardSheet() {
+    router.replace('/companion')
+  }
   const locale = useLocale()
   const t = useTranslations('Onboarding')
   const tc = useTranslations('Companion')
@@ -97,7 +105,8 @@ function CompanionContent() {
   // "Explore in Mirror/Decision Room" action from a Library topic can carry
   // "source session" context, per the flow's own worked example.
   const [sessionId, setSessionId] = useState<string | null>(null)
-  const [historyOpen, setHistoryOpen] = useState(false) // mobile-only Recent Conversations sheet
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [musicOpen, setMusicOpen] = useState(false) // mobile-only Recent Conversations sheet
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editText, setEditText] = useState('')
   const [input, setInput] = useState('')
@@ -144,6 +153,18 @@ function CompanionContent() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // The composer grows with what's typed, up to COMPOSER_MAX_HEIGHT, then
+  // scrolls. It used to stay one row tall, so anything that wrapped (the
+  // placeholder on a phone, founder feedback 2026-09-27) was cut off.
+  useLayoutEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    // border-box: scrollHeight leaves out the border, so add it back.
+    const needed = el.scrollHeight + el.offsetHeight - el.clientHeight
+    el.style.height = `${Math.min(needed, COMPOSER_MAX_HEIGHT)}px`
+    el.style.overflowY = needed > COMPOSER_MAX_HEIGHT ? 'auto' : 'hidden'
+  }, [input])
 
   useEffect(() => {
     // Deferred a tick (same "setState from a callback, not the effect body
@@ -505,17 +526,49 @@ function CompanionContent() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
       {creditsExhausted && <CreditsExhaustedModal onClose={() => setCreditsExhausted(false)} />}
 
-      {/* Mobile: Recent Conversations has no room in the single-column
-          layout (desktop shows it in the right column), so it lives behind
-          this button as a bottom sheet — same component, same actions. */}
+      {/* Mobile utility row (founder feedback 2026-09-27, "navigation vs.
+          utilities"): what's around you right now, not places to go. Date +
+          time on DPNR on the start side (the phone's own status bar already
+          shows the clock), then Music (Focus Mode in a sheet: the only way to
+          start music on a phone) and Recent Conversations, which has no room
+          in the single-column layout (desktop shows both in the right
+          column). The fade keeps scrolling content from colliding with it. */}
       {!onboarding.active && (
-        <button
-          onClick={() => setHistoryOpen(true)}
-          className="lg:hidden fixed top-14 end-4 z-30 inline-flex items-center gap-1.5 liquid-glass rounded-full px-3 py-1.5 text-xs text-white/80"
-          aria-label={tr('showHistory')}
-        >
-          <MessagesSquare className="w-3.5 h-3.5" /> {tr('showHistory')}
-        </button>
+        <div className="lg:hidden fixed top-12 inset-x-0 z-30 flex items-center gap-2 px-4 pt-2 pb-4 bg-gradient-to-b from-[var(--color-bg-base)]/90 via-[var(--color-bg-base)]/50 to-transparent pointer-events-none">
+          <MobileDateLine />
+          <div className="ms-auto flex items-center gap-2 pointer-events-auto">
+            <button
+              onClick={() => setMusicOpen(true)}
+              className="inline-flex items-center gap-1.5 liquid-glass rounded-full px-3 py-1.5 text-xs text-white/80"
+              aria-label={tc('focusMode.openMusic')}
+            >
+              <Music className="w-3.5 h-3.5" /> {tc('focusMode.music')}
+            </button>
+            <button
+              onClick={() => setHistoryOpen(true)}
+              className="inline-flex items-center gap-1.5 liquid-glass rounded-full px-3 py-1.5 text-xs text-white/80"
+              aria-label={tr('showHistory')}
+            >
+              <MessagesSquare className="w-3.5 h-3.5" /> {tr('showHistory')}
+            </button>
+          </div>
+        </div>
+      )}
+      {musicOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex items-end bg-black/50" onClick={() => setMusicOpen(false)}>
+          <div className="w-full max-h-[85dvh] overflow-y-auto p-3 pb-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-end mb-2">
+              <button
+                onClick={() => setMusicOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full liquid-glass text-white/70"
+                aria-label={tr('close')}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <FocusMode />
+          </div>
+        </div>
       )}
       {historyOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex items-end bg-black/50" onClick={() => setHistoryOpen(false)}>
@@ -541,6 +594,27 @@ function CompanionContent() {
               }}
               onDeleted={handleDeletedConversation}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Mobile: Pull a Card from the mobile menu (/companion?card=1). On a
+          phone the card otherwise only shows on the empty chat landing, so
+          the menu opens it here as a sheet (founder feedback 2026-09-27:
+          every existing destination reachable on mobile). */}
+      {cardSheetOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex items-end bg-black/50" onClick={closeCardSheet}>
+          <div className="w-full max-h-[85dvh] overflow-y-auto p-3 pb-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-end mb-2">
+              <button
+                onClick={closeCardSheet}
+                className="w-8 h-8 flex items-center justify-center rounded-full liquid-glass text-white/70"
+                aria-label={tr('close')}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <PullACard />
           </div>
         </div>
       )}
@@ -616,13 +690,14 @@ function CompanionContent() {
             </div>
           )}
 
-          {/* pt-14 replaces the greeting block's own safe-area top padding
-              once the conversation is active and the greeting is hidden —
-              this page has no other fixed header providing that space. */}
+          {/* pt-24 replaces the greeting block's own safe-area top padding
+              once the conversation is active and the greeting is hidden:
+              room for the fixed mobile header plus the utility row under it
+              (was pt-14 before the utility row, 2026-09-27). */}
           <div
             ref={scrollRef}
             key={threadKey}
-            className={`${threadKey > 0 ? 'animate-fade-in ' : ''}scrollbar-glass flex-1 overflow-y-auto px-5 lg:px-0 pb-2 flex flex-col ${isLanding ? 'pt-2 max-lg:flex-none max-lg:overflow-visible' : 'pt-14 lg:pt-2'} ${
+            className={`${threadKey > 0 ? 'animate-fade-in ' : ''}scrollbar-glass flex-1 overflow-y-auto px-5 lg:px-0 pb-2 flex flex-col ${isLanding ? 'pt-2 max-lg:flex-none max-lg:overflow-visible' : 'pt-24 lg:pt-2'} ${
               !pageLoading && messages.length === 0 && !onboarding.active ? 'justify-center' : 'space-y-3'
             }`}
           >
@@ -909,7 +984,7 @@ function CompanionContent() {
                 placeholder={onboarding.awaitingIntention ? t('cards.currentIntention.placeholder') : tc('composer.placeholder')}
                 rows={1}
                 disabled={composerDisabled}
-                className="flex-1 min-w-0 bg-[var(--color-surface-glass)] border border-white/15 rounded-2xl ps-4 pe-20 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors max-h-32"
+                className="flex-1 min-w-0 bg-[var(--color-surface-glass)] border border-white/15 rounded-2xl ps-4 pe-10 lg:pe-16 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base leading-6 resize-none focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors max-h-32 placeholder:truncate max-lg:placeholder:text-sm"
               />
               <div className="absolute end-3 bottom-3 flex items-center gap-2.5">
                 {speechSupported && (
@@ -924,10 +999,12 @@ function CompanionContent() {
                     <Mic className="w-[18px] h-[18px]" />
                   </button>
                 )}
+                {/* Same action as the + button beside the composer; hidden below lg so
+                    the placeholder fits on a phone (founder feedback 2026-09-27). */}
                 <button
                   onClick={handleAttachClick}
                   disabled={composerDisabled}
-                  className="text-white/40 hover:text-white/70 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="max-lg:hidden text-white/40 hover:text-white/70 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   aria-label={tc('composer.attachImage')}
                 >
                   <ImagePlus className="w-[18px] h-[18px]" />
@@ -984,4 +1061,20 @@ function markLastUserPersisted(messages: ChatMessage[], serverCreatedAt: string 
   const lastUser = messages.map((m) => m.role).lastIndexOf('user')
   if (lastUser === -1) return messages
   return messages.map((m, i) => (i === lastUser ? { ...m, createdAt: serverCreatedAt, persisted: true } : m))
+}
+
+/** Mobile utility row's start side: today's date and time on DPNR. */
+function MobileDateLine() {
+  const now = useClock()
+  if (!now) return null
+  return (
+    <div className="flex items-baseline gap-1.5 text-xs text-white/55 min-w-0 pointer-events-auto">
+      {/* Weekday then day ("Sun 27"): a combined format puts the day first in some locales. */}
+      <span className="whitespace-nowrap">
+        {now.toLocaleDateString(undefined, { weekday: 'short' })} {now.getDate()}
+      </span>
+      <span aria-hidden>·</span>
+      <TimeTodayIndicator className="!text-white/55 whitespace-nowrap" />
+    </div>
+  )
 }

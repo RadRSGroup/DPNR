@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import { useRoomSessionClock } from '@/components/shared/RoomSessionClock'
+import { useRoomExit } from '@/components/shared/RoomExit'
 
 // "After sustained intensive reflection, offer to integrate, stop, or
 // continue later" (spec §6). Threshold is a fraction of the room's own
@@ -63,6 +64,7 @@ export default function RoomStepLayout({
   minutesLeft: initialMinutes,
 }: RoomStepLayoutProps) {
   const router = useRouter()
+  const roomExit = useRoomExit()
   const [infoOpen, setInfoOpen] = useState(false)
   // The room page's clock (RoomSessionClock), so the countdown and the
   // stopping cue carry across steps instead of restarting on each remount.
@@ -101,7 +103,7 @@ export default function RoomStepLayout({
           {/* Top bar */}
           <div className="flex items-center justify-between px-5 pt-14 pb-2 lg:px-10 lg:pt-8">
             <button
-              onClick={() => router.push('/dashboard')}
+              onClick={() => (roomExit ? roomExit() : router.push('/dashboard'))}
               aria-label="Close"
               className="w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white text-lg"
             >
