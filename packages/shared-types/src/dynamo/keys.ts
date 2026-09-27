@@ -19,6 +19,9 @@ export const Sk = {
   roadmapVersion: (version: number): string => `ROADMAP#v${version}`,
   roadmapProposal: (): 'ROADMAP#PROPOSED' => 'ROADMAP#PROPOSED',
   twinSignal: (domain: string, signalId: string): string => `TWIN#SIGNAL#${domain}#${signalId}`,
+  // One per life domain (2026-09-27): a short, regenerated summary of what
+  // seems active in that domain, from confirmed signals only.
+  lifeDomainSummary: (domain: string): string => `TWIN#DOMAIN_SUMMARY#${domain}`,
   session: (sessionId: string): string => `SESSION#${sessionId}`,
   // Pointer to the user's current Companion session, so handlers can GetItem
   // it directly instead of scanning/filtering SESSION# items by roomType.

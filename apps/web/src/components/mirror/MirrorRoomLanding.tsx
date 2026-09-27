@@ -284,7 +284,6 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                   ) : patterns.length > 0 ? (
                     <ul className="divide-y divide-white/[0.06]">
                       {patterns.slice(0, 4).map((p, i) => {
-                        const pct = Math.round(p.confidence * 100)
                         return (
                           <li key={p.signalId} className="flex items-center gap-3 py-2.5">
                             <span className="relative w-10 h-10 shrink-0">
@@ -292,17 +291,15 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                             </span>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className="text-sm text-white truncate">{p.description}</p>
+                                <p className="text-sm text-white truncate">{p.name ?? p.description}</p>
                                 <span className="shrink-0 rounded-full bg-[var(--color-violet-600)]/30 text-[var(--color-violet-200)] text-[10px] px-2 py-0.5">
                                   {tab === 'confirmed' ? 'Active' : 'Exploring'}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-2 mt-1.5">
-                                <div className="flex-1 h-1 rounded-full bg-white/10 overflow-hidden max-w-48">
-                                  <div className="h-full rounded-full bg-gradient-to-r from-[var(--color-violet-500)] to-[var(--color-magenta-500)]" style={{ width: `${pct}%` }} />
-                                </div>
-                                <span className="text-[11px] text-[var(--color-text-tertiary)]">{pct}%</span>
-                              </div>
+                              {/* Name first, then the reading (2026-09-27). The old
+                                  bar showed extraction confidence, which read as
+                                  how strong the pattern is; removed. */}
+                              {p.name && <p className="text-xs text-white/60 truncate mt-0.5">{p.description}</p>}
                             </div>
                             <button
                               onClick={() => onStart({ mode: 'pattern', patternText: p.description })}

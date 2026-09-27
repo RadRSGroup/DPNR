@@ -7,6 +7,7 @@ import { getSessionCrypto } from '../lib/session-crypto'
 import { getProfileForLanguage, toLanguageInstruction } from '../lib/locale'
 import { maybeProposeRoadmapRevision } from '../lib/roadmap-revision'
 import { maybeClassifySignal } from '../lib/signal-classification'
+import { refreshDomainSummary } from '../lib/domain-summary'
 import { ddb, TABLE_NAME, findSignalById } from './helpers'
 
 const PROMPT_REGISTRY_TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME as string
@@ -58,7 +59,11 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const languageInstruction = toLanguageInstruction(profile.preferredLanguage, profile.genderIdentity)
 
     await maybeProposeRoadmapRevision(ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME, userId, crypto, languageInstruction)
-    await maybeClassifySignal(ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME, signal, crypto)
+    const lifeDomain = await maybeClassifySignal(ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME, signal, crypto)
+    // The domain's status summary now has new evidence (2026-09-27).
+    if (lifeDomain) {
+      await refreshDomainSummary(ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME, signal.pk, lifeDomain, crypto, languageInstruction)
+    }
 
     const response: TwinSignalActionResponse = { signalId, status: 'confirmed' }
     return jsonResponse(200, response)

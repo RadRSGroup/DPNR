@@ -825,14 +825,20 @@ export class ApiStack extends Stack {
 
     const twinRejectFn = new lambda.NodejsFunction(this, 'TwinRejectFn', {
       ...sharedProductLambdaProps,
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
       entry: path.join(__dirname, '../lambda/twin/reject.ts'),
-      description: 'POST /v1/twin/signals/{id}/reject.',
+      description: 'POST /v1/twin/signals/{id}/reject — optional "Not quite" follow-up.',
     })
     props.applicationTable.grantReadWriteData(twinRejectFn)
-    // No sessionTicketsKmsKey.grantDecrypt here (Stage 4b) — reject.ts only
-    // flips a status field, never touches [ENCRYPTED] content, so the
-    // pre-emptive grant Stage 2 gave it was unused; removed for exact
-    // least-privilege (see Session 32's own IAM-inspection precedent).
+    // Stage 4b removed these as unused; restored 2026-09-27 because the
+    // "Not quite" follow-up stores the person's correction encrypted, which
+    // needs the session ticket (read) and the ticket key (decrypt).
+    props.sessionTicketsKmsKey.grantDecrypt(twinRejectFn)
+    props.sessionTicketsTable.grantReadData(twinRejectFn)
 
     const roadmapProposalAcceptFn = new lambda.NodejsFunction(this, 'RoadmapProposalAcceptFn', {
       ...sharedProductLambdaProps,

@@ -179,6 +179,10 @@ export const ARCHETYPE_LABELS: Record<Archetype, string> = {
   protector: 'Protector',
 }
 
+/** "Not quite" follow-up choices (2026-09-27). */
+export const TwinRejectReasonSchema = z.enum(['not_really', 'partly', 'different'])
+export type TwinRejectReason = z.infer<typeof TwinRejectReasonSchema>
+
 export const TwinSignalItemSchema = z.object({
   pk: z.string(),
   sk: z.string(), // Sk.twinSignal(domain, signalId)
@@ -188,7 +192,10 @@ export const TwinSignalItemSchema = z.object({
   confidence: z.number().min(0).max(1),
   source: TwinSignalSourceSchema,
   sourceSessionId: z.string().optional(),
-  content: EncryptedBlobSchema, // wraps { description: string }
+  // wraps { description: string; name?: string } — `name` (2026-09-27) is a
+  // short tentative label such as "People-Pleasing", absent for signals
+  // extracted before it existed.
+  content: EncryptedBlobSchema,
   // Set at confirm-time (Session 19) by a real `twin/classify_signal`
   // Bedrock call (twin/confirm.ts → lib/signal-classification.ts) — absent
   // for signals confirmed before this existed, or if classification failed
@@ -221,7 +228,27 @@ export const TwinSignalItemSchema = z.object({
   // underlying pattern itself is judged to be.
   direction: SignalDirectionSchema.optional(),
   strength: z.number().min(0).max(1).optional(),
+  // "Not quite" follow-up (2026-09-27): why the person rejected it, and
+  // optionally what feels more accurate (encrypted { correction }). Fed
+  // back into extraction so a rejected reading isn't proposed again.
+  rejectReason: TwinRejectReasonSchema.optional(),
+  feedback: EncryptedBlobSchema.optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })
 export type TwinSignalItem = z.infer<typeof TwinSignalItemSchema>
+
+/**
+ * A life domain's short status summary (2026-09-27), regenerated when a
+ * confirmed signal is classified into that domain. Built from confirmed
+ * signals only; `content` wraps { summary: string }.
+ */
+export const LifeDomainSummaryItemSchema = z.object({
+  pk: z.string(),
+  sk: z.string(), // Sk.lifeDomainSummary(domain)
+  domain: LifeDomainCategorySchema,
+  content: EncryptedBlobSchema,
+  basedOnSignals: z.number().int().min(0),
+  updatedAt: z.string().datetime(),
+})
+export type LifeDomainSummaryItem = z.infer<typeof LifeDomainSummaryItemSchema>

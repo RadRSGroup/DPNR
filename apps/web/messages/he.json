@@ -308,6 +308,17 @@
   },
   "Dashboard": {
     "calibration": {
+      "whatFits": "מה מתאים יותר?",
+      "reasons": {
+        "not_really": "לא ממש",
+        "partly": "חלקית",
+        "different": "אצלי זה אחרת"
+      },
+      "tellMore": "ספרו לי מה מרגיש מדויק יותר",
+      "correctionPlaceholder": "במילים שלך…",
+      "send": "שליחה",
+      "done": "סיום",
+      "thanksNoted": "תודה. אזכור את זה.",
       "title": "מה אני שם/ה לב אליו",
       "subtitle": "אשרו מה שנכון, תקנו מה שלא",
       "confirm": "אישור",
@@ -352,6 +363,10 @@
       "direction": "כיוון"
     },
     "lifeDomains": {
+      "about": "על {name}",
+      "noSummary": "DPNR עדיין לא גיבש תמונה על התחום הזה.",
+      "shareExplained": "{percent}% ממה שאישרת קשור לתחום הזה. זה מראה לאן הקשב שלך הלך, לא איך התחום הזה בחיים שלך מתנהל.",
+      "shareNone": "עדיין אין משהו שאישרת שקשור לתחום הזה.",
       "title": "תחומי חיים",
       "subtitle": "מה חקרתם לאחרונה",
       "currentArea": "התחום הנוכחי",

@@ -12,6 +12,7 @@ import {
   type CommitmentItem,
   type TwinSignalItem,
   type AlignmentScoreSnapshotItem,
+  type LifeDomainSummaryItem,
   type DashboardResponse,
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
@@ -66,6 +67,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       commitmentsResult,
       twinSignalsResult,
       alignmentHistoryResult,
+      domainSummariesResult,
     ] = await Promise.all([
       ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.roadmap() } })),
       ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.roadmapProposal() } })),
@@ -94,6 +96,13 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
             ':from': Sk.alignmentScoreSnapshot(historyStart),
             ':to': Sk.alignmentScoreSnapshot(today),
           },
+        })
+      ),
+      ddb.send(
+        new QueryCommand({
+          TableName: TABLE_NAME,
+          KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
+          ExpressionAttributeValues: { ':pk': pk, ':prefix': 'TWIN#DOMAIN_SUMMARY#' },
         })
       ),
     ])
@@ -133,7 +142,18 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((snap) => ({ date: snap.date, score: snap.score }))
 
-    const lifeDomains = aggregateLifeDomains(twinSignals)
+    // Each domain's short status summary (2026-09-27), when one exists.
+    const summaries = new Map<string, string>()
+    await Promise.all(
+      ((domainSummariesResult.Items ?? []) as LifeDomainSummaryItem[]).map(async (item) => {
+        try {
+          summaries.set(item.domain, (await crypto.decryptField<{ summary: string }>(item.content)).summary)
+        } catch {
+          // an unreadable summary just isn't shown
+        }
+      })
+    )
+    const lifeDomains = aggregateLifeDomains(twinSignals).map((d) => ({ ...d, summary: summaries.get(d.domain) ?? null }))
     const archetypes = aggregateArchetypes(twinSignals)
 
     // Growth Tracker (Slice 4): confirmed signals created this calendar

@@ -20,6 +20,7 @@ import type {
   LibraryTopicDetailResponse,
   TwinListResponse,
   TwinSignalActionResponse,
+  TwinRejectRequest,
   LibraryTopicsResponse,
   LibraryRecommendationsResponse,
   RoadmapProposalAcceptResponse,
@@ -386,8 +387,12 @@ export async function confirmTwinSignal(signalId: string): Promise<TwinSignalAct
   return parseOrThrow<TwinSignalActionResponse>(res)
 }
 
-export async function rejectTwinSignal(signalId: string): Promise<TwinSignalActionResponse> {
-  const res = await authedFetch(`/v1/twin/signals/${encodeURIComponent(signalId)}/reject`, { method: 'POST' })
+/** POST /v1/twin/signals/{id}/reject — `followUp` (2026-09-27) records the "Not quite" reason / correction; sending it again updates it. */
+export async function rejectTwinSignal(signalId: string, followUp?: TwinRejectRequest): Promise<TwinSignalActionResponse> {
+  const res = await authedFetch(`/v1/twin/signals/${encodeURIComponent(signalId)}/reject`, {
+    method: 'POST',
+    ...(followUp ? { body: JSON.stringify(followUp) } : {}),
+  })
   return parseOrThrow<TwinSignalActionResponse>(res)
 }
 

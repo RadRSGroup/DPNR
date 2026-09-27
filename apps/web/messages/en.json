@@ -308,6 +308,17 @@
   },
   "Dashboard": {
     "calibration": {
+      "whatFits": "What fits better?",
+      "reasons": {
+        "not_really": "Not really",
+        "partly": "Partly",
+        "different": "It's different for me"
+      },
+      "tellMore": "Tell me what feels more accurate",
+      "correctionPlaceholder": "In your words…",
+      "send": "Send",
+      "done": "Done",
+      "thanksNoted": "Thank you. I'll keep this in mind.",
       "title": "What I'm Noticing",
       "subtitle": "Confirm what's right, correct what isn't",
       "confirm": "Confirm",
@@ -352,6 +363,10 @@
       "direction": "Direction"
     },
     "lifeDomains": {
+      "about": "About {name}",
+      "noSummary": "DPNR hasn't formed a picture of this area yet.",
+      "shareExplained": "{percent}% of what you've confirmed relates to this area. It shows where your attention has been, not how this part of your life is going.",
+      "shareNone": "Nothing you've confirmed relates to this area yet.",
       "title": "Life Domains",
       "subtitle": "What you've been exploring",
       "currentArea": "Current area",

@@ -5,6 +5,7 @@ import type { SessionCrypto } from '../lib/session-crypto'
 import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
+import { loadRejectedReadings, formatRejectedReadings, repeatsRejected } from '../lib/rejected-readings'
 
 const EXTRACTABLE_DOMAINS = new Set(['pattern', 'trigger', 'value', 'commitment'])
 /** Signals below this confidence are almost certainly noise — not worth writing at all, per the spec's "only strong signals should update the Digital Twin." */
@@ -37,12 +38,20 @@ export async function extractCandidateSignals(
   const writtenSignalIds: string[] = []
   try {
     const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'twin', 'extract_signals')
-    const result = await callPromptModel(version, { roomType, sessionSummary, languageInstruction })
+    // Readings the person already said weren't accurate: the prompt is told
+    // not to propose them again, and repeatsRejected() backstops that.
+    const rejected = await loadRejectedReadings(ddb, TABLE_NAME, pk, crypto)
+    const result = await callPromptModel(version, {
+      roomType,
+      sessionSummary,
+      rejectedReadings: formatRejectedReadings(rejected),
+      languageInstruction,
+    })
     const signals = typeof result === 'string' ? [] : (result.signals as unknown[] | undefined) ?? []
 
     const now = new Date().toISOString()
     for (const raw of signals) {
-      const signal = raw as { domain?: string; description?: string; confidence?: number }
+      const signal = raw as { domain?: string; name?: string; description?: string; confidence?: number }
       if (
         !signal.domain ||
         !EXTRACTABLE_DOMAINS.has(signal.domain) ||
@@ -53,6 +62,7 @@ export async function extractCandidateSignals(
       ) {
         continue // silently skip a malformed or low-confidence entry rather than fail the whole batch
       }
+      if (repeatsRejected(signal.description, rejected)) continue
 
       const signalId = randomUUID()
       const item: TwinSignalItem = {
@@ -70,7 +80,11 @@ export async function extractCandidateSignals(
         signalType: 'model_inference',
         promptRef: promptRef('twin', 'extract_signals', version),
         modelRef: version.modelParams.model,
-        content: await crypto.encryptField({ description: signal.description }),
+        content: await crypto.encryptField(
+          typeof signal.name === 'string' && signal.name.trim()
+            ? { description: signal.description, name: signal.name.trim().slice(0, 60) }
+            : { description: signal.description }
+        ),
         createdAt: now,
         updatedAt: now,
       }

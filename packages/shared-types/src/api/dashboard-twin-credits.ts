@@ -7,6 +7,7 @@ import {
   RoadmapLifecycleStateSchema,
   SignalTypeSchema,
   SignalDirectionSchema,
+  TwinRejectReasonSchema,
 } from '../dynamo/twin'
 
 /**
@@ -77,7 +78,9 @@ export const DashboardResponseSchema = z.object({
   // 19, twin/classify_signal) — only entries for categories with at least
   // one classified signal; empty arrays until the person has any. Percent
   // is share of classified-and-confirmed signals in that category, rounded.
-  lifeDomains: z.array(z.object({ domain: LifeDomainCategorySchema, percent: z.number() })),
+  // `summary` (2026-09-27): what seems active in the domain now, from
+  // confirmed signals only; null until one has been generated.
+  lifeDomains: z.array(z.object({ domain: LifeDomainCategorySchema, percent: z.number(), summary: z.string().nullable().optional() })),
   archetypes: z.array(z.object({ archetype: ArchetypeSchema, percent: z.number() })),
   // Growth Tracker (Slice 4): real counts of confirmed Twin signals created
   // in the current calendar month (UTC) — not all-time totals. Computed
@@ -105,6 +108,7 @@ export const TwinListResponseSchema = z.object({
       status: TwinSignalStatusSchema,
       confidence: z.number().min(0).max(1),
       description: z.string(), // decrypted server-side for this response, per §6.6 "Interactive AI call" flow
+      name: z.string().optional(), // short tentative label (2026-09-27), absent for older signals
       // Set at confirm-time by twin/classify_signal (Session 19) — absent
       // for signals confirmed before that existed, or if classification
       // failed. Exposed here (My Evolution Map, Slice 5) so a real per-domain
@@ -127,6 +131,17 @@ export const TwinListResponseSchema = z.object({
 export type TwinListResponse = z.infer<typeof TwinListResponseSchema>
 
 /** POST /v1/twin/signals/{id}/confirm | reject — spec §5 Trust rules: never silently overwritten. */
+/**
+ * POST /v1/twin/signals/{id}/reject body (optional, 2026-09-27): the
+ * "Not quite" follow-up. Sending it again for an already-rejected signal
+ * updates the follow-up.
+ */
+export const TwinRejectRequestSchema = z.object({
+  reason: TwinRejectReasonSchema.optional(),
+  correction: z.string().trim().max(500).optional(),
+})
+export type TwinRejectRequest = z.infer<typeof TwinRejectRequestSchema>
+
 export const TwinSignalActionResponseSchema = z.object({
   signalId: z.string(),
   status: TwinSignalStatusSchema,

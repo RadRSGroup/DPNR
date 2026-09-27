@@ -37,7 +37,7 @@ export default function PatternsTrackCard({
       {patterns.length > 0 ? (
         <ul className="space-y-1.5">
           {patterns.slice(0, 4).map((p, i) => {
-            return <PatternRow key={p.signalId} description={p.description} percent={Math.round(p.confidence * 100)} orb={ORBS[i % ORBS.length]} />
+            return <PatternRow key={p.signalId} name={p.name} description={p.description} orb={ORBS[i % ORBS.length]} />
           })}
         </ul>
       ) : loading ? (
@@ -55,7 +55,7 @@ export default function PatternsTrackCard({
   )
 }
 
-function PatternRow({ description, percent, orb }: { description: string; percent: number; orb: string }) {
+function PatternRow({ name, description, orb }: { name?: string; description: string; orb: string }) {
   const t = useTranslations('Dashboard.patterns')
   const [expanded, setExpanded] = useState(false)
   const [truncated, setTruncated] = useState(false)
@@ -77,24 +77,22 @@ function PatternRow({ description, percent, orb }: { description: string; percen
       <span className="relative w-6 h-6 shrink-0">
         <Image src={orb} alt="" fill sizes="24px" />
       </span>
-      <span ref={textRef} className={`min-w-0 text-xs text-white/85 text-start ${expanded ? 'order-last basis-full whitespace-normal leading-relaxed ps-[2.125rem]' : 'flex-1 truncate'}`}>
-        {description}
+      <span className={`min-w-0 text-start ${expanded ? 'flex-1' : 'flex-1'}`}>
+        {name && <span className="block text-xs text-white font-medium truncate">{name}</span>}
+        <span ref={textRef} className={`block text-xs text-white/70 ${expanded ? 'whitespace-normal leading-relaxed' : 'truncate'}`}>
+          {description}
+        </span>
       </span>
-      {expanded && <span className="flex-1" aria-hidden />}
       {canExpand && (
         <ChevronDown aria-hidden className={`w-3.5 h-3.5 shrink-0 text-white/40 transition-transform ${expanded ? 'rotate-180' : ''}`} />
       )}
-      <span className="w-16 h-1 rounded-full bg-white/10 overflow-hidden shrink-0">
-        <span className="block h-full rounded-full bg-gradient-to-r from-[var(--color-violet-500)] to-[var(--color-magenta-500)]" style={{ width: `${percent}%` }} />
-      </span>
-      <span className="text-xs text-[var(--color-text-tertiary)] w-8 text-end shrink-0">{percent}%</span>
     </>
   )
   // The row itself never changes element (swapping a <div> for a <button>
   // would remount the text the observer above is measuring); when the text
   // is cut off, a transparent toggle covers the row instead.
   return (
-    <li className={`relative flex ${expanded ? 'flex-wrap items-center gap-y-1.5' : 'items-center'} gap-2.5 rounded-xl bg-white/[0.04] px-2.5 py-2 ${canExpand ? 'hover:bg-white/[0.07] transition-colors' : ''}`}>
+    <li className={`relative flex ${expanded ? 'items-start' : 'items-center'} gap-2.5 rounded-xl bg-white/[0.04] px-2.5 py-2 ${canExpand ? 'hover:bg-white/[0.07] transition-colors' : ''}`}>
       {body}
       {canExpand && (
         <button

@@ -34,16 +34,22 @@ Only extract a signal when the session gives real, specific evidence for it. Mos
 For each signal you do extract:
 - domain: exactly one of "pattern" (a recurring reaction/loop), "trigger" (something that reliably provokes a reaction), "value" (something they protect or seek), or "commitment" (a concrete action they committed to). Only "commitment" applies to a Decision Room session's own literal commitment text — never infer a commitment from anything else.
 - description: one plain sentence written to the person in second person ("You tend to…", "You may be…"), never "I" and never about them in the third person, using tentative language ("seems to", "may be emerging as") for anything inferred rather than explicitly stated by the person themselves.
+- name: a short, tentative label of one to three words for what this is (e.g. "People-Pleasing", "Conflict Avoidance", "Fairness"). For a pattern, prefer one of these reference names when it genuinely fits, otherwise write your own: People-Pleasing, Avoidance, Over-Control, Perfectionism, Over-Responsibility, Emotional Suppression, Conflict Avoidance, Hyper-Independence, Reassurance Seeking, Withdrawal, Overthinking, Self-Abandonment, Fear-Based Procrastination, Anger as Protection, Fixing / Rescuing, Testing / Pushing Away, Over-Accommodation, Freeze / Shutdown, Comparison, Self-Criticism, Push-Pull. The name labels a pattern or moment, never the person (never "People-Pleaser").
 - confidence: 0–1. Use 0.9+ only for something the person stated directly in their own words. Use lower confidence the more this is your own inference from their behavior/choices rather than their explicit statement.
 
 Never invent detail beyond what the session summary actually contains. Never assign a fixed trait or label to the person — describe a pattern or moment, not an identity.
+
+The person has already told you some readings were not accurate (listed below, with their correction when they gave one). Never propose one of those again, or anything that means the same thing in other words. If their correction points somewhere else and this session supports it, you may reflect that instead.
 
 {{languageInstruction}}`,
     userTemplate: `Session type: {{roomType}}
 
 Session summary:
-{{sessionSummary}}`,
-    variables: ['roomType', 'sessionSummary', 'languageInstruction'],
+{{sessionSummary}}
+
+Readings the person said were not accurate (may be empty):
+{{rejectedReadings}}`,
+    variables: ['roomType', 'sessionSummary', 'rejectedReadings', 'languageInstruction'],
     outputSchema: {
       type: 'object',
       required: ['signals'],
@@ -52,9 +58,10 @@ Session summary:
           type: 'array',
           items: {
             type: 'object',
-            required: ['domain', 'description', 'confidence'],
+            required: ['domain', 'name', 'description', 'confidence'],
             properties: {
               domain: { type: 'string', enum: ['pattern', 'trigger', 'value', 'commitment'] },
+              name: { type: 'string' },
               description: { type: 'string' },
               confidence: { type: 'number' },
             },
@@ -147,5 +154,31 @@ Other already-confirmed signals in this same domain:
       'a live model with real signal data — a design-level first draft, same status every other net-new prompt ' +
       'gets before its own product review; verify the calling convention and data plumbing live before treating ' +
       'the classification *behavior* itself as final.',
+  },
+  {
+    // 2026-09-27 (founder feedback, Life Domains): a short status line per
+    // active life domain, shown on tap/hover on the Dashboard. Regenerated
+    // by lib/domain-summary.ts when a confirmed signal is classified into
+    // the domain. Confirmed signals only; plain text out.
+    name: 'domain_summary',
+    systemTemplate: `You write one short status line for one area of a person's life inside a personal-development app, shown when they tap that area on their Dashboard. It says what seems to be active in that area right now, based only on things the person has confirmed about themselves.
+
+{{languageInstruction}}
+
+Rules:
+- One or two sentences, warm and plain. Tentative ("seem to", "have been coming up"), never certain claims.
+- Use only the confirmed items below. Never add events, causes, feelings or advice that aren't there.
+- Describe what's active or moving, not how good or bad the area is. No scores, grades, percentages or judgments of their life.
+- No labels for the person, no diagnosis, no advice, no questions.
+- Output plain text only — the line itself, nothing else.`,
+    userTemplate: `Life area: {{lifeDomain}}
+
+Things the person has confirmed that relate to this area, most recent first:
+{{confirmedItems}}`,
+    variables: ['lifeDomain', 'confirmedItems', 'languageInstruction'],
+    notes:
+      'Called by lib/domain-summary.ts (from twin/confirm.ts, after maybeClassifySignal). lifeDomain = the human label ' +
+      '(e.g. "Relationships"). confirmedItems = "- name: description" lines of confirmed signals in that domain. ' +
+      'Plain text output (no outputSchema), stored encrypted as a LifeDomainSummaryItem.',
   },
 ]

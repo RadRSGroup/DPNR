@@ -53,6 +53,8 @@ async function findPriorConfirmedSignalsInDomain(
  * lib/roadmap-revision.ts/maybeProposeRoadmapRevision. A classification
  * failure must never block the confirm action itself; the signal simply
  * stays unclassified (absent from both aggregates) until re-confirmed.
+ * Returns the life domain it was classified into (null if it wasn't), so
+ * the caller can refresh that domain's summary.
  */
 export async function maybeClassifySignal(
   ddb: DynamoDBDocumentClient,
@@ -60,7 +62,7 @@ export async function maybeClassifySignal(
   promptRegistryTableName: string,
   signal: TwinSignalItem,
   crypto: SessionCrypto
-): Promise<void> {
+): Promise<LifeDomainCategory | null> {
   try {
     const { description } = await crypto.decryptField<{ description: string }>(signal.content)
 
@@ -79,7 +81,7 @@ export async function maybeClassifySignal(
       signalDescription: description,
       priorSignalsInDomain,
     })
-    if (typeof result === 'string') return
+    if (typeof result === 'string') return null
 
     const lifeDomainParse = LifeDomainCategorySchema.safeParse(result.lifeDomain)
     const archetypeParse = ArchetypeSchema.safeParse(result.archetype)
@@ -88,7 +90,7 @@ export async function maybeClassifySignal(
       typeof result.strength === 'number' && result.strength >= 0 && result.strength <= 1
         ? { success: true as const, data: result.strength }
         : { success: false as const }
-    if (!lifeDomainParse.success || !archetypeParse.success) return
+    if (!lifeDomainParse.success || !archetypeParse.success) return null
 
     const lifeDomain: LifeDomainCategory = lifeDomainParse.data
     const archetype: Archetype = archetypeParse.data
@@ -118,9 +120,11 @@ export async function maybeClassifySignal(
         ExpressionAttributeValues: values,
       })
     )
+    return lifeDomain
   } catch (err) {
     // Log only a generic message — never model output or signal content,
     // per the "no raw payloads in logs" guardrail.
     console.error('Signal classification failed (non-fatal):', err instanceof Error ? err.message : 'unknown error')
+    return null
   }
 }

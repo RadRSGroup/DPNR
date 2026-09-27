@@ -30,18 +30,22 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const signals = await Promise.all(
       ((result.Items ?? []) as TwinSignalItem[])
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-        .map(async (item) => ({
-          signalId: item.signalId,
-          domain: item.domain,
-          status: item.status,
-          confidence: item.confidence,
-          description: (await crypto.decryptField<{ description: string }>(item.content)).description,
-          lifeDomain: item.lifeDomain,
-          archetype: item.archetype,
-          signalType: item.signalType,
-          direction: item.direction,
-          strength: item.strength,
-        }))
+        .map(async (item) => {
+          const { description, name } = await crypto.decryptField<{ description: string; name?: string }>(item.content)
+          return {
+            signalId: item.signalId,
+            domain: item.domain,
+            status: item.status,
+            confidence: item.confidence,
+            description,
+            ...(name ? { name } : {}),
+            lifeDomain: item.lifeDomain,
+            archetype: item.archetype,
+            signalType: item.signalType,
+            direction: item.direction,
+            strength: item.strength,
+          }
+        })
     )
 
     const body: TwinListResponse = { signals }

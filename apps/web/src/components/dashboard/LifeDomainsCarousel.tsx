@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import { LifeDomainCategorySchema, type DashboardResponse, type LifeDomainCategory } from '@dpnr/shared-types'
 import { DOMAIN_META } from '@/components/shared/domain-meta'
+import InfoPopover from '@/components/ui/InfoPopover'
 
 /**
  * Life Domains as the reference draws them: all seven domains as a scrolling
@@ -13,11 +14,17 @@ import { DOMAIN_META } from '@/components/shared/domain-meta'
  * classified Twin signals; a domain with no evidence yet shows "—" and an
  * empty bar rather than a number (user decision, Session 69: every widget
  * always shows, honest when empty).
+ *
+ * Each tile opens a short note on tap/click/hover (founder feedback
+ * 2026-09-27): what seems active in that area (the stored domain summary,
+ * from confirmed signals only) and what the percent actually means — a
+ * share of what the person has confirmed, not a score of that area of life.
  */
 export default function LifeDomainsCarousel({ lifeDomains, loading = false }: { lifeDomains: DashboardResponse['lifeDomains']; loading?: boolean }) {
   const t = useTranslations('Dashboard.lifeDomains')
   const rowRef = useRef<HTMLDivElement>(null)
   const byDomain = new Map(lifeDomains.map((d) => [d.domain, d.percent]))
+  const summaryByDomain = new Map(lifeDomains.map((d) => [d.domain, d.summary ?? null]))
   const current = [...lifeDomains].sort((a, b) => b.percent - a.percent)[0]?.domain
   const domains = LifeDomainCategorySchema.options as LifeDomainCategory[]
 
@@ -59,25 +66,35 @@ export default function LifeDomainsCarousel({ lifeDomains, loading = false }: { 
             const percent = byDomain.get(domain)
             const isCurrent = domain === current
             return (
-              <div
+              <InfoPopover
                 key={domain}
-                className={`snap-start flex-1 basis-[92px] min-w-[92px] rounded-2xl border px-2.5 pt-3 pb-3.5 bg-white/[0.04] ${
+                label={t('about', { name: t(`labels.${domain}`) })}
+                className={`snap-start flex-1 basis-[92px] min-w-[92px] rounded-2xl border px-2.5 pt-3 pb-3.5 bg-white/[0.04] text-start hover:bg-white/[0.07] transition-colors ${
                   isCurrent ? 'border-[var(--color-amber-400)]/60 shadow-[0_0_16px_-4px_var(--color-amber-400)]' : 'border-white/10'
                 }`}
+                content={
+                  <>
+                    <p className="text-white text-sm mb-1">{t(`labels.${domain}`)}</p>
+                    <p>{summaryByDomain.get(domain) ?? t('noSummary')}</p>
+                    <p className="mt-2 text-white/60">
+                      {percent === undefined ? t('shareNone') : t('shareExplained', { percent })}
+                    </p>
+                  </>
+                }
               >
                 <Icon className="w-7 h-7 mx-auto" style={{ color: meta.color }} strokeWidth={1.5} aria-hidden />
-                <p className="text-[11px] text-white/80 text-center mt-2 leading-tight min-h-[2.2em] line-clamp-2">
+                <span className="block text-[11px] text-white/80 text-center mt-2 leading-tight min-h-[2.2em] line-clamp-2">
                   {t(`labels.${domain}`)}
-                </p>
-                <p className="text-base text-white mt-1" aria-label={percent === undefined ? t('notYet') : undefined}>
+                </span>
+                <span className="block text-base text-white mt-1" aria-label={percent === undefined ? t('notYet') : undefined}>
                   {loading ? ' ' : percent === undefined ? '—' : `${percent}%`}
-                </p>
-                <div className="h-1 rounded-full bg-white/10 overflow-hidden mt-1.5">
+                </span>
+                <span className="block h-1 rounded-full bg-white/10 overflow-hidden mt-1.5">
                   {percent !== undefined && (
-                    <div className="h-full rounded-full" style={{ width: `${percent}%`, backgroundColor: meta.color }} />
+                    <span className="block h-full rounded-full" style={{ width: `${percent}%`, backgroundColor: meta.color }} />
                   )}
-                </div>
-              </div>
+                </span>
+              </InfoPopover>
             )
           })}
         </div>
