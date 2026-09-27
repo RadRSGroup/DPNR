@@ -1,6 +1,6 @@
 import type { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb'
 import { GetCommand } from '@aws-sdk/lib-dynamodb'
-import { Sk, userPk, type UserProfileItem } from '@dpnr/shared-types'
+import { Sk, userPk, hasCurrentConsent, type UserProfileItem } from '@dpnr/shared-types'
 import { HttpError } from './http'
 
 /**
@@ -30,7 +30,10 @@ export async function requireConsent(
   if (!profile) {
     throw new HttpError(404, 'profile_not_found', 'User profile does not exist.')
   }
-  if (!profile.consentedAt) {
+  // Session 73: consent must be for the current version and include the
+  // 18+ confirmation (hasCurrentConsent), so the version bump makes existing
+  // accounts consent once more rather than only new signups.
+  if (!hasCurrentConsent(profile)) {
     throw new HttpError(403, 'consent_required', 'Consent must be given before this action.')
   }
   return profile

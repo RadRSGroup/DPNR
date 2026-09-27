@@ -23,11 +23,17 @@ function ConsentContent() {
   const params = useSearchParams()
   // Untrusted until validated — see resolveSafeNext's own doc comment (DPNR-03).
   const next = resolveSafeNext(params.get('next'))
+  // Set by the API client when an older consent needs renewing (Session 73).
+  const updated = params.get('updated') === '1'
 
   const [accepting, setAccepting] = useState(false)
+  // Wave 2 #1: required, unticked by default, and sent to the backend, which
+  // refuses consent without it (the /signup Terms box is client-only).
+  const [ageConfirmed, setAgeConfirmed] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function handleAccept() {
+    if (!ageConfirmed) return
     setAccepting(true)
     setError(null)
     try {
@@ -53,6 +59,9 @@ function ConsentContent() {
         <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR · InnerOS</p>
         <h1 className="text-white text-xl font-light">{t('title')}</h1>
         <p className="text-[var(--color-text-tertiary)] text-sm mt-2">{t('subtitle')}</p>
+        {updated && (
+          <p className="text-purple-300/90 text-sm mt-3 leading-relaxed">{t('updatedNotice')}</p>
+        )}
       </div>
 
       <div className="flex-1 space-y-3">
@@ -77,6 +86,21 @@ function ConsentContent() {
           })}
         </p>
 
+        <label className="flex items-start gap-3 rounded-2xl border border-white/15 bg-white/5 px-4 py-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={ageConfirmed}
+            onChange={(e) => setAgeConfirmed(e.target.checked)}
+            required
+            aria-describedby="age-note"
+            className="mt-0.5 h-5 w-5 shrink-0 accent-purple-500"
+          />
+          <span className="space-y-1">
+            <span className="block text-white/90 text-sm">{t('ageConfirm')}</span>
+            <span id="age-note" className="block text-white/50 text-xs leading-relaxed">{t('ageNote')}</span>
+          </span>
+        </label>
+
         {error && (
           <div className="bg-red-900/30 border border-red-700/40 rounded-2xl px-4 py-3">
             <p className="text-red-400 text-sm">{error}</p>
@@ -85,7 +109,7 @@ function ConsentContent() {
 
         <button
           onClick={handleAccept}
-          disabled={accepting}
+          disabled={accepting || !ageConfirmed}
           className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 active:scale-[0.98] text-white rounded-2xl px-5 py-4 font-medium transition-all"
         >
           {accepting ? t('saving') : t('agreeButton')}

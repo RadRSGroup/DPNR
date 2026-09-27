@@ -134,6 +134,15 @@ export function markConsentedLocally(): void {
 }
 
 /**
+ * The backend said consent is missing or out of date (consent version bump,
+ * Session 73), so the UX cookie is wrong: clear it so proxy.ts routes to
+ * /consent too. The only path that clears it besides sign-out.
+ */
+export function clearConsentCookie(): void {
+  document.cookie = `${CONSENT_COOKIE}=; path=/; max-age=0`
+}
+
+/**
  * Called right after the profile-setup screen's `updatePreferences({ ...,
  * profileSetupComplete: true })` succeeds — same optimistic-cookie pattern
  * as `markConsentedLocally()` above, and for the same reason (the ID

@@ -1,8 +1,8 @@
 import type { APIGatewayProxyHandlerV2WithJWTAuthorizer } from 'aws-lambda'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb'
-import { Sk, userPk, CURRENT_CONSENT_VERSION, type ConsentResponse } from '@dpnr/shared-types'
-import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
+import { Sk, userPk, CURRENT_CONSENT_VERSION, ConsentRequestSchema, type ConsentResponse } from '@dpnr/shared-types'
+import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
@@ -18,10 +18,15 @@ const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
  * Idempotent by design: calling this again just re-confirms the current
  * version rather than erroring — consent isn't a one-time event a client
  * retry should be able to break.
+ *
+ * Session 73 (Wave 2 #1): the body must carry `ageConfirmed: true` (the 18+
+ * checkbox on /consent); anything else is a 400 and writes nothing, so
+ * consent is never recorded without the age confirmation.
  */
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
     const userId = requireUserId(event)
+    parseBody(event, ConsentRequestSchema)
     const now = new Date().toISOString()
 
     const result = await ddb
@@ -34,7 +39,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
           // profile is a real inconsistency, not something to paper over by
           // creating one here.
           ConditionExpression: 'attribute_exists(pk)',
-          UpdateExpression: 'SET consentedAt = :now, consentVersion = :v, updatedAt = :now',
+          UpdateExpression: 'SET consentedAt = :now, consentVersion = :v, ageConfirmedAt = :now, updatedAt = :now',
           ExpressionAttributeValues: { ':now': now, ':v': CURRENT_CONSENT_VERSION },
           ReturnValues: 'ALL_NEW',
         })
@@ -49,6 +54,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const response: ConsentResponse = {
       consentedAt: result.Attributes?.consentedAt as string,
       consentVersion: result.Attributes?.consentVersion as string,
+      ageConfirmedAt: result.Attributes?.ageConfirmedAt as string,
     }
     return jsonResponse(200, response)
   } catch (err) {

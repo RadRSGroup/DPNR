@@ -1,3 +1,4 @@
+import { CURRENT_CONSENT_VERSION } from '@dpnr/shared-types'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mockClient } from 'aws-sdk-client-mock'
 import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
@@ -107,6 +108,8 @@ describe('POST /v1/rooms/decision concurrency (DPNR-08)', () => {
     const items = makeFakeTable()
     items.set('USER#user-1|PROFILE', {
       consentedAt: '2026-09-22T00:00:00.000Z',
+      consentVersion: CURRENT_CONSENT_VERSION,
+      ageConfirmedAt: '2026-09-22T00:00:00.000Z',
       preferredLanguage: 'en',
       genderIdentity: 'unspecified',
     })
@@ -133,6 +136,8 @@ describe('POST /v1/rooms/decision concurrency (DPNR-08)', () => {
     const items = makeFakeTable()
     items.set('USER#user-1|PROFILE', {
       consentedAt: '2026-09-22T00:00:00.000Z',
+      consentVersion: CURRENT_CONSENT_VERSION,
+      ageConfirmedAt: '2026-09-22T00:00:00.000Z',
       preferredLanguage: 'en',
       genderIdentity: 'unspecified',
     })

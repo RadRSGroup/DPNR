@@ -2,6 +2,7 @@ import type {
   RoomCommandRequest,
   RoomCommandResponse,
   ConsentResponse,
+  ConsentRequest,
   DecisionRoomFullResponse,
   MirrorRoomFullResponse,
   UserExportResponse,
@@ -58,7 +59,7 @@ import type {
   OnboardingSnapshotResponse,
   SessionSummariesResponse,
 } from '@dpnr/shared-types'
-import { getIdToken } from '../cognito/client'
+import { getIdToken, clearConsentCookie } from '../cognito/client'
 
 const API_URL = process.env.NEXT_PUBLIC_DPNR_API_URL!
 
@@ -84,10 +85,31 @@ async function authedFetch(path: string, init: RequestInit = {}): Promise<Respon
   })
 }
 
+/**
+ * Session 73 (Wave 2 #1): the consent version was bumped for the 18+
+ * confirmation, so an account that consented to an older version gets
+ * `403 consent_required` from any consent-gated endpoint while its UX
+ * cookie may still say "consented". Whatever page made the call, send the
+ * person to /consent once (clearing the stale cookie so proxy.ts agrees),
+ * then back to where they were. `updated=1` shows the "we've updated our
+ * consent" line.
+ */
+let consentRedirecting = false
+function sendToConsent(): void {
+  if (typeof window === 'undefined' || consentRedirecting) return
+  const localePrefix = window.location.pathname.match(/^\/he(?=\/|$)/)?.[0] ?? ''
+  const path = window.location.pathname.slice(localePrefix.length) || '/'
+  if (path.startsWith('/consent')) return
+  consentRedirecting = true
+  clearConsentCookie()
+  window.location.assign(`${localePrefix}/consent?next=${encodeURIComponent(path + window.location.search)}&updated=1`)
+}
+
 async function parseOrThrow<T>(res: Response): Promise<T> {
   const body = await res.json().catch(() => null)
   if (!res.ok) {
     const err = (body as { error?: { code: string; message: string } } | null)?.error
+    if (res.status === 403 && err?.code === 'consent_required') sendToConsent()
     throw new ApiError(res.status, err?.code ?? 'unknown_error', err?.message ?? 'Request failed.')
   }
   return body as T
@@ -135,7 +157,9 @@ export async function getMirrorsList(): Promise<MirrorsListResponse> {
 
 /** POST /v1/user/consent — the write path this session built (docs/PHASE_AUDIT.md §2.2). */
 export async function grantConsent(): Promise<ConsentResponse> {
-  const res = await authedFetch('/v1/user/consent', { method: 'POST' })
+  // Only ever called after the person ticks the 18+ checkbox on /consent.
+  const body: ConsentRequest = { ageConfirmed: true }
+  const res = await authedFetch('/v1/user/consent', { method: 'POST', body: JSON.stringify(body) })
   return parseOrThrow<ConsentResponse>(res)
 }
 

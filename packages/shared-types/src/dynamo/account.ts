@@ -93,6 +93,10 @@ export const UserProfileItemSchema = z.object({
   tier: TierSchema.default('free'),
   consentedAt: z.string().datetime().nullable(),
   consentVersion: z.string().nullable(),
+  // Session 73 (Wave 2 #1): when the person confirmed they are 18 or older,
+  // set by POST /v1/user/consent together with consentedAt. Optional for
+  // profiles written before it existed (read as "not confirmed").
+  ageConfirmedAt: z.string().datetime().nullable().optional(),
   preferredLanguage: z.enum(['en', 'he']).default('en'),
   genderIdentity: GenderIdentitySchema.default('unspecified'),
   // Session 70 — the name the person wants to be called, asked on the

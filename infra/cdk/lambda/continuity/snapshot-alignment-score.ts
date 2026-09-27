@@ -1,5 +1,5 @@
 import { ScanCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
-import { Sk, userPk, type UserProfileItem, type AlignmentScoreSnapshotItem } from '@dpnr/shared-types'
+import { Sk, userPk, type UserProfileItem, type AlignmentScoreSnapshotItem, hasCurrentConsent } from '@dpnr/shared-types'
 import { computeAlignmentScore, fetchAlignmentScoreInputs } from '../lib/alignment-score'
 import { ddb, TABLE_NAME } from './helpers'
 
@@ -34,7 +34,7 @@ export const handler = async (): Promise<void> => {
     const profiles = (scanResult.Items ?? []) as UserProfileItem[]
 
     for (const profile of profiles) {
-      if (!profile.consentedAt) {
+      if (!hasCurrentConsent(profile)) {
         skippedNoConsent++
         continue
       }

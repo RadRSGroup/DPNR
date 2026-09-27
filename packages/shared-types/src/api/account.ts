@@ -152,15 +152,39 @@ export type UpdateWrappedDekResponse = z.infer<typeof UpdateWrappedDekResponseSc
  * path for consent... updates the PROFILE item") but that never got built
  * against the new backend (see docs/PHASE_AUDIT.md §2.2/§4.2: until this
  * existed, no code path could ever set `PROFILE.consentedAt`, so every
- * consent-gated handler would 403 forever for a real signup). No request
- * body — the server owns the current consent-copy version, the same
- * convention the old Supabase-era route used.
+ * consent-gated handler would 403 forever for a real signup). The server
+ * owns the current consent-copy version; since Session 73 the body carries
+ * the required 18+ confirmation (ConsentRequestSchema).
  */
-export const CURRENT_CONSENT_VERSION = '2026-06'
+//
+// Session 73 (Wave 2 #1, user-approved 2026-09-27): bumped from '2026-06'
+// when the 18+ confirmation was added, so every existing account consents
+// once more (and confirms its age) before personal content is processed.
+// Bump again whenever the consent screen's substance changes.
+export const CURRENT_CONSENT_VERSION = '2026-09'
+
+/**
+ * The single definition of "has valid consent", used by the request gate
+ * (lib/consent.ts), the token claim (pre-token-generation.ts) and the
+ * scheduled composers: consent given for the CURRENT version, with the
+ * 18+ confirmation recorded.
+ */
+export function hasCurrentConsent(
+  profile: { consentedAt: string | null; consentVersion: string | null; ageConfirmedAt?: string | null } | undefined | null
+): boolean {
+  return Boolean(profile?.consentedAt && profile.consentVersion === CURRENT_CONSENT_VERSION && profile.ageConfirmedAt)
+}
+
+/** POST /v1/user/consent body. The 18+ confirmation is required, never assumed. */
+export const ConsentRequestSchema = z.object({
+  ageConfirmed: z.literal(true),
+})
+export type ConsentRequest = z.infer<typeof ConsentRequestSchema>
 
 export const ConsentResponseSchema = z.object({
   consentedAt: z.string().datetime(),
   consentVersion: z.string(),
+  ageConfirmedAt: z.string().datetime(),
 })
 export type ConsentResponse = z.infer<typeof ConsentResponseSchema>
 

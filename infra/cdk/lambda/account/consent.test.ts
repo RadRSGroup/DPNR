@@ -15,8 +15,9 @@ import { handler } from './consent'
 
 const ddbMock = mockClient(DynamoDBDocumentClient)
 
-function eventFor(userId: string | undefined): APIGatewayProxyEventV2WithJWTAuthorizer {
+function eventFor(userId: string | undefined, body: unknown = { ageConfirmed: true }): APIGatewayProxyEventV2WithJWTAuthorizer {
   return {
+    body: body === null ? undefined : JSON.stringify(body),
     requestContext: {
       authorizer: { jwt: { claims: userId ? { sub: userId } : {}, scopes: null } },
     },
@@ -30,7 +31,7 @@ beforeEach(() => {
 describe('POST /v1/user/consent', () => {
   it('sets consentedAt/consentVersion on the caller\'s own profile', async () => {
     ddbMock.on(UpdateCommand).resolves({
-      Attributes: { consentedAt: '2026-09-22T00:00:00.000Z', consentVersion: CURRENT_CONSENT_VERSION },
+      Attributes: { consentedAt: '2026-09-22T00:00:00.000Z', consentVersion: CURRENT_CONSENT_VERSION, ageConfirmedAt: '2026-09-22T00:00:00.000Z' },
     })
 
     const result = await handler(eventFor('user-1'), {} as never, {} as never)
@@ -42,11 +43,21 @@ describe('POST /v1/user/consent', () => {
     const call = ddbMock.commandCalls(UpdateCommand)[0]
     expect(call.args[0].input.Key).toEqual({ pk: 'USER#user-1', sk: 'PROFILE' })
     expect(call.args[0].input.ConditionExpression).toBe('attribute_exists(pk)')
+    expect(call.args[0].input.UpdateExpression).toContain('ageConfirmedAt = :now')
+    expect(body.ageConfirmedAt).toBe('2026-09-22T00:00:00.000Z')
+  })
+
+  it('400s and writes nothing without the 18+ confirmation (Session 73)', async () => {
+    for (const body of [null, {}, { ageConfirmed: false }, { ageConfirmed: 'yes' }]) {
+      const result = (await handler(eventFor('user-1', body), {} as never, {} as never)) as { statusCode: number; body: string }
+      expect(result.statusCode).toBe(400)
+    }
+    expect(ddbMock.commandCalls(UpdateCommand)).toHaveLength(0)
   })
 
   it('is idempotent — calling it twice does not error', async () => {
     ddbMock.on(UpdateCommand).resolves({
-      Attributes: { consentedAt: '2026-09-22T00:00:00.000Z', consentVersion: CURRENT_CONSENT_VERSION },
+      Attributes: { consentedAt: '2026-09-22T00:00:00.000Z', consentVersion: CURRENT_CONSENT_VERSION, ageConfirmedAt: '2026-09-22T00:00:00.000Z' },
     })
 
     const first = await handler(eventFor('user-1'), {} as never, {} as never)

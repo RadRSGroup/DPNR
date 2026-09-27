@@ -569,6 +569,9 @@
       }
     },
     "agreementText": "By continuing you agree to our <terms>Terms of Use</terms> and <privacy>Privacy & Data Policy</privacy>, including the use of anonymised data to improve the service.",
+    "ageConfirm": "I confirm I am 18 or older.",
+    "ageNote": "DPNR is for adults. Please confirm this to continue.",
+    "updatedNotice": "We've updated our consent. Please review it and confirm again to continue.",
     "saving": "Saving…",
     "agreeButton": "I agree — take me in",
     "withdrawText": "You can withdraw consent and delete your account at any time from <account>Account Settings</account>."

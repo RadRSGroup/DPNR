@@ -1,5 +1,5 @@
 import { ScanCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
-import { Sk, userPk, type UserProfileItem, type WeeklyRecapItem } from '@dpnr/shared-types'
+import { Sk, userPk, type UserProfileItem, type WeeklyRecapItem, hasCurrentConsent } from '@dpnr/shared-types'
 import { getSessionCrypto } from '../lib/session-crypto'
 import { toLanguageInstruction } from '../lib/locale'
 import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
@@ -42,7 +42,7 @@ export const handler = async (): Promise<void> => {
     const profiles = (scanResult.Items ?? []) as UserProfileItem[]
 
     for (const profile of profiles) {
-      if (!profile.consentedAt) {
+      if (!hasCurrentConsent(profile)) {
         skippedNoConsent++
         continue
       }

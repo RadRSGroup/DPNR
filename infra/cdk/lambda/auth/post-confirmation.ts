@@ -45,6 +45,7 @@ export const handler = async (
     tier: 'free',
     consentedAt: null,
     consentVersion: null,
+    ageConfirmedAt: null,
     preferredLanguage: 'en',
     // Real gender-collection UI + its update endpoint are Slice B work
     // (docs/HEBREW_LOCALIZATION_PLAN.md) — Cognito custom attributes can't
