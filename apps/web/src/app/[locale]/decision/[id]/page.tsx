@@ -9,6 +9,8 @@ import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
 import Card from '@/components/ui/Card'
 import ReopenPanel from '@/components/rooms/ReopenPanel'
+import FeltSummary from '@/components/shared/FeltSummary'
+import { feltFromDecisionEmotion } from '@/lib/body-map'
 import { getDecisionFull, ApiError } from '@/lib/api/v1-client'
 import type { DecisionRoomFullResponse, DecisionRoomOptionView, TagType } from '@dpnr/shared-types'
 
@@ -204,17 +206,8 @@ export default function DecisionDetailPage() {
                 {decision.emotion && (
                   <Card>
                     <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">Body &amp; emotion</p>
-                    <div className="flex gap-2 flex-wrap mb-2">
-                      {decision.emotion.bodyLocation && (
-                        <span className="text-xs bg-white/10 rounded-full px-2.5 py-1 text-white/60">
-                          {decision.emotion.bodyLocation}
-                        </span>
-                      )}
-                      {decision.emotion.emotionColor && (
-                        <span className="text-xs bg-white/10 rounded-full px-2.5 py-1 text-white/60">
-                          {decision.emotion.emotionColor}
-                        </span>
-                      )}
+                    <div className="mb-3">
+                      <FeltSummary {...feltFromDecisionEmotion(decision.emotion)} />
                     </div>
                     {decision.emotion.aiReflection && (
                       <p className="text-white/50 text-sm italic leading-relaxed">&ldquo;{decision.emotion.aiReflection}&rdquo;</p>

@@ -2,7 +2,7 @@
 import RoomScreenFrame from '@/components/shared/RoomScreenFrame'
 import InvertedButton from '@/components/ui/InvertedButton'
 import Card from '@/components/ui/Card'
-import FeltSummary from './FeltSummary'
+import FeltSummary from '@/components/shared/FeltSummary'
 import type { MirrorBodyPlacement, MirrorEmotionFelt } from '@dpnr/shared-types'
 
 const AFFIRMATIONS = [

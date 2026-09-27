@@ -3,6 +3,8 @@ import { useRouter } from '@/i18n/navigation'
 import RoomScreenFrame from '@/components/shared/RoomScreenFrame'
 import InvertedButton from '@/components/ui/InvertedButton'
 import Card from '@/components/ui/Card'
+import FeltSummary from '@/components/shared/FeltSummary'
+import type { Felt } from '@/lib/body-map'
 
 const AFFIRMATIONS = [
   'You showed up for yourself today. That takes real courage.',
@@ -21,6 +23,8 @@ interface Props {
   reflectionNote?: string
   commitment?: string
   decisionId?: string
+  /** Step 3's emotion + body capture (Slice 5b). */
+  felt?: Felt
   onDone: () => void
 }
 
@@ -33,6 +37,7 @@ export default function CompletionScreen({
   reflectionNote,
   commitment,
   decisionId,
+  felt,
   onDone,
 }: Props) {
   const router = useRouter()
@@ -98,6 +103,12 @@ export default function CompletionScreen({
             </div>
           )}
         </Card>
+
+        {felt && (felt.emotionsFelt.length > 0 || felt.emotion || felt.bodyResponse) && (
+          <Card>
+            <FeltSummary {...felt} />
+          </Card>
+        )}
 
         {/* Reflection note */}
         {reflectionNote && (

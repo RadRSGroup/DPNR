@@ -64,6 +64,11 @@ export const DecisionRoomFullResponseSchema = z.object({
       emotionColor: z.string().nullable(),
       aiReflection: z.string().nullable(),
       userResponse: DecisionEmotionAgreementSchema.nullable(),
+      // Slice 5b: absent on decisions captured before the body map.
+      emotionsFelt: z.array(MirrorEmotionFeltSchema).optional(),
+      bodyPlacements: z.array(MirrorBodyPlacementSchema).optional(),
+      emotionWords: z.string().optional(),
+      bodyWords: z.string().optional(),
     })
     .nullable(), // null until step 3 has run
   outcomes: z.array(DecisionRoomOutcomeViewSchema),

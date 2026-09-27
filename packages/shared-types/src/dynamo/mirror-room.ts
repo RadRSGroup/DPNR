@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { EncryptedBlobSchema } from './crypto'
+import { BodyAreaSchema, EmotionFeltSchema, BodyPlacementSchema, type BodyArea, type EmotionFelt, type BodyPlacement } from './felt'
 
 /**
  * Mirror Room schema. Session 5 designed this collaboratively with the
@@ -40,18 +41,14 @@ export type MirrorEntry = z.infer<typeof MirrorEntrySchema>
  * never picks or suggests a location (Appendix B). Descriptive only: nothing
  * here is scored.
  */
-export const MirrorBodyAreaSchema = z.enum(['Head', 'Throat', 'Shoulders', 'Chest', 'Arms', 'Hands', 'Stomach', 'Gut', 'Legs'])
-export type MirrorBodyArea = z.infer<typeof MirrorBodyAreaSchema>
-export const MirrorEmotionFeltSchema = z.object({
-  label: z.string().min(1).max(40),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-})
-export type MirrorEmotionFelt = z.infer<typeof MirrorEmotionFeltSchema>
-export const MirrorBodyPlacementSchema = z.object({
-  area: MirrorBodyAreaSchema,
-  emotion: z.string().min(1).max(40),
-})
-export type MirrorBodyPlacement = z.infer<typeof MirrorBodyPlacementSchema>
+// Room-neutral definitions live in ./felt (the Decision Room uses them too since
+// Slice 5b); these Mirror names are kept as aliases for existing callers.
+export const MirrorBodyAreaSchema = BodyAreaSchema
+export type MirrorBodyArea = BodyArea
+export const MirrorEmotionFeltSchema = EmotionFeltSchema
+export type MirrorEmotionFelt = EmotionFelt
+export const MirrorBodyPlacementSchema = BodyPlacementSchema
+export type MirrorBodyPlacement = BodyPlacement
 
 export const MirrorSessionItemSchema = z.object({
   pk: z.string(),

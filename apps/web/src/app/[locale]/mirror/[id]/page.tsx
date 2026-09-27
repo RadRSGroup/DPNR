@@ -9,7 +9,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
 import Card from '@/components/ui/Card'
 import ReopenPanel from '@/components/rooms/ReopenPanel'
-import FeltSummary from '@/components/mirror/FeltSummary'
+import FeltSummary from '@/components/shared/FeltSummary'
 import { getMirrorFull, ApiError } from '@/lib/api/v1-client'
 import type { MirrorRoomFullResponse } from '@dpnr/shared-types'
 

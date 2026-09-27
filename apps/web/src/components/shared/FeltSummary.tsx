@@ -1,20 +1,20 @@
-import type { MirrorBodyPlacement, MirrorEmotionFelt } from '@dpnr/shared-types'
-import { MIRROR_BODY_AREAS } from '@/lib/mirror-body'
+import type { BodyPlacement, EmotionFelt } from '@dpnr/shared-types'
+import { BODY_AREAS } from '@/lib/body-map'
 
 interface Props {
-  emotionsFelt?: MirrorEmotionFelt[]
-  bodyPlacements?: MirrorBodyPlacement[]
+  emotionsFelt?: EmotionFelt[]
+  bodyPlacements?: BodyPlacement[]
   emotion?: string
   bodyResponse?: string
 }
 
 /**
- * Step 2's answers shown back (Mirror ending and review page): the emotions
+ * The emotion + body capture shown back (Mirror and Decision endings and review pages): the emotions
  * the person chose, where they placed each one, and their own words. Areas
  * are listed head to toe. Renders nothing when there's nothing to show.
  */
 export default function FeltSummary({ emotionsFelt = [], bodyPlacements = [], emotion, bodyResponse }: Props) {
-  const areaOrder = MIRROR_BODY_AREAS.map((a) => a.area)
+  const areaOrder = BODY_AREAS.map((a) => a.area)
   const placedFor = (label: string) =>
     bodyPlacements.filter((p) => p.emotion === label).map((p) => p.area).sort((a, b) => areaOrder.indexOf(a) - areaOrder.indexOf(b))
 

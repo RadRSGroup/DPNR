@@ -2,10 +2,10 @@
 import { useState } from 'react'
 import type { MirrorBodyPlacement, MirrorEmotionFelt } from '@dpnr/shared-types'
 import MirrorStepShell from './MirrorStepShell'
-import BodyMap from './BodyMap'
+import BodyMap from '@/components/shared/BodyMap'
+import EmotionChips from '@/components/shared/EmotionChips'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI, RefineFn } from '@/lib/useAI'
-import { EMOTION_COLORS } from '@/lib/types'
 
 export interface FeltAnswers {
   thought: string
@@ -50,16 +50,6 @@ export default function Step02AutomaticReaction({ sessionTitle, initial, onRefin
   const readyToReflect = !!thought.trim() && hasEmotion && hasBody
   const readyToContinue = readyToReflect && !!automaticReaction.trim()
 
-  function toggleEmotion(label: string, color: string) {
-    const on = emotionsFelt.some((e) => e.label === label)
-    if (on) {
-      setEmotionsFelt((prev) => prev.filter((e) => e.label !== label))
-      setBodyPlacements((prev) => prev.filter((p) => p.emotion !== label))
-    } else {
-      setEmotionsFelt((prev) => (prev.some((e) => e.label === label) ? prev : [...prev, { label, color }]))
-    }
-  }
-
   function felt() {
     return { thought: thought.trim(), emotion: emotion.trim(), bodyResponse: bodyResponse.trim(), emotionsFelt, bodyPlacements }
   }
@@ -97,24 +87,7 @@ export default function Step02AutomaticReaction({ sessionTitle, initial, onRefin
               <p className="text-white/70 text-sm leading-relaxed">What did you feel?</p>
               <p className="text-[var(--color-text-tertiary)] text-xs">Choose any that fit. There&apos;s no right answer.</p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {EMOTION_COLORS.map(({ label, color }) => {
-                const on = emotionsFelt.some((e) => e.label === label)
-                return (
-                  <button
-                    key={label}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => toggleEmotion(label, color)}
-                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors ${on ? 'text-white' : 'text-white/65 border-white/15 hover:text-white hover:border-white/35'}`}
-                    style={on ? { borderColor: color, backgroundColor: `${color}2e` } : undefined}
-                  >
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color, boxShadow: on ? `0 0 8px ${color}` : undefined }} aria-hidden />
-                    {label}
-                  </button>
-                )
-              })}
-            </div>
+            <EmotionChips emotionsFelt={emotionsFelt} setEmotionsFelt={setEmotionsFelt} setBodyPlacements={setBodyPlacements} />
             <textarea
               value={emotion}
               onChange={e => setEmotion(e.target.value.slice(0, 5000))}

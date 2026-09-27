@@ -131,7 +131,12 @@ export type DecisionEmotionAgreement = z.infer<typeof DecisionEmotionAgreementSc
 export const DecisionEmotionItemSchema = z.object({
   pk: z.string(),
   sk: z.string(), // Sk.decisionEmotion(decisionId)
-  content: EncryptedBlobSchema, // wraps { bodyLocation, emotionColor, aiReflection, userResponse }
+  // wraps { bodyLocation, emotionColor, aiReflection, userResponse,
+  //   emotionsFelt?, bodyPlacements?, emotionWords?, bodyWords? }
+  // The optional fields are Slice 5b's (Session 75) Mirror-style capture;
+  // bodyLocation/emotionColor are still written (first placement / first
+  // emotion) so readers of the legacy single values keep working.
+  content: EncryptedBlobSchema,
   createdAt: z.string().datetime(),
 })
 export type DecisionEmotionItem = z.infer<typeof DecisionEmotionItemSchema>

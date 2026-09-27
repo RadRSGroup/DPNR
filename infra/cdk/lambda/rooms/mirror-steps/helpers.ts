@@ -63,22 +63,5 @@ export function formatEntryContext(entry: MirrorEntry | undefined): string {
   return 'They came in by describing a situation. Begin from what happened and what became activated.'
 }
 
-/** Emotion for the prompts: the chips they chose plus their own words, whichever exist. */
-export function formatEmotion(content: Pick<MirrorContent, 'emotion' | 'emotionsFelt'>): string {
-  const parts: string[] = []
-  if (content.emotionsFelt?.length) parts.push(`chose ${content.emotionsFelt.map((e) => e.label).join(', ')}`)
-  if (content.emotion.trim()) parts.push(`in their words: "${content.emotion.trim()}"`)
-  return parts.join('; ') || 'not said'
-}
-
-/** Body for the prompts: where THEY placed each emotion, plus their own words. Never inferred. */
-export function formatBody(content: Pick<MirrorContent, 'bodyResponse' | 'bodyPlacements'>): string {
-  const parts: string[] = []
-  if (content.bodyPlacements?.length) {
-    const byEmotion = new Map<string, string[]>()
-    for (const p of content.bodyPlacements) byEmotion.set(p.emotion, [...(byEmotion.get(p.emotion) ?? []), p.area])
-    parts.push(`placed on the body map: ${[...byEmotion].map(([emotion, areas]) => `${emotion} in ${areas.join(', ')}`).join('; ')}`)
-  }
-  if (content.bodyResponse.trim()) parts.push(`in their words: "${content.bodyResponse.trim()}"`)
-  return parts.join('; ') || 'not said'
-}
+// formatEmotion/formatBody moved to ../felt (shared with the Decision Room, Slice 5b).
+export { formatEmotion, formatBody } from '../felt'

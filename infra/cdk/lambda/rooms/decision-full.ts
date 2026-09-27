@@ -11,6 +11,8 @@ import {
   type DecisionSummaryItem,
   type DecisionEmotionItem,
   type DecisionEmotionAgreement,
+  type EmotionFelt,
+  type BodyPlacement,
   type DecisionRoomFullResponse,
   type DecisionRoomOptionView,
   type DecisionRoomTagView,
@@ -32,6 +34,11 @@ type EmotionContent = {
   emotionColor: string | null
   aiReflection: string | null
   userResponse: DecisionEmotionAgreement | null
+  // Slice 5b: absent on decisions captured before the body map.
+  emotionsFelt?: EmotionFelt[]
+  bodyPlacements?: BodyPlacement[]
+  emotionWords?: string
+  bodyWords?: string
 }
 
 /**

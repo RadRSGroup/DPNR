@@ -6,54 +6,64 @@ import RoomScreenFrame from '@/components/shared/RoomScreenFrame'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
-import { EMOTION_COLORS, BODY_LOCATIONS, EmotionColor, TOTAL_STEPS } from '@/lib/types'
-
-const PRESET_EMOTION_LABELS: string[] = EMOTION_COLORS.map(e => e.label)
+import BodyMap from '@/components/shared/BodyMap'
+import EmotionChips from '@/components/shared/EmotionChips'
+import FeltSummary from '@/components/shared/FeltSummary'
+import { TOTAL_STEPS } from '@/lib/types'
+import { EMPTY_FELT, type Felt } from '@/lib/body-map'
+import type { BodyPlacement, EmotionFelt } from '@dpnr/shared-types'
 
 interface Step03Props {
   decisionTitle: string
-  initialBodyLocation?: string
-  initialEmotion?: string
+  initialFelt?: Felt
   initialReflection?: string
   onRefine: RefineFn
-  onComplete: (bodyLocation: string, emotion: string, reflection: string, response: UserResponse, userRefinement?: string) => void
+  onComplete: (felt: Felt, reflection: string, response: UserResponse, userRefinement?: string) => void
   onBack?: () => void
   onSkip?: () => void
 }
 
 export type UserResponse = 'accurate' | 'refine' | 'not_sure' | 'partly_true'
 
-export default function Step03({ decisionTitle, initialBodyLocation, initialEmotion, initialReflection, onRefine, onComplete, onBack, onSkip }: Step03Props) {
+/**
+ * BODY_EMOTION. Slice 5b (Session 75): the same capture as the Mirror Room's
+ * Step 2 — emotion chips → the body comes forward and the person places each
+ * feeling on it (BodyMap; DPNR never picks a location) → optional own words,
+ * required only for a half the chips / map didn't answer. Then the AI
+ * reflection and the accurate / refine / not sure / partly true response,
+ * unchanged. See decision-steps/body-emotion.ts.
+ */
+export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initialReflection, onRefine, onComplete, onBack, onSkip }: Step03Props) {
   const router = useRouter()
-  const isPreset = (v?: string): v is EmotionColor => !!v && PRESET_EMOTION_LABELS.includes(v)
-  const [bodyLocation, setBodyLocation] = useState<string | null>(initialBodyLocation ?? null)
-  const [emotion, setEmotion] = useState<EmotionColor | null>(
-    isPreset(initialEmotion) ? initialEmotion : null
-  )
-  const [customEmotion, setCustomEmotion] = useState<string>(
-    isPreset(initialEmotion) ? '' : (initialEmotion ?? '')
-  )
+  const [emotionsFelt, setEmotionsFelt] = useState<EmotionFelt[]>(initialFelt.emotionsFelt)
+  const [bodyPlacements, setBodyPlacements] = useState<BodyPlacement[]>(initialFelt.bodyPlacements)
+  const [emotion, setEmotion] = useState(initialFelt.emotion)
+  const [bodyResponse, setBodyResponse] = useState(initialFelt.bodyResponse)
   const [reflection, setReflection] = useState<string | null>(initialReflection ?? null)
   const [response, setResponse] = useState<UserResponse | null>(null)
   const [userRefinement, setUserRefinement] = useState('')
   const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI(onRefine)
 
-  const resolvedEmotion = emotion ?? (customEmotion.trim() || null)
+  const hasEmotion = emotionsFelt.length > 0 || !!emotion.trim()
+  const hasBody = bodyPlacements.length > 0 || !!bodyResponse.trim()
+
+  function felt(): Felt {
+    return { emotionsFelt, bodyPlacements, emotion: emotion.trim(), bodyResponse: bodyResponse.trim() }
+  }
 
   async function handleMapFeelings() {
-    if (!bodyLocation || !resolvedEmotion) return
-    const res = await callAI<{ reflection: string }>(
-      'emotion_reflection',
-      { bodyLocation, emotion: resolvedEmotion }
-    )
+    if (!hasEmotion || !hasBody) return
+    const res = await callAI<{ reflection: string }>('emotion_reflection', { ...felt() })
     if (res?.reflection) setReflection(res.reflection)
   }
 
   function handleContinue() {
-    if (!bodyLocation || !resolvedEmotion || !reflection || !response) return
+    if (!hasEmotion || !hasBody || !reflection || !response) return
     if (response === 'refine' && !userRefinement.trim()) return
-    onComplete(bodyLocation, resolvedEmotion, reflection, response, response === 'refine' ? userRefinement.trim() : undefined)
+    onComplete(felt(), reflection, response, response === 'refine' ? userRefinement.trim() : undefined)
   }
+
+  const textarea = 'w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-fuchsia-500/60 transition-colors'
 
   if (reflection) {
     return (
@@ -100,9 +110,7 @@ export default function Step03({ decisionTitle, initialBodyLocation, initialEmot
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto no-scrollbar px-5 space-y-4 pb-4 animate-settle-in">
           <div className="bg-fuchsia-950/40 border border-fuchsia-600/25 rounded-2xl px-4 py-4 space-y-3">
-            <p className="text-fuchsia-300 text-xs uppercase tracking-widest font-semibold">
-              Your selection: {bodyLocation} · {resolvedEmotion}
-            </p>
+            <FeltSummary emotionsFelt={emotionsFelt} bodyPlacements={bodyPlacements} emotion={emotion} bodyResponse={bodyResponse} />
             <p className="text-[var(--color-text-tertiary)] text-xs font-medium uppercase tracking-wide">A word from Us:</p>
             <p className="text-white/80 text-sm leading-relaxed">{reflection}</p>
           </div>
@@ -185,104 +193,48 @@ export default function Step03({ decisionTitle, initialBodyLocation, initialEmot
   return (
     <StepShell step={3} decisionTitle={decisionTitle} onBack={onBack} onSkip={onSkip}>
       {tokenCapReached && <TokenCapModal onClose={dismissTokenCap} />}
-      <div className="flex-1 flex flex-col space-y-5 pt-2">
-        {/* Body location */}
+      <div className="flex-1 flex flex-col space-y-6 pt-2">
         <div className="space-y-3">
-          <p className="text-white/60 text-sm text-center">
-            Where do you feel this experience in your body?
-          </p>
-          <div className="flex justify-center">
-            <BodyFigure selected={bodyLocation} onSelect={setBodyLocation} />
+          <div className="space-y-1">
+            <p className="text-white/70 text-sm leading-relaxed">What do you feel when you hold this decision?</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs">Choose any that fit. There&apos;s no right answer.</p>
           </div>
-          <div className="chips-row justify-center">
-            {BODY_LOCATIONS.map(loc => (
-              <button
-                key={loc}
-                onClick={() => setBodyLocation(loc)}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs border transition-all ${
-                  bodyLocation === loc
-                    ? 'bg-purple-600 border-purple-500 text-white'
-                    : 'bg-white/5 border-white/15 text-white/50 hover:bg-white/10'
-                }`}
-              >
-                {loc}
-              </button>
-            ))}
-          </div>
+          <EmotionChips emotionsFelt={emotionsFelt} setEmotionsFelt={setEmotionsFelt} setBodyPlacements={setBodyPlacements} />
+          <textarea
+            value={emotion}
+            onChange={e => setEmotion(e.target.value.slice(0, 5000))}
+            placeholder={emotionsFelt.length ? 'Anything to add, in your own words? (optional)' : 'Or name the feeling in your own words...'}
+            rows={2}
+            className={textarea}
+          />
         </div>
 
-        {/* Emotion colour picker */}
-        <div className="space-y-3">
-          <p className="text-white/60 text-sm text-center">Identify the colour of this experience</p>
-          <div className="grid grid-cols-4 gap-x-3 gap-y-4 justify-items-center">
-            {EMOTION_COLORS.map(({ label, color }) => (
-              <button
-                key={label}
-                onClick={() => { setEmotion(label); setCustomEmotion('') }}
-                className="flex flex-col items-center gap-1.5"
-              >
-                <div
-                  className={`w-10 h-10 rounded-full border-2 transition-all ${
-                    emotion === label ? 'scale-110 border-white' : 'border-transparent opacity-70 hover:opacity-100'
-                  }`}
-                  style={{ backgroundColor: color }}
-                />
-                <span className="text-white/50 text-xs">{label}</span>
-              </button>
-            ))}
-          </div>
-          <input
-            type="text"
-            value={customEmotion}
-            onChange={e => { setCustomEmotion(e.target.value); setEmotion(null) }}
-            placeholder="Or type your own…"
-            className="w-full bg-white/5 border border-white/15 rounded-full px-4 py-2 text-white placeholder-[var(--color-text-tertiary)] text-sm focus:outline-none focus:border-fuchsia-500/60 transition-colors"
+        {emotionsFelt.length > 0 && (
+          <BodyMap emotions={emotionsFelt} placements={bodyPlacements} onChange={setBodyPlacements} />
+        )}
+
+        <div className="space-y-2">
+          {emotionsFelt.length === 0 && (
+            <p className="text-white/70 text-sm leading-relaxed">Where do you feel it in your body?</p>
+          )}
+          <textarea
+            value={bodyResponse}
+            onChange={e => setBodyResponse(e.target.value.slice(0, 5000))}
+            placeholder={bodyPlacements.length
+              ? 'How does it feel there? Tight, heavy, hot... (optional)'
+              : 'Tight chest, clenched jaw, a knot in your stomach...'}
+            rows={2}
+            className={textarea}
           />
         </div>
 
         <PrimaryButton
           label="Map My Feelings"
           onClick={handleMapFeelings}
-          disabled={!bodyLocation || !resolvedEmotion}
+          disabled={!hasEmotion || !hasBody}
           loading={loading}
         />
       </div>
     </StepShell>
-  )
-}
-
-/* Simplified interactive SVG body figure */
-function BodyFigure({ selected, onSelect }: { selected: string | null; onSelect: (loc: string) => void }) {
-  const zones: { id: string; cx: number; cy: number; r: number }[] = [
-    { id: 'Head',      cx: 60, cy: 18,  r: 14 },
-    { id: 'Throat',    cx: 60, cy: 40,  r: 8  },
-    { id: 'Chest',     cx: 60, cy: 62,  r: 14 },
-    { id: 'Stomach',   cx: 60, cy: 86,  r: 11 },
-    { id: 'Gut',       cx: 60, cy: 106, r: 10 },
-    { id: 'Shoulders', cx: 60, cy: 54,  r: 8  },
-  ]
-  return (
-    <svg viewBox="0 0 120 160" width="90" height="120" className="overflow-visible">
-      {/* Simple body outline */}
-      <ellipse cx="60" cy="18" rx="13" ry="14" fill="#1e1030" stroke="#4c1d95" strokeWidth="1.5" />
-      <rect x="44" y="32" width="32" height="58" rx="8" fill="#1e1030" stroke="#4c1d95" strokeWidth="1.5" />
-      <rect x="30" y="34" width="14" height="42" rx="7" fill="#1e1030" stroke="#4c1d95" strokeWidth="1.5" />
-      <rect x="76" y="34" width="14" height="42" rx="7" fill="#1e1030" stroke="#4c1d95" strokeWidth="1.5" />
-      <rect x="46" y="90" width="12" height="50" rx="6" fill="#1e1030" stroke="#4c1d95" strokeWidth="1.5" />
-      <rect x="62" y="90" width="12" height="50" rx="6" fill="#1e1030" stroke="#4c1d95" strokeWidth="1.5" />
-
-      {/* Tap zones */}
-      {zones.map(z => (
-        <circle
-          key={z.id}
-          cx={z.cx} cy={z.cy} r={z.r}
-          fill={selected === z.id ? 'rgba(139,92,246,0.6)' : 'transparent'}
-          stroke={selected === z.id ? '#a78bfa' : 'transparent'}
-          strokeWidth="1.5"
-          className="cursor-pointer hover:fill-purple-800/40 transition-all"
-          onClick={() => onSelect(z.id)}
-        />
-      ))}
-    </svg>
   )
 }

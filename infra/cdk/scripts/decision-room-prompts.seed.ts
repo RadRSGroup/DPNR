@@ -121,7 +121,7 @@ Output only the refined option text — no preamble, no surrounding quotation ma
   {
     name: 'emotion_reflection',
     systemTemplate: `You are a somatic awareness guide walking someone through a difficult personal decision.
-The person has just located a physical sensation in their body and named its emotional quality.
+The person has just named what they feel (one or more emotions) and placed it on their body themselves, and may have added their own words.
 
 Write a 2–3 sentence reflection that:
 - Connects the physical sensation directly to something specific in THEIR situation — reference the actual tension or dilemma they described, not generic themes
@@ -139,10 +139,10 @@ Begin directly with the reflection itself — no preamble like "Here's a reflect
 What they shared in their own words:
 "{{narrativeExcerpt}}"
 
-Where they feel it in the body: {{bodyLocation}}
-The emotional quality of that sensation: {{emotion}}`,
+What they feel: {{emotion}}
+Where they feel it in the body: {{bodyLocation}}`,
     variables: ['title', 'narrativeExcerpt', 'bodyLocation', 'emotion', 'languageInstruction'],
-    notes: 'narrativeExcerpt = (narrative ?? "").slice(0, 600) — caller truncates before substitution.',
+    notes: 'narrativeExcerpt = (narrative ?? "").slice(0, 600) — caller truncates before substitution. Since Slice 5b, emotion/bodyLocation are pre-formatted by lambda/rooms/felt.ts (formatEmotion/formatBody: chosen emotions, where the person placed each, their own words); a pre-5b client still sends a single location + emotion, passed through as-is. Only ever reference locations the person placed — never suggest one.',
   },
   {
     name: 'pros_cons_tags',
@@ -231,7 +231,7 @@ Stay specific — reference what they actually selected, not generic themes.
     userTemplate: `Decision: "{{decisionTitle}}"
 Narrative: {{narrative}}
 Option A: "{{optionA}}" | Option B: "{{optionB}}"
-Body: {{emotionColor}} at {{emotionBodyLocation}}. {{emotionReflection}}
+Emotion: {{emotionColor}} | Body: {{emotionBodyLocation}}. {{emotionReflection}}
 Pros A: {{prosA}} | Cons A: {{consA}}
 Pros B: {{prosB}} | Cons B: {{consB}}
 Desires A: {{desiresA}} | Fears A: {{fearsA}}
@@ -247,7 +247,7 @@ Chosen lean: {{chosenLean}}`,
       'valuesA', 'needsA', 'valuesB', 'needsB', 'projectionsA', 'projectionsB',
       'chosenLean', 'languageInstruction',
     ],
-    notes: 'emotionColor/emotionBodyLocation default to "—", emotionReflection defaults to "". prosA/consA/prosB/consB/desiresA/fearsA/valuesA/needsA/valuesB/needsB/projectionsA/projectionsB are each the corresponding tag array joined with ", ", defaulting to "—" when empty. chosenLean defaults to "undecided". Caller must replicate this exactly — see the original params.tagsA?.pro etc. logic in apps/web/src/lib/ai/prompts.ts.',
+    notes: 'emotionColor/emotionBodyLocation default to "—", emotionReflection defaults to "". Since Slice 5b they carry formatEmotion/formatBody output when the body map was used (older decisions: the single legacy values). prosA/consA/prosB/consB/desiresA/fearsA/valuesA/needsA/valuesB/needsB/projectionsA/projectionsB are each the corresponding tag array joined with ", ", defaulting to "—" when empty. chosenLean defaults to "undecided". Caller must replicate this exactly — see the original params.tagsA?.pro etc. logic in apps/web/src/lib/ai/prompts.ts.',
     outputSchema: {
       type: 'object',
       properties: {

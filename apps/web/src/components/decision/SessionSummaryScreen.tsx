@@ -3,9 +3,13 @@ import { useEffect, useState } from 'react'
 import StepShell from './StepShell'
 import { useAI, RefineFn } from '@/lib/useAI'
 import Card from '@/components/ui/Card'
+import FeltSummary from '@/components/shared/FeltSummary'
+import type { Felt } from '@/lib/body-map'
 
 interface SessionSummaryScreenProps {
   decisionTitle: string
+  /** Step 3's emotion + body capture, shown under Body Awareness (Slice 5b). */
+  felt?: Felt
   onRefine: RefineFn
   onContinue: () => void
   onBack: () => void
@@ -29,7 +33,7 @@ const AGREEMENT_OPTIONS: { key: Agreement; label: string }[] = [
 ]
 
 export default function SessionSummaryScreen({
-  decisionTitle, onRefine, onContinue, onBack,
+  decisionTitle, felt, onRefine, onContinue, onBack,
 }: SessionSummaryScreenProps) {
   const [summaries, setSummaries] = useState<Record<string, string>>({})
   const [situation, setSituation] = useState('')
@@ -89,6 +93,11 @@ export default function SessionSummaryScreen({
                   <Card key={key} className="space-y-1">
                     <p className="text-white text-xs font-medium">{label}</p>
                     <p className="text-white/55 text-xs leading-relaxed">{summaries[key]}</p>
+                    {key === 'bodyAwareness' && felt && (
+                      <div className="pt-2">
+                        <FeltSummary {...felt} />
+                      </div>
+                    )}
                   </Card>
                 ) : null
               ))}

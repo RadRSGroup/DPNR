@@ -1,49 +1,20 @@
 import { z } from 'zod'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
-import { MirrorEmotionFeltSchema, MirrorBodyPlacementSchema } from '@dpnr/shared-types'
-import { parseValue, HttpError } from '../../lib/http'
+import { parseValue } from '../../lib/http'
+import { FeltFields, normalizeFelt } from '../felt'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModel } from '../../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from '../db'
 import { getMirrorSession, withAnswers, formatEntryContext, formatEmotion, formatBody, type MirrorContent } from './helpers'
 import type { StepDefinition } from '../types'
 
-// Session 72 (#35): emotion and body can now come from the emotion chips and
-// the body map instead of (or as well as) free text. Each needs at least one
-// of the two; the structured parts are optional so older clients still work.
-const FeltInput = z.object({
-  thought: z.string().min(1),
-  emotion: z.string().default(''),
-  bodyResponse: z.string().default(''),
-  emotionsFelt: z.array(MirrorEmotionFeltSchema).max(12).optional(),
-  bodyPlacements: z.array(MirrorBodyPlacementSchema).max(108).optional(),
-})
+// Session 72 (#35): emotion and body can come from the emotion chips and the
+// body map instead of (or as well as) free text — see ../felt.
+const FeltInput = z.object({ thought: z.string().min(1), ...FeltFields })
 const RefineInput = FeltInput
 const SubmitInput = FeltInput.extend({ automaticReaction: z.string().min(1) })
 
-type Felt = z.infer<typeof FeltInput>
-
-/** Both halves must be answered somehow, and every placement must use an emotion the person chose. */
-export function normalizeFelt(input: Felt): Pick<MirrorContent, 'emotion' | 'bodyResponse' | 'emotionsFelt' | 'bodyPlacements'> {
-  const emotionsFelt = input.emotionsFelt?.length ? input.emotionsFelt : undefined
-  const chosen = new Set((emotionsFelt ?? []).map((e) => e.label))
-  const seen = new Set<string>()
-  const bodyPlacements = (input.bodyPlacements ?? []).filter((p) => {
-    const key = `${p.emotion}|${p.area}`
-    if (!chosen.has(p.emotion) || seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
-  const emotion = input.emotion.trim()
-  const bodyResponse = input.bodyResponse.trim()
-  if (!emotion && !emotionsFelt) {
-    throw new HttpError(400, 'emotion_required', 'Choose at least one emotion or describe what you felt.')
-  }
-  if (!bodyResponse && bodyPlacements.length === 0) {
-    throw new HttpError(400, 'body_required', 'Place a feeling on the body or describe where you felt it.')
-  }
-  return { emotion, bodyResponse, emotionsFelt, bodyPlacements: bodyPlacements.length ? bodyPlacements : undefined }
-}
+export { normalizeFelt }
 
 /**
  * The in-the-moment cluster: automatic thought, emotion, body sensation,

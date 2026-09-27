@@ -25,6 +25,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import { DecisionOption, Lens } from '@/lib/types'
 import type { RefineFn } from '@/lib/useAI'
 import { getCurrentSession } from '@/lib/cognito/client'
+import { feltFromDecisionEmotion, type Felt } from '@/lib/body-map'
 import { RoomSessionClockProvider } from '@/components/shared/RoomSessionClock'
 import { submitRoomCommand, getDecisionFull, ApiError } from '@/lib/api/v1-client'
 import type {
@@ -93,8 +94,7 @@ interface LocalDecisionState {
   narrative: string
   optionA?: DecisionOption
   optionB?: DecisionOption
-  emotionBodyLocation?: string
-  emotionColor?: string
+  emotionFelt?: Felt
   emotionReflection?: string
   lens?: Lens
 }
@@ -140,6 +140,7 @@ function NewDecisionContent() {
     reflectionNote?: string
     commitment?: string
     decisionId?: string
+    felt?: Felt
   } | null>(null)
 
   const [userName, setUserName] = useState('')
@@ -191,8 +192,7 @@ function NewDecisionContent() {
           lens: full.lens ?? undefined,
           optionA: optA ? { label: 'A', content: optA.content, approved: optA.approved } : undefined,
           optionB: optB ? { label: 'B', content: optB.content, approved: optB.approved } : undefined,
-          emotionBodyLocation: full.emotion?.bodyLocation ?? undefined,
-          emotionColor: full.emotion?.emotionColor ?? undefined,
+          emotionFelt: full.emotion ? feltFromDecisionEmotion(full.emotion) : undefined,
           emotionReflection: full.emotion?.aiReflection ?? undefined,
         })
 
@@ -326,10 +326,10 @@ function NewDecisionContent() {
     })
   }
 
-  async function completeStep03(bodyLocation: string, emotion: string, reflection: string, response: UserResponse, userRefinement?: string) {
-    update({ emotionBodyLocation: bodyLocation, emotionColor: emotion, emotionReflection: reflection })
+  async function completeStep03(felt: Felt, reflection: string, response: UserResponse, userRefinement?: string) {
+    update({ emotionFelt: felt, emotionReflection: reflection })
     await submitStepAndAdvance('BODY_EMOTION', {
-      bodyLocation, emotionColor: emotion, aiReflection: reflection, response, userRefinement,
+      ...felt, aiReflection: reflection, response, userRefinement,
     })
   }
 
@@ -394,6 +394,7 @@ function NewDecisionContent() {
       reflectionNote: sessionData.reflectionNote,
       commitment,
       decisionId: sessionId ?? undefined,
+      felt: state.emotionFelt,
     })
     setCelebrating(true)
   }
@@ -462,6 +463,7 @@ function NewDecisionContent() {
           reflectionNote={completedSummary.reflectionNote}
           commitment={completedSummary.commitment}
           decisionId={completedSummary.decisionId}
+          felt={completedSummary.felt}
           onDone={() => router.push('/dashboard?completed=true')}
         />
       )
@@ -516,8 +518,7 @@ function NewDecisionContent() {
         return (
           <Step03
             decisionTitle={state.title}
-            initialBodyLocation={state.emotionBodyLocation}
-            initialEmotion={state.emotionColor}
+            initialFelt={state.emotionFelt}
             initialReflection={state.emotionReflection}
             onRefine={makeRefine('BODY_EMOTION')}
             onComplete={completeStep03}
@@ -637,6 +638,7 @@ function NewDecisionContent() {
         return (
           <SessionSummaryScreen
             decisionTitle={state.title}
+            felt={state.emotionFelt}
             onRefine={makeRefine('SESSION_SUMMARY')}
             onContinue={() => submitStepAndAdvance('SESSION_SUMMARY', {})}
             onBack={goBack}

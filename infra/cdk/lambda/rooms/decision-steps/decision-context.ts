@@ -3,6 +3,8 @@ import { Sk, type DecisionTagItem, type DecisionProjectionItem, type DecisionOut
 import type { SessionCrypto } from '../../lib/session-crypto'
 import { ddb, TABLE_NAME } from './db'
 import { getDecision, getOption, type DecisionContent, type OptionContent } from './helpers'
+import type { DecisionEmotionContent } from './body-emotion'
+import { formatEmotion, formatBody } from '../felt'
 
 export interface GatheredDecisionContext {
   title: string
@@ -90,11 +92,11 @@ export async function gatherDecisionContext(
   )
 
   const emotionItem = emotionResult.Item as DecisionEmotionItem | undefined
-  const emotionContent = emotionItem
-    ? await crypto.decryptField<{ bodyLocation: string | null; emotionColor: string | null; aiReflection: string | null }>(
-        emotionItem.content
-      )
-    : null
+  const emotionContent = emotionItem ? await crypto.decryptField<DecisionEmotionContent>(emotionItem.content) : null
+  // Slice 5b: when the chips/body map were used, the prompts get the full
+  // formatted picture (every emotion, where the person placed each); older
+  // decisions only have the single legacy values.
+  const structured = !!emotionContent?.emotionsFelt?.length
 
   const latestOutcome = ((outcomesResult.Items ?? [])[0] as DecisionOutcomeItem | undefined)?.chosenOptionLabel ?? null
 
@@ -105,8 +107,16 @@ export async function gatherDecisionContext(
     optionBContent,
     tagsA,
     tagsB,
-    emotionColor: emotionContent?.emotionColor ?? null,
-    emotionBodyLocation: emotionContent?.bodyLocation ?? null,
+    emotionColor: emotionContent
+      ? structured
+        ? formatEmotion({ emotion: emotionContent.emotionWords ?? '', emotionsFelt: emotionContent.emotionsFelt })
+        : emotionContent.emotionColor
+      : null,
+    emotionBodyLocation: emotionContent
+      ? structured
+        ? formatBody({ bodyResponse: emotionContent.bodyWords ?? '', bodyPlacements: emotionContent.bodyPlacements })
+        : emotionContent.bodyLocation
+      : null,
     emotionReflection: emotionContent?.aiReflection ?? null,
     projectionsA,
     projectionsB,

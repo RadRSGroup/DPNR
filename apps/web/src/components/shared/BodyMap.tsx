@@ -1,17 +1,17 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import type { MirrorBodyArea, MirrorBodyPlacement, MirrorEmotionFelt } from '@dpnr/shared-types'
-import { MIRROR_BODY_AREAS, MIRROR_BODY_MEDIA } from '@/lib/mirror-body'
+import type { BodyArea, BodyPlacement, EmotionFelt } from '@dpnr/shared-types'
+import { BODY_AREAS, BODY_MEDIA } from '@/lib/body-map'
 
 interface Props {
-  emotions: MirrorEmotionFelt[]
-  placements: MirrorBodyPlacement[]
-  onChange: (placements: MirrorBodyPlacement[]) => void
+  emotions: EmotionFelt[]
+  placements: BodyPlacement[]
+  onChange: (placements: BodyPlacement[]) => void
 }
 
 /**
- * Mirror Room emotion → body map (founder feedback #35, design approved
- * 2026-09-27). The body comes forward and turns once to face the person
+ * Emotion → body map, shared by the Mirror Room (founder feedback #35, design approved
+ * 2026-09-27) and the Decision Room (Slice 5b). The body comes forward and turns once to face the person
  * (the Drive clip reversed, so it settles on the front view), then the
  * areas become tappable. The person places each chosen emotion themselves;
  * DPNR never picks or suggests a location (Appendix B). Nothing is scored.
@@ -69,7 +69,7 @@ export default function BodyMap({ emotions, placements, onChange }: Props) {
     }
   }
 
-  function toggle(area: MirrorBodyArea) {
+  function toggle(area: BodyArea) {
     if (!activeLabel) return
     const exists = placements.some((p) => p.area === area && p.emotion === activeLabel)
     onChange(exists
@@ -77,7 +77,7 @@ export default function BodyMap({ emotions, placements, onChange }: Props) {
       : [...placements, { area, emotion: activeLabel }])
   }
 
-  const placedHere = (area: MirrorBodyArea) => placements.filter((p) => p.area === area)
+  const placedHere = (area: BodyArea) => placements.filter((p) => p.area === area)
 
   return (
     <div className="space-y-4 animate-settle-in">
@@ -112,11 +112,11 @@ export default function BodyMap({ emotions, placements, onChange }: Props) {
 
       <div
         className="relative mx-auto w-full max-w-[280px] lg:max-w-[300px]"
-        style={{ aspectRatio: `${MIRROR_BODY_MEDIA.width} / ${MIRROR_BODY_MEDIA.height}` }}
+        style={{ aspectRatio: `${BODY_MEDIA.width} / ${BODY_MEDIA.height}` }}
       >
         {still ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={MIRROR_BODY_MEDIA.poster} alt="" className="absolute inset-0 h-full w-full animate-fade-in" />
+          <img src={BODY_MEDIA.poster} alt="" className="absolute inset-0 h-full w-full animate-fade-in" />
         ) : (
           <video
             ref={videoRef}
@@ -129,11 +129,11 @@ export default function BodyMap({ emotions, placements, onChange }: Props) {
             onEnded={() => setReady(true)}
             onError={showStill}
           >
-            <source src={MIRROR_BODY_MEDIA.webm} type="video/webm; codecs=vp9" />
+            <source src={BODY_MEDIA.webm} type="video/webm; codecs=vp9" />
           </video>
         )}
 
-        {ready && MIRROR_BODY_AREAS.map(({ area, points }) => {
+        {ready && BODY_AREAS.map(({ area, points }) => {
           const here = placedHere(area)
           const mine = here.some((p) => p.emotion === activeLabel)
           return points.map((pt, i) => (
@@ -173,7 +173,7 @@ export default function BodyMap({ emotions, placements, onChange }: Props) {
       {/* The same choice as a list: easier to hit precisely, and readable by screen readers. */}
       {ready && (
         <div className="flex flex-wrap justify-center gap-1.5 animate-fade-in">
-          {MIRROR_BODY_AREAS.map(({ area }) => {
+          {BODY_AREAS.map(({ area }) => {
             const here = placedHere(area)
             const mine = here.some((p) => p.emotion === activeLabel)
             return (
