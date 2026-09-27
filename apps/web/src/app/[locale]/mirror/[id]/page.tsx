@@ -9,6 +9,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
 import Card from '@/components/ui/Card'
 import ReopenPanel from '@/components/rooms/ReopenPanel'
+import FeltSummary from '@/components/mirror/FeltSummary'
 import { getMirrorFull, ApiError } from '@/lib/api/v1-client'
 import type { MirrorRoomFullResponse } from '@dpnr/shared-types'
 
@@ -139,13 +140,12 @@ export default function MirrorDetailPage() {
                   </Card>
                 )}
 
-                {(session.thought || session.emotion || session.bodyResponse || session.automaticReaction) && (
+                {(session.thought || session.emotion || session.bodyResponse || session.emotionsFelt?.length || session.automaticReaction) && (
                   <Card>
                     <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-3">In the moment</p>
                     <div className="space-y-3">
                       <Field label="Thought" value={session.thought} />
-                      <Field label="Emotion" value={session.emotion} />
-                      <Field label="Body response" value={session.bodyResponse} />
+                      <FeltSummary emotionsFelt={session.emotionsFelt} bodyPlacements={session.bodyPlacements} emotion={session.emotion} bodyResponse={session.bodyResponse} />
                       <Field label="What you did" value={session.automaticReaction} />
                     </div>
                   </Card>
@@ -165,6 +165,13 @@ export default function MirrorDetailPage() {
                   <Card>
                     <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-3">Life impact</p>
                     <Field label="Effect on energy &amp; mood" value={session.energyMoodEffect} />
+                  </Card>
+                )}
+
+                {session.synthesis && (
+                  <Card>
+                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">Synthesis</p>
+                    <p className="text-white/70 text-sm italic leading-relaxed">&quot;{session.synthesis}&quot;</p>
                   </Card>
                 )}
 

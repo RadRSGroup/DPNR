@@ -4,9 +4,9 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
 import MirrorRoomLanding from '@/components/mirror/MirrorRoomLanding'
-import { DEFAULT_OPENING, type MirrorOpening } from '@/components/mirror/openings'
+import { DEFAULT_OPENING, openingFromEntry, type MirrorOpening } from '@/components/mirror/openings'
 import Step01Situation from '@/components/mirror/Step01Situation'
-import Step02AutomaticReaction from '@/components/mirror/Step02AutomaticReaction'
+import Step02AutomaticReaction, { type FeltAnswers } from '@/components/mirror/Step02AutomaticReaction'
 import Step03Pattern from '@/components/mirror/Step03Pattern'
 import Step04LifeImpact from '@/components/mirror/Step04LifeImpact'
 import Step05Synthesis from '@/components/mirror/Step05Synthesis'
@@ -20,7 +20,7 @@ import { getCurrentSession } from '@/lib/cognito/client'
 import { RoomSessionClockProvider } from '@/components/shared/RoomSessionClock'
 import { RoomExitProvider } from '@/components/shared/RoomExit'
 import { submitRoomCommand, getMirrorFull, ApiError } from '@/lib/api/v1-client'
-import type { RoomCommandResponse, MirrorRoomStepId } from '@dpnr/shared-types'
+import type { RoomCommandResponse, MirrorRoomStepId, MirrorEntry, MirrorEmotionFelt, MirrorBodyPlacement } from '@dpnr/shared-types'
 
 /** WELCOME is a client-only intro screen, not a real backend step. */
 type MirrorPageStepId = 'WELCOME' | MirrorRoomStepId
@@ -48,11 +48,15 @@ interface LocalMirrorState {
   lifeDomain: string
   synthesis: string
   commitment: string
+  emotionsFelt: MirrorEmotionFelt[]
+  bodyPlacements: MirrorBodyPlacement[]
+  entry?: MirrorEntry
 }
 
 const INITIAL_STATE: LocalMirrorState = {
   situation: '', trigger: '', thought: '', emotion: '', bodyResponse: '', automaticReaction: '',
   copingResponse: '', recurringPattern: '', energyMoodEffect: '', lifeDomain: '', synthesis: '', commitment: '',
+  emotionsFelt: [], bodyPlacements: [],
 }
 
 function NewMirrorContent() {
@@ -70,6 +74,7 @@ function NewMirrorContent() {
 
   const [showWelcome, setShowWelcome] = useState(!resumeId)
   const [opening, setOpening] = useState<MirrorOpening>(DEFAULT_OPENING)
+  const [resumedArchetype, setResumedArchetype] = useState<string | undefined>(undefined)
   const [completed, setCompleted] = useState(false)
   const [userName, setUserName] = useState('')
   const [state, setState] = useState<LocalMirrorState>(INITIAL_STATE)
@@ -104,6 +109,9 @@ function NewMirrorContent() {
         setSessionId(full.mirrorId)
         setSessionVersion(full.sessionVersion ?? 0)
         setCurrentStepId((full.currentStepId as MirrorRoomStepId) ?? 'SITUATION')
+        const resumed = openingFromEntry(full.entry)
+        setOpening(resumed.opening)
+        setResumedArchetype(resumed.archetype)
         setState({
           situation: full.situation ?? '',
           trigger: full.trigger ?? '',
@@ -115,8 +123,12 @@ function NewMirrorContent() {
           recurringPattern: full.recurringPattern ?? '',
           energyMoodEffect: full.energyMoodEffect ?? '',
           lifeDomain: full.lifeDomain ?? '',
-          synthesis: '',
+          // Kept since Session 72, so resuming on SYNTHESIS doesn't regenerate (and re-charge) it.
+          synthesis: full.synthesis ?? '',
           commitment: full.commitment ?? '',
+          emotionsFelt: full.emotionsFelt ?? [],
+          bodyPlacements: full.bodyPlacements ?? [],
+          entry: full.entry,
         })
         if (full.status === 'completed') setCompleted(true)
       } catch {
@@ -131,6 +143,20 @@ function NewMirrorContent() {
 
   function update(patch: Partial<LocalMirrorState>) {
     setState(prev => ({ ...prev, ...patch }))
+  }
+
+  /**
+   * Saves a step's answers locally. If any of them changed, the synthesis no
+   * longer describes the session, so it's dropped and SYNTHESIS regenerates
+   * it (the backend does the same, see mirror-steps/helpers.ts withAnswers).
+   */
+  function updateAnswers(patch: Partial<LocalMirrorState>) {
+    setState(prev => {
+      const changed = (Object.keys(patch) as (keyof LocalMirrorState)[]).some(
+        (key) => JSON.stringify(patch[key] ?? null) !== JSON.stringify(prev[key] ?? null)
+      )
+      return { ...prev, ...patch, ...(changed ? { synthesis: '' } : {}) }
+    })
   }
 
   async function handleCommandError(err: unknown) {
@@ -204,6 +230,10 @@ function NewMirrorContent() {
   function makeRefine(stepId: MirrorRoomStepId): RefineFn {
     return async (refineInput) => {
       const res = await callCommand(stepId, 'REFINE', refineInput)
+      // The backend saves the synthesis as soon as it's generated; keep the
+      // page in step so Back → Continue shows it again instead of regenerating.
+      const synthesis = stepId === 'SYNTHESIS' ? res?.result?.synthesis : undefined
+      if (typeof synthesis === 'string' && synthesis) update({ synthesis })
       return res?.result ?? null
     }
   }
@@ -222,23 +252,23 @@ function NewMirrorContent() {
     else returnToMirrorMain()
   }
 
-  async function completeStep01(situation: string, trigger: string) {
-    update({ situation, trigger })
-    await submitStepAndAdvance('SITUATION', { situation, trigger, sourceLibraryTopic: sourceTopic ?? undefined })
+  async function completeStep01(situation: string, trigger: string, entry: MirrorEntry) {
+    updateAnswers({ situation, trigger, entry })
+    await submitStepAndAdvance('SITUATION', { situation, trigger, entry, sourceLibraryTopic: sourceTopic ?? undefined })
   }
 
-  async function completeStep02(thought: string, emotion: string, bodyResponse: string, automaticReaction: string) {
-    update({ thought, emotion, bodyResponse, automaticReaction })
-    await submitStepAndAdvance('AUTOMATIC_REACTION', { thought, emotion, bodyResponse, automaticReaction })
+  async function completeStep02(answers: FeltAnswers) {
+    updateAnswers(answers)
+    await submitStepAndAdvance('AUTOMATIC_REACTION', { ...answers })
   }
 
   async function completeStep03(copingResponse: string, recurringPattern: string) {
-    update({ copingResponse, recurringPattern })
+    updateAnswers({ copingResponse, recurringPattern })
     await submitStepAndAdvance('PATTERN', { copingResponse, recurringPattern })
   }
 
   async function completeStep04(energyMoodEffect: string, lifeDomain: string) {
-    update({ energyMoodEffect, lifeDomain })
+    updateAnswers({ energyMoodEffect, lifeDomain })
     await submitStepAndAdvance('LIFE_IMPACT', { energyMoodEffect, lifeDomain })
   }
 
@@ -307,6 +337,8 @@ function NewMirrorContent() {
           trigger={state.trigger}
           emotion={state.emotion}
           bodyResponse={state.bodyResponse}
+          emotionsFelt={state.emotionsFelt}
+          bodyPlacements={state.bodyPlacements}
           synthesis={state.synthesis}
           commitment={state.commitment}
           onDone={() => router.push('/dashboard')}
@@ -320,6 +352,7 @@ function NewMirrorContent() {
           userName={userName}
           onStart={(o) => {
             setOpening(o)
+            setResumedArchetype(undefined)
             setShowWelcome(false)
           }}
           sourceTopicTitle={sourceTopicTitle}
@@ -333,6 +366,7 @@ function NewMirrorContent() {
           <Step01Situation
             initialSituation={state.situation}
             initialTrigger={state.trigger}
+            initialArchetype={resumedArchetype}
             opening={opening}
             onComplete={completeStep01}
             onBack={goBack}
@@ -342,10 +376,14 @@ function NewMirrorContent() {
         return (
           <Step02AutomaticReaction
             sessionTitle={sessionTitle}
-            initialThought={state.thought}
-            initialEmotion={state.emotion}
-            initialBodyResponse={state.bodyResponse}
-            initialAutomaticReaction={state.automaticReaction}
+            initial={{
+              thought: state.thought,
+              emotion: state.emotion,
+              bodyResponse: state.bodyResponse,
+              automaticReaction: state.automaticReaction,
+              emotionsFelt: state.emotionsFelt,
+              bodyPlacements: state.bodyPlacements,
+            }}
             onRefine={makeRefine('AUTOMATIC_REACTION')}
             onComplete={completeStep02}
             onBack={goBack}
@@ -357,6 +395,7 @@ function NewMirrorContent() {
             sessionTitle={sessionTitle}
             initialCopingResponse={state.copingResponse}
             initialRecurringPattern={state.recurringPattern}
+            entry={state.entry}
             onComplete={completeStep03}
             onBack={goBack}
           />
@@ -394,6 +433,7 @@ function NewMirrorContent() {
           <Step01Situation
             initialSituation={state.situation}
             initialTrigger={state.trigger}
+            initialArchetype={resumedArchetype}
             opening={opening}
             onComplete={completeStep01}
             onBack={goBack}

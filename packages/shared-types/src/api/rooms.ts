@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { LensSchema, DecisionStatusSchema, TagTypeSchema, DecisionEmotionAgreementSchema } from '../dynamo/decision-room'
-import { MirrorSessionStatusSchema } from '../dynamo/mirror-room'
+import { MirrorSessionStatusSchema, MirrorEntrySchema, MirrorEmotionFeltSchema, MirrorBodyPlacementSchema } from '../dynamo/mirror-room'
 
 /**
  * GET /v1/rooms/decision/{id}/full and GET /v1/rooms/mirror/{id}/full —
@@ -115,6 +115,13 @@ export const MirrorRoomFullResponseSchema = z.object({
   energyMoodEffect: z.string().optional(),
   lifeDomain: z.string().optional(),
   commitment: z.string().optional(),
+  // Session 72 (Slice 3): see dynamo/mirror-room.ts. `synthesis` is the last
+  // generated closing reflection, kept so a resumed session doesn't lose it
+  // (or pay for it again); cleared whenever an earlier answer changes.
+  entry: MirrorEntrySchema.optional(),
+  emotionsFelt: z.array(MirrorEmotionFeltSchema).optional(),
+  bodyPlacements: z.array(MirrorBodyPlacementSchema).optional(),
+  synthesis: z.string().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })

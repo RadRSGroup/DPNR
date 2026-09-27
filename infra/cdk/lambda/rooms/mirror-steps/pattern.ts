@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import { parseValue } from '../../lib/http'
 import { ddb, TABLE_NAME } from '../db'
-import { getMirrorSession, type MirrorContent } from './helpers'
+import { getMirrorSession, withAnswers, type MirrorContent } from './helpers'
 import type { StepDefinition } from '../types'
 
 const SubmitInput = z.object({
@@ -27,7 +27,7 @@ export const patternStep: StepDefinition = {
     const updatedSession = {
       ...session,
       currentStepId: 'PATTERN',
-      content: await ctx.crypto.encryptField<MirrorContent>({ ...content, copingResponse, recurringPattern }),
+      content: await ctx.crypto.encryptField<MirrorContent>(withAnswers(content, { copingResponse, recurringPattern })),
       updatedAt: now,
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: updatedSession }))

@@ -2,6 +2,8 @@
 import RoomScreenFrame from '@/components/shared/RoomScreenFrame'
 import InvertedButton from '@/components/ui/InvertedButton'
 import Card from '@/components/ui/Card'
+import FeltSummary from './FeltSummary'
+import type { MirrorBodyPlacement, MirrorEmotionFelt } from '@dpnr/shared-types'
 
 const AFFIRMATIONS = [
   'Looking honestly at yourself takes real courage.',
@@ -18,13 +20,15 @@ interface Props {
   /** Step 2's own answers (already saved) — shown back so the ending reflects what was felt, not only what happened. */
   emotion?: string
   bodyResponse?: string
+  emotionsFelt?: MirrorEmotionFelt[]
+  bodyPlacements?: MirrorBodyPlacement[]
   synthesis?: string
   commitment?: string
   onDone: () => void
 }
 
 /** Adapted from components/decision/CompletionScreen.tsx. No "view full summary" link — no Mirror Room detail/review page exists (out of scope, same as decision/[id]/page.tsx's precedent). */
-export default function CompletionScreen({ userName, situation, trigger, emotion, bodyResponse, synthesis, commitment, onDone }: Props) {
+export default function CompletionScreen({ userName, situation, trigger, emotion, bodyResponse, emotionsFelt, bodyPlacements, synthesis, commitment, onDone }: Props) {
   const firstName = userName.includes('@')
     ? userName.split('@')[0]
     : userName.split(' ')[0] || userName
@@ -53,22 +57,11 @@ export default function CompletionScreen({ userName, situation, trigger, emotion
           )}
         </Card>
 
-        {(emotion?.trim() || bodyResponse?.trim()) && (
-          <Card className="space-y-3">
-            {emotion?.trim() && (
-              <div className="space-y-1">
-                <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">What you felt</p>
-                <p className="text-white/70 text-sm leading-relaxed">{emotion}</p>
-              </div>
-            )}
-            {bodyResponse?.trim() && (
-              <div className="space-y-1">
-                <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">Where your body felt it</p>
-                <p className="text-white/70 text-sm leading-relaxed">{bodyResponse}</p>
-              </div>
-            )}
+        {(emotionsFelt?.length || emotion?.trim() || bodyResponse?.trim()) ? (
+          <Card>
+            <FeltSummary emotionsFelt={emotionsFelt} bodyPlacements={bodyPlacements} emotion={emotion} bodyResponse={bodyResponse} />
           </Card>
-        )}
+        ) : null}
 
         {synthesis && (
           <div className="bg-purple-900/15 border border-purple-700/25 rounded-2xl p-4 space-y-1">

@@ -1,9 +1,9 @@
 import { z } from 'zod'
 import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb'
-import { Sk, type MirrorSessionItem } from '@dpnr/shared-types'
+import { Sk, MirrorEntrySchema, type MirrorSessionItem } from '@dpnr/shared-types'
 import { parseValue } from '../../lib/http'
 import { ddb, TABLE_NAME } from '../db'
-import type { MirrorContent } from './helpers'
+import { withAnswers, type MirrorContent } from './helpers'
 import type { StepDefinition } from '../types'
 
 const SubmitInput = z.object({
@@ -13,6 +13,10 @@ const SubmitInput = z.object({
   // domain + source session)" — set only when this session was started via
   // a Library topic's "Explore in Mirror Room" action.
   sourceLibraryTopic: z.string().optional(),
+  // Session 72 (#34): how the person entered from the landing. Kept inside
+  // the encrypted content. Omitted on a resubmit that doesn't know it, in
+  // which case the stored entry is kept.
+  entry: MirrorEntrySchema.optional(),
 })
 
 /**
@@ -27,7 +31,7 @@ const SubmitInput = z.object({
 export const situationStep: StepDefinition = {
   allowedActions: ['SUBMIT_STEP'],
   handle: async (ctx) => {
-    const { situation, trigger, sourceLibraryTopic } = parseValue(ctx.input, SubmitInput)
+    const { situation, trigger, sourceLibraryTopic, entry } = parseValue(ctx.input, SubmitInput)
     const now = new Date().toISOString()
     // A resubmit (Back, or redo after REOPEN) keeps the existing session's
     // later answers, creation date and credit marker — later steps overwrite
@@ -37,7 +41,7 @@ export const situationStep: StepDefinition = {
     )
     const existing = existingResult.Item as MirrorSessionItem | undefined
     const existingContent = existing ? await ctx.crypto.decryptField<MirrorContent>(existing.content) : null
-    const content: MirrorContent = existingContent ? { ...existingContent, situation, trigger } : {
+    const content: MirrorContent = existingContent ? withAnswers(existingContent, { situation, trigger, ...(entry ? { entry } : {}) }) : {
       situation,
       trigger,
       thought: '',
@@ -49,6 +53,7 @@ export const situationStep: StepDefinition = {
       energyMoodEffect: '',
       lifeDomain: '',
       commitment: '',
+      ...(entry ? { entry } : {}),
     }
     const session: MirrorSessionItem = {
       pk: ctx.pk,

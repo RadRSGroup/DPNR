@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import MirrorStepShell from './MirrorStepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
+import type { MirrorEntry } from '@dpnr/shared-types'
 
 interface Props {
   sessionTitle: string
@@ -9,6 +10,33 @@ interface Props {
   initialRecurringPattern?: string
   onComplete: (copingResponse: string, recurringPattern: string) => void
   onBack?: () => void
+  /** How the person came in (Session 72, #34). */
+  entry?: MirrorEntry
+}
+
+/**
+ * Appendix B entry-aware adaptation: someone who came in through a pattern
+ * they already know isn't asked to identify it again; the question explores
+ * where else it lives. Same field (`recurringPattern`), different ask.
+ */
+function recurringQuestion(entry?: MirrorEntry): { question: string; placeholder: string } {
+  if (entry?.mode === 'pattern') {
+    const named = entry.patternName ? `“${entry.patternName}”` : 'this pattern'
+    return {
+      question: `Beyond this moment, where else does ${named} tend to show up for you?`,
+      placeholder: 'With certain people, places, times, or kinds of pressure...',
+    }
+  }
+  if (entry?.mode === 'archetype' && entry.archetype) {
+    return {
+      question: `When else does the ${entry.archetype} in you tend to take over?`,
+      placeholder: 'Notice the people or situations that seem to call it up...',
+    }
+  }
+  return {
+    question: 'Does this happen with certain people or situations?',
+    placeholder: 'Notice if this keeps showing up in a particular way...',
+  }
 }
 
 /** PATTERN — SUBMIT_STEP only, {copingResponse, recurringPattern}, see mirror-steps/pattern.ts. */
@@ -18,7 +46,9 @@ export default function Step03Pattern({
   initialRecurringPattern = '',
   onComplete,
   onBack,
+  entry,
 }: Props) {
+  const { question, placeholder } = recurringQuestion(entry)
   const [copingResponse, setCopingResponse] = useState(initialCopingResponse)
   const [recurringPattern, setRecurringPattern] = useState(initialRecurringPattern)
 
@@ -43,11 +73,11 @@ export default function Step03Pattern({
           </div>
 
           <div className="space-y-2">
-            <p className="text-white/70 text-sm leading-relaxed">Does this happen with certain people or situations?</p>
+            <p className="text-white/70 text-sm leading-relaxed">{question}</p>
             <textarea
               value={recurringPattern}
               onChange={e => setRecurringPattern(e.target.value.slice(0, 5000))}
-              placeholder="Notice if this keeps showing up in a particular way..."
+              placeholder={placeholder}
               rows={3}
               className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
             />

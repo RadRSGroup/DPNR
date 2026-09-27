@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import { parseValue } from '../../lib/http'
 import { ddb, TABLE_NAME } from '../db'
-import { getMirrorSession, type MirrorContent } from './helpers'
+import { getMirrorSession, withAnswers, type MirrorContent } from './helpers'
 import type { StepDefinition } from '../types'
 
 const SubmitInput = z.object({
@@ -25,7 +25,7 @@ export const lifeImpactStep: StepDefinition = {
     const updatedSession = {
       ...session,
       currentStepId: 'LIFE_IMPACT',
-      content: await ctx.crypto.encryptField<MirrorContent>({ ...content, energyMoodEffect, lifeDomain }),
+      content: await ctx.crypto.encryptField<MirrorContent>(withAnswers(content, { energyMoodEffect, lifeDomain })),
       updatedAt: now,
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: updatedSession }))

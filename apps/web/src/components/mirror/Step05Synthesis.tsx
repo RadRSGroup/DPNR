@@ -14,8 +14,9 @@ interface Props {
 }
 
 /**
- * SYNTHESIS — REFINE fires automatically on mount, {} -> {synthesis}
- * (ephemeral, nothing persisted). SUBMIT_STEP takes no input and advances
+ * SYNTHESIS — REFINE fires automatically on mount unless a synthesis is
+ * already known, {} -> {synthesis}. The backend saves it (Session 72) and
+ * returns it on resume, so it isn't regenerated or charged again. SUBMIT_STEP takes no input and advances
  * to COMMITMENT. See mirror-steps/synthesis.ts.
  */
 export default function Step05Synthesis({ sessionTitle, initialSynthesis, onRefine, onComplete, onBack }: Props) {

@@ -2,19 +2,22 @@
 import { useState } from 'react'
 import MirrorStepShell from './MirrorStepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
-import { DEFAULT_OPENING, TRIGGER_ARCHETYPES, type MirrorOpening } from './openings'
+import type { MirrorEntry } from '@dpnr/shared-types'
+import { DEFAULT_OPENING, TRIGGER_ARCHETYPES, entryFor, type MirrorOpening } from './openings'
 
 interface Props {
   initialSituation?: string
   initialTrigger?: string
-  onComplete: (situation: string, trigger: string) => void
+  /** The archetype picked earlier in this session (resume). */
+  initialArchetype?: string
+  onComplete: (situation: string, trigger: string, entry: MirrorEntry) => void
   onBack?: () => void
   /** How the person chose to begin on the landing (see openings.ts). */
   opening?: MirrorOpening
 }
 
 /** SITUATION — SUBMIT_STEP only, {situation, trigger}, see mirror-steps/situation.ts. */
-export default function Step01Situation({ initialSituation = '', initialTrigger = '', onComplete, onBack, opening = DEFAULT_OPENING }: Props) {
+export default function Step01Situation({ initialSituation = '', initialTrigger = '', initialArchetype, onComplete, onBack, opening = DEFAULT_OPENING }: Props) {
   // A pattern opening pre-fills the situation with the pattern, in plain
   // editable text, so it reaches the AI only if the person keeps it.
   const [situation, setSituation] = useState(
@@ -23,15 +26,17 @@ export default function Step01Situation({ initialSituation = '', initialTrigger 
 A recent moment it showed up: ` : '')
   )
   const [trigger, setTrigger] = useState(initialTrigger)
+  const [archetype, setArchetype] = useState(initialArchetype)
 
   function pickArchetype(name: string) {
     const line = `The part of me that took over felt like the ${name}.`
+    setArchetype(name)
     setTrigger((prev) => (prev.trim() ? `${prev.trim()} ${line}` : line).slice(0, 5000))
   }
 
   function handleContinue() {
     if (!situation.trim() || !trigger.trim()) return
-    onComplete(situation.trim(), trigger.trim())
+    onComplete(situation.trim(), trigger.trim(), entryFor(opening, situation, trigger, archetype))
   }
 
   return (

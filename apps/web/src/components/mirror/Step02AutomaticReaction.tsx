@@ -1,59 +1,86 @@
 'use client'
 import { useState } from 'react'
+import type { MirrorBodyPlacement, MirrorEmotionFelt } from '@dpnr/shared-types'
 import MirrorStepShell from './MirrorStepShell'
+import BodyMap from './BodyMap'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI, RefineFn } from '@/lib/useAI'
+import { EMOTION_COLORS } from '@/lib/types'
+
+export interface FeltAnswers {
+  thought: string
+  emotion: string
+  bodyResponse: string
+  automaticReaction: string
+  emotionsFelt: MirrorEmotionFelt[]
+  bodyPlacements: MirrorBodyPlacement[]
+}
 
 interface Props {
   sessionTitle: string
-  initialThought?: string
-  initialEmotion?: string
-  initialBodyResponse?: string
-  initialAutomaticReaction?: string
+  initial: FeltAnswers
   onRefine: RefineFn
-  onComplete: (thought: string, emotion: string, bodyResponse: string, automaticReaction: string) => void
+  onComplete: (answers: FeltAnswers) => void
   onBack?: () => void
 }
 
 /**
  * AUTOMATIC_REACTION — SUBMIT_STEP {thought, emotion, bodyResponse,
- * automaticReaction}, REFINE {thought, emotion, bodyResponse} -> {reflection}.
+ * automaticReaction, emotionsFelt?, bodyPlacements?}, REFINE {thought,
+ * emotion, bodyResponse, emotionsFelt?, bodyPlacements?} -> {reflection}.
  * See mirror-steps/automatic-reaction.ts.
+ *
+ * Session 72 (#35): the feeling is picked from Decision Room's emotion
+ * palette, then the body comes forward and the person places each feeling
+ * on it (BodyMap). Their own words stay available for both, and are
+ * required only when the chips / body map weren't used.
  */
-export default function Step02AutomaticReaction({
-  sessionTitle,
-  initialThought = '',
-  initialEmotion = '',
-  initialBodyResponse = '',
-  initialAutomaticReaction = '',
-  onRefine,
-  onComplete,
-  onBack,
-}: Props) {
-  const [thought, setThought] = useState(initialThought)
-  const [emotion, setEmotion] = useState(initialEmotion)
-  const [bodyResponse, setBodyResponse] = useState(initialBodyResponse)
-  const [automaticReaction, setAutomaticReaction] = useState(initialAutomaticReaction)
+export default function Step02AutomaticReaction({ sessionTitle, initial, onRefine, onComplete, onBack }: Props) {
+  const [thought, setThought] = useState(initial.thought)
+  const [emotion, setEmotion] = useState(initial.emotion)
+  const [bodyResponse, setBodyResponse] = useState(initial.bodyResponse)
+  const [automaticReaction, setAutomaticReaction] = useState(initial.automaticReaction)
+  const [emotionsFelt, setEmotionsFelt] = useState<MirrorEmotionFelt[]>(initial.emotionsFelt)
+  const [bodyPlacements, setBodyPlacements] = useState<MirrorBodyPlacement[]>(initial.bodyPlacements)
   const [reflection, setReflection] = useState<string | undefined>(undefined)
   const { callAI, loading } = useAI(onRefine)
 
-  const readyToReflect = thought.trim() && emotion.trim() && bodyResponse.trim()
+  const hasEmotion = emotionsFelt.length > 0 || !!emotion.trim()
+  const hasBody = bodyPlacements.length > 0 || !!bodyResponse.trim()
+  const readyToReflect = !!thought.trim() && hasEmotion && hasBody
+  const readyToContinue = readyToReflect && !!automaticReaction.trim()
+
+  function toggleEmotion(label: string, color: string) {
+    const on = emotionsFelt.some((e) => e.label === label)
+    if (on) {
+      setEmotionsFelt((prev) => prev.filter((e) => e.label !== label))
+      setBodyPlacements((prev) => prev.filter((p) => p.emotion !== label))
+    } else {
+      setEmotionsFelt((prev) => (prev.some((e) => e.label === label) ? prev : [...prev, { label, color }]))
+    }
+  }
+
+  function felt() {
+    return { thought: thought.trim(), emotion: emotion.trim(), bodyResponse: bodyResponse.trim(), emotionsFelt, bodyPlacements }
+  }
 
   async function handleReflect() {
     if (!readyToReflect) return
-    const res = await callAI<{ reflection: string }>('reflection', { thought, emotion, bodyResponse })
+    const res = await callAI<{ reflection: string }>('reflection', felt())
     if (res?.reflection) setReflection(res.reflection)
   }
 
   function handleContinue() {
-    if (!thought.trim() || !emotion.trim() || !bodyResponse.trim() || !automaticReaction.trim()) return
-    onComplete(thought.trim(), emotion.trim(), bodyResponse.trim(), automaticReaction.trim())
+    if (!readyToContinue) return
+    onComplete({ ...felt(), automaticReaction: automaticReaction.trim() })
   }
+
+  const textarea = 'w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors'
 
   return (
     <MirrorStepShell step={2} sessionTitle={sessionTitle} onBack={onBack}>
       <div className="flex-1 flex flex-col justify-between pt-4">
-        <div className="space-y-5">
+        <div className="space-y-6">
           <div className="space-y-2">
             <p className="text-white/70 text-sm leading-relaxed">What went through your mind in that moment?</p>
             <textarea
@@ -61,29 +88,58 @@ export default function Step02AutomaticReaction({
               onChange={e => setThought(e.target.value.slice(0, 5000))}
               placeholder="The first thought that crossed your mind..."
               rows={2}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              className={textarea}
             />
           </div>
 
-          <div className="space-y-2">
-            <p className="text-white/70 text-sm leading-relaxed">What did you feel?</p>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <p className="text-white/70 text-sm leading-relaxed">What did you feel?</p>
+              <p className="text-[var(--color-text-tertiary)] text-xs">Choose any that fit. There&apos;s no right answer.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {EMOTION_COLORS.map(({ label, color }) => {
+                const on = emotionsFelt.some((e) => e.label === label)
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => toggleEmotion(label, color)}
+                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors ${on ? 'text-white' : 'text-white/65 border-white/15 hover:text-white hover:border-white/35'}`}
+                    style={on ? { borderColor: color, backgroundColor: `${color}2e` } : undefined}
+                  >
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color, boxShadow: on ? `0 0 8px ${color}` : undefined }} aria-hidden />
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
             <textarea
               value={emotion}
               onChange={e => setEmotion(e.target.value.slice(0, 5000))}
-              placeholder="Name the feeling..."
+              placeholder={emotionsFelt.length ? 'Anything to add, in your own words? (optional)' : 'Or name the feeling in your own words...'}
               rows={2}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              className={textarea}
             />
           </div>
 
+          {emotionsFelt.length > 0 && (
+            <BodyMap emotions={emotionsFelt} placements={bodyPlacements} onChange={setBodyPlacements} />
+          )}
+
           <div className="space-y-2">
-            <p className="text-white/70 text-sm leading-relaxed">Where did you feel it in your body?</p>
+            {emotionsFelt.length === 0 && (
+              <p className="text-white/70 text-sm leading-relaxed">Where did you feel it in your body?</p>
+            )}
             <textarea
               value={bodyResponse}
               onChange={e => setBodyResponse(e.target.value.slice(0, 5000))}
-              placeholder="Tight chest, clenched jaw, a knot in your stomach..."
+              placeholder={bodyPlacements.length
+                ? 'How did it feel there? Tight, heavy, hot... (optional)'
+                : 'Tight chest, clenched jaw, a knot in your stomach...'}
               rows={2}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              className={textarea}
             />
           </div>
 
@@ -111,17 +167,13 @@ export default function Step02AutomaticReaction({
               onChange={e => setAutomaticReaction(e.target.value.slice(0, 5000))}
               placeholder="Your actual reaction, not what you wish you'd done..."
               rows={2}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              className={textarea}
             />
           </div>
         </div>
 
         <div className="pt-6">
-          <PrimaryButton
-            label="Continue"
-            onClick={handleContinue}
-            disabled={!thought.trim() || !emotion.trim() || !bodyResponse.trim() || !automaticReaction.trim()}
-          />
+          <PrimaryButton label="Continue" onClick={handleContinue} disabled={!readyToContinue} />
         </div>
       </div>
     </MirrorStepShell>

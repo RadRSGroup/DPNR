@@ -242,7 +242,7 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                     orb="/images/mirror/orb-pattern.webp"
                     title="By Pattern"
                     text={topConfirmed ? 'Start from a pattern you keep noticing.' : 'Start from a pattern — confirm one first on your Dashboard.'}
-                    onClick={() => onStart(topConfirmed ? { mode: 'pattern', patternText: topConfirmed.description } : { mode: 'situation' })}
+                    onClick={() => onStart(topConfirmed ? { mode: 'pattern', patternText: topConfirmed.description, patternName: topConfirmed.name } : { mode: 'situation' })}
                   />
                   <ModeCard
                     orb="/images/mirror/orb-situation.webp"
@@ -302,7 +302,7 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                               {p.name && <p className="text-xs text-white/60 truncate mt-0.5">{p.description}</p>}
                             </div>
                             <button
-                              onClick={() => onStart({ mode: 'pattern', patternText: p.description })}
+                              onClick={() => onStart({ mode: 'pattern', patternText: p.description, patternName: p.name })}
                               aria-label={`Explore: ${p.description}`}
                               className="w-8 h-8 shrink-0 rounded-full bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/70 transition-colors"
                             >

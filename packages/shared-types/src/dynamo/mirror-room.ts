@@ -15,13 +15,51 @@ import { EncryptedBlobSchema } from './crypto'
 export const MirrorSessionStatusSchema = z.enum(['active', 'completed'])
 export type MirrorSessionStatus = z.infer<typeof MirrorSessionStatusSchema>
 
+/**
+ * Session 72 (Wave 2 Slice 3, founder feedback #34/#35, user-approved
+ * 2026-09-27). All of these live INSIDE the encrypted `content` blob, never
+ * as plaintext item attributes, and are optional so sessions saved before
+ * this slice still read cleanly.
+ *
+ * `entry` — how the person came in from the landing (Appendix B "entry-aware
+ * adaptation"). A pattern/archetype is recorded only if the person kept it in
+ * their own step-1 text, so the AI never sees context the person removed.
+ */
+export const MirrorEntryModeSchema = z.enum(['situation', 'pattern', 'archetype'])
+export const MirrorEntrySchema = z.object({
+  mode: MirrorEntryModeSchema,
+  patternName: z.string().max(80).optional(),
+  patternDescription: z.string().max(1000).optional(),
+  archetype: z.string().max(40).optional(),
+})
+export type MirrorEntry = z.infer<typeof MirrorEntrySchema>
+
+/**
+ * Emotion + body capture (#35). The person picks emotions (Decision Room's
+ * EMOTION_COLORS palette) and places each one on the body themselves — DPNR
+ * never picks or suggests a location (Appendix B). Descriptive only: nothing
+ * here is scored.
+ */
+export const MirrorBodyAreaSchema = z.enum(['Head', 'Throat', 'Shoulders', 'Chest', 'Arms', 'Hands', 'Stomach', 'Gut', 'Legs'])
+export type MirrorBodyArea = z.infer<typeof MirrorBodyAreaSchema>
+export const MirrorEmotionFeltSchema = z.object({
+  label: z.string().min(1).max(40),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+})
+export type MirrorEmotionFelt = z.infer<typeof MirrorEmotionFeltSchema>
+export const MirrorBodyPlacementSchema = z.object({
+  area: MirrorBodyAreaSchema,
+  emotion: z.string().min(1).max(40),
+})
+export type MirrorBodyPlacement = z.infer<typeof MirrorBodyPlacementSchema>
+
 export const MirrorSessionItemSchema = z.object({
   pk: z.string(),
   sk: z.string(), // Sk.mirrorRoom(mirrorId)
   mirrorId: z.string(),
   status: MirrorSessionStatusSchema,
   currentStepId: z.string().optional(),
-  content: EncryptedBlobSchema, // wraps { situation, trigger, thought, emotion, bodyResponse, automaticReaction, copingResponse, recurringPattern, energyMoodEffect, lifeDomain, commitment }
+  content: EncryptedBlobSchema, // wraps { situation, trigger, thought, emotion, bodyResponse, automaticReaction, copingResponse, recurringPattern, energyMoodEffect, lifeDomain, commitment, entry?, emotionsFelt?, bodyPlacements?, synthesis? }
   // Intelligence Spec §18/Appendix B Flow 1 "Mirror receives context (topic
   // + domain + source session)" — set only when the session was started via
   // a Library topic's "Explore in Mirror Room" action (LibrarySidePanel.tsx).

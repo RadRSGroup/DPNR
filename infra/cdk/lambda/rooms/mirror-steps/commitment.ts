@@ -3,7 +3,7 @@ import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import { parseValue } from '../../lib/http'
 import { grantCredits, EARN_REFLECTION_COMPLETED_CREDITS } from '../../lib/credits'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from '../db'
-import { getMirrorSession, type MirrorContent } from './helpers'
+import { getMirrorSession, formatEmotion, formatBody, type MirrorContent } from './helpers'
 import { extractCandidateSignals, persistSessionSummary } from '../twin-signals'
 import { refreshRoadmapAfterSession } from '../../lib/roadmap-refresh'
 import type { StepDefinition } from '../types'
@@ -58,8 +58,8 @@ export const commitmentStep: StepDefinition = {
       `Situation: ${content.situation}`,
       `Trigger: ${content.trigger}`,
       `Thought: ${content.thought}`,
-      `Emotion: ${content.emotion}`,
-      `Body response: ${content.bodyResponse}`,
+      `Emotion: ${formatEmotion(content)}`,
+      `Body response: ${formatBody(content)}`,
       `Automatic reaction: ${content.automaticReaction}`,
       `Coping response: ${content.copingResponse}`,
       `Recurring pattern: ${content.recurringPattern}`,
