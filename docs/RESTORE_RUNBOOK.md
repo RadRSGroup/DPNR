@@ -72,4 +72,4 @@ Do one restore drill after any change to this setup, and at least quarterly: res
 
 | Date | Drill | Result |
 |---|---|---|
-| — | none yet | — |
+| 2026-09-27 | PITR restore of `dpnr-prompt-registry` (to 23:29:04Z) → `dpnr-restore-drill-20260927` | Pass: ACTIVE after ~3.5 min; 64 items = live 64; `PROMPT#decision_room#emotion_reflection` / `ALIAS#prod` present. Drill table deleted. (Session 75) |
