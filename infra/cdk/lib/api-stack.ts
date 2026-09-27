@@ -1532,10 +1532,11 @@ export class ApiStack extends Stack {
       'GrowCredentialsSecret',
       'dpnr/grow-credentials'
     )
-    // Only sandbox hosts are confirmed from Grow's public docs (ADR 0008) —
-    // the production hostname is a guess, VERIFY before any real deploy with
-    // isProduction: true attempts a real charge.
-    const growBaseUrl = props.isProduction ? 'https://api.grow.link' : 'https://sandboxapi.grow.link'
+    // Grow is no longer the payment provider (user, 2026-09-27). Pinned to
+    // the sandbox host so `isProduction` (which now also turns on backup
+    // protections, Slice 6) can never point a charge at a live payment API.
+    // Removing the Grow Lambdas/routes altogether is a separate change.
+    const growBaseUrl = 'https://sandboxapi.grow.link'
 
     const initiatePurchaseFn = new lambda.NodejsFunction(this, 'InitiatePurchaseFn', {
       runtime: Runtime.NODEJS_24_X,
@@ -1820,6 +1821,26 @@ export class ApiStack extends Stack {
         period: Duration.minutes(15),
         statistic: 'Sum',
       }),
+      threshold: 3,
+      evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    }).addAlarmAction(opsAlarmAction)
+
+    // Slice 6: Bedrock throttling / server errors, account-wide (the
+    // dimensionless AWS/Bedrock metrics cover every model). Each one is also
+    // a 503 `model_unavailable` to the person, with the credit refunded
+    // (lib/model-call.ts sendConverse, rooms/command.ts, companion/message.ts).
+    new cloudwatch.Alarm(this, 'BedrockThrottleAlarm', {
+      alarmDescription:
+        'Bedrock throttled DPNR 5+ times in 10 minutes — people are seeing "briefly unavailable". Check service quotas (tokens/requests per minute) for the model in use.',
+      metric: new cloudwatch.Metric({ namespace: 'AWS/Bedrock', metricName: 'InvocationThrottles', period: Duration.minutes(10), statistic: 'Sum' }),
+      threshold: 5,
+      evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    }).addAlarmAction(opsAlarmAction)
+    new cloudwatch.Alarm(this, 'BedrockServerErrorAlarm', {
+      alarmDescription: 'Bedrock returned 3+ server errors in 10 minutes — likely a Bedrock-side incident (check the AWS Health dashboard).',
+      metric: new cloudwatch.Metric({ namespace: 'AWS/Bedrock', metricName: 'InvocationServerErrors', period: Duration.minutes(10), statistic: 'Sum' }),
       threshold: 3,
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,

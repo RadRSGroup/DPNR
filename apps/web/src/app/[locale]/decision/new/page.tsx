@@ -228,6 +228,8 @@ function NewDecisionContent() {
       if (err.code === 'consent_required') { router.push('/consent?next=/decision/new'); return }
       if (err.code === 'session_completed') { router.push('/dashboard'); return }
       if (err.code === 'credits_exhausted') { setCreditsExhausted(true); return }
+      // Slice 6: Bedrock briefly unavailable — not fatal; the answers are kept and the credit was refunded.
+      if (err.code === 'model_unavailable') { setSyncNotice('DPNR is briefly unavailable — nothing was charged and your answers are kept. Please try again in a minute.'); return }
       if (err.code === 'session_version_conflict' && sessionId) {
         try {
           const full = await getDecisionFull(sessionId)

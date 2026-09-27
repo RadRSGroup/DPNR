@@ -395,9 +395,11 @@ function CompanionContent() {
         setMessages((prev) => prev.map((m, i) => (i === prev.length - 1 ? { ...m, failed: true } : m)))
         setCreditsExhausted(true)
       } else {
+        // Slice 6: a Bedrock outage is a 503 `model_unavailable` (credit refunded server-side).
+        const unavailable = err instanceof ApiError && err.code === 'model_unavailable'
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant', text: tc('sendError'), createdAt: new Date().toISOString(), failed: true, fresh: true },
+          { role: 'assistant', text: tc(unavailable ? 'unavailable' : 'sendError'), createdAt: new Date().toISOString(), failed: true, fresh: true },
         ])
       }
     } finally {
@@ -438,6 +440,8 @@ function CompanionContent() {
       setMessages(snapshot)
       if (err instanceof ApiError && err.code === 'credits_exhausted') {
         setCreditsExhausted(true)
+      } else if (err instanceof ApiError && err.code === 'model_unavailable') {
+        alert(tc('unavailable'))
       } else {
         alert(tc('editFailed'))
       }

@@ -10,7 +10,8 @@ import {
 } from '@dpnr/shared-types'
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { requireConsent } from '../lib/consent'
-import { consumeCredits, ROOM_REFINE_COST } from '../lib/credits'
+import { consumeCredits, grantCredits, ROOM_REFINE_COST } from '../lib/credits'
+import { isModelFailure } from '../lib/model-call'
 import { toLanguageInstruction, type Locale } from '../lib/locale'
 import { classifySafety, generateSafetyResponse, extractFreeTextForSafetyCheck } from '../lib/safety'
 import { getSessionCrypto } from '../lib/session-crypto'
@@ -153,17 +154,26 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     if (safetyIntervention) {
       stepResult = { nextStepId: null, result: {} }
     } else {
-      if (body.action === 'REFINE') {
+      const charged = body.action === 'REFINE'
+      if (charged) {
         await consumeCredits(ddb, TABLE_NAME, pk, ROOM_REFINE_COST, 'room_refine')
       }
-      stepResult = await step.handle({
-        pk,
-        sessionId: body.sessionId,
-        action: body.action,
-        input: body.input,
-        crypto,
-        languageInstruction,
-      })
+      try {
+        stepResult = await step.handle({
+          pk,
+          sessionId: body.sessionId,
+          action: body.action,
+          input: body.input,
+          crypto,
+          languageInstruction,
+        })
+      } catch (err) {
+        // Slice 6: the person didn't get a reflection, so they don't pay for one.
+        if (charged && isModelFailure(err)) {
+          await grantCredits(ddb, TABLE_NAME, pk, ROOM_REFINE_COST, 'refund', 'room_refine_model_failure')
+        }
+        throw err
+      }
     }
 
     const newSessionVersion = (existingSession?.sessionVersion ?? 0) + 1

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib'
+import { BackupDrStack, DR_REGION, DR_BACKUP_VAULT_NAME } from '../lib/backup-dr-stack'
 import { DataStack } from '../lib/data-stack'
 import { AuthStack } from '../lib/auth-stack'
 import { ApiStack } from '../lib/api-stack'
@@ -67,7 +68,12 @@ const env = {
   region: process.env.CDK_DEFAULT_REGION,
 }
 
-const dataStack = new DataStack(app, 'Dpnr-Data', { env, isProduction })
+// Slice 6: DR-region vault for the daily backup copies (lib/backup-dr-stack.ts).
+// The ARN is built as a string because CDK can't reference across regions.
+new BackupDrStack(app, 'Dpnr-BackupDr', { env: { account: env.account, region: DR_REGION } })
+const drBackupVaultArn = `arn:aws:backup:${DR_REGION}:${env.account}:backup-vault:${DR_BACKUP_VAULT_NAME}`
+
+const dataStack = new DataStack(app, 'Dpnr-Data', { env, isProduction, drBackupVaultArn })
 
 const authStack = new AuthStack(app, 'Dpnr-Auth', {
   env,

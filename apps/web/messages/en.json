@@ -806,6 +806,7 @@
     },
     "attachmentNotSupported": "I can see you attached an image — I can't actually look at images yet, but I've got everything else you shared.",
     "sendError": "Something went wrong on my end — try sending that again.",
+    "unavailable": "DPNR is briefly unavailable — nothing was charged. Please try again in a minute.",
     "privacyNote": "Everything you share is private and encrypted.",
     "pullACard": {
       "heading": "Pull a Card",

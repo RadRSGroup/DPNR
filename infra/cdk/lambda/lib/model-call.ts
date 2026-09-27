@@ -65,6 +65,39 @@ function resolveGuardrailRef(): GuardrailRef | undefined {
  * to `BLOCK` is a real behavior change for a later session to make
  * deliberately, once real usage data exists to calibrate against.
  */
+/**
+ * Bedrock errors that mean "the model is briefly unavailable", not "this
+ * request is wrong" (Slice 6). They surface as 503 `model_unavailable` so the
+ * UI can say so calmly and the caller can refund the credit it charged,
+ * instead of a 500 "Something went wrong". The `[MODEL_UNAVAILABLE]` line
+ * carries only the error name and prompt key — never content.
+ */
+const UNAVAILABLE_ERRORS = new Set([
+  'ThrottlingException',
+  'ServiceUnavailableException',
+  'ModelNotReadyException',
+  'ModelTimeoutException',
+  'InternalServerException',
+])
+
+export async function sendConverse(promptKey: string, command: ConverseCommand) {
+  try {
+    return await bedrock.send(command)
+  } catch (err) {
+    const name = err instanceof Error ? err.name : 'unknown'
+    if (UNAVAILABLE_ERRORS.has(name)) {
+      console.warn('[MODEL_UNAVAILABLE]', { errorName: name, prompt: promptKey })
+      throw new HttpError(503, 'model_unavailable', 'DPNR is briefly unavailable. Please try again in a moment.')
+    }
+    throw err
+  }
+}
+
+/** Model failures after which a charged credit should be given back. */
+export function isModelFailure(err: unknown): boolean {
+  return err instanceof HttpError && (err.code === 'model_unavailable' || err.code === 'model_call_failed')
+}
+
 export async function callPromptModel(
   promptVersion: PromptVersionItem,
   vars: Record<string, string>
@@ -75,7 +108,8 @@ export async function callPromptModel(
   const { outputSchema } = promptVersion
   const guardrail = resolveGuardrailRef()
 
-  const response = await bedrock.send(
+  const response = await sendConverse(
+    promptVersion.pk,
     new ConverseCommand({
       modelId: model,
       system: [{ text: filledSystem }],

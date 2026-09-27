@@ -1,5 +1,8 @@
 import { Duration, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib'
+import * as backup from 'aws-cdk-lib/aws-backup'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
+import * as events from 'aws-cdk-lib/aws-events'
+import * as iam from 'aws-cdk-lib/aws-iam'
 import * as kms from 'aws-cdk-lib/aws-kms'
 import * as s3 from 'aws-cdk-lib/aws-s3'
 import { Construct } from 'constructs'
@@ -13,6 +16,13 @@ export interface DataStackProps extends StackProps {
    * replacement could silently delete real user data.
    */
   isProduction?: boolean
+  /**
+   * Slice 6: ARN of the backup vault in the disaster-recovery region
+   * (`Dpnr-BackupDr`, bin/dpnr.ts). Every daily backup is copied there.
+   * Passed as a plain string, not a cross-stack reference — CDK can't
+   * reference resources across regions.
+   */
+  drBackupVaultArn: string
 }
 
 /**
@@ -31,7 +41,7 @@ export class DataStack extends Stack {
   public readonly sessionTicketsKmsKey: kms.Key
   public readonly avatarsBucket: s3.Bucket
 
-  constructor(scope: Construct, id: string, props: DataStackProps = {}) {
+  constructor(scope: Construct, id: string, props: DataStackProps) {
     super(scope, id, props)
 
     const removalPolicy = props.isProduction ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY
@@ -189,6 +199,69 @@ export class DataStack extends Stack {
       ],
       removalPolicy,
       autoDeleteObjects: !props.isProduction,
+      // Slice 6: an overwritten or deleted photo stays recoverable for 30
+      // days (the noncurrent version), then is gone — same order of
+      // magnitude as the tables' 35-day PITR window, so an erased account's
+      // photos don't outlive its table data by much. AWS Backup also needs
+      // versioning to back the bucket up at all.
+      versioned: true,
+      lifecycleRules: [
+        {
+          noncurrentVersionExpiration: Duration.days(30),
+          expiredObjectDeleteMarker: true,
+          abortIncompleteMultipartUploadAfter: Duration.days(7),
+        },
+      ],
+    })
+
+    // Slice 6 (#2 backup hardening): AWS Backup on top of PITR. PITR alone
+    // lives inside the table — it's gone if the table is deleted, and it
+    // never leaves this region. A daily backup plan (35-day retention)
+    // with a copy to the DR region covers both. Deliberately NOT the
+    // session-tickets table: a revoked ticket must not live on in a backup
+    // (same reason it has no PITR, migration plan §6.5).
+    const backupVault = new backup.BackupVault(this, 'BackupVault', {
+      backupVaultName: 'dpnr-primary',
+      removalPolicy: RemovalPolicy.RETAIN,
+    })
+    const plan = new backup.BackupPlan(this, 'BackupPlan', {
+      backupPlanName: 'dpnr-daily',
+      backupVault,
+      backupPlanRules: [
+        new backup.BackupPlanRule({
+          ruleName: 'daily-35d-with-dr-copy',
+          scheduleExpression: events.Schedule.cron({ hour: '3', minute: '0' }),
+          startWindow: Duration.hours(1),
+          completionWindow: Duration.hours(4),
+          deleteAfter: Duration.days(35),
+          copyActions: [
+            {
+              destinationBackupVault: backup.BackupVault.fromBackupVaultArn(this, 'DrBackupVault', props.drBackupVaultArn),
+              deleteAfter: Duration.days(35),
+            },
+          ],
+        }),
+      ],
+    })
+    const backupRole = new iam.Role(this, 'BackupRole', {
+      assumedBy: new iam.ServicePrincipal('backup.amazonaws.com'),
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSBackupServiceRolePolicyForBackup'),
+        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSBackupServiceRolePolicyForRestores'),
+        iam.ManagedPolicy.fromAwsManagedPolicyName('AWSBackupServiceRolePolicyForS3Backup'),
+        iam.ManagedPolicy.fromAwsManagedPolicyName('AWSBackupServiceRolePolicyForS3Restore'),
+      ],
+    })
+    plan.addSelection('Selection', {
+      backupSelectionName: 'dpnr-user-and-config-data',
+      role: backupRole,
+      resources: [
+        backup.BackupResource.fromDynamoDbTable(this.applicationTable),
+        backup.BackupResource.fromDynamoDbTable(this.promptRegistryTable),
+        backup.BackupResource.fromDynamoDbTable(this.libraryCatalogTable),
+        backup.BackupResource.fromDynamoDbTable(this.plansCatalogTable),
+        backup.BackupResource.fromArn(this.avatarsBucket.bucketArn),
+      ],
     })
   }
 }

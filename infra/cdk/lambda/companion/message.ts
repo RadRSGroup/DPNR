@@ -21,11 +21,11 @@ import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from
 import { requireConsent } from '../lib/consent'
 import { getLocaleClaim, resolveLocale, toLanguageInstruction, type Locale } from '../lib/locale'
 import { getOnboardingSnapshotContext } from '../lib/onboarding-snapshot-context'
-import { consumeCredits, COMPANION_MESSAGE_COST } from '../lib/credits'
+import { consumeCredits, grantCredits, COMPANION_MESSAGE_COST } from '../lib/credits'
 import { batchDeleteKeys } from '../lib/batch-delete'
 import { getSessionCrypto, type SessionCrypto } from '../lib/session-crypto'
 import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
-import { callPromptModel } from '../lib/model-call'
+import { callPromptModel, isModelFailure } from '../lib/model-call'
 import { listActiveTopics } from '../lib/library-catalog'
 import { gatherContinuityContext } from '../continuity/gather-context'
 import { roadmapExists } from '../lib/roadmap'
@@ -260,9 +260,18 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       )
       await updateSessionInteractionMode(ddb, TABLE_NAME, pk, currentInteractionMode)
 
-      const result = hasRoadmap
-        ? await callCompanionModel(userId, pk, sessionId, crypto, history, body.text, currentInteractionMode, languageInstruction, earlier)
-        : await runOnboardingTurn(crypto, pk, sessionId, history, body.text, currentInteractionMode, languageInstruction)
+      let result: Awaited<ReturnType<typeof callCompanionModel>>
+      try {
+        result = hasRoadmap
+          ? await callCompanionModel(userId, pk, sessionId, crypto, history, body.text, currentInteractionMode, languageInstruction, earlier)
+          : await runOnboardingTurn(crypto, pk, sessionId, history, body.text, currentInteractionMode, languageInstruction)
+      } catch (err) {
+        // Slice 6: no reply, no charge.
+        if (hasRoadmap && isModelFailure(err)) {
+          await grantCredits(ddb, TABLE_NAME, pk, COMPANION_MESSAGE_COST, 'refund', 'companion_message_model_failure')
+        }
+        throw err
+      }
       reply = result.reply
       directive = result.directive
     }

@@ -89,6 +89,11 @@ export class AuthStack extends Stack {
       mfa: cognito.Mfa.OPTIONAL,
       mfaSecondFactor: { sms: false, otp: true },
       removalPolicy,
+      // Slice 6: every login lives here and Cognito has no backup/restore —
+      // a deleted pool can't be brought back, and every user would lose
+      // access (their data is keyed on this pool's `sub`). Same gate as the
+      // tables' deletion protection.
+      deletionProtection: props.isProduction,
     })
 
     this.userPoolClient = this.userPool.addClient('WebClient', {
