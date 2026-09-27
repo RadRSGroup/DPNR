@@ -57,6 +57,8 @@ type CompanionTurn = { role: 'user' | 'assistant'; text: string }
 // context.ts bounds a client's full chat-resume view — a different concern
 // with a different right answer.
 const MODEL_CONTEXT_MESSAGES = 20
+/** Turns of the earlier conversation given as background to a fresh conversation's first reply. */
+const EARLIER_CONVERSATION_MESSAGES = 8
 
 // Idempotency: only guards an immediate client retry (e.g. a timed-out
 // request the client resubmits with the same clientMessageId) — checks
@@ -161,6 +163,21 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       }))
     )
 
+    // Fresh entry: the first message of a new conversation that opened on a
+    // welcome-back line about an earlier one. That conversation's tail is
+    // background for this reply only. Read from the caller's own partition
+    // (the key is built from their pk), and only while this conversation
+    // has no history of its own.
+    const earlier: CompanionTurn[] =
+      history.length === 0 && body.continuesFromSessionId && body.continuesFromSessionId !== sessionId
+        ? await Promise.all(
+            (await queryRecentMessages(pk, body.continuesFromSessionId, EARLIER_CONVERSATION_MESSAGES)).map(async (m) => ({
+              role: m.role,
+              text: (await crypto.decryptField<MessageContent>(m.content)).text,
+            }))
+          )
+        : []
+
     // Safety/crisis classification (spec §30, docs/SAFETY_SYSTEM_DESIGN.md,
     // ADR 0012) — runs before any normal reply is generated, since a
     // non-normal, non-deep_reflection result must suspend the ordinary
@@ -244,7 +261,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       await updateSessionInteractionMode(ddb, TABLE_NAME, pk, currentInteractionMode)
 
       const result = hasRoadmap
-        ? await callCompanionModel(userId, pk, sessionId, crypto, history, body.text, currentInteractionMode, languageInstruction)
+        ? await callCompanionModel(userId, pk, sessionId, crypto, history, body.text, currentInteractionMode, languageInstruction, earlier)
         : await runOnboardingTurn(crypto, pk, sessionId, history, body.text, currentInteractionMode, languageInstruction)
       reply = result.reply
       directive = result.directive
@@ -372,16 +389,20 @@ async function callCompanionModel(
   history: CompanionTurn[],
   userText: string,
   currentInteractionMode: InteractionMode,
-  languageInstruction: string
+  languageInstruction: string,
+  earlier: CompanionTurn[] = []
 ): Promise<{ reply: string; directive: CompanionDirective | null }> {
   const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'companion', 'respond')
   const topics = await listActiveTopics(ddb, LIBRARY_CATALOG_TABLE_NAME)
   const { confirmedSignals, openThreads } = await gatherContinuityContext(userId, crypto)
 
+  const turns = (list: CompanionTurn[]) => list.map((m) => `${m.role === 'user' ? 'User' : 'Companion'}: ${m.text}`).join('\n')
   const conversationHistory =
     history.length > 0
-      ? history.map((m) => `${m.role === 'user' ? 'User' : 'Companion'}: ${m.text}`).join('\n')
-      : '(no prior messages — this is the start of the conversation)'
+      ? turns(history)
+      : earlier.length > 0
+        ? `(A new conversation. You opened it by gently recalling their last conversation, below. They may pick it up or talk about something else entirely; follow their lead.)\n\nLast conversation:\n${turns(earlier)}\n\n(New conversation starts here.)`
+        : '(no prior messages — this is the start of the conversation)'
   const libraryTopics =
     topics.length > 0 ? topics.map((t) => `- ${t.slug}: ${t.title}`).join('\n') : '(none available)'
   const confirmedSignalsText =

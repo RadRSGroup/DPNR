@@ -3,7 +3,16 @@ import { toLanguageInstruction } from './locale'
 
 describe('toLanguageInstruction', () => {
   it('English carries no grammatical-gender instruction', () => {
-    expect(toLanguageInstruction('en', 'female')).toBe('Respond to the user entirely in English.')
+    const en = toLanguageInstruction('en', 'female')
+    expect(en).toMatch(/^Respond to the user entirely in English\./)
+    expect(en).not.toMatch(/feminine|masculine/)
+  })
+
+  it('both languages require second person for what the person reads', () => {
+    for (const locale of ['en', 'he'] as const) {
+      expect(toLanguageInstruction(locale, 'male')).toMatch(/speaks to them directly, as "you"/)
+      expect(toLanguageInstruction(locale, 'male')).toMatch(/never about them in the third person/)
+    }
   })
 
   it('Hebrew mirrors the user gender in both second and first person (digital-twin voice)', () => {

@@ -10,6 +10,12 @@ import { closeFocusPlayer } from '@/lib/focus-player'
  */
 export async function logOut(): Promise<void> {
   closeFocusPlayer() // the player lives in the root layout, which a sign-out doesn't unmount
+  // The next sign-in in this tab is a new visit: Main Chat starts fresh.
+  try {
+    sessionStorage.removeItem('dpnr.mainChatVisit')
+  } catch {
+    // storage blocked: nothing was stored either
+  }
   await revokeCurrentSessionTicket().catch(() => {})
   signOut()
 }

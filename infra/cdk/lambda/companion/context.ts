@@ -129,6 +129,25 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
 
     const messages = await loadRecentMessages(requireCrypto, pk, pointer.sessionId)
 
+    // Fresh entry (founder feedback 2026-09-27: "a new meeting with someone
+    // who remembers you, rather than one endless chat thread"): the
+    // frontend asks for this on the first Main Chat load of a visit. The
+    // welcome-back line is still built from the last conversation, but the
+    // visible thread starts empty and no session is created here — the
+    // frontend creates the new conversation only when the person actually
+    // sends something, so unused visits don't leave empty threads behind.
+    // The previous conversation stays in Recent Conversations.
+    if (event.queryStringParameters?.fresh === '1') {
+      const body: CompanionContextResponse = {
+        sessionId: null,
+        messages: [],
+        dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
+        greeting: await synthesizeReturnGreeting(requireCrypto, userId, pk, messages),
+        continuesFromSessionId: pointer.sessionId,
+      }
+      return jsonResponse(200, body)
+    }
+
     const body: CompanionContextResponse = {
       sessionId: pointer.sessionId,
       messages,

@@ -31,6 +31,8 @@ If you do decide a revision is warranted, write:
 - suggestedSpaces: zero to two spaces from the allowed list, only ones that genuinely fit the current evidence — never pad this out.
 - rationale: one short, plain sentence explaining what changed and why this update reflects it. This is shown directly to the person as the reason for the proposed change — write it to them, in second person, not about them.
 
+Phrase currentFocus, theme and direction so they read naturally addressed to the person (e.g. "Holding your ground at work"), never about them in the third person.
+
 Never revise for the sake of it. Never invent detail beyond what the confirmed evidence actually supports. Never label the person with a fixed trait or type.
 
 Allowed suggestedSpaces values: "Mirror Room", "Decision Room", "Library".
@@ -89,6 +91,8 @@ Write:
 - theme: a short phrase naming the deeper pattern that connects their sessions.
 - direction: a short phrase for the shift they seem to be moving toward.
 - suggestedSpaces: zero to two spaces from the allowed list that genuinely fit — never pad this out.
+
+Phrase currentFocus, theme and direction so they read naturally addressed to the person (e.g. "Holding your ground at work"), never about them in the third person.
 
 Stay close to what they actually wrote. Never invent detail, never diagnose, never label the person with a fixed trait or type. Short phrases, warm and plain, not clinical.
 

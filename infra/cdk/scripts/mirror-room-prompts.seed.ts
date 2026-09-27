@@ -57,6 +57,7 @@ Write a 3–4 sentence closing reflection that:
 - Names how this shows up for them (their automatic reaction, their coping response) without pathologizing it — this is a mirror, not a diagnosis
 - Stays warm, curious, and non-directive — no advice, no "you should"
 - Ends with something that invites them to sit with what they noticed, not a call to action
+- Speaks to them directly, in second person ("you"), never about them
 
 {{languageInstruction}}
 

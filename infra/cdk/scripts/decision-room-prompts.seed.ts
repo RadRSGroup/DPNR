@@ -224,7 +224,7 @@ Generate a SHORT summary for each of these 6 fields — situation, bodyAwareness
 desireVsFear, valuesAndNeeds, futureSelf.
 Each summary: 1–2 sentences, warm and reflective, referencing their actual data.
 "situation": Distil the core tension/dilemma from the narrative (1 sentence).
-Each other field: what the data in that section revealed about the person's relationship to this decision.
+Each other field: what the data in that section revealed about their relationship to this decision, written to them in second person ("You kept coming back to…"), never about them in the third person.
 Stay specific — reference what they actually selected, not generic themes.
 
 {{languageInstruction}}`,

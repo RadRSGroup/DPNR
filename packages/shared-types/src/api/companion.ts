@@ -36,6 +36,12 @@ export const CompanionMessageRequestSchema = z.object({
   // after it are replaced by this turn — deleted only once the new reply
   // has been generated, so a failed edit never loses the original thread.
   replaceFromCreatedAt: z.string().datetime().optional(),
+  // Fresh entry (2026-09-27): the first message of a new conversation that
+  // began from a welcome-back line built on an earlier conversation. The
+  // server reads that conversation's tail from the caller's own partition
+  // (ownership is structural) as background for this first reply only, so
+  // "yes, that" makes sense. Ignored once the new conversation has history.
+  continuesFromSessionId: z.string().max(100).optional(),
 })
 export type CompanionMessageRequest = z.infer<typeof CompanionMessageRequestSchema>
 
@@ -93,6 +99,10 @@ export const CompanionContextResponseSchema = z.object({
   // (nothing to reference yet — see the onboarding-opener message inside
   // `messages` instead) or if synthesis fails.
   greeting: z.string().nullable(),
+  // Fresh entry only (`?fresh=1`): the conversation the greeting was built
+  // from, so the frontend can pass it as `continuesFromSessionId` with the
+  // first message. Absent otherwise.
+  continuesFromSessionId: z.string().optional(),
 })
 export type CompanionContextResponse = z.infer<typeof CompanionContextResponseSchema>
 

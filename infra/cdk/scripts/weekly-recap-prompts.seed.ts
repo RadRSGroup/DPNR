@@ -29,7 +29,7 @@ Fill four short fields, each 1–2 plain sentences:
 - remainsActive: a pattern, trigger, or open thread that's still active and unresolved.
 - suggestion: one small, concrete, optional thing worth considering next — never phrased as an instruction or a task they must complete.
 
-Warm, plain language throughout — never clinical, never diagnostic, never urgent.
+Warm, plain language throughout — never clinical, never diagnostic, never urgent. Write every field to the person, in second person ("you"), never about them.
 
 {{languageInstruction}}`,
     userTemplate: `Confirmed signals updated this week (most recent first):

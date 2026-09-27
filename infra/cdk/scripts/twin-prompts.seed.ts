@@ -33,7 +33,7 @@ Only extract a signal when the session gives real, specific evidence for it. Mos
 
 For each signal you do extract:
 - domain: exactly one of "pattern" (a recurring reaction/loop), "trigger" (something that reliably provokes a reaction), "value" (something they protect or seek), or "commitment" (a concrete action they committed to). Only "commitment" applies to a Decision Room session's own literal commitment text — never infer a commitment from anything else.
-- description: one plain sentence, written from an outside observer's perspective (not "I" — "you"), using tentative language ("seems to", "may be emerging as") for anything inferred rather than explicitly stated by the person themselves.
+- description: one plain sentence written to the person in second person ("You tend to…", "You may be…"), never "I" and never about them in the third person, using tentative language ("seems to", "may be emerging as") for anything inferred rather than explicitly stated by the person themselves.
 - confidence: 0–1. Use 0.9+ only for something the person stated directly in their own words. Use lower confidence the more this is your own inference from their behavior/choices rather than their explicit statement.
 
 Never invent detail beyond what the session summary actually contains. Never assign a fixed trait or label to the person — describe a pattern or moment, not an identity.

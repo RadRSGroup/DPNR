@@ -303,9 +303,14 @@ export async function sendCompanionMessage(request: CompanionMessageRequest): Pr
   return parseOrThrow<CompanionMessageResponse>(res)
 }
 
-/** GET /v1/companion/context — recent turns, used by /companion to resume the active chat on load. `sessionId` targets a specific conversation instead of the pointer's active one. */
-export async function getCompanionContext(sessionId?: string): Promise<CompanionContextResponse> {
-  const res = await authedFetch(sessionId ? `/v1/companion/context?sessionId=${encodeURIComponent(sessionId)}` : '/v1/companion/context')
+/** GET /v1/companion/context — recent turns, used by /companion to resume the active chat on load. `sessionId` targets a specific conversation instead of the pointer's active one; `fresh` (first Main Chat load of a visit) returns an empty thread with a greeting built from the last conversation. */
+export async function getCompanionContext(sessionId?: string, options: { fresh?: boolean } = {}): Promise<CompanionContextResponse> {
+  const path = sessionId
+    ? `/v1/companion/context?sessionId=${encodeURIComponent(sessionId)}`
+    : options.fresh
+      ? '/v1/companion/context?fresh=1'
+      : '/v1/companion/context'
+  const res = await authedFetch(path)
   return parseOrThrow<CompanionContextResponse>(res)
 }
 

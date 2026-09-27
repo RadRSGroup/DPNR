@@ -87,13 +87,21 @@ export async function getProfileForLanguage(
   }
 }
 
+const SECOND_PERSON_RULE =
+  'Whatever you write that the person will read speaks to them directly, as "you" / "your" — never about them in the third person ("she", "he", "they", "the user", "this person").'
+
 export function toLanguageInstruction(locale: Locale, gender: GenderIdentity): string {
-  if (locale === 'en') return 'Respond to the user entirely in English.'
+  // Second person for everything the person reads (founder feedback
+  // 2026-09-27: "Lital, you are beginning to…", not "She is learning…").
+  // Every user-facing prompt already carries this instruction, so this is
+  // the one place the rule lives.
+  if (locale === 'en') return `Respond to the user entirely in English. ${SECOND_PERSON_RULE}`
   const grammaticalForm = gender === 'female' ? 'feminine' : 'masculine'
   return (
     'Respond to the user entirely in Hebrew (עברית). ' +
     `Address the user using ${grammaticalForm} grammatical forms for second-person verb conjugation, ` +
     `and use the same ${grammaticalForm} forms when referring to yourself in the first person — ` +
-    "you speak as the user's digital twin, so your own voice mirrors their gender."
+    "you speak as the user's digital twin, so your own voice mirrors their gender. " +
+    SECOND_PERSON_RULE
   )
 }

@@ -47,6 +47,9 @@ const QUICK_PROMPT_KEYS = [
   { icon: UserCircle, key: 'guide' as const },
 ]
 
+/** sessionStorage flag: this tab has already opened Main Chat this visit. */
+const VISIT_KEY = 'dpnr.mainChatVisit'
+
 /** Tallest the composer grows before it scrolls — matches its `max-h-32` (8rem). */
 const COMPOSER_MAX_HEIGHT = 128
 
@@ -101,6 +104,9 @@ function CompanionContent() {
   // so it must not be treated as a real stored chat turn here either —
   // re-fetched fresh on every load, never carried across a send/reload.
   const [returnGreeting, setReturnGreeting] = useState<string | null>(null)
+  // Fresh entry: the conversation the greeting recalled. The new
+  // conversation is created on the first send, which passes this along.
+  const [continuesFrom, setContinuesFrom] = useState<string | null>(null)
   // Intelligence Spec §18/Appendix B — threaded down into DirectiveCard so a
   // "Explore in Mirror/Decision Room" action from a Library topic can carry
   // "source session" context, per the flow's own worked example.
@@ -224,11 +230,17 @@ function CompanionContent() {
         const email = session.getIdToken().payload.email as string | undefined
         setEmailName(displayFirstName(null, email))
 
-        const context = await getCompanionContext()
+        // First Main Chat load of this visit (this tab's session): start a
+        // fresh conversation with a welcome-back line about the last one
+        // (founder feedback 2026-09-27). Coming back to Main Chat later in
+        // the same visit resumes the open thread instead.
+        const fresh = startsVisit()
+        const context = await getCompanionContext(undefined, { fresh })
         nextScrollInstant.current = true
         setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt, persisted: true })))
         setSessionId(context.sessionId)
         setReturnGreeting(context.greeting)
+        setContinuesFrom(context.continuesFromSessionId ?? null)
       } catch {
         // Degrades to an empty chat — same tolerance the Dashboard page uses.
       } finally {
@@ -269,6 +281,7 @@ function CompanionContent() {
       setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt, persisted: true })))
       setSessionId(context.sessionId)
       setReturnGreeting(context.greeting)
+      setContinuesFrom(null)
     } catch {
       // Leave the currently-open conversation showing — same tolerance as the initial load.
     } finally {
@@ -283,6 +296,7 @@ function CompanionContent() {
     setMessages([])
     setSessionId(newSessionId)
     setReturnGreeting(null) // a brand-new thread has nothing to welcome the person back to yet
+    setContinuesFrom(null)
   }
 
   /**
@@ -352,7 +366,22 @@ function CompanionContent() {
 
     try {
       const clientMessageId = crypto.randomUUID()
-      const res = await sendCompanionMessage({ text, clientMessageId, sessionId: sessionId ?? undefined })
+      // Fresh entry: no conversation exists yet (none is created just for
+      // opening the page), so make one now; its first reply gets the
+      // recalled conversation as background.
+      let targetSessionId = sessionId
+      const recalled = continuesFrom
+      if (!targetSessionId && recalled) {
+        targetSessionId = (await createCompanionConversation()).sessionId
+        setSessionId(targetSessionId)
+        setContinuesFrom(null)
+      }
+      const res = await sendCompanionMessage({
+        text,
+        clientMessageId,
+        sessionId: targetSessionId ?? undefined,
+        continuesFromSessionId: recalled ?? undefined,
+      })
       setSessionId(res.sessionId)
       setMessages((prev) => [
         ...markLastUserPersisted(prev, res.userMessageCreatedAt),
@@ -464,8 +493,12 @@ function CompanionContent() {
   // Greet → check in → reconnect → invite (feedback log, 2026-09-25): the
   // model writes everything after the greeting (companion/continuation), the
   // name is added here so it never reaches the model.
+  // On the landing (a fresh visit) the hero already greets by name, so the
+  // bubble starts straight with the Companion's own words.
   const returnGreetingLine = returnGreeting
-    ? `${firstName ? tc('returnGreetingHi', { name: firstName }) : tc('returnGreetingHiNoName')} ${returnGreeting}`
+    ? isLanding
+      ? returnGreeting
+      : `${firstName ? tc('returnGreetingHi', { name: firstName }) : tc('returnGreetingHiNoName')} ${returnGreeting}`
     : null
   const showPrompts = !pageLoading && !onboarding.active
   const composerDisabled = pageLoading || (onboarding.active && !onboarding.awaitingIntention)
@@ -1077,4 +1110,15 @@ function MobileDateLine() {
       <TimeTodayIndicator className="!text-white/55 whitespace-nowrap" />
     </div>
   )
+}
+
+/** True once per visit (this tab's session): the first Main Chat load. */
+function startsVisit(): boolean {
+  try {
+    if (sessionStorage.getItem(VISIT_KEY)) return false
+    sessionStorage.setItem(VISIT_KEY, '1')
+    return true
+  } catch {
+    return false // storage blocked: resume as before rather than start fresh every load
+  }
 }
