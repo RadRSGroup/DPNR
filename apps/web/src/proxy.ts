@@ -97,7 +97,8 @@ async function resolveRoutingResponse(request: NextRequest) {
     pathname.startsWith('/twin') ||
     pathname.startsWith('/rooms') ||
     pathname.startsWith('/library') ||
-    pathname.startsWith('/mirror')
+    pathname.startsWith('/mirror') ||
+    pathname.startsWith('/journal')
   // /signup deliberately excluded from this gate — see the "Already
   // authenticated" check below for why.
   const isLoginPage = pathname.startsWith('/login')

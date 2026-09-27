@@ -3,6 +3,13 @@ import type {
   RoomCommandResponse,
   ConsentResponse,
   ConsentRequest,
+  RitualView,
+  RitualsListResponse,
+  CreateRitualRequest,
+  UpdateRitualRequest,
+  JournalEntryView,
+  JournalListResponse,
+  CreateJournalEntryRequest,
   DecisionRoomFullResponse,
   MirrorRoomFullResponse,
   UserExportResponse,
@@ -102,6 +109,8 @@ function sendToConsent(): void {
   if (path.startsWith('/consent')) return
   consentRedirecting = true
   clearConsentCookie()
+  // A full load on purpose: this runs outside React, and proxy.ts must see the cleared cookie.
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
   window.location.assign(`${localePrefix}/consent?next=${encodeURIComponent(path + window.location.search)}&updated=1`)
 }
 
@@ -482,4 +491,46 @@ export async function createSessionTicket(request: SessionTicketRequest): Promis
 export async function revokeSession(sessionId: string): Promise<RevokeSessionResponse> {
   const res = await authedFetch(`/v1/auth/sessions/${encodeURIComponent(sessionId)}`, { method: 'DELETE' })
   return parseOrThrow<RevokeSessionResponse>(res)
+}
+
+/**
+ * My Profile personal space (Session 74): the person's own rituals and
+ * private journal. Encrypted at rest; never read by any AI or the Digital
+ * Twin (see lambda/personal/handler.ts).
+ */
+export async function listRituals(): Promise<RitualsListResponse> {
+  return parseOrThrow<RitualsListResponse>(await authedFetch('/v1/rituals'))
+}
+
+export async function createRitual(request: CreateRitualRequest): Promise<RitualView> {
+  return parseOrThrow<RitualView>(await authedFetch('/v1/rituals', { method: 'POST', body: JSON.stringify(request) }))
+}
+
+export async function updateRitual(ritualId: string, request: UpdateRitualRequest): Promise<RitualView> {
+  return parseOrThrow<RitualView>(
+    await authedFetch(`/v1/rituals/${encodeURIComponent(ritualId)}`, { method: 'PUT', body: JSON.stringify(request) })
+  )
+}
+
+export async function deleteRitual(ritualId: string): Promise<void> {
+  await parseOrThrow<{ ok: true }>(await authedFetch(`/v1/rituals/${encodeURIComponent(ritualId)}`, { method: 'DELETE' }))
+}
+
+export async function listJournal(cursor?: string): Promise<JournalListResponse> {
+  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''
+  return parseOrThrow<JournalListResponse>(await authedFetch(`/v1/journal${query}`))
+}
+
+export async function createJournalEntry(request: CreateJournalEntryRequest): Promise<JournalEntryView> {
+  return parseOrThrow<JournalEntryView>(await authedFetch('/v1/journal', { method: 'POST', body: JSON.stringify(request) }))
+}
+
+export async function updateJournalEntry(entryId: string, request: CreateJournalEntryRequest): Promise<JournalEntryView> {
+  return parseOrThrow<JournalEntryView>(
+    await authedFetch(`/v1/journal/${encodeURIComponent(entryId)}`, { method: 'PUT', body: JSON.stringify(request) })
+  )
+}
+
+export async function deleteJournalEntry(entryId: string): Promise<void> {
+  await parseOrThrow<{ ok: true }>(await authedFetch(`/v1/journal/${encodeURIComponent(entryId)}`, { method: 'DELETE' }))
 }

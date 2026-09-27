@@ -2,7 +2,74 @@
   "Common": {
     "appName": "InnerOS"
   },
+  "Journal": {
+    "title": "Self Reflection",
+    "subtitle": "Your private space to pause, reflect and reconnect with yourself.",
+    "privacy": "Only you can read this. Your journal is encrypted, and DPNR doesn't use it to learn about you.",
+    "newEntry": "New entry",
+    "titlePlaceholder": "Title (optional)",
+    "bodyPlaceholder": "What's on your mind?",
+    "save": "Save entry",
+    "saving": "Saving…",
+    "update": "Save changes",
+    "empty": "Your journal is empty. Your first entry can be a single sentence.",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this entry? This can't be undone.",
+    "confirmDelete": "Delete",
+    "cancel": "Cancel",
+    "loadMore": "Show older entries",
+    "error": "Could not save. Please try again.",
+    "loadError": "Your journal couldn't load right now.",
+    "back": "My Profile",
+    "edited": "Edited",
+    "untitled": "Untitled"
+  },
   "Account": {
+    "profile": {
+      "welcome": "Welcome back, {name}",
+      "subtitle": "This is your space.",
+      "selfReflection": {
+        "eyebrow": "Journal",
+        "title": "Self Reflection",
+        "body": "Your private space to pause, reflect and reconnect with yourself.",
+        "cta": "Open Journal"
+      },
+      "personalize": {
+        "title": "Personalize My Space",
+        "subtitle": "Make DPNR feel like you."
+      },
+      "rituals": {
+        "eyebrow": "Rituals",
+        "title": "My Rituals",
+        "body": "Your own small practices for the morning, afternoon and evening.",
+        "morning": "Morning",
+        "afternoon": "Afternoon",
+        "evening": "Evening",
+        "count": "{count, plural, =0 {Add one} one {# ritual} other {# rituals}}",
+        "addPlaceholder": "Write a ritual in your own words…",
+        "add": "Add",
+        "save": "Save",
+        "cancel": "Cancel",
+        "edit": "Edit",
+        "delete": "Delete",
+        "close": "Close",
+        "empty": "Nothing here yet. What would help this part of your day?",
+        "error": "Could not save. Please try again.",
+        "limit": "You can keep up to {max} rituals.",
+        "loadError": "Your rituals couldn't load right now."
+      },
+      "playlists": {
+        "eyebrow": "Music",
+        "title": "My Playlists",
+        "body": "DPNR playlists for different states and moments.",
+        "play": "Play {name}"
+      },
+      "settings": {
+        "account": "Account",
+        "legalData": "Legal & Data"
+      }
+    },
     "therapistSummary": {
       "title": "Summary for my therapist",
       "body": "Create a PDF of your reflections to share with your therapist or psychiatrist.",

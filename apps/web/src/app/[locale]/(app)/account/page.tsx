@@ -16,8 +16,15 @@ import LanguageSelector from '@/components/shared/LanguageSelector'
 import GenderSelector from '@/components/shared/GenderSelector'
 import ChatBackgroundSelector from '@/components/shared/ChatBackgroundSelector'
 import AvatarUpload from '@/components/shared/AvatarUpload'
+import RitualsCard from '@/components/profile/RitualsCard'
+import PlaylistsCard from '@/components/profile/PlaylistsCard'
 
 /**
+ * My Profile. Session 74 (Wave 2 Slice 5, founder feedback #16): re-laid
+ * out after the approved reference (Drive "My Profile"); adds Self
+ * Reflection (-> /journal), My Rituals and a compact My Playlists. All the
+ * controls and handlers below predate that and are unchanged.
+ *
  * Reskinned onto the shared Sidebar/MobileNav shell + design tokens in
  * Slice 6 (`docs/AGENT_LOG.md`) — was still fully pre-redesign UI (its own
  * "← InnerOS" back link, hardcoded gradient/purple-* colors) until then.
@@ -215,6 +222,11 @@ export default function AccountPage() {
     </div>
   )
 
+  const displayName = savedFirstName || email.split('@')[0]
+  const sectionLabel = 'text-[var(--color-text-tertiary)] text-[11px] uppercase tracking-[0.14em]'
+  const rowLink = 'flex items-center justify-between gap-3 py-2.5 text-sm text-white/70 hover:text-white transition-colors'
+  const quietButton = 'w-full py-2.5 rounded-2xl border border-[var(--color-violet-800)]/60 bg-[var(--color-violet-900)]/30 text-[var(--color-violet-300)] hover:bg-[var(--color-violet-900)]/50 disabled:opacity-40 text-sm font-medium transition-all'
+
   return (
     <div className="relative min-h-screen">
       <div className="absolute inset-0 -z-10">
@@ -222,141 +234,159 @@ export default function AccountPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
       </div>
 
-      <div className="max-w-[393px] lg:max-w-2xl mx-auto px-5 lg:px-8 pb-16 lg:pb-12">
-        <div className="pt-14 lg:pt-8 pb-6">
-          <h1 className="font-display text-2xl lg:text-3xl text-white">{t('title')}</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">{email}</p>
-        </div>
+      {/* My Profile (founder feedback #16, Session 74), laid out after the
+          approved reference: Self Reflection + Personalize first, a compact
+          Rituals/Playlists column, then Account / Security / Legal & Data.
+          On phones the grid collapses in DOM order, which is the brief's
+          priority order; on desktop the right column sits beside Self
+          Reflection. Every control below is the page's existing behavior. */}
+      <div className="max-w-[440px] lg:max-w-6xl mx-auto px-5 lg:px-8 pb-16 lg:pb-12">
+        <header className="flex items-center gap-4 pt-14 lg:pt-8 pb-6">
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatarUrl} alt="" className="h-14 w-14 lg:h-16 lg:w-16 rounded-full object-cover border border-white/15" />
+          ) : null}
+          <div className="min-w-0">
+            <h1 className="font-display text-2xl lg:text-3xl text-white truncate">{t('profile.welcome', { name: displayName })}</h1>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{t('profile.subtitle')}</p>
+          </div>
+        </header>
 
-        <div className="space-y-4">
+        <div className="grid gap-4 lg:grid-cols-12 lg:gap-5">
 
-          {/* Credits — the real ledger (GET /v1/credits, live since Session 11) had no
-              Account-page caller until now; Dashboard's own reader was the only one.
-              Purchasing more (POST /v1/credits/purchase) isn't built yet — pending the
-              real Grow integration (see docs/PHASE_AUDIT.md's Session 10 update) — so
-              "Upgrade" links to /wallet, it doesn't complete a purchase. */}
-          <Card>
-            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-3">{t('credits.label')}</p>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white text-lg font-light">{credits ? credits.balance : '…'}</p>
-                {credits?.isExhausted && (
-                  <p className="text-red-400/80 text-xs mt-0.5">{t('credits.outOfCredits')}</p>
+          {/* Self Reflection — the journal, the page's main reflective area. */}
+          <section className="relative overflow-hidden rounded-[var(--radius-card)] border border-white/10 min-h-[240px] lg:min-h-[300px] lg:col-span-8 lg:row-start-1">
+            <Image src="/images/profile/journal.webp" alt="" fill sizes="(min-width: 1024px) 760px, 440px" className="object-cover" priority />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/10 lg:bg-gradient-to-r rtl:lg:bg-gradient-to-l lg:from-black/85 lg:via-black/50 lg:to-transparent" />
+            <div className="relative flex h-full flex-col justify-end lg:justify-center gap-3 p-5 lg:p-8 lg:max-w-[60%]">
+              <p className="text-white/70 text-[11px] uppercase tracking-[0.14em]">{t('profile.selfReflection.eyebrow')}</p>
+              <h2 className="font-display text-3xl lg:text-4xl text-white">{t('profile.selfReflection.title')}</h2>
+              <p className="text-white/80 text-sm lg:text-base leading-relaxed">{t('profile.selfReflection.body')}</p>
+              <div className="pt-1">
+                <Link
+                  href="/journal"
+                  className="inline-flex items-center gap-2 rounded-full bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] px-5 py-2.5 text-sm text-white transition-colors"
+                >
+                  {t('profile.selfReflection.cta')} <span aria-hidden className="rtl:-scale-x-100">→</span>
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          {/* Personalize My Space — given the most room (brief). Profile photo
+              = identity; chat background = environment (a visual asset only). */}
+          <Card className="p-5 lg:p-6 lg:col-span-12 lg:row-start-2">
+            <h2 className="font-display text-xl lg:text-2xl text-white">{t('profile.personalize.title')}</h2>
+            <p className="text-[var(--color-text-tertiary)] text-sm mt-0.5">{t('profile.personalize.subtitle')}</p>
+            <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] lg:gap-8">
+              <div className="space-y-5">
+                <AvatarUpload
+                  avatarUrl={avatarUrl}
+                  onUploaded={(url) => {
+                    setAvatarUrl(url)
+                    setAvatarUrlEverywhere(url) // sidebar/header/nav update without a reload
+                  }}
+                />
+                {firstName !== null && (
+                  <div>
+                    <label htmlFor="account-first-name" className="block text-white/80 text-sm mb-1">{t('preferences.name')}</label>
+                    <p className="text-[var(--color-text-tertiary)] text-xs mb-2">{t('preferences.nameHint')}</p>
+                    <input
+                      id="account-first-name"
+                      type="text"
+                      autoComplete="given-name"
+                      value={firstName}
+                      maxLength={PREFERRED_NAME_MAX_LENGTH}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      onBlur={saveFirstName}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') e.currentTarget.blur()
+                      }}
+                      disabled={firstNameSaving}
+                      placeholder={t('preferences.namePlaceholder')}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60 disabled:opacity-60"
+                    />
+                  </div>
                 )}
-                {credits && !credits.isExhausted && credits.isLow && (
-                  <p className="text-yellow-400/80 text-xs mt-0.5">{t('credits.runningLow')}</p>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-white/80 text-sm">{t('preferences.language')}</span>
+                  <LanguageSelector />
+                </div>
+                {/* Gender is used only to pick correct Hebrew grammar in AI replies;
+                    hidden (not guessed) until the read resolves. */}
+                {gender !== null && (
+                  <div>
+                    <p className="text-white/80 text-sm mb-1">{t('preferences.gender')}</p>
+                    <p className="text-[var(--color-text-tertiary)] text-xs mb-2">{t('preferences.genderHint')}</p>
+                    <GenderSelector value={gender} onChange={handleGenderChange} className={genderSaving ? 'opacity-60 pointer-events-none' : ''} />
+                  </div>
                 )}
               </div>
-              <Link href="/wallet" className="text-[var(--color-violet-400)] hover:text-[var(--color-violet-300)] text-xs underline">
-                {credits && (credits.isLow || credits.isExhausted) ? t('credits.upgrade') : t('credits.viewWallet')}
-              </Link>
+              {chatBackground !== null && (
+                <div className="lg:border-s lg:border-white/8 lg:ps-8">
+                  <p className="text-white/80 text-sm mb-1">{t('preferences.chatBackground')}</p>
+                  <p className="text-[var(--color-text-tertiary)] text-xs mb-3">{t('preferences.chatBackgroundHint')}</p>
+                  <ChatBackgroundSelector
+                    value={chatBackground}
+                    onChange={handleChatBackgroundChange}
+                    customUrl={chatBackgroundUrl}
+                    onCustomUploaded={handleCustomBackgroundUploaded}
+                    hasAvatar={avatarUrl !== null}
+                    visionRemaining={visionRemaining}
+                    onVisionRemainingChange={setVisionRemaining}
+                    roadmapDirection={roadmapDirection}
+                    className={chatBackgroundSaving ? 'opacity-60 pointer-events-none' : ''}
+                  />
+                </div>
+              )}
             </div>
           </Card>
 
-          {/* Plan — every account is honestly on the free Beta tier today, not a stored,
-              per-user value; paid plans/packages aren't purchasable yet (see above). */}
-          <Card>
-            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-3">{t('subscription.label')}</p>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white text-sm font-medium">{t('subscription.freeBeta')}</p>
+          {/* Compact right column: rituals + four playlists, smaller and lighter. */}
+          <div className="grid gap-4 lg:gap-5 content-start lg:col-span-4 lg:col-start-9 lg:row-start-1">
+            <RitualsCard />
+            <PlaylistsCard />
+          </div>
+
+          {/* Account — real Credits ledger (GET /v1/credits); every account is on
+              the free Beta tier today (no stored plan, nothing purchasable yet). */}
+          <Card className="p-5 lg:col-span-4">
+            <p className={sectionLabel}>{t('profile.settings.account')}</p>
+            <div className="mt-2 divide-y divide-white/8">
+              <div className="flex items-center justify-between gap-3 py-2.5">
+                <div>
+                  <p className="text-white/80 text-sm">{t('credits.label')}</p>
+                  <p className="text-white text-base font-light">{credits ? credits.balance : '…'}</p>
+                  {credits?.isExhausted && <p className="text-red-400/80 text-xs mt-0.5">{t('credits.outOfCredits')}</p>}
+                  {credits && !credits.isExhausted && credits.isLow && (
+                    <p className="text-yellow-400/80 text-xs mt-0.5">{t('credits.runningLow')}</p>
+                  )}
+                </div>
+                <Link href="/wallet" className="text-[var(--color-violet-400)] hover:text-[var(--color-violet-300)] text-xs underline">
+                  {credits && (credits.isLow || credits.isExhausted) ? t('credits.upgrade') : t('credits.viewWallet')}
+                </Link>
+              </div>
+              <div className="py-2.5">
+                <p className="text-white/80 text-sm">{t('subscription.label')}</p>
+                <p className="text-white text-sm font-medium mt-0.5">{t('subscription.freeBeta')}</p>
                 <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">{t('subscription.comingSoon')}</p>
               </div>
+              {/* Summary for my therapist (docs/PROVIDER_SUMMARY_PLAN.md, Slice 1). */}
+              <div className="py-2.5 space-y-1.5">
+                <p className="text-white/80 text-sm">{t('therapistSummary.title')}</p>
+                <p className="text-[var(--color-text-tertiary)] text-xs">{t('therapistSummary.body')}</p>
+                <Link href="/therapist-summary" className="inline-block text-[var(--color-violet-400)] hover:text-[var(--color-violet-300)] text-xs underline">
+                  {t('therapistSummary.cta')}
+                </Link>
+              </div>
             </div>
           </Card>
 
-          {/* Summary for my therapist (docs/PROVIDER_SUMMARY_PLAN.md, Slice 1). */}
-          <Card className="space-y-2">
-            <p className="text-white/85 text-sm">{t('therapistSummary.title')}</p>
-            <p className="text-[var(--color-text-tertiary)] text-xs">{t('therapistSummary.body')}</p>
-            <Link
-              href="/therapist-summary"
-              className="inline-block rounded-full bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] text-white text-xs px-4 py-2 transition-colors"
-            >
-              {t('therapistSummary.cta')}
-            </Link>
-          </Card>
-
-          {/* Preferences — docs/HEBREW_LOCALIZATION_PLAN.md Slice B. Language
-              switches immediately (LanguageSelector re-routes the whole page);
-              gender is used only to pick correct Hebrew grammatical gender in
-              future AI-generated responses (Slice E) and does nothing while
-              English is selected. `gender === null` means the read hasn't
-              resolved yet (or failed) — the selector is hidden rather than
-              shown pre-selected to a guessed value. */}
-          <Card className="space-y-3">
-            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">{t('preferences.label')}</p>
-            <AvatarUpload
-              avatarUrl={avatarUrl}
-              onUploaded={(url) => {
-                setAvatarUrl(url)
-                setAvatarUrlEverywhere(url) // sidebar/header/nav update without a reload
-              }}
-            />
-            <div className="flex items-center justify-between">
-              <span className="text-white/80 text-sm">{t('preferences.language')}</span>
-              <LanguageSelector />
-            </div>
-            {firstName !== null && (
-              <div>
-                <label htmlFor="account-first-name" className="block text-white/80 text-sm mb-2">{t('preferences.name')}</label>
-                <p className="text-[var(--color-text-tertiary)] text-xs mb-3">{t('preferences.nameHint')}</p>
-                <input
-                  id="account-first-name"
-                  type="text"
-                  autoComplete="given-name"
-                  value={firstName}
-                  maxLength={PREFERRED_NAME_MAX_LENGTH}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  onBlur={saveFirstName}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') e.currentTarget.blur()
-                  }}
-                  disabled={firstNameSaving}
-                  placeholder={t('preferences.namePlaceholder')}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60 disabled:opacity-60"
-                />
-              </div>
-            )}
-            {gender !== null && (
-              <div>
-                <p className="text-white/80 text-sm mb-2">{t('preferences.gender')}</p>
-                <p className="text-[var(--color-text-tertiary)] text-xs mb-3">
-                  {t('preferences.genderHint')}
-                </p>
-                <GenderSelector value={gender} onChange={handleGenderChange} className={genderSaving ? 'opacity-60 pointer-events-none' : ''} />
-              </div>
-            )}
-            {chatBackground !== null && (
-              <div>
-                <p className="text-white/80 text-sm mb-2">{t('preferences.chatBackground')}</p>
-                <p className="text-[var(--color-text-tertiary)] text-xs mb-3">
-                  {t('preferences.chatBackgroundHint')}
-                </p>
-                <ChatBackgroundSelector
-                  value={chatBackground}
-                  onChange={handleChatBackgroundChange}
-                  customUrl={chatBackgroundUrl}
-                  onCustomUploaded={handleCustomBackgroundUploaded}
-                  hasAvatar={avatarUrl !== null}
-                  visionRemaining={visionRemaining}
-                  onVisionRemainingChange={setVisionRemaining}
-                  roadmapDirection={roadmapDirection}
-                  className={chatBackgroundSaving ? 'opacity-60 pointer-events-none' : ''}
-                />
-              </div>
-            )}
-          </Card>
-
-          {/* Security — direct signed-in password change (`PUT /v1/keys` +
-              Cognito's own changePassword), distinct from the separate
-              forgot-password flow reachable from /login. Flagged open in
-              docs/AGENT_LOG.md since Session 33, since the forgot-password
-              build only ever covered the "don't know current password"
-              path. */}
-          <Card className="space-y-3">
-            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">{t('security.label')}</p>
-            <form onSubmit={handlePasswordChange} className="space-y-3">
+          {/* Security — signed-in password change (PUT /v1/keys re-wrap +
+              Cognito changePassword), separate from forgot-password on /login. */}
+          <Card className="p-5 lg:col-span-4">
+            <p className={sectionLabel}>{t('security.label')}</p>
+            <form onSubmit={handlePasswordChange} className="mt-3 space-y-3">
               <input
                 type="password"
                 placeholder={t('security.currentPasswordPlaceholder')}
@@ -379,108 +409,87 @@ export default function AccountPage() {
               <button
                 type="submit"
                 disabled={passwordChanging || !passwordsReadyToSubmit(newPassword, confirmNewPassword)}
-                className="w-full py-3 rounded-2xl border border-[var(--color-violet-800)]/60 bg-[var(--color-violet-900)]/30 text-[var(--color-violet-300)] hover:bg-[var(--color-violet-900)]/50 disabled:opacity-40 text-sm font-medium transition-all"
+                className={quietButton}
               >
                 {passwordChanging ? t('security.changing') : t('security.changePassword')}
               </button>
             </form>
           </Card>
 
-          {/* Legal */}
-          <Card className="space-y-3">
-            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">{t('legal.label')}</p>
-            <Link href="/terms" className="flex items-center justify-between text-white/60 hover:text-white text-sm transition-colors">
-              {t('legal.terms')} <span className="text-white/20 rtl:-scale-x-100">›</span>
-            </Link>
-            <div className="border-t border-white/8" />
-            <Link href="/privacy" className="flex items-center justify-between text-white/60 hover:text-white text-sm transition-colors">
-              {t('legal.privacy')} <span className="text-white/20 rtl:-scale-x-100">›</span>
-            </Link>
-          </Card>
-
-          {/* Data */}
-          <Card className="space-y-4">
-            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">{t('data.label')}</p>
-
-            <div>
-              <p className="text-white/80 text-sm font-medium">{t('data.download.title')}</p>
-              <p className="text-[var(--color-text-tertiary)] text-xs mt-1 mb-3">
-                {t('data.download.description')}
-              </p>
+          {/* Legal & Data — existing routes, the existing export (GET /v1/user/export)
+              and the existing authenticated delete flow with its typed confirmation. */}
+          <Card className="p-5 lg:col-span-4">
+            <p className={sectionLabel}>{t('profile.settings.legalData')}</p>
+            <div className="mt-2 divide-y divide-white/8">
+              <Link href="/terms" className={rowLink}>
+                {t('legal.terms')} <span aria-hidden className="text-white/25 rtl:-scale-x-100">›</span>
+              </Link>
+              <Link href="/privacy" className={rowLink}>
+                {t('legal.privacy')} <span aria-hidden className="text-white/25 rtl:-scale-x-100">›</span>
+              </Link>
+              <div className="py-2.5">
+                <button type="button" onClick={handleDownload} disabled={downloading} className="flex w-full items-center justify-between gap-3 text-sm text-white/70 hover:text-white disabled:opacity-50 transition-colors">
+                  {downloading ? t('data.download.preparing') : t('data.download.title')}
+                  <span aria-hidden className="text-white/25 rtl:-scale-x-100">›</span>
+                </button>
+                <p className="text-[var(--color-text-tertiary)] text-xs mt-1">{t('data.download.description')}</p>
+              </div>
+              <div className="py-2.5">
+                {deleteStep === 'idle' ? (
+                  <button type="button" onClick={() => setDeleteStep('confirm')} className="flex w-full items-center justify-between gap-3 text-sm text-red-300/80 hover:text-red-300 transition-colors">
+                    {t('data.delete.title')} <span aria-hidden className="text-white/25 rtl:-scale-x-100">›</span>
+                  </button>
+                ) : (
+                  <div className="space-y-3 bg-red-950/20 border border-red-900/30 rounded-2xl p-4">
+                    <p className="text-red-400 text-xs font-medium">{t('data.delete.warningTitle')}</p>
+                    <p className="text-[var(--color-text-tertiary)] text-xs">{t('data.delete.description')}</p>
+                    <ul className="text-white/50 text-xs space-y-1 list-disc ps-4">
+                      <li>{t('data.delete.items.decisions')}</li>
+                      <li>{t('data.delete.items.account')}</li>
+                      <li>{t('data.delete.items.subscription')}</li>
+                    </ul>
+                    <p className="text-white/50 text-xs">
+                      {t.rich('data.delete.confirmPrompt', {
+                        phrase: () => <span className="text-white/80 font-mono">{deleteConfirmPhrase}</span>,
+                      })}
+                    </p>
+                    <input
+                      type="text"
+                      value={deleteConfirm}
+                      onChange={e => setDeleteConfirm(e.target.value)}
+                      placeholder={deleteConfirmPhrase}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-500/50 transition-colors"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleDelete}
+                        disabled={deleteConfirm.toLowerCase() !== deleteConfirmPhrase.toLowerCase() || deleteStep === 'deleting'}
+                        className="flex-1 py-2.5 rounded-xl bg-red-700 hover:bg-red-600 disabled:opacity-30 text-white text-sm font-medium transition-all"
+                      >
+                        {deleteStep === 'deleting' ? t('data.delete.deleting') : t('data.delete.permanentlyDelete')}
+                      </button>
+                      <button
+                        onClick={() => { setDeleteStep('idle'); setDeleteConfirm('') }}
+                        className="px-4 text-[var(--color-text-tertiary)] text-sm hover:text-white/50 transition-colors"
+                      >
+                        {t('data.delete.cancel')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
               <button
-                onClick={handleDownload}
-                disabled={downloading}
-                className="w-full py-3 rounded-2xl border border-[var(--color-violet-800)]/60 bg-[var(--color-violet-900)]/30 text-[var(--color-violet-300)] hover:bg-[var(--color-violet-900)]/50 disabled:opacity-40 text-sm font-medium transition-all"
+                type="button"
+                onClick={async () => {
+                  await logOut()
+                  router.push('/login')
+                }}
+                className={`${rowLink} w-full`}
               >
-                {downloading ? t('data.download.preparing') : t('data.download.button')}
+                {t('signOut')} <span aria-hidden className="text-white/25 rtl:-scale-x-100">›</span>
               </button>
             </div>
-
-            <div className="border-t border-white/8 pt-4">
-              <p className="text-white/80 text-sm font-medium">{t('data.delete.title')}</p>
-              <p className="text-[var(--color-text-tertiary)] text-xs mt-1 mb-3">
-                {t('data.delete.description')}
-              </p>
-
-              {deleteStep === 'idle' && (
-                <button
-                  onClick={() => setDeleteStep('confirm')}
-                  className="w-full py-3 rounded-2xl border border-red-900/40 text-red-400/70 hover:border-red-700/50 hover:text-red-400 text-sm transition-all"
-                >
-                  {t('data.delete.title')}
-                </button>
-              )}
-
-              {(deleteStep === 'confirm' || deleteStep === 'deleting') && (
-                <div className="space-y-3 bg-red-950/20 border border-red-900/30 rounded-2xl p-4">
-                  <p className="text-red-400 text-xs font-medium">{t('data.delete.warningTitle')}</p>
-                  <ul className="text-white/50 text-xs space-y-1 list-disc ps-4">
-                    <li>{t('data.delete.items.decisions')}</li>
-                    <li>{t('data.delete.items.account')}</li>
-                    <li>{t('data.delete.items.subscription')}</li>
-                  </ul>
-                  <p className="text-white/50 text-xs">
-                    {t.rich('data.delete.confirmPrompt', {
-                      phrase: () => <span className="text-white/80 font-mono">{deleteConfirmPhrase}</span>,
-                    })}
-                  </p>
-                  <input
-                    type="text"
-                    value={deleteConfirm}
-                    onChange={e => setDeleteConfirm(e.target.value)}
-                    placeholder={deleteConfirmPhrase}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-red-500/50 transition-colors"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleDelete}
-                      disabled={deleteConfirm.toLowerCase() !== deleteConfirmPhrase.toLowerCase() || deleteStep === 'deleting'}
-                      className="flex-1 py-2.5 rounded-xl bg-red-700 hover:bg-red-600 disabled:opacity-30 text-white text-sm font-medium transition-all"
-                    >
-                      {deleteStep === 'deleting' ? t('data.delete.deleting') : t('data.delete.permanentlyDelete')}
-                    </button>
-                    <button
-                      onClick={() => { setDeleteStep('idle'); setDeleteConfirm('') }}
-                      className="px-4 text-[var(--color-text-tertiary)] text-sm hover:text-white/50 transition-colors"
-                    >
-                      {t('data.delete.cancel')}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
           </Card>
-
-          {/* Sign out */}
-          <button
-            onClick={async () => {
-              await logOut()
-              router.push('/login')
-            }}
-            className="w-full py-3.5 rounded-2xl border border-white/10 text-[var(--color-text-tertiary)] hover:text-white/60 hover:border-white/20 text-sm transition-all"
-          >
-            {t('signOut')}
-          </button>
 
         </div>
       </div>

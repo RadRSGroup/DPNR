@@ -52,6 +52,9 @@ export const Sk = {
   safetyEvent: (eventId: string): string => `SAFETY#EVENT#${eventId}`,
   openThread: (threadId: string): string => `OPENTHREAD#${threadId}`,
   onboardingSnapshot: (): 'ONBOARDING_SNAPSHOT' => 'ONBOARDING_SNAPSHOT',
+  // My Profile personal space (Session 74).
+  ritual: (ritualId: string): string => `RITUAL#${ritualId}`,
+  journalEntry: (entryId: string): string => `JOURNAL#${entryId}`,
 } as const
 
 /** Global (not per-user) tables — see MVP_ARCHITECTURE.md §3.2. */

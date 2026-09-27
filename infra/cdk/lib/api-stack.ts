@@ -1417,6 +1417,38 @@ export class ApiStack extends Stack {
       authorizer: this.cognitoAuthorizer,
     })
 
+    // My Profile personal space (Session 74): rituals + private journal. One
+    // function and one integration for all eight routes — this stack is near
+    // CloudFormation's 500-resource limit (see docs/AGENT_LOG.md Session 74).
+    const personalSpaceFn = new lambda.NodejsFunction(this, 'PersonalSpaceFn', {
+      ...sharedProductLambdaProps,
+      entry: path.join(__dirname, '../lambda/personal/handler.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+      },
+      description: 'GET/POST /v1/rituals, PUT/DELETE /v1/rituals/{id}, GET/POST /v1/journal, PUT/DELETE /v1/journal/{id}.',
+    })
+    props.applicationTable.grantReadWriteData(personalSpaceFn)
+    props.sessionTicketsKmsKey.grantDecrypt(personalSpaceFn)
+    props.sessionTicketsTable.grantReadData(personalSpaceFn)
+    const personalSpaceIntegration = new integrations.HttpLambdaIntegration('PersonalSpaceIntegration', personalSpaceFn)
+    for (const base of ['/v1/rituals', '/v1/journal']) {
+      this.httpApi.addRoutes({
+        path: base,
+        methods: [apigwv2.HttpMethod.GET, apigwv2.HttpMethod.POST],
+        integration: personalSpaceIntegration,
+        authorizer: this.cognitoAuthorizer,
+      })
+      this.httpApi.addRoutes({
+        path: `${base}/{id}`,
+        methods: [apigwv2.HttpMethod.PUT, apigwv2.HttpMethod.DELETE],
+        integration: personalSpaceIntegration,
+        authorizer: this.cognitoAuthorizer,
+      })
+    }
+
     const completeCommitmentFn = new lambda.NodejsFunction(this, 'CompleteCommitmentFn', {
       ...sharedProductLambdaProps,
       entry: path.join(__dirname, '../lambda/continuity/complete-commitment.ts'),

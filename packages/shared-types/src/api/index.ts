@@ -9,6 +9,7 @@ export * from './continuity'
 export * from './webhooks'
 export * from './open-threads'
 export * from './onboarding'
+export * from './personal'
 
 /**
  * Every /v1 endpoint in MVP_ARCHITECTURE.md §4 now has a contract here.
