@@ -101,7 +101,7 @@
       "chatBackgroundDefault": "Default",
       "chatBackgroundCustom": "My image",
       "chatBackgroundUploadPrompt": "Upload a photo",
-      "chatBackgroundHint": "Choose what sits behind Main Chat — or create a Vision: you, in the life you’re moving toward.",
+      "chatBackgroundHint": "Choose what sits behind Main Chat, or upload your own photo.",
       "vision": {
         "create": "Create my Vision",
         "title": "Create your Vision",

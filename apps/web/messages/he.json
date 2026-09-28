@@ -101,7 +101,7 @@
       "chatBackgroundDefault": "ברירת מחדל",
       "chatBackgroundCustom": "התמונה שלי",
       "chatBackgroundUploadPrompt": "העלאת תמונה",
-      "chatBackgroundHint": "בחרו מה יופיע מאחורי הצ׳אט הראשי — או צרו חזון: אתם, בחיים שאליהם אתם הולכים.",
+      "chatBackgroundHint": "בחרו מה יופיע מאחורי הצ׳אט הראשי, או העלו תמונה משלכם.",
       "vision": {
         "create": "יצירת החזון שלי",
         "title": "יצירת החזון שלכם",

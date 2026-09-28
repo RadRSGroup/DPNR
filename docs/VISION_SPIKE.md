@@ -1,5 +1,8 @@
 # Create My Vision — research spike (Wave 2 Slice 7, feedback #17)
 
+> **Outcome (same session): the user chose to remove Create My Vision and go back to picture upload
+> only.** This doc is kept in case the feature comes back.
+
 *Session 76, 2026-09-27. Research only — no code changed, no samples generated yet.*
 
 ## The problem (founder, Living Feedback Log #17)
