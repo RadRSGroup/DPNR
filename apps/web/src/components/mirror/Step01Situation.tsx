@@ -4,6 +4,7 @@ import MirrorStepShell from './MirrorStepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import type { MirrorEntry } from '@dpnr/shared-types'
 import { DEFAULT_OPENING, TRIGGER_ARCHETYPES, entryFor, patternPrefill, type MirrorOpening } from './openings'
+import Dictatable from '@/components/ui/Dictatable'
 
 interface Props {
   initialSituation?: string
@@ -83,25 +84,29 @@ export default function Step01Situation({ initialSituation = '', initialTrigger 
           )}
           <div className="space-y-2">
             <p className="text-white/70 text-sm leading-relaxed">What happened?</p>
-            <textarea
-              value={situation}
-              onChange={e => setSituation(e.target.value.slice(0, 5000))}
-              placeholder="Describe the moment, as plainly as you can..."
-              rows={4}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
-            />
+            <Dictatable>
+              <textarea
+                value={situation}
+                onChange={e => setSituation(e.target.value.slice(0, 5000))}
+                placeholder="Describe the moment, as plainly as you can..."
+                rows={4}
+                className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              />
+            </Dictatable>
             <p className="text-[var(--color-text-tertiary)] text-xs text-right">{situation.length}/5000</p>
           </div>
 
           <div className="space-y-2">
             <p className="text-white/70 text-sm leading-relaxed">What triggered this for you?</p>
-            <textarea
-              value={trigger}
-              onChange={e => setTrigger(e.target.value.slice(0, 5000))}
-              placeholder="What was it, specifically, that set this off?"
-              rows={3}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
-            />
+            <Dictatable>
+              <textarea
+                value={trigger}
+                onChange={e => setTrigger(e.target.value.slice(0, 5000))}
+                placeholder="What was it, specifically, that set this off?"
+                rows={3}
+                className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              />
+            </Dictatable>
             <p className="text-[var(--color-text-tertiary)] text-xs text-right">{trigger.length}/5000</p>
           </div>
         </div>

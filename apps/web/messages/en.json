@@ -1,4 +1,8 @@
 {
+  "Dictation": {
+    "start": "Dictate",
+    "stop": "Stop dictation"
+  },
   "Common": {
     "appName": "InnerOS"
   },

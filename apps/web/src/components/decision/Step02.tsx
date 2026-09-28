@@ -5,6 +5,7 @@ import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { DecisionOption } from '@/lib/types'
+import Dictatable from '@/components/ui/Dictatable'
 
 interface Step02Props {
   decisionTitle: string
@@ -61,12 +62,14 @@ export default function Step02({ decisionTitle, initialNarrative = '', initialOp
             <p className="text-white/60 text-sm text-center">
               Tell me about this decision. Write freely — what&apos;s happening, what makes it hard?
             </p>
-            <textarea
-              value={narrative}
-              onChange={e => setNarrative(e.target.value.slice(0, charLimit))}
-              placeholder="Write your story here..."
-              className="flex-1 min-h-[200px] bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
-            />
+            <Dictatable className="flex-1 flex flex-col">
+              <textarea
+                value={narrative}
+                onChange={e => setNarrative(e.target.value.slice(0, charLimit))}
+                placeholder="Write your story here..."
+                className="flex-1 w-full min-h-[200px] bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              />
+            </Dictatable>
             <div className="flex justify-between items-center">
               <span className="text-white/20 text-xs">{narrative.length}/{charLimit} chars</span>
             </div>

@@ -12,6 +12,7 @@ import FeltSummary from '@/components/shared/FeltSummary'
 import { TOTAL_STEPS } from '@/lib/types'
 import { EMPTY_FELT, type Felt } from '@/lib/body-map'
 import type { BodyPlacement, EmotionFelt } from '@dpnr/shared-types'
+import Dictatable from '@/components/ui/Dictatable'
 
 interface Step03Props {
   decisionTitle: string
@@ -149,13 +150,15 @@ export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initia
             {response === 'refine' && (
               <div className="pt-1 space-y-1 animate-settle-in">
                 <p className="text-[var(--color-text-tertiary)] text-xs">Add or edit — make it yours:</p>
-                <textarea
-                  autoFocus
-                  value={userRefinement}
-                  onChange={e => setUserRefinement(e.target.value.slice(0, 5000))}
-                  rows={4}
-                  className="w-full bg-white/5 border border-fuchsia-700/40 rounded-xl px-3 py-2.5 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-fuchsia-500/60 transition-colors"
-                />
+                <Dictatable>
+                  <textarea
+                    autoFocus
+                    value={userRefinement}
+                    onChange={e => setUserRefinement(e.target.value.slice(0, 5000))}
+                    rows={4}
+                    className="w-full bg-white/5 border border-fuchsia-700/40 rounded-xl px-3 py-2.5 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-fuchsia-500/60 transition-colors"
+                  />
+                </Dictatable>
               </div>
             )}
           </div>
@@ -200,13 +203,15 @@ export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initia
             <p className="text-[var(--color-text-tertiary)] text-xs">Choose any that fit. There&apos;s no right answer.</p>
           </div>
           <EmotionChips emotionsFelt={emotionsFelt} setEmotionsFelt={setEmotionsFelt} setBodyPlacements={setBodyPlacements} />
-          <textarea
-            value={emotion}
-            onChange={e => setEmotion(e.target.value.slice(0, 5000))}
-            placeholder={emotionsFelt.length ? 'Anything to add, in your own words? (optional)' : 'Or name the feeling in your own words...'}
-            rows={2}
-            className={textarea}
-          />
+          <Dictatable>
+            <textarea
+              value={emotion}
+              onChange={e => setEmotion(e.target.value.slice(0, 5000))}
+              placeholder={emotionsFelt.length ? 'Anything to add, in your own words? (optional)' : 'Or name the feeling in your own words...'}
+              rows={2}
+              className={textarea}
+            />
+          </Dictatable>
         </div>
 
         {emotionsFelt.length > 0 && (
@@ -217,15 +222,17 @@ export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initia
           {emotionsFelt.length === 0 && (
             <p className="text-white/70 text-sm leading-relaxed">Where do you feel it in your body?</p>
           )}
-          <textarea
-            value={bodyResponse}
-            onChange={e => setBodyResponse(e.target.value.slice(0, 5000))}
-            placeholder={bodyPlacements.length
-              ? 'How does it feel there? Tight, heavy, hot... (optional)'
-              : 'Tight chest, clenched jaw, a knot in your stomach...'}
-            rows={2}
-            className={textarea}
-          />
+          <Dictatable>
+            <textarea
+              value={bodyResponse}
+              onChange={e => setBodyResponse(e.target.value.slice(0, 5000))}
+              placeholder={bodyPlacements.length
+                ? 'How does it feel there? Tight, heavy, hot... (optional)'
+                : 'Tight chest, clenched jaw, a knot in your stomach...'}
+              rows={2}
+              className={textarea}
+            />
+          </Dictatable>
         </div>
 
         <PrimaryButton

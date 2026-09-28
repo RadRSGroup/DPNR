@@ -13,6 +13,7 @@ import ProgressRing from '@/components/ui/ProgressRing'
 import RoadmapTimelineCard from '@/components/shared/RoadmapTimelineCard'
 import StatTile from '@/components/shared/StatTile'
 import { DOMAIN_META } from '@/components/shared/domain-meta'
+import Dictatable from '@/components/ui/Dictatable'
 
 /**
  * My Evolution Map (Slice 5 of the 6-slice reference-mockup parity plan,
@@ -294,14 +295,16 @@ function EvolutionMapContent() {
 
               {showAddGoal && (
                 <form onSubmit={submitGoal} className="mb-4 space-y-2 rounded-xl bg-white/5 border border-[var(--color-border-glass)] p-3">
-                  <textarea
-                    value={goalDescription}
-                    onChange={(e) => setGoalDescription(e.target.value)}
-                    placeholder={t('goals.placeholder')}
-                    required
-                    rows={2}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-2 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60"
-                  />
+                  <Dictatable>
+                    <textarea
+                      value={goalDescription}
+                      onChange={(e) => setGoalDescription(e.target.value)}
+                      placeholder={t('goals.placeholder')}
+                      required
+                      rows={2}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-2 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60"
+                    />
+                  </Dictatable>
                   <div className="flex items-center gap-2">
                     <select
                       value={goalDomain}

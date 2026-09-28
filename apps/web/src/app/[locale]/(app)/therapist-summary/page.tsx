@@ -7,6 +7,7 @@ import Card from '@/components/ui/Card'
 import { getCommitments, getDashboard, getPreferences, getSessionSummaries, getTwin } from '@/lib/api/v1-client'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { displayFirstName } from '@/lib/displayName'
+import Dictatable from '@/components/ui/Dictatable'
 
 /**
  * "Summary for my therapist" — docs/PROVIDER_SUMMARY_PLAN.md, Slice 1.
@@ -230,14 +231,16 @@ export default function TherapistSummaryPage() {
             <label className="block">
               <span className="block text-sm text-white/85">{t('sections.note')}</span>
               <span className="block text-xs text-[var(--color-text-tertiary)] mt-0.5 mb-2">{t('sections.noteHint')}</span>
-              <textarea
-                value={note}
-                maxLength={NOTE_MAX}
-                onChange={(e) => setNote(e.target.value)}
-                rows={4}
-                placeholder={t('sections.notePlaceholder')}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60"
-              />
+              <Dictatable>
+                <textarea
+                  value={note}
+                  maxLength={NOTE_MAX}
+                  onChange={(e) => setNote(e.target.value)}
+                  rows={4}
+                  placeholder={t('sections.notePlaceholder')}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60"
+                />
+              </Dictatable>
               <span className="block text-end text-[11px] text-[var(--color-text-tertiary)]">{note.length}/{NOTE_MAX}</span>
             </label>
           </Card>
@@ -430,11 +433,13 @@ function EditableSection({
 
 function LineInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <input
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--color-violet-500)]/60"
-    />
+    <Dictatable single>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--color-violet-500)]/60"
+      />
+    </Dictatable>
   )
 }
 
@@ -454,12 +459,14 @@ function EditableLine({
   return (
     <div className="flex items-start gap-2">
       {multiline ? (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          rows={Math.min(8, Math.max(3, Math.ceil(value.length / 90)))}
-          className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white leading-relaxed focus:outline-none focus:border-[var(--color-violet-500)]/60"
-        />
+        <Dictatable className="flex-1 min-w-0">
+          <textarea
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            rows={Math.min(8, Math.max(3, Math.ceil(value.length / 90)))}
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white leading-relaxed focus:outline-none focus:border-[var(--color-violet-500)]/60"
+          />
+        </Dictatable>
       ) : (
         <div className="flex-1">
           <LineInput value={value} onChange={onChange} />

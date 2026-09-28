@@ -4,6 +4,7 @@ import StepShell from './StepShell'
 import { useAI, RefineFn } from '@/lib/useAI'
 import InvertedButton from '@/components/ui/InvertedButton'
 import Card from '@/components/ui/Card'
+import Dictatable from '@/components/ui/Dictatable'
 
 interface ClarityToActionScreenProps {
   decisionTitle: string
@@ -76,13 +77,15 @@ export default function ClarityToActionScreen({
                 Suggesting a step…
               </div>
             ) : (
-              <textarea
-                value={nextStep}
-                onChange={e => setNextStep(e.target.value.slice(0, 5000))}
-                rows={3}
-                className="w-full bg-white/8 border border-white/10 rounded-xl px-3 py-2.5 text-white/80 text-sm resize-none focus:outline-none focus:border-purple-500/50 transition-colors placeholder-[var(--color-text-tertiary)]"
-                placeholder="Describe your next small step…"
-              />
+              <Dictatable>
+                <textarea
+                  value={nextStep}
+                  onChange={e => setNextStep(e.target.value.slice(0, 5000))}
+                  rows={3}
+                  className="w-full bg-white/8 border border-white/10 rounded-xl px-3 py-2.5 text-white/80 text-sm resize-none focus:outline-none focus:border-purple-500/50 transition-colors placeholder-[var(--color-text-tertiary)]"
+                  placeholder="Describe your next small step…"
+                />
+              </Dictatable>
             )}
           </div>
         </Card>

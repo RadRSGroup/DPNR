@@ -6,6 +6,7 @@ import { Sunrise, Sun, Moon, ChevronRight, Pencil, Trash2, X } from 'lucide-reac
 import { RITUAL_TEXT_MAX, RITUALS_MAX, type RitualTimeOfDay, type RitualView } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 import { listRituals, createRitual, updateRitual, deleteRitual, ApiError } from '@/lib/api/v1-client'
+import Dictatable from '@/components/ui/Dictatable'
 
 const TIMES: { id: RitualTimeOfDay; Icon: typeof Sun; tint: string }[] = [
   { id: 'morning', Icon: Sunrise, tint: 'text-amber-300' },
@@ -144,13 +145,15 @@ function RitualsSheet({ time, rituals, onChange, onClose }: {
               <li key={r.ritualId} className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2.5">
                 {editing?.id === r.ritualId ? (
                   <div className="space-y-2">
-                    <textarea
-                      value={editing.text}
-                      onChange={(e) => setEditing({ id: r.ritualId, text: e.target.value.slice(0, RITUAL_TEXT_MAX) })}
-                      rows={2}
-                      autoFocus
-                      className="w-full resize-none rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--color-violet-500)]/60"
-                    />
+                    <Dictatable>
+                      <textarea
+                        value={editing.text}
+                        onChange={(e) => setEditing({ id: r.ritualId, text: e.target.value.slice(0, RITUAL_TEXT_MAX) })}
+                        rows={2}
+                        autoFocus
+                        className="w-full resize-none rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--color-violet-500)]/60"
+                      />
+                    </Dictatable>
                     <div className="flex justify-end gap-2">
                       <button type="button" onClick={() => setEditing(null)} className="px-3 py-1.5 text-xs text-white/50 hover:text-white">{t('cancel')}</button>
                       <button type="button" onClick={saveEdit} disabled={busy || !editing.text.trim()} className="rounded-full bg-[var(--color-violet-600)] px-3 py-1.5 text-xs text-white disabled:opacity-40">{t('save')}</button>
@@ -173,14 +176,16 @@ function RitualsSheet({ time, rituals, onChange, onClose }: {
         )}
 
         <div className="space-y-2">
-          <textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value.slice(0, RITUAL_TEXT_MAX))}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); add() } }}
-            placeholder={t('addPlaceholder')}
-            rows={2}
-            className="w-full resize-none rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60"
-          />
+          <Dictatable>
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value.slice(0, RITUAL_TEXT_MAX))}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); add() } }}
+              placeholder={t('addPlaceholder')}
+              rows={2}
+              className="w-full resize-none rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60"
+            />
+          </Dictatable>
           {error && <p className="text-red-400/90 text-xs">{error}</p>}
           <button
             type="button"

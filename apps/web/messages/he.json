@@ -1,4 +1,8 @@
 {
+  "Dictation": {
+    "start": "הקלטה קולית",
+    "stop": "עצירת הקלטה קולית"
+  },
   "Common": {
     "appName": "InnerOS"
   },

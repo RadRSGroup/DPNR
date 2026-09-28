@@ -6,6 +6,7 @@ import BodyMap from '@/components/shared/BodyMap'
 import EmotionChips from '@/components/shared/EmotionChips'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI, RefineFn } from '@/lib/useAI'
+import Dictatable from '@/components/ui/Dictatable'
 
 export interface FeltAnswers {
   thought: string
@@ -73,13 +74,15 @@ export default function Step02AutomaticReaction({ sessionTitle, initial, onRefin
         <div className="space-y-6">
           <div className="space-y-2">
             <p className="text-white/70 text-sm leading-relaxed">What went through your mind in that moment?</p>
-            <textarea
-              value={thought}
-              onChange={e => setThought(e.target.value.slice(0, 5000))}
-              placeholder="The first thought that crossed your mind..."
-              rows={2}
-              className={textarea}
-            />
+            <Dictatable>
+              <textarea
+                value={thought}
+                onChange={e => setThought(e.target.value.slice(0, 5000))}
+                placeholder="The first thought that crossed your mind..."
+                rows={2}
+                className={textarea}
+              />
+            </Dictatable>
           </div>
 
           <div className="space-y-3">
@@ -88,13 +91,15 @@ export default function Step02AutomaticReaction({ sessionTitle, initial, onRefin
               <p className="text-[var(--color-text-tertiary)] text-xs">Choose any that fit. There&apos;s no right answer.</p>
             </div>
             <EmotionChips emotionsFelt={emotionsFelt} setEmotionsFelt={setEmotionsFelt} setBodyPlacements={setBodyPlacements} />
-            <textarea
-              value={emotion}
-              onChange={e => setEmotion(e.target.value.slice(0, 5000))}
-              placeholder={emotionsFelt.length ? 'Anything to add, in your own words? (optional)' : 'Or name the feeling in your own words...'}
-              rows={2}
-              className={textarea}
-            />
+            <Dictatable>
+              <textarea
+                value={emotion}
+                onChange={e => setEmotion(e.target.value.slice(0, 5000))}
+                placeholder={emotionsFelt.length ? 'Anything to add, in your own words? (optional)' : 'Or name the feeling in your own words...'}
+                rows={2}
+                className={textarea}
+              />
+            </Dictatable>
           </div>
 
           {emotionsFelt.length > 0 && (
@@ -105,15 +110,17 @@ export default function Step02AutomaticReaction({ sessionTitle, initial, onRefin
             {emotionsFelt.length === 0 && (
               <p className="text-white/70 text-sm leading-relaxed">Where did you feel it in your body?</p>
             )}
-            <textarea
-              value={bodyResponse}
-              onChange={e => setBodyResponse(e.target.value.slice(0, 5000))}
-              placeholder={bodyPlacements.length
-                ? 'How did it feel there? Tight, heavy, hot... (optional)'
-                : 'Tight chest, clenched jaw, a knot in your stomach...'}
-              rows={2}
-              className={textarea}
-            />
+            <Dictatable>
+              <textarea
+                value={bodyResponse}
+                onChange={e => setBodyResponse(e.target.value.slice(0, 5000))}
+                placeholder={bodyPlacements.length
+                  ? 'How did it feel there? Tight, heavy, hot... (optional)'
+                  : 'Tight chest, clenched jaw, a knot in your stomach...'}
+                rows={2}
+                className={textarea}
+              />
+            </Dictatable>
           </div>
 
           {reflection ? (
@@ -135,13 +142,15 @@ export default function Step02AutomaticReaction({ sessionTitle, initial, onRefin
 
           <div className="space-y-2">
             <p className="text-white/70 text-sm leading-relaxed">What did you actually do or say?</p>
-            <textarea
-              value={automaticReaction}
-              onChange={e => setAutomaticReaction(e.target.value.slice(0, 5000))}
-              placeholder="Your actual reaction, not what you wish you'd done..."
-              rows={2}
-              className={textarea}
-            />
+            <Dictatable>
+              <textarea
+                value={automaticReaction}
+                onChange={e => setAutomaticReaction(e.target.value.slice(0, 5000))}
+                placeholder="Your actual reaction, not what you wish you'd done..."
+                rows={2}
+                className={textarea}
+              />
+            </Dictatable>
           </div>
         </div>
 

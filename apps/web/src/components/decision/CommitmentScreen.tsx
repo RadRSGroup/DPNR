@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { CalendarButtons } from '@/components/ui/CalendarButtons'
 import RoomScreenFrame from '@/components/shared/RoomScreenFrame'
 import InvertedButton from '@/components/ui/InvertedButton'
+import Dictatable from '@/components/ui/Dictatable'
 
 interface CommitmentScreenProps {
   decisionTitle: string
@@ -52,13 +53,15 @@ export default function CommitmentScreen({ decisionTitle, nextStep, onDone, onBa
         </div>
 
         {/* Commitment input */}
-        <textarea
-          value={commitment}
-          onChange={e => setCommitment(e.target.value.slice(0, 5000))}
-          rows={3}
-          placeholder='Type: "I commit to taking this step by:"'
-          className="w-full bg-white/8 border border-white/15 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
-        />
+        <Dictatable>
+          <textarea
+            value={commitment}
+            onChange={e => setCommitment(e.target.value.slice(0, 5000))}
+            rows={3}
+            placeholder='Type: "I commit to taking this step by:"'
+            className="w-full bg-white/8 border border-white/15 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+          />
+        </Dictatable>
 
         {/* Add to Calendar */}
         <div className="space-y-2">

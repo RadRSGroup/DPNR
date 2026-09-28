@@ -7,6 +7,7 @@ import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { DecisionOption, PRESET_TAGS } from '@/lib/types'
 import AiThinking from '@/components/shared/AiThinking'
+import Dictatable from '@/components/ui/Dictatable'
 
 interface Step06Props {
   decisionTitle: string
@@ -173,13 +174,15 @@ export default function Step06({ decisionTitle, optionA, optionB, initialValuesA
 
         {/* Custom input */}
         <div className="flex gap-2">
+          <Dictatable single className="flex-1 min-w-0">
           <input
             value={customInput}
             onChange={e => setCustomInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addCustom()}
             placeholder="Add your own..."
-            className="flex-1 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-white text-xs placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-purple-500/50"
+            className="w-full bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-white text-xs placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-purple-500/50"
           />
+          </Dictatable>
           <button
             onClick={addCustom}
             className="px-3 py-1.5 rounded-full bg-purple-900/30 border border-purple-700/40 text-purple-400 text-xs hover:bg-purple-800/40 transition-colors"

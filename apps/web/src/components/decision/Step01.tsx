@@ -3,6 +3,7 @@ import { useState } from 'react'
 import StepShell from './StepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI, RefineFn } from '@/lib/useAI'
+import Dictatable from '@/components/ui/Dictatable'
 
 interface Step01Props {
   initialTitle?: string
@@ -39,13 +40,15 @@ export default function Step01({ initialTitle = '', initialSubtitle, onRefine, o
 
           {/* Title input */}
           <div className="space-y-2">
-            <textarea
-              value={title}
-              onChange={e => setTitle(e.target.value.slice(0, 5000))}
-              placeholder="Name your decision..."
-              rows={2}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
-            />
+            <Dictatable>
+              <textarea
+                value={title}
+                onChange={e => setTitle(e.target.value.slice(0, 5000))}
+                placeholder="Name your decision..."
+                rows={2}
+                className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              />
+            </Dictatable>
             <p className="text-[var(--color-text-tertiary)] text-xs text-right">{title.length}/5000</p>
           </div>
 

@@ -8,6 +8,7 @@ import { JOURNAL_BODY_MAX, JOURNAL_TITLE_MAX, type JournalEntryView } from '@dpn
 import Card from '@/components/ui/Card'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { listJournal, createJournalEntry, updateJournalEntry, deleteJournalEntry } from '@/lib/api/v1-client'
+import Dictatable from '@/components/ui/Dictatable'
 
 /**
  * Self Reflection — the private journal (founder feedback #16, Session 74).
@@ -101,20 +102,24 @@ export default function JournalPage() {
 
         <Card className="p-4 lg:p-5 space-y-3">
           <p className="text-white/80 text-sm">{t('newEntry')}</p>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value.slice(0, JOURNAL_TITLE_MAX))}
-            placeholder={t('titlePlaceholder')}
-            className={`${input} text-sm`}
-          />
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value.slice(0, JOURNAL_BODY_MAX))}
-            placeholder={t('bodyPlaceholder')}
-            rows={6}
-            className={`${input} text-base leading-relaxed resize-y min-h-[140px]`}
-          />
+          <Dictatable single>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value.slice(0, JOURNAL_TITLE_MAX))}
+              placeholder={t('titlePlaceholder')}
+              className={`${input} text-sm`}
+            />
+          </Dictatable>
+          <Dictatable>
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value.slice(0, JOURNAL_BODY_MAX))}
+              placeholder={t('bodyPlaceholder')}
+              rows={6}
+              className={`${input} text-base leading-relaxed resize-y min-h-[140px]`}
+            />
+          </Dictatable>
           {error && <p className="text-red-400/90 text-xs">{error}</p>}
           <div className="flex justify-end">
             <button
@@ -225,19 +230,23 @@ function JournalEntryCard({ entry, locale, onUpdated, onDeleted }: {
 
       {mode === 'edit' ? (
         <div className="mt-3 space-y-2">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value.slice(0, JOURNAL_TITLE_MAX))}
-            placeholder={t('titlePlaceholder')}
-            className="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60"
-          />
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value.slice(0, JOURNAL_BODY_MAX))}
-            rows={6}
-            className="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2 text-sm text-white leading-relaxed resize-y focus:outline-none focus:border-[var(--color-violet-500)]/60"
-          />
+          <Dictatable single>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value.slice(0, JOURNAL_TITLE_MAX))}
+              placeholder={t('titlePlaceholder')}
+              className="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60"
+            />
+          </Dictatable>
+          <Dictatable>
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value.slice(0, JOURNAL_BODY_MAX))}
+              rows={6}
+              className="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2 text-sm text-white leading-relaxed resize-y focus:outline-none focus:border-[var(--color-violet-500)]/60"
+            />
+          </Dictatable>
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => { setMode('read'); setTitle(entry.title ?? ''); setBody(entry.body) }} className="px-3 py-1.5 text-xs text-white/50 hover:text-white">{t('cancel')}</button>
             <button type="button" onClick={save} disabled={busy || !body.trim()} className="rounded-full bg-[var(--color-violet-600)] px-4 py-1.5 text-xs text-white disabled:opacity-40">{t('update')}</button>

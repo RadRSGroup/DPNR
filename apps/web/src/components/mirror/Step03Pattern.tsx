@@ -3,6 +3,7 @@ import { useState } from 'react'
 import MirrorStepShell from './MirrorStepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import type { MirrorEntry } from '@dpnr/shared-types'
+import Dictatable from '@/components/ui/Dictatable'
 
 interface Props {
   sessionTitle: string
@@ -63,24 +64,28 @@ export default function Step03Pattern({
         <div className="space-y-6">
           <div className="space-y-2">
             <p className="text-white/70 text-sm leading-relaxed">How did you cope with it afterward?</p>
-            <textarea
-              value={copingResponse}
-              onChange={e => setCopingResponse(e.target.value.slice(0, 5000))}
-              placeholder="Did you shut down, vent to someone, distract yourself..."
-              rows={3}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
-            />
+            <Dictatable>
+              <textarea
+                value={copingResponse}
+                onChange={e => setCopingResponse(e.target.value.slice(0, 5000))}
+                placeholder="Did you shut down, vent to someone, distract yourself..."
+                rows={3}
+                className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              />
+            </Dictatable>
           </div>
 
           <div className="space-y-2">
             <p className="text-white/70 text-sm leading-relaxed">{question}</p>
-            <textarea
-              value={recurringPattern}
-              onChange={e => setRecurringPattern(e.target.value.slice(0, 5000))}
-              placeholder={placeholder}
-              rows={3}
-              className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
-            />
+            <Dictatable>
+              <textarea
+                value={recurringPattern}
+                onChange={e => setRecurringPattern(e.target.value.slice(0, 5000))}
+                placeholder={placeholder}
+                rows={3}
+                className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+              />
+            </Dictatable>
           </div>
         </div>
 

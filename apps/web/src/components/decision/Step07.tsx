@@ -7,6 +7,7 @@ import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { DecisionOption } from '@/lib/types'
 import AiThinking from '@/components/shared/AiThinking'
 import { staggerClass } from '@/lib/motion'
+import Dictatable from '@/components/ui/Dictatable'
 interface Step07Props {
   decisionTitle: string
   optionA: DecisionOption
@@ -167,13 +168,15 @@ export default function Step07({
               // requires at least one statement per option, so that was a
               // genuine dead end, not just a missed AI suggestion.
               <div className="flex gap-2 pt-1">
+                <Dictatable single className="flex-1 min-w-0">
                 <input
                   value={currentOption === 'A' ? customA : customB}
                   onChange={e => currentOption === 'A' ? setCustomA(e.target.value) : setCustomB(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && addCustom()}
                   placeholder="Something else?"
-                  className="flex-1 bg-white/5 border border-white/10 rounded-full px-3 py-2 text-white text-sm placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-purple-500/50"
+                  className="w-full bg-white/5 border border-white/10 rounded-full px-3 py-2 text-white text-sm placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-purple-500/50"
                 />
+                </Dictatable>
                 <button
                   onClick={addCustom}
                   className="px-3 py-2 rounded-full bg-purple-900/30 border border-purple-700/40 text-purple-400 text-xs hover:bg-purple-800/40 transition-colors"
@@ -244,13 +247,15 @@ export default function Step07({
           {/* One-line reflection */}
           <div className="space-y-2">
             <p className="text-white/50 text-xs text-center">In one sentence — what feels true right now? <span className="text-[var(--color-text-tertiary)]">(optional)</span></p>
-            <textarea
-              value={reflectionNote}
-              onChange={e => setReflectionNote(e.target.value.slice(0, 5000))}
-              placeholder="Something in me knows..."
-              rows={2}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/50 transition-colors"
-            />
+            <Dictatable>
+              <textarea
+                value={reflectionNote}
+                onChange={e => setReflectionNote(e.target.value.slice(0, 5000))}
+                placeholder="Something in me knows..."
+                rows={2}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/50 transition-colors"
+              />
+            </Dictatable>
           </div>
 
           <PrimaryButton

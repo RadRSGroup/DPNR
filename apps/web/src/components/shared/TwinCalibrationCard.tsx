@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl'
 import { confirmTwinSignal, rejectTwinSignal } from '@/lib/api/v1-client'
 import type { TwinSignalDomain, TwinListResponse, TwinRejectReason } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
+import Dictatable from '@/components/ui/Dictatable'
 
 type Signal = TwinListResponse['signals'][number]
 
@@ -153,14 +154,16 @@ export default function TwinCalibrationCard({
                 </div>
                 {phase.writing ? (
                   <div className="space-y-2">
-                    <textarea
-                      value={phase.text}
-                      onChange={(e) => setPhase(signal.signalId, { ...phase, text: e.target.value.slice(0, 500) })}
-                      placeholder={t('correctionPlaceholder')}
-                      aria-label={t('tellMore')}
-                      rows={2}
-                      className="w-full resize-none rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60"
-                    />
+                    <Dictatable>
+                      <textarea
+                        value={phase.text}
+                        onChange={(e) => setPhase(signal.signalId, { ...phase, text: e.target.value.slice(0, 500) })}
+                        placeholder={t('correctionPlaceholder')}
+                        aria-label={t('tellMore')}
+                        rows={2}
+                        className="w-full resize-none rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60"
+                      />
+                    </Dictatable>
                     <button
                       type="button"
                       disabled={phase.saving || !phase.text.trim()}

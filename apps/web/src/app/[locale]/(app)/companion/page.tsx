@@ -20,6 +20,7 @@ import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
 import { useOnboardingFlow } from '@/components/companion/onboarding/useOnboardingFlow'
 import OnboardingCardPanel from '@/components/companion/onboarding/OnboardingCardPanel'
 import OnboardingSummaryCard from '@/components/companion/onboarding/OnboardingSummaryCard'
+import Dictatable from '@/components/ui/Dictatable'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -674,8 +675,10 @@ function CompanionContent() {
         >
           {/* Mobile: plain text greeting, no room for hero art here. Only on
               the true landing state — see isLanding's doc comment above. */}
+          {/* pt-24 clears the fixed header + utility row (the row, added
+              2026-09-27, isn't shown during onboarding, so pt-14 there). */}
           {isLanding && (
-            <div className="px-5 pt-14 pb-1 lg:hidden">
+            <div className={`px-5 ${onboarding.active ? 'pt-14' : 'pt-24'} pb-1 lg:hidden`}>
               <h1 className="font-display text-2xl text-white">
                 {timeGreeting(tc)}{firstName ? `, ${firstName}` : ''}
               </h1>
@@ -849,22 +852,24 @@ function CompanionContent() {
                   >
                     {editingIndex === i ? (
                       <div className="space-y-2">
-                        <textarea
-                          value={editText}
-                          onChange={(e) => setEditText(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault()
-                              void handleEditSubmit(i)
-                            }
-                            if (e.key === 'Escape') setEditingIndex(null)
-                          }}
-                          autoFocus
-                          rows={Math.min(6, Math.max(2, Math.ceil(editText.length / 40)))}
-                          maxLength={8000}
-                          aria-label={tc('editMessage')}
-                          className="w-full min-w-[220px] bg-black/20 rounded-lg px-2 py-1.5 text-sm text-white resize-none focus:outline-none"
-                        />
+                        <Dictatable>
+                          <textarea
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault()
+                                void handleEditSubmit(i)
+                              }
+                              if (e.key === 'Escape') setEditingIndex(null)
+                            }}
+                            autoFocus
+                            rows={Math.min(6, Math.max(2, Math.ceil(editText.length / 40)))}
+                            maxLength={8000}
+                            aria-label={tc('editMessage')}
+                            className="w-full min-w-[220px] bg-black/20 rounded-lg px-2 py-1.5 text-sm text-white resize-none focus:outline-none"
+                          />
+                        </Dictatable>
                         <div className="flex justify-end gap-2">
                           <button onClick={() => setEditingIndex(null)} className="text-xs px-3 py-1 rounded-full bg-white/10 hover:bg-white/20">
                             {tc('editCancel')}
