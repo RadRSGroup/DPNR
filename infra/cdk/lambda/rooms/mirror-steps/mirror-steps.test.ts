@@ -81,6 +81,40 @@ describe('helpers', () => {
     expect(formatEntryContext({ mode: 'pattern' })).toContain('describing a situation')
   })
 
+  // Session 77 (#33): only a confirmed signal is ever described as confirmed.
+  it('describes a pattern entry truthfully per source', () => {
+    const base = { mode: 'pattern' as const, patternName: 'People-Pleasing', patternDescription: 'd' }
+    expect(formatEntryContext({ ...base, patternSource: 'confirmed' })).toContain('have confirmed')
+    for (const patternSource of ['exploring', 'reference'] as const) {
+      const text = formatEntryContext({ ...base, patternSource })
+      expect(text).not.toMatch(/\bconfirmed:/)
+      expect(text).toContain('leave room for it not to fit')
+    }
+    expect(formatEntryContext({ ...base, patternSource: 'reference' })).toContain('general pattern list')
+    expect(formatEntryContext({ ...base, patternSource: 'exploring' })).toContain('not confirmed yet')
+    // Legacy entries (no source) no longer claim "confirmed" either.
+    expect(formatEntryContext(base)).not.toContain('confirmed')
+  })
+
+  it('asks for a tentative, optional pattern only when the person asked for help', () => {
+    const help = formatEntryContext({ mode: 'situation', helpIdentify: true })
+    expect(help).toContain('Does that feel relevant?')
+    expect(help).toContain("don't name one")
+    expect(formatEntryContext({ mode: 'situation' })).not.toContain('possible pattern')
+    // A known pattern wins over the help flag.
+    expect(formatEntryContext({ mode: 'pattern', patternName: 'X', patternSource: 'confirmed', helpIdentify: true })).not.toContain('possible pattern')
+  })
+
+  it('keeps patternSource and helpIdentify when stored, and rejects an unknown source', async () => {
+    const entry = { mode: 'pattern', patternName: 'Avoidance', patternDescription: 'd', patternSource: 'reference' }
+    await situationStep.handle(ctx('SUBMIT_STEP', { situation: 's', trigger: 't', entry }))
+    expect(storedContent().entry).toEqual(entry)
+    await situationStep.handle(ctx('SUBMIT_STEP', { situation: 's', trigger: 't', entry: { mode: 'situation', helpIdentify: true } }))
+    expect(storedContent().entry).toEqual({ mode: 'situation', helpIdentify: true })
+    await expect(situationStep.handle(ctx('SUBMIT_STEP', { situation: 's', trigger: 't', entry: { mode: 'pattern', patternSource: 'guessed' } })))
+      .rejects.toMatchObject({ statusCode: 400 })
+  })
+
   it('formats emotion and body from chips, placements and words', () => {
     const c = { emotion: 'tight', bodyResponse: '', emotionsFelt: [{ label: 'Fear', color: '#a855f7' }, { label: 'Anger', color: '#ef4444' }],
       bodyPlacements: [{ area: 'Chest' as const, emotion: 'Fear' }, { area: 'Throat' as const, emotion: 'Fear' }, { area: 'Hands' as const, emotion: 'Anger' }] }

@@ -27,10 +27,23 @@ export type MirrorSessionStatus = z.infer<typeof MirrorSessionStatusSchema>
  * their own step-1 text, so the AI never sees context the person removed.
  */
 export const MirrorEntryModeSchema = z.enum(['situation', 'pattern', 'archetype'])
+/**
+ * Session 77 (#33 pattern selection, user-approved 2026-09-28): where a
+ * pattern entry came from, so the prompt describes it truthfully —
+ * `confirmed` / `exploring` = the person's own Twin signal (confirmed or
+ * still a candidate), `reference` = picked from the Appendix A reference
+ * list (a lens they chose, nothing known about them). Absent on sessions
+ * saved before this (those were always the person's own signal).
+ */
+export const MirrorPatternSourceSchema = z.enum(['confirmed', 'exploring', 'reference'])
+export type MirrorPatternSource = z.infer<typeof MirrorPatternSourceSchema>
 export const MirrorEntrySchema = z.object({
   mode: MirrorEntryModeSchema,
   patternName: z.string().max(80).optional(),
   patternDescription: z.string().max(1000).optional(),
+  patternSource: MirrorPatternSourceSchema.optional(),
+  /** Situation entry where the person asked DPNR to help notice what may be at play (#33). */
+  helpIdentify: z.boolean().optional(),
   archetype: z.string().max(40).optional(),
 })
 export type MirrorEntry = z.infer<typeof MirrorEntrySchema>

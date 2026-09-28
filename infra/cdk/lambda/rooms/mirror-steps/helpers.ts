@@ -51,14 +51,29 @@ export function withAnswers(content: MirrorContent, patch: Partial<MirrorContent
 }
 
 /** How the person came in, for the prompts' {{entryContext}} (Appendix B). */
+// Session 77 (#33): the wording follows where the pattern came from, so the
+// model is never told a pattern is "confirmed" when it isn't.
 export function formatEntryContext(entry: MirrorEntry | undefined): string {
   if (entry?.mode === 'pattern' && (entry.patternName || entry.patternDescription)) {
     const label = entry.patternName ? `"${entry.patternName}"` : 'a pattern'
-    const reading = entry.patternDescription ? ` (their own confirmed reading: "${entry.patternDescription}")` : ''
-    return `They came in through a pattern they already know and confirmed: ${label}${reading}. Do not identify or name the pattern for them again; explore how it showed up in this specific moment.`
+    const text = entry.patternDescription ? `"${entry.patternDescription}"` : ''
+    switch (entry.patternSource) {
+      case 'confirmed':
+        return `They came in through a pattern they already know and have confirmed: ${label}${text ? ` (their own confirmed reading: ${text})` : ''}. Do not identify or name the pattern for them again; explore how it showed up in this specific moment.`
+      case 'exploring':
+        return `They chose to explore a pattern DPNR noticed earlier that they have not confirmed yet: ${label}${text ? ` (DPNR's earlier reading: ${text})` : ''}. Treat it as a possibility they are testing, not an established fact about them. Don't ask them to identify a pattern again; explore tentatively how it showed up in this moment, and leave room for it not to fit.`
+      case 'reference':
+        return `They picked ${label} from DPNR's general pattern list as possibly relevant${text ? ` (general description: ${text})` : ''}. It is a lens they chose, not something known or confirmed about them. Don't restart pattern identification; explore tentatively whether and how it showed up in this specific moment, and leave room for it not to fit.`
+      default:
+        // Sessions saved before Session 77: always the person's own Twin signal.
+        return `They came in through a pattern from their own reflections: ${label}${text ? ` (the reading: ${text})` : ''}. Do not identify or name the pattern for them again; explore how it showed up in this specific moment.`
+    }
   }
   if (entry?.mode === 'archetype' && entry.archetype) {
     return `They came in through trigger archetypes and felt the ${entry.archetype} part of them took over. Use this as context; do not restart generic pattern discovery.`
+  }
+  if (entry?.helpIdentify) {
+    return 'They came in by describing a situation and said they are not sure what pattern is at play; they asked DPNR to help notice what may be happening. Begin from what happened and what became activated. Where what they shared supports it, you may name one possible pattern tentatively, as a question they can accept or reject (e.g. "People-Pleasing may be showing up here. Does that feel relevant?"), never as a label for who they are. If the evidence is thin, don\'t name one.'
   }
   return 'They came in by describing a situation. Begin from what happened and what became activated.'
 }

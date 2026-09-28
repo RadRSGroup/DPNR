@@ -809,6 +809,7 @@
     "unavailable": "DPNR is briefly unavailable — nothing was charged. Please try again in a minute.",
     "privacyNote": "Everything you share is private and encrypted.",
     "pullACard": {
+      "todaysCard": "Today's Card",
       "heading": "Pull a Card",
       "error": "Couldn't pull a card — try again.",
       "prompt": "Pull a card for something to sit with today.",

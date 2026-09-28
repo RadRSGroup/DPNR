@@ -3,7 +3,7 @@ import { useState } from 'react'
 import MirrorStepShell from './MirrorStepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import type { MirrorEntry } from '@dpnr/shared-types'
-import { DEFAULT_OPENING, TRIGGER_ARCHETYPES, entryFor, type MirrorOpening } from './openings'
+import { DEFAULT_OPENING, TRIGGER_ARCHETYPES, entryFor, patternPrefill, type MirrorOpening } from './openings'
 
 interface Props {
   initialSituation?: string
@@ -21,9 +21,7 @@ export default function Step01Situation({ initialSituation = '', initialTrigger 
   // A pattern opening pre-fills the situation with the pattern, in plain
   // editable text, so it reaches the AI only if the person keeps it.
   const [situation, setSituation] = useState(
-    initialSituation || (opening.mode === 'pattern' ? `A pattern I keep noticing: "${opening.patternText}"
-
-A recent moment it showed up: ` : '')
+    initialSituation || (opening.mode === 'pattern' ? patternPrefill(opening) : '')
   )
   const [trigger, setTrigger] = useState(initialTrigger)
   const [archetype, setArchetype] = useState(initialArchetype)
@@ -45,9 +43,22 @@ A recent moment it showed up: ` : '')
         <div className="space-y-6">
           {opening.mode === 'pattern' && (
             <div className="rounded-2xl border border-purple-500/25 bg-purple-900/15 px-4 py-3 animate-settle-in">
-              <p className="text-purple-300 text-xs uppercase tracking-wide">Starting from a pattern</p>
+              <p className="text-purple-300 text-xs uppercase tracking-wide">
+                {opening.source === 'confirmed' || opening.source === undefined ? 'Starting from a pattern' : 'Exploring a possible pattern'}
+              </p>
               <p className="text-white/75 text-sm mt-1 leading-relaxed">
-                Describe one recent moment when it showed up. Edit or remove the pattern line if it doesn&apos;t fit.
+                {opening.source === 'confirmed' || opening.source === undefined
+                  ? 'Describe one recent moment when it showed up.'
+                  : `${opening.patternName ?? 'This pattern'} may be showing up for you, or it may not. Describe one recent moment and see whether it fits.`}{' '}
+                Edit or remove the pattern line if it doesn&apos;t fit.
+              </p>
+            </div>
+          )}
+          {opening.mode === 'situation' && opening.helpIdentify && (
+            <div className="rounded-2xl border border-purple-500/25 bg-purple-900/15 px-4 py-3 animate-settle-in">
+              <p className="text-purple-300 text-xs uppercase tracking-wide">Let&apos;s notice it together</p>
+              <p className="text-white/75 text-sm mt-1 leading-relaxed">
+                Start with what happened. As you go, DPNR will reflect back what may be at play and, if something seems to fit, gently name a possible pattern for you to check. You decide whether it feels true.
               </p>
             </div>
           )}

@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import FittedImage from '@/components/ui/FittedImage'
+import Card from '@/components/ui/Card'
 import { useTranslations } from 'next-intl'
 import DirectiveCard from './DirectiveCard'
 import RingLogo from '@/components/icons/RingLogo'
@@ -117,18 +118,23 @@ export default function PullACard() {
 
   const text = card ? card.text : error ? t('error') : t('prompt')
 
-  // Scaling: the desktop column is a third of the viewport, so on large
-  // screens the card got huge (~780px wide / ~975px tall at 2560) while the
-  // question stopped growing at a fixed size, and the button fell below the
-  // fold. The section is a size container, so type, padding and divider scale
-  // with the card's own width (`cqw`, clamped to the old sizes at the narrow
-  // end), and the card's height is capped to the viewport — past the cap it
-  // simply goes squarer, which is closer to the designer's reference anyway.
+  // Layout (Session 77, user request: back to the reference's "Today's Card",
+  // docs/reference-screens/Main_screen_reference/01-main-chat.png): one glass
+  // panel with a heading, the card and the button inside it, the same on the
+  // desktop column, the mobile landing and the mobile sheet. The card is
+  // 11:10, near the reference's square: at that shape every card photo (3:2,
+  // square, one 5:6 portrait) fills it edge to edge with FittedImage's <=30%
+  // trim, so no blurred band shows (the old 4:5 left one across the top of
+  // every 3:2 photo). Size is capped by WIDTH (not height, which would break
+  // the aspect ratio) so the panel stays compact on tall/large screens; type
+  // and padding scale with the card's width (`cqw`).
   return (
-    // overflow-x-clip: shuffling backs can poke a little past the card's
-    // sides; clip them here instead of scrolling the parent column sideways.
-    <section aria-label={t('heading')} className="@container overflow-x-clip">
-      <div className="relative mx-auto aspect-[4/3] lg:aspect-[4/5] lg:max-h-[58vh] [perspective:1200px]" aria-busy={shuffling}>
+    <Card className="!p-4">
+      <h2 className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-3">{t('todaysCard')}</h2>
+      {/* overflow-x-clip: shuffling backs can poke a little past the card's
+          sides; clip them here instead of scrolling the parent column sideways. */}
+      <section aria-label={t('heading')} className="@container overflow-x-clip mx-auto w-full max-w-[calc(58vh*1.1)]">
+      <div className="relative mx-auto aspect-[11/10] [perspective:1200px]" aria-busy={shuffling}>
         {/* The deck: two card backs behind the face — peeking out at rest, shuffling while pulling. */}
         <CardBack pose={BACK_POSE.a} shuffleClass={shuffling && !reduced ? 'animate-card-shuffle-a' : ''} />
         <CardBack pose={BACK_POSE.b} shuffleClass={shuffling && !reduced ? 'animate-card-shuffle-b' : ''} />
@@ -151,10 +157,11 @@ export default function PullACard() {
               if (!faceReady) deal()
             }}
           />
-          {/* Lighter than before: the question now has its own glass panel
-              (below), so the photo no longer needs darkening as a whole. */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.3)_0%,rgba(0,0,0,0.12)_55%,transparent_100%)]" />
-          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
+          {/* Readability (#40) without the boxed glass panel the reference
+              doesn't have: a soft localized darkening behind the question and
+              a gradient under the tagline; the photo stays fully visible. */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_75%_50%_at_50%_45%,rgba(0,0,0,0.42)_0%,rgba(0,0,0,0.18)_55%,transparent_85%)]" />
+          <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/65 to-transparent" />
           {/* One soft light sweep as the card lands (transform/opacity only; none under reduced motion). */}
           {phase === 'dealt' && !reduced && (
             <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -165,25 +172,23 @@ export default function PullACard() {
           {/* Question and tagline stack in normal flow (not both absolutely
               placed), so a long question in a narrow column pushes against
               the tagline instead of running over it. */}
-          <div className="absolute inset-0 flex flex-col items-center px-[clamp(1.25rem,7cqw,3.5rem)] pt-[clamp(1.5rem,7cqw,3.5rem)] pb-[clamp(1.25rem,5cqw,2.5rem)] text-center">
+          <div className="absolute inset-0 flex flex-col items-center px-[clamp(0.75rem,7cqw,3.5rem)] pt-[clamp(1rem,6cqw,3rem)] pb-[clamp(1rem,5cqw,2.25rem)] text-center">
             <div className="flex-1 min-h-0 flex flex-col items-center justify-center">
-              {/* Glass behind the question: a translucent glossy gradient with a
-                  top highlight, no backdrop-filter (the face flips on every
-                  deal, and MOTION.md rules out blurring while moving). */}
-              <div className="flex flex-col items-center rounded-2xl border border-white/15 bg-gradient-to-b from-white/[0.12] to-black/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_24px_rgba(0,0,0,0.25)] px-[clamp(1rem,5cqw,2rem)] py-[clamp(0.75rem,4cqw,1.75rem)]">
               <p
                 className={`font-hand rtl:font-display text-white leading-snug drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] ${
                   text.length > 70
-                    ? 'text-[clamp(1.125rem,5.5cqw,2.25rem)]'
-                    : 'text-[clamp(1.25rem,6.5cqw,3rem)]'
+                    ? 'text-[clamp(0.95rem,5.5cqw,2.25rem)]'
+                    : 'text-[clamp(1.05rem,6.5cqw,3rem)]'
                 }`}
               >
                 {text}
               </p>
-              <span className="mt-[clamp(1rem,4cqw,2rem)] h-px w-[clamp(3rem,12cqw,6rem)] shrink-0 bg-white/80" />
-              </div>
+              <span className="mt-[clamp(0.75rem,4cqw,2rem)] h-px w-[clamp(3rem,12cqw,6rem)] shrink-0 bg-white/80" />
             </div>
-            <p className="mt-3 text-white/90 text-[clamp(10px,2cqw,15px)] uppercase tracking-[0.2em] @md:tracking-[0.25em] leading-relaxed drop-shadow">
+            {/* Decorative; left out when the card is very narrow (the
+                1024px desktop column) so the longest questions (~100 chars)
+                still fit. */}
+            <p className="hidden @3xs:block mt-2 max-w-[24em] text-balance text-white/90 text-[clamp(10px,2.6cqw,15px)] uppercase tracking-[0.2em] @md:tracking-[0.25em] leading-relaxed drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
               {t('tagline')}
             </p>
           </div>
@@ -199,7 +204,8 @@ export default function PullACard() {
       >
         {shuffling ? t('pulling') : card ? t('pullAgain') : t('pullFirst')}
       </button>
-    </section>
+      </section>
+    </Card>
   )
 }
 

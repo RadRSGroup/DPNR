@@ -11,6 +11,7 @@ import { getCompanionContext, getTwin, getMirrorsList } from '@/lib/api/v1-clien
 import { ROOM_REFINE_COST } from '@dpnr/shared-types'
 import type { CompanionContextResponse, TwinListResponse, MirrorSummaryView } from '@dpnr/shared-types'
 import type { MirrorOpening } from './openings'
+import PatternPicker from './PatternPicker'
 
 interface Props {
   userName: string
@@ -34,6 +35,8 @@ interface Props {
  *   anti-addiction principle, docs/PHASE_AUDIT.md).
  * - "Start Your Reflection"'s three modes start the same single Mirror flow
  *   with a different opening (openings.ts); nothing on the backend differs.
+ *   "By Pattern" opens PatternPicker (#33, Session 77): DPNR's suggestion,
+ *   browse own + reference patterns, not sure, or ask DPNR to help.
  * - "Your Patterns" shows the person's own Twin pattern signals in the
  *   reference's row design: Active = confirmed, Exploring = noticed but not
  *   yet confirmed. No "Resolved" tab (no such state exists) and no "5/7
@@ -69,6 +72,7 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
   const [mirrors, setMirrors] = useState<MirrorSummaryView[] | null>(null)
   const [showAllReflections, setShowAllReflections] = useState(false)
   const [tab, setTab] = useState<'confirmed' | 'candidate'>('confirmed')
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   useEffect(() => {
     getCompanionContext().then((c) => setDailyCard(c.dailyCard)).catch(() => {})
@@ -83,9 +87,10 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
   const patterns = (twin?.signals ?? [])
     .filter((s) => s.domain === 'pattern' && s.status === tab)
     .sort((a, b) => b.confidence - a.confidence)
-  const topConfirmed = (twin?.signals ?? [])
-    .filter((s) => s.domain === 'pattern' && s.status === 'confirmed')
-    .sort((a, b) => b.confidence - a.confidence)[0]
+  // For the pattern picker (#33): confirmed first, then still exploring.
+  const ownPatterns = (twin?.signals ?? [])
+    .filter((s) => s.domain === 'pattern' && (s.status === 'confirmed' || s.status === 'candidate'))
+    .sort((a, b) => (a.status === b.status ? b.confidence - a.confidence : a.status === 'confirmed' ? -1 : 1))
 
   const now = new Date()
   const weekStart = startOfWeek(now)
@@ -241,8 +246,8 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                   <ModeCard
                     orb="/images/mirror/orb-pattern.webp"
                     title="By Pattern"
-                    text={topConfirmed ? 'Start from a pattern you keep noticing.' : 'Start from a pattern — confirm one first on your Dashboard.'}
-                    onClick={() => onStart(topConfirmed ? { mode: 'pattern', patternText: topConfirmed.description, patternName: topConfirmed.name } : { mode: 'situation' })}
+                    text="Choose a pattern to look at, or let DPNR help you notice one."
+                    onClick={() => setPickerOpen(true)}
                   />
                   <ModeCard
                     orb="/images/mirror/orb-situation.webp"
@@ -302,7 +307,7 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                               {p.name && <p className="text-xs text-white/60 truncate mt-0.5">{p.description}</p>}
                             </div>
                             <button
-                              onClick={() => onStart({ mode: 'pattern', patternText: p.description, patternName: p.name })}
+                              onClick={() => onStart({ mode: 'pattern', patternText: p.description, patternName: p.name, source: tab === 'confirmed' ? 'confirmed' : 'exploring' })}
                               aria-label={`Explore: ${p.description}`}
                               className="w-8 h-8 shrink-0 rounded-full bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/70 transition-colors"
                             >
@@ -376,6 +381,16 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
         </div>
       </main>
       <MobileNav />
+      {pickerOpen && (
+        <PatternPicker
+          signals={ownPatterns}
+          onClose={() => setPickerOpen(false)}
+          onChoose={(o) => {
+            setPickerOpen(false)
+            onStart(o)
+          }}
+        />
+      )}
     </div>
   )
 }
