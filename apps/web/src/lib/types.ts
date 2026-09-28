@@ -8,9 +8,12 @@ export type EmotionColor =
 
 export type TagType = 'pro' | 'con' | 'desire' | 'fear' | 'value' | 'need'
 
+/** Two options, plus an optional third (founder feedback 2026-09-28 #2). */
+export type OptionLabel = 'A' | 'B' | 'C'
+
 export interface DecisionOption {
   id?: string
-  label: 'A' | 'B'
+  label: OptionLabel
   content: string
   approved: boolean
 }
@@ -22,6 +25,7 @@ export interface DecisionState {
   narrative: string
   optionA?: DecisionOption
   optionB?: DecisionOption
+  optionC?: DecisionOption
   emotionBodyLocation?: string
   emotionColor?: string
   emotionReflection?: string

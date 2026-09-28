@@ -3,7 +3,7 @@ import { parseValue } from '../../lib/http'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModel } from '../../lib/model-call'
 import { ddb, PROMPT_REGISTRY_TABLE_NAME } from './db'
-import { gatherDecisionContext } from './decision-context'
+import { gatherDecisionContext, optionCInline } from './decision-context'
 import type { StepDefinition } from './types'
 
 const SubmitInput = z.object({ nextStep: z.string().min(1) })
@@ -32,6 +32,7 @@ export const clarityActionStep: StepDefinition = {
         narrative: context.narrative,
         optionA: context.optionAContent,
         optionB: context.optionBContent,
+        optionCInline: optionCInline(context),
         chosenLean: context.chosenLean,
         languageInstruction: ctx.languageInstruction,
       })

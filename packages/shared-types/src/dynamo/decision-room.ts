@@ -12,6 +12,15 @@ export const LensSchema = z.enum(['pros_cons', 'fears_desires', 'values_needs'])
 export type Lens = z.infer<typeof LensSchema>
 
 /**
+ * A decision has two options (A, B) and an optional third (C) — founder
+ * feedback 2026-09-28 #2 ("up to 3 options"). Decisions from before that
+ * only ever have A and B, and every reader must treat C as optional.
+ */
+export const DecisionOptionLabelSchema = z.enum(['A', 'B', 'C'])
+export type DecisionOptionLabel = z.infer<typeof DecisionOptionLabelSchema>
+export const DECISION_OPTION_LABELS: readonly DecisionOptionLabel[] = ['A', 'B', 'C']
+
+/**
  * Symbolic step ids for the room command contract (api/command-contract.ts:
  * `stepId` must be "symbolic ... never a UI position number"). The
  * pre-migration UI's 7 numbered steps map 1:1 onto these — ported from
@@ -120,7 +129,7 @@ export type DecisionItem = z.infer<typeof DecisionItemSchema>
 export const DecisionOptionItemSchema = z.object({
   pk: z.string(),
   sk: z.string(), // Sk.decisionOption(decisionId, label)
-  label: z.enum(['A', 'B']),
+  label: DecisionOptionLabelSchema,
   approved: z.boolean(),
   content: EncryptedBlobSchema, // wraps { content: string }
   createdAt: z.string().datetime(),
@@ -151,7 +160,7 @@ export type TagType = z.infer<typeof TagTypeSchema>
 export const DecisionTagItemSchema = z.object({
   pk: z.string(),
   sk: z.string(), // Sk.decisionTag(decisionId, tagId)
-  optionLabel: z.enum(['A', 'B']).optional(), // fear/desire tags are option-agnostic (HANDOVER.md)
+  optionLabel: DecisionOptionLabelSchema.optional(), // fear/desire tags are option-agnostic (HANDOVER.md)
   tagType: TagTypeSchema,
   aiSuggested: z.boolean(),
   content: EncryptedBlobSchema, // wraps { label: string }
@@ -162,7 +171,7 @@ export type DecisionTagItem = z.infer<typeof DecisionTagItemSchema>
 export const DecisionProjectionItemSchema = z.object({
   pk: z.string(),
   sk: z.string(), // Sk.decisionProjection(decisionId, projectionId)
-  optionLabel: z.enum(['A', 'B']),
+  optionLabel: DecisionOptionLabelSchema,
   selected: z.boolean(), // implicit preference signal — kept plaintext, matches original schema
   isCustom: z.boolean(),
   content: EncryptedBlobSchema, // wraps { statement: string }
@@ -173,7 +182,7 @@ export type DecisionProjectionItem = z.infer<typeof DecisionProjectionItemSchema
 export const DecisionOutcomeItemSchema = z.object({
   pk: z.string(),
   sk: z.string(), // Sk.decisionOutcome(decisionId, isoTimestamp)
-  chosenOptionLabel: z.enum(['A', 'B']).nullable(),
+  chosenOptionLabel: DecisionOptionLabelSchema.nullable(),
   content: EncryptedBlobSchema, // wraps { reflection: string }
   createdAt: z.string().datetime(),
 })

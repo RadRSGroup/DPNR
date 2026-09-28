@@ -30,7 +30,7 @@ export const Sk = {
     `SESSION#${sessionId}#MSG#${isoTimestamp}`,
   sessionSummary: (sessionId: string): string => `SESSION#${sessionId}#SUMMARY`,
   decisionRoom: (decisionId: string): string => `ROOM#DECISION#${decisionId}`,
-  decisionOption: (decisionId: string, label: 'A' | 'B'): string =>
+  decisionOption: (decisionId: string, label: 'A' | 'B' | 'C'): string =>
     `ROOM#DECISION#${decisionId}#OPTION#${label}`,
   decisionEmotion: (decisionId: string): string => `ROOM#DECISION#${decisionId}#EMOTION`,
   decisionTag: (decisionId: string, tagId: string): string =>

@@ -19,6 +19,8 @@ interface Props {
   decisionTitle: string
   optionA?: string
   optionB?: string
+  /** Only when the decision had a third option (2026-09-28 #2). */
+  optionC?: string
   chosenLean?: string
   reflectionNote?: string
   commitment?: string
@@ -33,6 +35,7 @@ export default function CompletionScreen({
   decisionTitle,
   optionA,
   optionB,
+  optionC,
   chosenLean,
   reflectionNote,
   commitment,
@@ -47,8 +50,7 @@ export default function CompletionScreen({
 
   const affirmation = AFFIRMATIONS[Math.floor(decisionTitle.length % AFFIRMATIONS.length)]
 
-  const leanLabel = chosenLean === 'A' ? 'Option A'
-    : chosenLean === 'B' ? 'Option B'
+  const leanLabel = chosenLean === 'A' || chosenLean === 'B' || chosenLean === 'C' ? `Option ${chosenLean}`
     : chosenLean === 'undecided' ? 'Still undecided' : null
 
   return (
@@ -75,19 +77,13 @@ export default function CompletionScreen({
 
           {/* Options */}
           {(optionA || optionB) && (
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              {optionA && (
-                <div className={`rounded-xl border p-3 space-y-1 ${chosenLean === 'A' ? 'border-purple-500/60 bg-purple-900/20' : 'border-white/10 bg-white/5'}`}>
-                  <p className="text-purple-400 text-xs">Option A {chosenLean === 'A' ? '← your lean' : ''}</p>
-                  <p className="text-white/60 text-xs leading-relaxed line-clamp-3">{optionA}</p>
+            <div className={`grid gap-2 pt-1 ${optionC ? 'grid-cols-3' : 'grid-cols-2'}`}>
+              {([['A', optionA], ['B', optionB], ['C', optionC]] as const).map(([label, text]) => text && (
+                <div key={label} className={`min-w-0 rounded-xl border p-3 space-y-1 ${chosenLean === label ? 'border-purple-500/60 bg-purple-900/20' : 'border-white/10 bg-white/5'}`}>
+                  <p className="text-purple-400 text-xs">Option {label} {chosenLean === label ? '· your lean' : ''}</p>
+                  <p className="text-white/60 text-xs leading-relaxed line-clamp-3 break-words">{text}</p>
                 </div>
-              )}
-              {optionB && (
-                <div className={`rounded-xl border p-3 space-y-1 ${chosenLean === 'B' ? 'border-purple-500/60 bg-purple-900/20' : 'border-white/10 bg-white/5'}`}>
-                  <p className="text-purple-400 text-xs">Option B {chosenLean === 'B' ? '← your lean' : ''}</p>
-                  <p className="text-white/60 text-xs leading-relaxed line-clamp-3">{optionB}</p>
-                </div>
-              )}
+              ))}
             </div>
           )}
 

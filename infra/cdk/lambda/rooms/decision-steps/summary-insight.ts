@@ -1,7 +1,7 @@
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModel } from '../../lib/model-call'
 import { ddb, PROMPT_REGISTRY_TABLE_NAME } from './db'
-import { gatherDecisionContext } from './decision-context'
+import { gatherDecisionContext, optionCLine } from './decision-context'
 import type { StepDefinition } from './types'
 
 /**
@@ -17,13 +17,14 @@ export const summaryInsightStep: StepDefinition = {
   handle: async (ctx) => {
     if (ctx.action === 'REFINE') {
       const context = await gatherDecisionContext(ctx.crypto, ctx.pk, ctx.sessionId)
-      const exploredTags = [...context.projectionsA, ...context.projectionsB].slice(0, 30).join(', ')
+      const exploredTags = [...context.projectionsA, ...context.projectionsB, ...context.projectionsC].slice(0, 30).join(', ')
       const version = await resolvePromptVersion(ddb, PROMPT_REGISTRY_TABLE_NAME, 'decision_room', 'summary_insight')
       const modelResult = await callPromptModel(version, {
         decisionTitle: context.title,
         narrative: context.narrative,
         optionA: context.optionAContent,
         optionB: context.optionBContent,
+        optionCLine: optionCLine(context),
         exploredTags,
         languageInstruction: ctx.languageInstruction,
       })

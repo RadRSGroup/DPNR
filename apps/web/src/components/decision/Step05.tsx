@@ -5,25 +5,27 @@ import PrimaryButton from '@/components/ui/PrimaryButton'
 import Chip from '@/components/ui/Chip'
 import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
-import { Lens, DecisionOption, PRESET_TAGS } from '@/lib/types'
+import { Lens, DecisionOption, OptionLabel, PRESET_TAGS } from '@/lib/types'
 import AiThinking from '@/components/shared/AiThinking'
 import Dictatable from '@/components/ui/Dictatable'
 import { OptionContext, RoomHeading } from './RoomHeadings'
 
 interface Step05Props {
   decisionTitle: string
-  optionA: DecisionOption
-  optionB: DecisionOption
+  /** A, B and (2026-09-28 #2) an optional C. */
+  options: DecisionOption[]
   lens: Lens
-  initialTagsA?: Record<string, string[]>
-  initialTagsB?: Record<string, string[]>
+  initialTags?: Partial<Record<OptionLabel, Record<string, string[]>>>
   onRefine: RefineFn
-  onComplete: (tags: Record<string, string[]>) => void
+  /** Per option, the chosen tags by type (pro/con or desire/fear). */
+  onComplete: (tags: Partial<Record<OptionLabel, Record<string, string[]>>>) => void
   onBack?: () => void
   onSkip?: () => void
 }
 
-export default function Step05({ decisionTitle, optionA, optionB, lens, initialTagsA, initialTagsB, onRefine, onComplete, onBack, onSkip }: Step05Props) {
+const EMPTY_TAGS: Record<string, string[]> = { pro: [], con: [], desire: [], fear: [] }
+
+export default function Step05({ decisionTitle, options, lens, initialTags, onRefine, onComplete, onBack, onSkip }: Step05Props) {
   const sections = lens === 'pros_cons'
     ? [{ type: 'pro', label: 'Pros' }, { type: 'con', label: 'Cons' }]
     : [{ type: 'desire', label: 'Desires' }, { type: 'fear', label: 'Fears' }]
@@ -31,55 +33,51 @@ export default function Step05({ decisionTitle, optionA, optionB, lens, initialT
   const lensName = lens === 'pros_cons' ? 'Pros & Cons' : 'Fears & Desires'
 
   const [sectionIdx, setSectionIdx] = useState(0)
-  const [currentOption, setCurrentOption] = useState<'A' | 'B'>('A')
-  const [tagsA, setTagsA] = useState<Record<string, string[]>>(initialTagsA ?? { pro: [], con: [], desire: [], fear: [] })
-  const [tagsB, setTagsB] = useState<Record<string, string[]>>(initialTagsB ?? { pro: [], con: [], desire: [], fear: [] })
-  const [suggestedA, setSuggestedA] = useState<Record<string, string[]>>({})
-  const [suggestedB, setSuggestedB] = useState<Record<string, string[]>>({})
+  const [optionIdx, setOptionIdx] = useState(0)
+  const [tagsByOption, setTagsByOption] = useState<Partial<Record<OptionLabel, Record<string, string[]>>>>(() =>
+    Object.fromEntries(options.map((o) => [o.label, initialTags?.[o.label] ?? { ...EMPTY_TAGS }]))
+  )
+  const [suggestedByOption, setSuggestedByOption] = useState<Partial<Record<OptionLabel, Record<string, string[]>>>>({})
   const [customInput, setCustomInput] = useState('')
   const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI(onRefine)
 
   const currentSection = sections[sectionIdx]
   const isLastSection = sectionIdx === sections.length - 1
-  const tags = currentOption === 'A' ? tagsA : tagsB
-  const setTags = currentOption === 'A' ? setTagsA : setTagsB
-  const suggested = currentOption === 'A' ? suggestedA : suggestedB
+  const currentOption = options[optionIdx].label
+  const isLastOption = optionIdx === options.length - 1
+  const tags = tagsByOption[currentOption] ?? EMPTY_TAGS
+  const suggested = suggestedByOption[currentOption] ?? {}
 
-  useEffect(() => {
-    fetchSuggestions(currentOption)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentOption])
-
-  async function fetchSuggestions(opt: 'A' | 'B') {
-    const o = opt === 'A' ? optionA : optionB
+  async function fetchSuggestions(opt: OptionLabel) {
+    const setSuggested = (value: Record<string, string[]>) => setSuggestedByOption((prev) => ({ ...prev, [opt]: value }))
     if (lens === 'pros_cons') {
       const res = await callAI<{ pros: string[]; cons: string[] }>(
         'pros_cons_tags',
-        { optionLabel: o.label }
+        { optionLabel: opt }
       )
-      if (res) {
-        const setter = opt === 'A' ? setSuggestedA : setSuggestedB
-        setter({ pro: res.pros, con: res.cons })
-      }
+      if (res) setSuggested({ pro: res.pros, con: res.cons })
     } else {
       // fears_desires AND values_needs both land here — matches
       // deep-exploration.ts's tagKindForLens. optionLabel is required by
       // the backend's RefineInput even for this branch (a real bug in the
       // pre-port UI: the old /api/ai call never sent it here at all).
       const res = await callAI<{ desires: string[]; fears: string[] }>(
-        'fear_desire_tags', { optionLabel: o.label }
+        'fear_desire_tags', { optionLabel: opt }
       )
-      if (res) {
-        const setter = opt === 'A' ? setSuggestedA : setSuggestedB
-        setter({ desire: res.desires, fear: res.fears })
-      }
+      if (res) setSuggested({ desire: res.desires, fear: res.fears })
     }
   }
 
+  useEffect(() => {
+    if (!suggestedByOption[currentOption]) fetchSuggestions(currentOption)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentOption])
+
   function toggleTag(type: string, label: string) {
-    setTags(prev => {
+    setTagsByOption(all => {
+      const prev = all[currentOption] ?? EMPTY_TAGS
       const arr = prev[type] ?? []
-      return { ...prev, [type]: arr.includes(label) ? arr.filter(t => t !== label) : [...arr, label] }
+      return { ...all, [currentOption]: { ...prev, [type]: arr.includes(label) ? arr.filter(t => t !== label) : [...arr, label] } }
     })
   }
 
@@ -90,30 +88,23 @@ export default function Step05({ decisionTitle, optionA, optionB, lens, initialT
   }
 
   function handleNext() {
-    if (currentOption === 'A') {
-      // Move to Option B for the same section
-      setCurrentOption('B')
-      if (!suggestedB || Object.keys(suggestedB).length === 0) fetchSuggestions('B')
+    if (!isLastOption) {
+      // Next option, same section
+      setOptionIdx(i => i + 1)
     } else if (!isLastSection) {
-      // Both options done for this section — move to next section, start with A
+      // Every option done for this section — next section, starting with A
       setSectionIdx(i => i + 1)
-      setCurrentOption('A')
+      setOptionIdx(0)
     } else {
-      // All sections done for both options
-      onComplete({
-        A_pro: tagsA.pro ?? [], A_con: tagsA.con ?? [],
-        A_desire: tagsA.desire ?? [], A_fear: tagsA.fear ?? [],
-        B_pro: tagsB.pro ?? [], B_con: tagsB.con ?? [],
-        B_desire: tagsB.desire ?? [], B_fear: tagsB.fear ?? [],
-      })
+      onComplete(tagsByOption)
     }
   }
 
   const currentTags = tags[currentSection.type] ?? []
   const canAdvance = currentTags.length > 0
 
-  const buttonLabel = currentOption === 'A'
-    ? `Option B: ${currentSection.label}`
+  const buttonLabel = !isLastOption
+    ? `Option ${options[optionIdx + 1].label}: ${currentSection.label}`
     : isLastSection
     ? 'Next step'
     : `Next: ${sections[sectionIdx + 1].label}`
@@ -139,7 +130,7 @@ export default function Step05({ decisionTitle, optionA, optionB, lens, initialT
       {tokenCapReached && <TokenCapModal onClose={dismissTokenCap} />}
       <div className="flex-1 flex flex-col space-y-4 pt-2">
 
-        <OptionContext optionA={optionA} optionB={optionB} active={currentOption} />
+        <OptionContext options={options} active={currentOption} />
 
         {/* Lens + section heading (#10/#14), with the section's progress. */}
         <div key={`${sectionIdx}-${currentOption}`} className="animate-settle-in space-y-3">

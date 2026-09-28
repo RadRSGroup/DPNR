@@ -5,21 +5,19 @@ import PrimaryButton from '@/components/ui/PrimaryButton'
 import Chip from '@/components/ui/Chip'
 import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
-import { DecisionOption, PRESET_TAGS } from '@/lib/types'
+import { DecisionOption, OptionLabel, PRESET_TAGS } from '@/lib/types'
 import AiThinking from '@/components/shared/AiThinking'
 import Dictatable from '@/components/ui/Dictatable'
 import { OptionContext, RoomHeading } from './RoomHeadings'
 
 interface Step06Props {
   decisionTitle: string
-  optionA: DecisionOption
-  optionB: DecisionOption
-  initialValuesA?: string[]
-  initialNeedsA?: string[]
-  initialValuesB?: string[]
-  initialNeedsB?: string[]
+  /** A, B and (2026-09-28 #2) an optional C. */
+  options: DecisionOption[]
+  initialValues?: Partial<Record<OptionLabel, string[]>>
+  initialNeeds?: Partial<Record<OptionLabel, string[]>>
   onRefine: RefineFn
-  onComplete: (valuesA: string[], needsA: string[], valuesB: string[], needsB: string[]) => void
+  onComplete: (values: Partial<Record<OptionLabel, string[]>>, needs: Partial<Record<OptionLabel, string[]>>) => void
   onBack?: () => void
   onSkip?: () => void
 }
@@ -31,46 +29,42 @@ const ROUNDS: { round: Round; label: string }[] = [
   { round: 'needs',  label: 'Needs' },
 ]
 
-export default function Step06({ decisionTitle, optionA, optionB, initialValuesA, initialNeedsA, initialValuesB, initialNeedsB, onRefine, onComplete, onBack, onSkip }: Step06Props) {
+export default function Step06({ decisionTitle, options, initialValues, initialNeeds, onRefine, onComplete, onBack, onSkip }: Step06Props) {
   const [roundIdx, setRoundIdx] = useState(0)
-  const [currentOption, setCurrentOption] = useState<'A' | 'B'>('A')
-  const [selected, setSelected] = useState<Record<string, Record<Round, string[]>>>({
-    A: { values: initialValuesA ?? [], needs: initialNeedsA ?? [] },
-    B: { values: initialValuesB ?? [], needs: initialNeedsB ?? [] },
-  })
-  const [suggestedA, setSuggestedA] = useState<{ values: string[]; needs: string[] }>({ values: [], needs: [] })
-  const [suggestedB, setSuggestedB] = useState<{ values: string[]; needs: string[] }>({ values: [], needs: [] })
+  const [optionIdx, setOptionIdx] = useState(0)
+  const [selected, setSelected] = useState<Partial<Record<OptionLabel, Record<Round, string[]>>>>(() =>
+    Object.fromEntries(options.map((o) => [o.label, { values: initialValues?.[o.label] ?? [], needs: initialNeeds?.[o.label] ?? [] }]))
+  )
+  const [suggestedByOption, setSuggestedByOption] = useState<Partial<Record<OptionLabel, { values: string[]; needs: string[] }>>>({})
   const [customInput, setCustomInput] = useState('')
   const { callAI, loading, tokenCapReached, dismissTokenCap } = useAI(onRefine)
 
   const currentRound = ROUNDS[roundIdx]
   const isLastRound = roundIdx === ROUNDS.length - 1
-  const suggested = currentOption === 'A' ? suggestedA : suggestedB
+  const currentOption = options[optionIdx].label
+  const isLastOption = optionIdx === options.length - 1
+  const suggested = suggestedByOption[currentOption] ?? { values: [], needs: [] }
 
+  // Suggestions once per option (a REFINE is a paid call).
   useEffect(() => {
-    fetchSuggestions(currentOption)
+    if (suggestedByOption[currentOption]) return
+    let ignore = false
+    const opt = currentOption
+    callAI<{ values: string[]; needs: string[] }>('values_needs_tags', { optionLabel: opt }).then((res) => {
+      if (!ignore && res) setSuggestedByOption((prev) => ({ ...prev, [opt]: res }))
+    })
+    return () => { ignore = true }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentOption])
 
-  async function fetchSuggestions(opt: 'A' | 'B') {
-    const o = opt === 'A' ? optionA : optionB
-    const res = await callAI<{ values: string[]; needs: string[] }>(
-      'values_needs_tags',
-      { optionLabel: o.label }
-    )
-    if (res) {
-      const setter = opt === 'A' ? setSuggestedA : setSuggestedB
-      setter(res)
-    }
-  }
-
   function toggle(item: string) {
     setSelected(prev => {
-      const arr = prev[currentOption][currentRound.round]
+      const current = prev[currentOption] ?? { values: [], needs: [] }
+      const arr = current[currentRound.round]
       return {
         ...prev,
         [currentOption]: {
-          ...prev[currentOption],
+          ...current,
           [currentRound.round]: arr.includes(item) ? arr.filter(i => i !== item) : [...arr, item],
         },
       }
@@ -78,14 +72,14 @@ export default function Step06({ decisionTitle, optionA, optionB, initialValuesA
   }
 
   function handleNext() {
-    if (currentOption === 'A') {
-      setCurrentOption('B')
-      if (Object.values(suggestedB).every(a => a.length === 0)) fetchSuggestions('B')
+    if (!isLastOption) {
+      setOptionIdx(i => i + 1)
     } else if (!isLastRound) {
       setRoundIdx(i => i + 1)
-      setCurrentOption('A')
+      setOptionIdx(0)
     } else {
-      onComplete(selected.A.values, selected.A.needs, selected.B.values, selected.B.needs)
+      const pick = (round: Round) => Object.fromEntries(options.map((o) => [o.label, selected[o.label]?.[round] ?? []]))
+      onComplete(pick('values'), pick('needs'))
     }
   }
 
@@ -96,7 +90,7 @@ export default function Step06({ decisionTitle, optionA, optionB, initialValuesA
   }
 
   const presetKey = currentRound.round === 'values' ? 'value' : 'need'
-  const currentSelected = selected[currentOption][currentRound.round]
+  const currentSelected = selected[currentOption]?.[currentRound.round] ?? []
   const canAdvance = currentSelected.length > 0
 
   const items = [
@@ -112,8 +106,8 @@ export default function Step06({ decisionTitle, optionA, optionB, initialValuesA
     ? `Which values does Option ${currentOption} honour most?`
     : `Which of the 6 core needs does Option ${currentOption} fulfil?`
 
-  const ctaLabel = currentOption === 'A'
-    ? `Option B: ${currentRound.label}`
+  const ctaLabel = !isLastOption
+    ? `Option ${options[optionIdx + 1].label}: ${currentRound.label}`
     : isLastRound
     ? 'Next step'
     : `Next: ${ROUNDS[roundIdx + 1].label}`
@@ -123,7 +117,7 @@ export default function Step06({ decisionTitle, optionA, optionB, initialValuesA
       {tokenCapReached && <TokenCapModal onClose={dismissTokenCap} />}
       <div className="flex-1 flex flex-col space-y-4 pt-2">
 
-        <OptionContext optionA={optionA} optionB={optionB} active={currentOption} />
+        <OptionContext options={options} active={currentOption} />
 
         {/* Lens + round heading (#10/#14), with the round's progress. */}
         <div key={`${roundIdx}-${currentOption}`} className="animate-settle-in space-y-3">

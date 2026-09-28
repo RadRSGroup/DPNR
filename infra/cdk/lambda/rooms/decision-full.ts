@@ -5,6 +5,7 @@ import {
   userPk,
   type DecisionItem,
   type DecisionOptionItem,
+  type DecisionOptionLabel,
   type DecisionTagItem,
   type DecisionProjectionItem,
   type DecisionOutcomeItem,
@@ -65,11 +66,13 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       throw new HttpError(400, 'missing_id', 'Path must include a decision id.')
     }
 
-    const [decisionResult, optionAResult, optionBResult, emotionResult, tagsResult, projectionsResult, outcomesResult, summaryResult, sessionResult] =
+    const [decisionResult, optionAResult, optionBResult, optionCResult, emotionResult, tagsResult, projectionsResult, outcomesResult, summaryResult, sessionResult] =
       await Promise.all([
         ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.decisionRoom(decisionId) } })),
         ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.decisionOption(decisionId, 'A') } })),
         ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.decisionOption(decisionId, 'B') } })),
+        // Only decisions with a third option (2026-09-28 #2) have one.
+        ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.decisionOption(decisionId, 'C') } })),
         ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.decisionEmotion(decisionId) } })),
         ddb.send(
           new QueryCommand({
@@ -110,7 +113,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
 
     const buildOption = async (
       item: DecisionOptionItem | undefined,
-      label: 'A' | 'B'
+      label: DecisionOptionLabel
     ): Promise<DecisionRoomOptionView | null> => {
       if (!item) return null
       const optionContent = await crypto.decryptField<OptionContent>(item.content)
@@ -139,9 +142,10 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       return { label, approved: item.approved, content: optionContent.content, tags, projections }
     }
 
-    const [optionA, optionB] = await Promise.all([
+    const [optionA, optionB, optionC] = await Promise.all([
       buildOption(optionAResult.Item as DecisionOptionItem | undefined, 'A'),
       buildOption(optionBResult.Item as DecisionOptionItem | undefined, 'B'),
+      buildOption(optionCResult.Item as DecisionOptionItem | undefined, 'C'),
     ])
 
     const emotionItem = emotionResult.Item as DecisionEmotionItem | undefined
@@ -171,7 +175,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       title: content.title,
       subtitle: content.subtitle,
       narrative: content.narrative || null,
-      options: [optionA, optionB].filter((o): o is DecisionRoomOptionView => o !== null),
+      options: [optionA, optionB, optionC].filter((o): o is DecisionRoomOptionView => o !== null),
       emotion,
       outcomes,
       summary,

@@ -22,7 +22,7 @@ import CommitmentScreen from '@/components/decision/CommitmentScreen'
 import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
 import SafetyInterventionScreen from '@/components/shared/SafetyInterventionScreen'
 import Sidebar from '@/components/layout/Sidebar'
-import { DecisionOption, Lens } from '@/lib/types'
+import { DecisionOption, Lens, OptionLabel } from '@/lib/types'
 import type { RefineFn } from '@/lib/useAI'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { feltFromDecisionEmotion, type Felt } from '@/lib/body-map'
@@ -96,6 +96,8 @@ interface LocalDecisionState {
   narrative: string
   optionA?: DecisionOption
   optionB?: DecisionOption
+  /** The optional third option (2026-09-28 #2). */
+  optionC?: DecisionOption
   emotionFelt?: Felt
   emotionReflection?: string
   lens?: Lens
@@ -105,11 +107,15 @@ interface LocalDecisionState {
 
 const INITIAL_STATE: LocalDecisionState = { title: '', narrative: '' }
 
+type PerOption<T> = Partial<Record<OptionLabel, T>>
+const toTagEntries = (arr?: string[]) => (arr ?? []).map(label => ({ label, aiSuggested: false }))
+const toProjectionEntries = (arr?: string[]) => (arr ?? []).map(statement => ({ statement, isCustom: false }))
+
 /** Strips the server-built `Leaning: X.` prefix and trailing ` Commitment: ...` suffix a resumed outcome's reflection carries — see future-projection.ts/commitment.ts. */
 function parseReflectionNote(reflection?: string | null): string | undefined {
   if (!reflection) return undefined
   const withoutCommitment = reflection.replace(/ Commitment:.*$/, '')
-  const withoutLeanPrefix = withoutCommitment.replace(/^Leaning: (A|B|undecided)\.\s*/, '')
+  const withoutLeanPrefix = withoutCommitment.replace(/^Leaning: (A|B|C|undecided)\.\s*/, '')
   return withoutLeanPrefix.trim() || undefined
 }
 
@@ -127,10 +133,13 @@ function NewDecisionContent() {
   const [introStep, setIntroStep] = useState<-1 | 0 | null>(resumeId ? null : -1)
   const [celebrating, setCelebrating] = useState(false)
 
+  // Per option (A, B, and C when there is one): Step05 tags by type, Step06
+  // values/needs, Step07 kept projections.
   const [sessionData, setSessionData] = useState<{
-    tags05?: Record<string, string[]>
-    valuesA?: string[]; needsA?: string[]; valuesB?: string[]; needsB?: string[]
-    projectionsA?: string[]; projectionsB?: string[]
+    tags05?: PerOption<Record<string, string[]>>
+    values?: PerOption<string[]>
+    needs?: PerOption<string[]>
+    projections?: PerOption<string[]>
     chosenLean?: string; reflectionNote?: string
   }>({})
 
@@ -140,6 +149,7 @@ function NewDecisionContent() {
     title: string
     optionA?: string
     optionB?: string
+    optionC?: string
     chosenLean?: string
     reflectionNote?: string
     commitment?: string
@@ -184,10 +194,13 @@ function NewDecisionContent() {
 
         const optA = full.options.find(o => o.label === 'A')
         const optB = full.options.find(o => o.label === 'B')
+        const optC = full.options.find(o => o.label === 'C')
         const tagsFor = (opt: typeof optA, type: string) =>
           (opt?.tags ?? []).filter(t => t.tagType === type).map(t => t.label)
         const projectionsFor = (opt: typeof optA) =>
           (opt?.projections ?? []).filter(p => p.selected).map(p => p.statement)
+        const perOption = <T,>(read: (opt: typeof optA) => T): PerOption<T> =>
+          Object.fromEntries(full.options.map(o => [o.label, read(o)]))
 
         setState({
           title: full.title,
@@ -197,19 +210,17 @@ function NewDecisionContent() {
           completedLenses: full.completedLenses ?? [],
           optionA: optA ? { label: 'A', content: optA.content, approved: optA.approved } : undefined,
           optionB: optB ? { label: 'B', content: optB.content, approved: optB.approved } : undefined,
+          optionC: optC ? { label: 'C', content: optC.content, approved: optC.approved } : undefined,
           emotionFelt: full.emotion ? feltFromDecisionEmotion(full.emotion) : undefined,
           emotionReflection: full.emotion?.aiReflection ?? undefined,
         })
 
         const latestOutcome = full.outcomes[full.outcomes.length - 1]
         setSessionData({
-          tags05: {
-            pro: tagsFor(optA, 'pro'), con: tagsFor(optA, 'con'), desire: tagsFor(optA, 'desire'), fear: tagsFor(optA, 'fear'),
-            B_pro: tagsFor(optB, 'pro'), B_con: tagsFor(optB, 'con'), B_desire: tagsFor(optB, 'desire'), B_fear: tagsFor(optB, 'fear'),
-          },
-          valuesA: tagsFor(optA, 'value'), needsA: tagsFor(optA, 'need'),
-          valuesB: tagsFor(optB, 'value'), needsB: tagsFor(optB, 'need'),
-          projectionsA: projectionsFor(optA), projectionsB: projectionsFor(optB),
+          tags05: perOption(o => ({ pro: tagsFor(o, 'pro'), con: tagsFor(o, 'con'), desire: tagsFor(o, 'desire'), fear: tagsFor(o, 'fear') })),
+          values: perOption(o => tagsFor(o, 'value')),
+          needs: perOption(o => tagsFor(o, 'need')),
+          projections: perOption(projectionsFor),
           chosenLean: latestOutcome ? (latestOutcome.chosenOptionLabel ?? 'undecided') : undefined,
           reflectionNote: parseReflectionNote(latestOutcome?.reflection),
         })
@@ -324,12 +335,19 @@ function NewDecisionContent() {
     await submitStepAndAdvance('NAME_DECISION', { title, subtitle, sourceLibraryTopic: sourceTopic ?? undefined })
   }
 
-  async function completeStep02(narrative: string, optionA: DecisionOption, optionB: DecisionOption) {
-    update({ narrative, optionA, optionB })
+  async function completeStep02(narrative: string, options: DecisionOption[]) {
+    const [optionA, optionB, optionC] = options
+    update({ narrative, optionA, optionB, optionC })
+    if (!optionC) {
+      // Removing C also removes what was recorded for it (map-options.ts does the same server-side).
+      const drop = <T,>(m?: PerOption<T>) => (m ? { ...m, C: undefined } : m)
+      setSessionData(prev => ({ ...prev, tags05: drop(prev.tags05), values: drop(prev.values), needs: drop(prev.needs), projections: drop(prev.projections) }))
+    }
     await submitStepAndAdvance('MAP_OPTIONS', {
       narrative,
       optionA: { content: optionA.content, approved: optionA.approved },
       optionB: { content: optionB.content, approved: optionB.approved },
+      ...(optionC ? { optionC: { content: optionC.content, approved: optionC.approved } } : {}),
     })
   }
 
@@ -358,35 +376,34 @@ function NewDecisionContent() {
     if (res) setState((prev) => ({ ...prev, completedLenses: [...new Set([...(prev.completedLenses ?? []), done])] }))
   }
 
-  async function completeStep05(tags: Record<string, string[]>) {
-    const toEntries = (arr?: string[]) => (arr ?? []).map(label => ({ label, aiSuggested: false }))
-    setSessionData(prev => ({
-      ...prev,
-      tags05: {
-        pro: tags.A_pro ?? [], con: tags.A_con ?? [], desire: tags.A_desire ?? [], fear: tags.A_fear ?? [],
-        B_pro: tags.B_pro ?? [], B_con: tags.B_con ?? [], B_desire: tags.B_desire ?? [], B_fear: tags.B_fear ?? [],
-      },
-    }))
+  async function completeStep05(tags: PerOption<Record<string, string[]>>) {
+    setSessionData(prev => ({ ...prev, tags05: tags }))
+    const bucket = (label: OptionLabel) => {
+      const t = tags[label] ?? {}
+      return { pro: toTagEntries(t.pro), con: toTagEntries(t.con), desire: toTagEntries(t.desire), fear: toTagEntries(t.fear) }
+    }
     await submitStepAndAdvance('DEEP_EXPLORATION', {
-      tagsA: { pro: toEntries(tags.A_pro), con: toEntries(tags.A_con), desire: toEntries(tags.A_desire), fear: toEntries(tags.A_fear) },
-      tagsB: { pro: toEntries(tags.B_pro), con: toEntries(tags.B_con), desire: toEntries(tags.B_desire), fear: toEntries(tags.B_fear) },
+      tagsA: bucket('A'),
+      tagsB: bucket('B'),
+      ...(state.optionC ? { tagsC: bucket('C') } : {}),
     })
   }
 
-  async function completeStep06(valuesA: string[], needsA: string[], valuesB: string[], needsB: string[]) {
-    const toEntries = (arr: string[]) => arr.map(label => ({ label, aiSuggested: false }))
-    setSessionData(prev => ({ ...prev, valuesA, needsA, valuesB, needsB }))
+  async function completeStep06(values: PerOption<string[]>, needs: PerOption<string[]>) {
+    setSessionData(prev => ({ ...prev, values, needs }))
     await submitStepAndAdvance('VALUES_NEEDS', {
-      valuesA: toEntries(valuesA), needsA: toEntries(needsA), valuesB: toEntries(valuesB), needsB: toEntries(needsB),
+      valuesA: toTagEntries(values.A), needsA: toTagEntries(needs.A),
+      valuesB: toTagEntries(values.B), needsB: toTagEntries(needs.B),
+      ...(state.optionC ? { valuesC: toTagEntries(values.C), needsC: toTagEntries(needs.C) } : {}),
     })
   }
 
-  async function completeStep07(projectionsA: string[], projectionsB: string[], chosenLean?: string, reflectionNote?: string) {
-    const toEntries = (arr: string[]) => arr.map(statement => ({ statement, isCustom: false }))
-    setSessionData(prev => ({ ...prev, projectionsA, projectionsB, chosenLean, reflectionNote }))
+  async function completeStep07(projections: PerOption<string[]>, chosenLean?: string, reflectionNote?: string) {
+    setSessionData(prev => ({ ...prev, projections, chosenLean, reflectionNote }))
     await submitStepAndAdvance('FUTURE_PROJECTION', {
-      projectionsA: toEntries(projectionsA),
-      projectionsB: toEntries(projectionsB),
+      projectionsA: toProjectionEntries(projections.A),
+      projectionsB: toProjectionEntries(projections.B),
+      ...(state.optionC ? { projectionsC: toProjectionEntries(projections.C) } : {}),
       chosenLean: chosenLean ?? 'undecided',
       reflectionNote,
     })
@@ -410,6 +427,7 @@ function NewDecisionContent() {
       title: state.title,
       optionA: state.optionA?.content,
       optionB: state.optionB?.content,
+      optionC: state.optionC?.content,
       chosenLean: sessionData.chosenLean,
       reflectionNote: sessionData.reflectionNote,
       commitment,
@@ -418,6 +436,9 @@ function NewDecisionContent() {
     })
     setCelebrating(true)
   }
+
+  // A, B and (when there is one) C, in order — what every per-option screen iterates.
+  const options = [state.optionA, state.optionB, state.optionC].filter((o): o is DecisionOption => !!o)
 
   function renderStep() {
     if (resumeLoading) {
@@ -479,6 +500,7 @@ function NewDecisionContent() {
           decisionTitle={completedSummary.title}
           optionA={completedSummary.optionA}
           optionB={completedSummary.optionB}
+          optionC={completedSummary.optionC}
           chosenLean={completedSummary.chosenLean}
           reflectionNote={completedSummary.reflectionNote}
           commitment={completedSummary.commitment}
@@ -528,6 +550,7 @@ function NewDecisionContent() {
             initialNarrative={state.narrative}
             initialOptionA={state.optionA}
             initialOptionB={state.optionB}
+            initialOptionC={state.optionC}
             onRefine={makeRefine('MAP_OPTIONS')}
             onComplete={completeStep02}
             onBack={goBack}
@@ -550,8 +573,7 @@ function NewDecisionContent() {
         return (
           <Step04
             decisionTitle={state.title}
-            optionA={state.optionA!}
-            optionB={state.optionB!}
+            options={options}
             initialLens={state.lens}
             completedLenses={state.completedLenses}
             onComplete={completeStep04}
@@ -563,17 +585,9 @@ function NewDecisionContent() {
         return (
           <Step05
             decisionTitle={state.title}
-            optionA={state.optionA!}
-            optionB={state.optionB!}
+            options={options}
             lens={state.lens ?? 'pros_cons'}
-            initialTagsA={sessionData.tags05 ? {
-              pro: sessionData.tags05.pro ?? [], con: sessionData.tags05.con ?? [],
-              desire: sessionData.tags05.desire ?? [], fear: sessionData.tags05.fear ?? [],
-            } : undefined}
-            initialTagsB={sessionData.tags05 ? {
-              pro: sessionData.tags05.B_pro ?? [], con: sessionData.tags05.B_con ?? [],
-              desire: sessionData.tags05.B_desire ?? [], fear: sessionData.tags05.B_fear ?? [],
-            } : undefined}
+            initialTags={sessionData.tags05}
             onRefine={makeRefine('DEEP_EXPLORATION')}
             onComplete={completeStep05}
             onBack={goBack}
@@ -585,17 +599,9 @@ function NewDecisionContent() {
         return (
           <SectionSummaryScreen
             decisionTitle={state.title}
-            optionA={state.optionA ?? undefined}
-            optionB={state.optionB ?? undefined}
+            options={options}
             stepType={summaryType}
-            tagsA={{
-              pro: sessionData.tags05?.pro ?? [], con: sessionData.tags05?.con ?? [],
-              desire: sessionData.tags05?.desire ?? [], fear: sessionData.tags05?.fear ?? [],
-            }}
-            tagsB={{
-              pro: sessionData.tags05?.B_pro ?? [], con: sessionData.tags05?.B_con ?? [],
-              desire: sessionData.tags05?.B_desire ?? [], fear: sessionData.tags05?.B_fear ?? [],
-            }}
+            tags={sessionData.tags05 ?? {}}
             onRefine={makeRefine('DEEP_EXPLORATION_SUMMARY')}
             onContinue={() => completeLensSummary('DEEP_EXPLORATION_SUMMARY')}
             onBack={goBack}
@@ -606,12 +612,9 @@ function NewDecisionContent() {
         return (
           <Step06
             decisionTitle={state.title}
-            optionA={state.optionA!}
-            optionB={state.optionB!}
-            initialValuesA={sessionData.valuesA}
-            initialNeedsA={sessionData.needsA}
-            initialValuesB={sessionData.valuesB}
-            initialNeedsB={sessionData.needsB}
+            options={options}
+            initialValues={sessionData.values}
+            initialNeeds={sessionData.needs}
             onRefine={makeRefine('VALUES_NEEDS')}
             onComplete={completeStep06}
             onBack={goBack}
@@ -622,11 +625,9 @@ function NewDecisionContent() {
         return (
           <SectionSummaryScreen
             decisionTitle={state.title}
-            optionA={state.optionA ?? undefined}
-            optionB={state.optionB ?? undefined}
+            options={options}
             stepType="values_needs"
-            tagsA={{ values: sessionData.valuesA ?? [], needs: sessionData.needsA ?? [] }}
-            tagsB={{ values: sessionData.valuesB ?? [], needs: sessionData.needsB ?? [] }}
+            tags={Object.fromEntries(options.map(o => [o.label, { values: sessionData.values?.[o.label] ?? [], needs: sessionData.needs?.[o.label] ?? [] }]))}
             onRefine={makeRefine('VALUES_NEEDS_SUMMARY')}
             onContinue={() => completeLensSummary('VALUES_NEEDS_SUMMARY')}
             onBack={goBack}
@@ -636,10 +637,8 @@ function NewDecisionContent() {
         return (
           <Step07
             decisionTitle={state.title}
-            optionA={state.optionA!}
-            optionB={state.optionB!}
-            initialSelectedA={sessionData.projectionsA}
-            initialSelectedB={sessionData.projectionsB}
+            options={options}
+            initialSelected={sessionData.projections}
             initialChosenLean={sessionData.chosenLean}
             initialReflectionNote={sessionData.reflectionNote}
             onRefine={makeRefine('FUTURE_PROJECTION')}
@@ -651,11 +650,9 @@ function NewDecisionContent() {
         return (
           <SectionSummaryScreen
             decisionTitle={state.title}
-            optionA={state.optionA ?? undefined}
-            optionB={state.optionB ?? undefined}
+            options={options}
             stepType="projections"
-            tagsA={{ projections: sessionData.projectionsA ?? [] }}
-            tagsB={{ projections: sessionData.projectionsB ?? [] }}
+            tags={Object.fromEntries(options.map(o => [o.label, { projections: sessionData.projections?.[o.label] ?? [] }]))}
             onRefine={makeRefine('FUTURE_PROJECTION_SUMMARY')}
             onContinue={() => submitStepAndAdvance('FUTURE_PROJECTION_SUMMARY', {})}
             onBack={goBack}

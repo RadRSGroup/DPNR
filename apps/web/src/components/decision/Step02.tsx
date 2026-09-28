@@ -4,7 +4,7 @@ import StepShell from './StepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
-import { DecisionOption } from '@/lib/types'
+import { DecisionOption, OptionLabel } from '@/lib/types'
 import Dictatable from '@/components/ui/Dictatable'
 
 interface Step02Props {
@@ -13,8 +13,10 @@ interface Step02Props {
   initialNarrative?: string
   initialOptionA?: DecisionOption
   initialOptionB?: DecisionOption
+  initialOptionC?: DecisionOption
   onRefine: RefineFn
-  onComplete: (narrative: string, optionA: DecisionOption, optionB: DecisionOption) => void
+  /** Two options, or three when the person kept an Option C (2026-09-28 #2). */
+  onComplete: (narrative: string, options: DecisionOption[]) => void
   onBack?: () => void
   onSkip?: () => void
 }
@@ -23,32 +25,37 @@ interface Step02Props {
 // user raised every room text box to 5000).
 const CHAR_LIMIT = 5000
 
-export default function Step02({ decisionTitle, initialNarrative = '', initialOptionA, initialOptionB, onRefine, onComplete, onBack, onSkip }: Step02Props) {
+const emptyOption = (label: OptionLabel): DecisionOption => ({ label, content: '', approved: false })
+
+export default function Step02({ decisionTitle, initialNarrative = '', initialOptionA, initialOptionB, initialOptionC, onRefine, onComplete, onBack, onSkip }: Step02Props) {
   const [narrative, setNarrative] = useState(initialNarrative)
-  const [optionA, setOptionA] = useState<DecisionOption>(initialOptionA ?? { label: 'A', content: '', approved: false })
-  const [optionB, setOptionB] = useState<DecisionOption>(initialOptionB ?? { label: 'B', content: '', approved: false })
+  const [optionA, setOptionA] = useState<DecisionOption>(initialOptionA ?? emptyOption('A'))
+  const [optionB, setOptionB] = useState<DecisionOption>(initialOptionB ?? emptyOption('B'))
+  // Optional third option (#2): DPNR drafts one only when the story clearly
+  // names a third path; the person can also add or remove it themselves.
+  const [optionC, setOptionC] = useState<DecisionOption | null>(initialOptionC ?? null)
   const [parsed, setParsed] = useState(!!(initialOptionA?.content && initialOptionB?.content))
   const { callAI, loading, error, tokenCapReached, dismissTokenCap } = useAI(onRefine)
   const charLimit = CHAR_LIMIT
 
   async function handleParse() {
-    const res = await callAI<{ optionA: string; optionB: string }>(
+    const res = await callAI<{ optionA: string; optionB: string; optionC?: string }>(
       'parse_options', { narrative }
     )
     if (res) {
       setOptionA({ label: 'A', content: res.optionA, approved: false })
       setOptionB({ label: 'B', content: res.optionB, approved: false })
+      setOptionC(res.optionC?.trim() ? { label: 'C', content: res.optionC, approved: false } : null)
       setParsed(true)
     }
   }
 
-  function handleApprove(which: 'A' | 'B') {
-    if (which === 'A') setOptionA(prev => ({ ...prev, approved: !prev.approved }))
-    else setOptionB(prev => ({ ...prev, approved: !prev.approved }))
+  function toggleApproved(prev: DecisionOption): DecisionOption {
+    return { ...prev, approved: !prev.approved }
   }
 
   function canContinue() {
-    return parsed && optionA.approved && optionB.approved
+    return parsed && optionA.approved && optionB.approved && (!optionC || optionC.approved)
   }
 
   return (
@@ -86,21 +93,37 @@ export default function Step02({ decisionTitle, initialNarrative = '', initialOp
         ) : (
           /* Options cards */
           <div className="flex-1 flex flex-col space-y-3">
-            {/* Option A */}
             <OptionCard
               label="Option A"
               option={optionA}
               onEdit={val => setOptionA(prev => ({ ...prev, content: val, approved: false }))}
-              onApprove={() => handleApprove('A')}
+              onApprove={() => setOptionA(toggleApproved)}
             />
 
-            {/* Option B */}
             <OptionCard
               label="Option B"
               option={optionB}
               onEdit={val => setOptionB(prev => ({ ...prev, content: val, approved: false }))}
-              onApprove={() => handleApprove('B')}
+              onApprove={() => setOptionB(toggleApproved)}
             />
+
+            {optionC ? (
+              <OptionCard
+                label="Option C"
+                option={optionC}
+                onEdit={val => setOptionC(prev => prev && ({ ...prev, content: val, approved: false }))}
+                onApprove={() => setOptionC(prev => prev && toggleApproved(prev))}
+                onRemove={() => setOptionC(null)}
+                startEditing={!optionC.content}
+              />
+            ) : (
+              <button
+                onClick={() => setOptionC(emptyOption('C'))}
+                className="w-full py-3 rounded-2xl border border-dashed border-white/20 text-white/60 hover:text-white/85 hover:border-white/35 text-sm transition-colors"
+              >
+                + Add a third option
+              </button>
+            )}
 
             {/* Re-parse */}
             <button
@@ -112,7 +135,7 @@ export default function Step02({ decisionTitle, initialNarrative = '', initialOp
 
             <PrimaryButton
               label="Continue process"
-              onClick={() => onComplete(narrative, optionA, optionB)}
+              onClick={() => onComplete(narrative, optionC ? [optionA, optionB, optionC] : [optionA, optionB])}
               disabled={!canContinue()}
             />
           </div>
@@ -130,15 +153,19 @@ export default function Step02({ decisionTitle, initialNarrative = '', initialOp
  * a separate, explicit choice.
  */
 function OptionCard({
-  label, option, onEdit, onApprove,
+  label, option, onEdit, onApprove, onRemove, startEditing = false,
 }: {
   label: string
   option: DecisionOption
   onEdit: (v: string) => void
   onApprove: () => void
+  /** Only the optional Option C can be removed. */
+  onRemove?: () => void
+  /** A new, empty option opens ready to write in. */
+  startEditing?: boolean
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const [editing, setEditing] = useState(false)
+  const [editing, setEditing] = useState(startEditing)
   const [original, setOriginal] = useState<string | null>(null)
 
   function handleRewrite() {
@@ -160,7 +187,14 @@ function OptionCard({
           ? 'bg-white/[0.06] border-[var(--color-violet-400)]/50'
           : 'bg-white/5 border-white/15'
     }`}>
-      <p className="text-[var(--color-amber-300)] text-[11px] uppercase tracking-[0.18em]">{label}</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[var(--color-amber-300)] text-[11px] uppercase tracking-[0.18em]">{label}</p>
+        {onRemove && (
+          <button onClick={onRemove} className="text-white/45 hover:text-white/75 text-xs underline underline-offset-2 transition-colors">
+            Remove
+          </button>
+        )}
+      </div>
       <Dictatable>
         <textarea
           ref={textareaRef}

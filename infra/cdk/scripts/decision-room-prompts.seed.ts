@@ -98,15 +98,17 @@ Output only that line — no preamble, no surrounding quotation marks.`,
   },
   {
     name: 'parse_options',
-    systemTemplate: `Read this decision narrative and extract exactly two distinct options the person is facing.
+    systemTemplate: `Read this decision narrative and extract the distinct options the person is facing.
+Always return two options (optionA, optionB). Return a third (optionC) only when the person clearly describes a third distinct path of their own; never invent one to fill the slot.
 Each option: 1–2 sentences. Clear, non-judgmental, faithful to their words.
 
 {{languageInstruction}}`,
     userTemplate: `{{narrative}}`,
     variables: ['narrative', 'languageInstruction'],
+    notes: 'optionC is optional (founder feedback 2026-09-28 #2: up to 3 options); the person can also add or remove a third option themselves in Step 2.',
     outputSchema: {
       type: 'object',
-      properties: { optionA: { type: 'string' }, optionB: { type: 'string' } },
+      properties: { optionA: { type: 'string' }, optionB: { type: 'string' }, optionC: { type: 'string' } },
       required: ['optionA', 'optionB'],
     },
   },
@@ -230,7 +232,7 @@ Stay specific — reference what they actually selected, not generic themes.
 {{languageInstruction}}`,
     userTemplate: `Decision: "{{decisionTitle}}"
 Narrative: {{narrative}}
-Option A: "{{optionA}}" | Option B: "{{optionB}}"
+Option A: "{{optionA}}" | Option B: "{{optionB}}"{{optionCInline}}
 Emotion: {{emotionColor}} | Body: {{emotionBodyLocation}}. {{emotionReflection}}
 Pros A: {{prosA}} | Cons A: {{consA}}
 Pros B: {{prosB}} | Cons B: {{consB}}
@@ -238,16 +240,16 @@ Desires A: {{desiresA}} | Fears A: {{fearsA}}
 Values A: {{valuesA}} | Needs A: {{needsA}}
 Values B: {{valuesB}} | Needs B: {{needsB}}
 Projections A: {{projectionsA}}
-Projections B: {{projectionsB}}
+Projections B: {{projectionsB}}{{optionCDetails}}
 Chosen lean: {{chosenLean}}`,
     variables: [
-      'decisionTitle', 'narrative', 'optionA', 'optionB',
+      'decisionTitle', 'narrative', 'optionA', 'optionB', 'optionCInline', 'optionCDetails',
       'emotionColor', 'emotionBodyLocation', 'emotionReflection',
       'prosA', 'consA', 'prosB', 'consB', 'desiresA', 'fearsA',
       'valuesA', 'needsA', 'valuesB', 'needsB', 'projectionsA', 'projectionsB',
       'chosenLean', 'languageInstruction',
     ],
-    notes: 'emotionColor/emotionBodyLocation default to "—", emotionReflection defaults to "". Since Slice 5b they carry formatEmotion/formatBody output when the body map was used (older decisions: the single legacy values). prosA/consA/prosB/consB/desiresA/fearsA/valuesA/needsA/valuesB/needsB/projectionsA/projectionsB are each the corresponding tag array joined with ", ", defaulting to "—" when empty. chosenLean defaults to "undecided". Caller must replicate this exactly — see the original params.tagsA?.pro etc. logic in apps/web/src/lib/ai/prompts.ts.',
+    notes: 'emotionColor/emotionBodyLocation default to "—", emotionReflection defaults to "". Since Slice 5b they carry formatEmotion/formatBody output when the body map was used (older decisions: the single legacy values). prosA/consA/prosB/consB/desiresA/fearsA/valuesA/needsA/valuesB/needsB/projectionsA/projectionsB are each the corresponding tag array joined with ", ", defaulting to "—" when empty. chosenLean defaults to "undecided". optionCInline/optionCDetails are "" for a two-option decision, otherwise Option C and its tags/projections (decision-context.ts optionCInline/optionCDetails). Caller must replicate this exactly — see the original params.tagsA?.pro etc. logic in apps/web/src/lib/ai/prompts.ts.',
     outputSchema: {
       type: 'object',
       properties: {
@@ -270,10 +272,10 @@ It should feel: Small, Safe, Possible within the next few days.
 {{languageInstruction}}`,
     userTemplate: `Decision: "{{decisionTitle}}"
 Context: {{narrative}}
-Option A: "{{optionA}}" | Option B: "{{optionB}}"
+Option A: "{{optionA}}" | Option B: "{{optionB}}"{{optionCInline}}
 Leaning towards: {{chosenLean}}`,
-    variables: ['decisionTitle', 'narrative', 'optionA', 'optionB', 'chosenLean', 'languageInstruction'],
-    notes: 'chosenLean defaults to "undecided" when absent.',
+    variables: ['decisionTitle', 'narrative', 'optionA', 'optionB', 'optionCInline', 'chosenLean', 'languageInstruction'],
+    notes: 'chosenLean defaults to "undecided" when absent. optionCInline is "" for a two-option decision (decision-context.ts optionCInline).',
     outputSchema: {
       type: 'object',
       properties: { nextStep: { type: 'string' } },
@@ -291,10 +293,10 @@ Leaning towards: {{chosenLean}}`,
     userTemplate: `Decision: "{{decisionTitle}}"
 Context: {{narrative}}
 Option A: "{{optionA}}"
-Option B: "{{optionB}}"
+Option B: "{{optionB}}"{{optionCLine}}
 What they explored: {{exploredTags}}`,
-    variables: ['decisionTitle', 'narrative', 'optionA', 'optionB', 'exploredTags', 'languageInstruction'],
-    notes: 'exploredTags = allTags.slice(0, 30).join(", ") — caller caps to the first 30 tags before joining.',
+    variables: ['decisionTitle', 'narrative', 'optionA', 'optionB', 'optionCLine', 'exploredTags', 'languageInstruction'],
+    notes: 'exploredTags = allTags.slice(0, 30).join(", ") — caller caps to the first 30 tags before joining. optionCLine is "" for a two-option decision (decision-context.ts optionCLine).',
     outputSchema: {
       type: 'object',
       properties: { insight: { type: 'string' } },
@@ -306,7 +308,7 @@ What they explored: {{exploredTags}}`,
     systemTemplate: `You are a compassionate guide helping someone reflect on a decision they are navigating.
 The person has just completed a section of structured self-exploration.
 Write a short reflection (3–4 sentences) that:
-- Notices the pattern or tension between their two options based on what they selected
+- Notices the pattern or tension between their options (two, sometimes three) based on what they selected
 - Names something emotionally true about what the selections reveal — without telling them what to choose
 - Uses warm, curious, non-directive language ("it seems like...", "one part of you...", "there may be a tension between...")
 - Ends with a question or open observation that invites them to sit with the insight
@@ -319,9 +321,9 @@ Step type: {{step}}
 Option A: "{{optionA}}"
 Option A selections: {{selectionsA}}
 Option B: "{{optionB}}"
-Option B selections: {{selectionsB}}`,
-    variables: ['decisionTitle', 'step', 'optionA', 'selectionsA', 'optionB', 'selectionsB', 'languageInstruction'],
-    notes: '`step` is one of pros_cons|fears_desires|values_needs|values|needs|projections. selectionsA/selectionsB are the respective arrays joined with ", ".',
+Option B selections: {{selectionsB}}{{optionCBlock}}`,
+    variables: ['decisionTitle', 'step', 'optionA', 'selectionsA', 'optionB', 'selectionsB', 'optionCBlock', 'languageInstruction'],
+    notes: '`step` is one of pros_cons|fears_desires|values_needs|values|needs|projections. selectionsA/selectionsB are the respective arrays joined with ", ". optionCBlock is "" for a two-option decision, otherwise Option C and its selections on their own lines (decision-context.ts optionCBlock).',
     outputSchema: {
       type: 'object',
       properties: { wordFromUs: { type: 'string' }, reflection: { type: 'string' } },

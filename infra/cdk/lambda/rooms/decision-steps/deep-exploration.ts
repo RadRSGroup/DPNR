@@ -1,13 +1,13 @@
 import { z } from 'zod'
-import type { Lens, TagType } from '@dpnr/shared-types'
+import { DecisionOptionLabelSchema, type DecisionOptionLabel, type Lens, type TagType } from '@dpnr/shared-types'
 import { parseValue, HttpError } from '../../lib/http'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModel } from '../../lib/model-call'
 import { ddb, PROMPT_REGISTRY_TABLE_NAME } from './db'
-import { getDecision, getOption, replaceTagsOfTypes, type DecisionContent, type OptionContent, type TagEntry } from './helpers'
+import { getDecision, getOption, hasOptionC, replaceTagsOfTypes, type DecisionContent, type OptionContent, type TagEntry } from './helpers'
 import type { StepDefinition } from './types'
 
-const RefineInput = z.object({ optionLabel: z.enum(['A', 'B']) })
+const RefineInput = z.object({ optionLabel: DecisionOptionLabelSchema })
 const TagEntrySchema = z.object({ label: z.string().min(1), aiSuggested: z.boolean() })
 const TagBucketSchema = z.object({
   pro: z.array(TagEntrySchema).optional(),
@@ -15,7 +15,8 @@ const TagBucketSchema = z.object({
   desire: z.array(TagEntrySchema).optional(),
   fear: z.array(TagEntrySchema).optional(),
 })
-const SubmitInput = z.object({ tagsA: TagBucketSchema, tagsB: TagBucketSchema })
+// tagsC only for a decision with a third option (2026-09-28 #2); required then.
+const SubmitInput = z.object({ tagsA: TagBucketSchema, tagsB: TagBucketSchema, tagsC: TagBucketSchema.optional() })
 type TagBucket = z.infer<typeof TagBucketSchema>
 
 /**
@@ -39,10 +40,10 @@ export function tagKindForLens(lens: Lens): 'pros_cons' | 'fears_desires' {
 }
 
 function flattenTags(
-  optionLabel: 'A' | 'B',
+  optionLabel: DecisionOptionLabel,
   tags: TagBucket
-): { optionLabel: 'A' | 'B'; tagType: TagType; label: string; aiSuggested: boolean }[] {
-  const out: { optionLabel: 'A' | 'B'; tagType: TagType; label: string; aiSuggested: boolean }[] = []
+): { optionLabel: DecisionOptionLabel; tagType: TagType; label: string; aiSuggested: boolean }[] {
+  const out: { optionLabel: DecisionOptionLabel; tagType: TagType; label: string; aiSuggested: boolean }[] = []
   for (const tagType of ['pro', 'con', 'desire', 'fear'] as const) {
     for (const t of tags[tagType] ?? []) {
       out.push({ optionLabel, tagType, label: t.label, aiSuggested: t.aiSuggested })
@@ -93,14 +94,17 @@ export const deepExplorationStep: StepDefinition = {
       }
     }
 
-    const { tagsA, tagsB } = parseValue(ctx.input, SubmitInput)
+    const { tagsA, tagsB, tagsC } = parseValue(ctx.input, SubmitInput)
     const requiredKeys: ('pro' | 'con' | 'desire' | 'fear')[] = kind === 'pros_cons' ? ['pro', 'con'] : ['desire', 'fear']
-    for (const [label, tags] of [
+    const withC = await hasOptionC(ctx.pk, ctx.sessionId)
+    const buckets: [DecisionOptionLabel, TagBucket | undefined][] = [
       ['A', tagsA],
       ['B', tagsB],
-    ] as const) {
+      ...(withC ? [['C', tagsC] as [DecisionOptionLabel, TagBucket | undefined]] : []),
+    ]
+    for (const [label, tags] of buckets) {
       for (const key of requiredKeys) {
-        if (!tags[key] || (tags[key] as TagEntry[]).length === 0) {
+        if (!tags?.[key] || (tags[key] as TagEntry[]).length === 0) {
           throw new HttpError(400, 'tags_required', `Option ${label} needs at least one "${key}" tag for the ${kind} lens.`)
         }
       }
@@ -109,7 +113,7 @@ export const deepExplorationStep: StepDefinition = {
     // Only this lens's own tag types are replaced. With several lenses per
     // decision (2026-09-28), replacing all four would erase the other
     // lens's answers (the client sends every bucket it holds).
-    const newTags = [...flattenTags('A', tagsA), ...flattenTags('B', tagsB)].filter((t) => (requiredKeys as TagType[]).includes(t.tagType))
+    const newTags = buckets.flatMap(([label, tags]) => flattenTags(label, tags ?? {})).filter((t) => (requiredKeys as TagType[]).includes(t.tagType))
     await replaceTagsOfTypes(ctx.crypto, ctx.pk, ctx.sessionId, requiredKeys, newTags)
 
     // DecisionItem.currentStep does NOT advance here — matches the original

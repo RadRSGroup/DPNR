@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { LensSchema, DecisionStatusSchema, TagTypeSchema, DecisionEmotionAgreementSchema } from '../dynamo/decision-room'
+import { LensSchema, DecisionStatusSchema, TagTypeSchema, DecisionEmotionAgreementSchema, DecisionOptionLabelSchema } from '../dynamo/decision-room'
 import { MirrorSessionStatusSchema, MirrorEntrySchema, MirrorEmotionFeltSchema, MirrorBodyPlacementSchema } from '../dynamo/mirror-room'
 
 /**
@@ -33,7 +33,7 @@ export const DecisionRoomProjectionViewSchema = z.object({
 export type DecisionRoomProjectionView = z.infer<typeof DecisionRoomProjectionViewSchema>
 
 export const DecisionRoomOptionViewSchema = z.object({
-  label: z.enum(['A', 'B']),
+  label: DecisionOptionLabelSchema,
   approved: z.boolean(),
   content: z.string(),
   tags: z.array(DecisionRoomTagViewSchema),
@@ -42,7 +42,7 @@ export const DecisionRoomOptionViewSchema = z.object({
 export type DecisionRoomOptionView = z.infer<typeof DecisionRoomOptionViewSchema>
 
 export const DecisionRoomOutcomeViewSchema = z.object({
-  chosenOptionLabel: z.enum(['A', 'B']).nullable(),
+  chosenOptionLabel: DecisionOptionLabelSchema.nullable(),
   reflection: z.string().nullable(),
   createdAt: z.string().datetime(),
 })

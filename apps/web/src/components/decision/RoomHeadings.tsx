@@ -1,4 +1,4 @@
-import type { DecisionOption } from '@/lib/types'
+import type { DecisionOption, OptionLabel } from '@/lib/types'
 
 /**
  * One heading system for the Decision Room (founder feedback 2026-09-28 #10,
@@ -30,35 +30,35 @@ export function RoomHeading({
 }
 
 /**
- * The two options, always in view while you evaluate them (#8): labelled
- * "Option A" / "Option B" with the person's own wording, the one being
- * evaluated now highlighted, so nobody has to remember what A and B meant.
+ * The options, always in view while you evaluate them (#8): labelled
+ * "Option A" / "Option B" (/ "Option C") with the person's own wording, the
+ * one being evaluated now highlighted, so nobody has to remember what each
+ * letter meant. Three options sit in three narrower columns (2026-09-28 #2).
  */
 export function OptionContext({
-  optionA,
-  optionB,
+  options,
   active,
 }: {
-  optionA: DecisionOption
-  optionB: DecisionOption
-  active?: 'A' | 'B'
+  options: DecisionOption[]
+  active?: OptionLabel
 }) {
+  const three = options.length > 2
   return (
-    <div className="grid grid-cols-2 gap-2 lg:gap-3">
-      {[optionA, optionB].map((opt) => {
+    <div className={`grid gap-2 lg:gap-3 ${three ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      {options.map((opt) => {
         const isActive = active === undefined || active === opt.label
         return (
           <div
             key={opt.label}
             aria-current={active === opt.label ? 'true' : undefined}
-            className={`rounded-2xl border p-3 lg:p-4 transition-all duration-(--motion-calm) ${
+            className={`min-w-0 rounded-2xl border ${three ? 'p-2.5' : 'p-3'} lg:p-4 transition-all duration-(--motion-calm) ${
               active === opt.label
                 ? 'border-[var(--color-amber-300)]/50 bg-white/[0.07] shadow-[0_0_18px_rgba(245,185,66,0.12)]'
                 : 'border-white/12 bg-white/[0.04]'
             } ${isActive ? '' : 'opacity-50'}`}
           >
             <p className="text-[var(--color-amber-300)] text-[11px] uppercase tracking-[0.18em]">Option {opt.label}</p>
-            <p className="text-white/85 text-sm leading-snug mt-1 line-clamp-3">{opt.content}</p>
+            <p className={`text-white/85 ${three ? 'text-xs lg:text-sm' : 'text-sm'} leading-snug mt-1 line-clamp-3 break-words`}>{opt.content}</p>
           </div>
         )
       })}

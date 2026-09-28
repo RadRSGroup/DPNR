@@ -61,6 +61,7 @@ export const commitmentStep: StepDefinition = {
       `Narrative: ${gathered.narrative}`,
       `Option A: ${gathered.optionAContent}`,
       `Option B: ${gathered.optionBContent}`,
+      gathered.optionCContent !== null ? `Option C: ${gathered.optionCContent}` : null,
       `Leaning toward: ${gathered.chosenLean}`,
       commitment?.trim() ? `Commitment: ${commitment.trim()}` : null,
     ]

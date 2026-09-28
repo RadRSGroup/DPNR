@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { GetCommand, PutCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
-import { Sk, type DecisionItem, type DecisionOptionItem, type DecisionTagItem, type TagType } from '@dpnr/shared-types'
+import { Sk, type DecisionItem, type DecisionOptionItem, type DecisionOptionLabel, type DecisionTagItem, type TagType } from '@dpnr/shared-types'
 import { HttpError } from '../../lib/http'
 import type { SessionCrypto } from '../../lib/session-crypto'
 import { ddb, TABLE_NAME } from './db'
@@ -20,15 +20,25 @@ export async function getDecision(pk: string, decisionId: string): Promise<Decis
   return item
 }
 
-export async function getOption(pk: string, decisionId: string, label: 'A' | 'B'): Promise<DecisionOptionItem> {
-  const result = await ddb.send(
-    new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.decisionOption(decisionId, label) } })
-  )
-  const item = result.Item as DecisionOptionItem | undefined
+export async function getOption(pk: string, decisionId: string, label: DecisionOptionLabel): Promise<DecisionOptionItem> {
+  const item = await findOption(pk, decisionId, label)
   if (!item) {
     throw new HttpError(404, 'option_not_found', `Option ${label} doesn't exist yet — submit MAP_OPTIONS first.`)
   }
   return item
+}
+
+/** The option if it exists — for Option C, which only some decisions have (2026-09-28 #2). */
+export async function findOption(pk: string, decisionId: string, label: DecisionOptionLabel): Promise<DecisionOptionItem | undefined> {
+  const result = await ddb.send(
+    new GetCommand({ TableName: TABLE_NAME, Key: { pk, sk: Sk.decisionOption(decisionId, label) } })
+  )
+  return result.Item as DecisionOptionItem | undefined
+}
+
+/** Whether this decision has a third option. Steps that take per-option input require C's input only then. */
+export async function hasOptionC(pk: string, decisionId: string): Promise<boolean> {
+  return !!(await findOption(pk, decisionId, 'C'))
 }
 
 /**
@@ -44,7 +54,7 @@ export async function replaceTagsOfTypes(
   pk: string,
   decisionId: string,
   types: TagType[],
-  newTags: { optionLabel: 'A' | 'B'; tagType: TagType; label: string; aiSuggested: boolean }[]
+  newTags: { optionLabel: DecisionOptionLabel; tagType: TagType; label: string; aiSuggested: boolean }[]
 ): Promise<void> {
   const existing = await ddb.send(
     new QueryCommand({

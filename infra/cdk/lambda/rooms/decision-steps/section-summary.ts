@@ -4,7 +4,7 @@ import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModel } from '../../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
 import { getDecision } from './helpers'
-import { gatherDecisionContext, type GatheredDecisionContext } from './decision-context'
+import { gatherDecisionContext, optionCBlock, type GatheredDecisionContext } from './decision-context'
 import { tagKindForLens } from './deep-exploration'
 import type { StepDefinition } from './types'
 
@@ -29,7 +29,7 @@ interface SectionSummaryConfig {
     pk: string,
     sessionId: string,
     context: GatheredDecisionContext
-  ): Promise<{ stepType: string; selectionsA: string; selectionsB: string }>
+  ): Promise<{ stepType: string; selectionsA: string; selectionsB: string; selectionsC: string }>
 }
 
 function createSectionSummaryStep(config: SectionSummaryConfig): StepDefinition {
@@ -38,7 +38,7 @@ function createSectionSummaryStep(config: SectionSummaryConfig): StepDefinition 
     handle: async (ctx) => {
       if (ctx.action === 'REFINE') {
         const context = await gatherDecisionContext(ctx.crypto, ctx.pk, ctx.sessionId)
-        const { stepType, selectionsA, selectionsB } = await config.computeStepTypeAndSelections(
+        const { stepType, selectionsA, selectionsB, selectionsC } = await config.computeStepTypeAndSelections(
           ctx.pk,
           ctx.sessionId,
           context
@@ -51,6 +51,7 @@ function createSectionSummaryStep(config: SectionSummaryConfig): StepDefinition 
           optionB: context.optionBContent,
           selectionsA,
           selectionsB,
+          optionCBlock: optionCBlock(context, selectionsC),
           languageInstruction: ctx.languageInstruction,
         })
         return {
@@ -106,7 +107,11 @@ export const deepExplorationSummaryStep = createSectionSummaryStep({
       kind === 'pros_cons'
         ? [...context.tagsB.pro, ...context.tagsB.con].join(', ')
         : [...context.tagsB.desire, ...context.tagsB.fear].join(', ')
-    return { stepType: kind, selectionsA, selectionsB }
+    const selectionsC =
+      kind === 'pros_cons'
+        ? [...context.tagsC.pro, ...context.tagsC.con].join(', ')
+        : [...context.tagsC.desire, ...context.tagsC.fear].join(', ')
+    return { stepType: kind, selectionsA, selectionsB, selectionsC }
   },
 })
 
@@ -118,6 +123,7 @@ export const valuesNeedsSummaryStep = createSectionSummaryStep({
     stepType: 'values_needs',
     selectionsA: [...context.tagsA.value, ...context.tagsA.need].join(', '),
     selectionsB: [...context.tagsB.value, ...context.tagsB.need].join(', '),
+    selectionsC: [...context.tagsC.value, ...context.tagsC.need].join(', '),
   }),
 })
 
@@ -130,5 +136,6 @@ export const futureProjectionSummaryStep = createSectionSummaryStep({
     stepType: 'projections',
     selectionsA: context.projectionsA.join(', '),
     selectionsB: context.projectionsB.join(', '),
+    selectionsC: context.projectionsC.join(', '),
   }),
 })

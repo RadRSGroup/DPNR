@@ -10,8 +10,8 @@ import { Lens, DecisionOption } from '@/lib/types'
 
 interface Step04Props {
   decisionTitle: string
-  optionA: DecisionOption
-  optionB: DecisionOption
+  /** A, B and (2026-09-28 #2) an optional C. */
+  options: DecisionOption[]
   initialLens?: Lens
   /** Lenses already explored in this decision: shown softened, still reopenable (#6/#7). */
   completedLenses?: Lens[]
@@ -34,11 +34,11 @@ const LENSES: { id: Lens; key: 'prosCons' | 'fearsDesires' | 'valuesNeeds'; imag
 
 /**
  * Choose Your Lens (founder feedback 2026-09-28 #5–#7, Figma "Deep
- * Exploration" frames): the two options stay in view, then three distinct
+ * Exploration" frames): the options stay in view, then three distinct
  * photo cards. A lens that's already been explored is softened with a
  * check, and remains tappable so the person can go back to it.
  */
-export default function Step04({ decisionTitle, optionA, optionB, initialLens, completedLenses = [], onComplete, onContinue, onBack }: Step04Props) {
+export default function Step04({ decisionTitle, options, initialLens, completedLenses = [], onComplete, onContinue, onBack }: Step04Props) {
   const t = useTranslations('DecisionLenses')
   const [selected, setSelected] = useState<Lens | null>(initialLens && !completedLenses.includes(initialLens) ? initialLens : null)
   const selectedMeta = LENSES.find((l) => l.id === selected)
@@ -54,7 +54,7 @@ export default function Step04({ decisionTitle, optionA, optionB, initialLens, c
   return (
     <StepShell step={4} decisionTitle={decisionTitle} onBack={onBack} onSkip={handleContinue}>
       <div className="flex-1 flex flex-col gap-4 lg:gap-6 pt-2">
-        <OptionContext optionA={optionA} optionB={optionB} />
+        <OptionContext options={options} />
 
         <p className="text-white/75 text-sm lg:text-base text-center leading-relaxed max-w-md mx-auto">
           {doneCount === 0 ? t('intro') : t('introMore', { count: doneCount })}

@@ -1,7 +1,7 @@
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModel } from '../../lib/model-call'
 import { ddb, PROMPT_REGISTRY_TABLE_NAME } from './db'
-import { gatherDecisionContext } from './decision-context'
+import { gatherDecisionContext, optionCInline, optionCDetails } from './decision-context'
 import type { StepDefinition } from './types'
 
 /**
@@ -30,6 +30,8 @@ export const sessionSummaryStep: StepDefinition = {
         narrative: context.narrative,
         optionA: context.optionAContent,
         optionB: context.optionBContent,
+        optionCInline: optionCInline(context),
+        optionCDetails: optionCDetails(context),
         emotionColor: context.emotionColor ?? '—',
         emotionBodyLocation: context.emotionBodyLocation ?? '—',
         emotionReflection: context.emotionReflection ?? '',

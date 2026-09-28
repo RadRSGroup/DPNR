@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { useAI, RefineFn } from '@/lib/useAI'
 import { TokenCapModal } from '@/components/ui/TokenCapModal'
-import type { DecisionOption } from '@/lib/types'
+import type { DecisionOption, OptionLabel } from '@/lib/types'
 import RoomScreenFrame from '@/components/shared/RoomScreenFrame'
 import ScrollCue from '@/components/shared/ScrollCue'
 import Card from '@/components/ui/Card'
@@ -15,14 +15,13 @@ export type SummaryType = 'pros_cons' | 'fears_desires' | 'values_needs' | 'valu
 interface Props {
   decisionTitle: string
   stepType: SummaryType
-  tagsA: Record<string, string[]>
-  tagsB: Record<string, string[]>
+  /** Per option, the selections by kind (pro/con, desire/fear, values/needs, projections). */
+  tags: Partial<Record<OptionLabel, Record<string, string[]>>>
   onRefine: RefineFn
   onContinue: () => void
   onBack?: () => void
-  /** Shown above the comparison so A and B never have to be remembered (#8). */
-  optionA?: DecisionOption
-  optionB?: DecisionOption
+  /** A, B and an optional C (2026-09-28 #2); shown above the comparison so nobody has to remember the letters (#8). */
+  options: DecisionOption[]
 }
 
 // The phase each summary belongs to, in StepShell's six (Align = the lenses, Decide = Future Projection).
@@ -72,8 +71,10 @@ const AGREEMENT_OPTIONS = ['Accurate', 'Refine this', 'Not sure', 'Partly True']
  * and a visible cue when more sits below the fold (#16).
  */
 export default function SectionSummaryScreen({
-  decisionTitle, stepType, tagsA, tagsB, onRefine, onContinue, onBack, optionA, optionB,
+  decisionTitle, stepType, tags, onRefine, onContinue, onBack, options,
 }: Props) {
+  const labels = options.map((o) => o.label)
+  const row = (key: string) => Object.fromEntries(labels.map((l) => [l, tags[l]?.[key] ?? []])) as Partial<Record<OptionLabel, string[]>>
   const router = useRouter()
   const [agreement, setAgreement] = useState<string | null>(null)
   const [wordFromUs, setWordFromUs] = useState('')
@@ -127,35 +128,35 @@ export default function SectionSummaryScreen({
             <p className="font-display text-white/80 text-base lg:text-lg leading-relaxed italic text-center whitespace-pre-line">{quote}</p>
           )}
 
-          {optionA && optionB && <OptionContext optionA={optionA} optionB={optionB} />}
+          {options.length >= 2 && <OptionContext options={options} />}
 
           {stepType === 'pros_cons' && (
             <div className="space-y-6">
-              <SectionRow label="Pros" tagsA={tagsA.pro ?? []} tagsB={tagsB.pro ?? []} />
-              <SectionRow label="Cons" tagsA={tagsA.con ?? []} tagsB={tagsB.con ?? []} />
+              <SectionRow label="Pros" labels={labels} tags={row('pro')} />
+              <SectionRow label="Cons" labels={labels} tags={row('con')} />
             </div>
           )}
 
           {stepType === 'fears_desires' && (
             <div className="space-y-6">
-              <SectionRow label="Desires" tagsA={tagsA.desire ?? []} tagsB={tagsB.desire ?? []} />
-              <SectionRow label="Fears" tagsA={tagsA.fear ?? []} tagsB={tagsB.fear ?? []} />
+              <SectionRow label="Desires" labels={labels} tags={row('desire')} />
+              <SectionRow label="Fears" labels={labels} tags={row('fear')} />
             </div>
           )}
 
           {(stepType === 'values_needs' || stepType === 'values' || stepType === 'needs') && (
             <div className="space-y-6">
-              {stepType !== 'needs' && <SectionRow label="Values" tagsA={tagsA.values ?? []} tagsB={tagsB.values ?? []} />}
-              {stepType !== 'values' && <SectionRow label="Needs" tagsA={tagsA.needs ?? []} tagsB={tagsB.needs ?? []} />}
+              {stepType !== 'needs' && <SectionRow label="Values" labels={labels} tags={row('values')} />}
+              {stepType !== 'values' && <SectionRow label="Needs" labels={labels} tags={row('needs')} />}
             </div>
           )}
 
           {stepType === 'projections' && (
             <section className="space-y-3">
               <SectionLabel>Futures that resonated</SectionLabel>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-6">
-                {(['A', 'B'] as const).map(label => {
-                  const projs = (label === 'A' ? tagsA : tagsB).projections ?? []
+              <div className={`grid grid-cols-1 gap-3 lg:gap-6 ${labels.length > 2 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+                {labels.map(label => {
+                  const projs = tags[label]?.projections ?? []
                   return (
                     <Card key={label} className="!p-4 lg:!p-5 space-y-2">
                       <p className="text-[var(--color-amber-300)] text-[11px] uppercase tracking-[0.18em]">Option {label}</p>
@@ -241,15 +242,16 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return <h3 className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.2em]">{children}</h3>
 }
 
-function SectionRow({ label, tagsA, tagsB }: { label: string; tagsA: string[]; tagsB: string[] }) {
+function SectionRow({ label, labels, tags: byOption }: { label: string; labels: OptionLabel[]; tags: Partial<Record<OptionLabel, string[]>> }) {
+  // Three options stack on phones and sit side by side from sm up.
   return (
     <section className="space-y-3">
       <SectionLabel>{label}</SectionLabel>
-      <div className="grid grid-cols-2 gap-3 lg:gap-6">
-        {(['A', 'B'] as const).map((opt, idx) => {
-          const tags = idx === 0 ? tagsA : tagsB
+      <div className={`grid gap-3 lg:gap-6 ${labels.length > 2 ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2'}`}>
+        {labels.map((opt) => {
+          const tags = byOption[opt] ?? []
           return (
-            <div key={opt} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 lg:p-4 space-y-2">
+            <div key={opt} className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.04] p-3 lg:p-4 space-y-2">
               <p className="text-white/55 text-[11px] uppercase tracking-[0.18em]">Option {opt}</p>
               {tags.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">

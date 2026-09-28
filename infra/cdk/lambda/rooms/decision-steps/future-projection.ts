@@ -1,22 +1,24 @@
 import { z } from 'zod'
 import { randomUUID } from 'node:crypto'
 import { PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
-import { Sk, DECISION_ROOM_STEP_NUMBER, type DecisionProjectionItem, type DecisionOutcomeItem } from '@dpnr/shared-types'
-import { parseValue } from '../../lib/http'
+import { Sk, DECISION_ROOM_STEP_NUMBER, DecisionOptionLabelSchema, type DecisionOptionLabel, type DecisionProjectionItem, type DecisionOutcomeItem } from '@dpnr/shared-types'
+import { parseValue, HttpError } from '../../lib/http'
 import { batchDeleteKeys } from '../../lib/batch-delete'
 import type { SessionCrypto } from '../../lib/session-crypto'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModel } from '../../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
-import { getDecision, getOption, type DecisionContent, type OptionContent } from './helpers'
+import { getDecision, getOption, hasOptionC, type DecisionContent, type OptionContent } from './helpers'
 import type { StepDefinition } from './types'
 
-const RefineInput = z.object({ optionLabel: z.enum(['A', 'B']) })
+const RefineInput = z.object({ optionLabel: DecisionOptionLabelSchema })
 const ProjectionEntry = z.object({ statement: z.string().min(1), isCustom: z.boolean() })
 const SubmitInput = z.object({
   projectionsA: z.array(ProjectionEntry).min(1),
   projectionsB: z.array(ProjectionEntry).min(1),
-  chosenLean: z.enum(['A', 'B', 'undecided']),
+  // Only for a decision with a third option (2026-09-28 #2); required then.
+  projectionsC: z.array(ProjectionEntry).min(1).optional(),
+  chosenLean: z.enum(['A', 'B', 'C', 'undecided']),
   reflectionNote: z.string().max(5000).optional(),
 })
 
@@ -24,7 +26,7 @@ async function buildProjectionItem(
   crypto: SessionCrypto,
   pk: string,
   decisionId: string,
-  optionLabel: 'A' | 'B',
+  optionLabel: DecisionOptionLabel,
   p: { statement: string; isCustom: boolean },
   now: string
 ): Promise<DecisionProjectionItem> {
@@ -79,12 +81,20 @@ export const futureProjectionStep: StepDefinition = {
       }
     }
 
-    const { projectionsA, projectionsB, chosenLean, reflectionNote } = parseValue(ctx.input, SubmitInput)
+    const { projectionsA, projectionsB, projectionsC, chosenLean, reflectionNote } = parseValue(ctx.input, SubmitInput)
+    const withC = await hasOptionC(ctx.pk, ctx.sessionId)
+    if (withC && !projectionsC) {
+      throw new HttpError(400, 'projections_required', 'Option C needs at least one projection.')
+    }
+    if (!withC && chosenLean === 'C') {
+      throw new HttpError(400, 'invalid_lean', 'This decision has no Option C.')
+    }
     const now = new Date().toISOString()
 
     const projectionItems = await Promise.all([
       ...projectionsA.map((p) => buildProjectionItem(ctx.crypto, ctx.pk, ctx.sessionId, 'A', p, now)),
       ...projectionsB.map((p) => buildProjectionItem(ctx.crypto, ctx.pk, ctx.sessionId, 'B', p, now)),
+      ...(withC && projectionsC ? projectionsC.map((p) => buildProjectionItem(ctx.crypto, ctx.pk, ctx.sessionId, 'C', p, now)) : []),
     ])
 
     const outcomeItem: DecisionOutcomeItem = {
