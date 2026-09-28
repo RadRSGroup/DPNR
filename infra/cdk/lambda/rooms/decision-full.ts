@@ -166,6 +166,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       status: decisionItem.status,
       currentStep: decisionItem.currentStep,
       lens: decisionItem.lens,
+      completedLenses: decisionItem.completedLenses ?? [],
       reviewDate: decisionItem.reviewDate,
       title: content.title,
       subtitle: content.subtitle,

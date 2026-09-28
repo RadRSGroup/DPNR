@@ -9,7 +9,6 @@ import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import BodyMap from '@/components/shared/BodyMap'
 import EmotionChips from '@/components/shared/EmotionChips'
 import FeltSummary from '@/components/shared/FeltSummary'
-import { TOTAL_STEPS } from '@/lib/types'
 import { EMPTY_FELT, type Felt } from '@/lib/body-map'
 import type { BodyPlacement, EmotionFelt } from '@dpnr/shared-types'
 import Dictatable from '@/components/ui/Dictatable'
@@ -68,7 +67,7 @@ export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initia
 
   if (reflection) {
     return (
-      <RoomScreenFrame backgroundSrc="/images/backgrounds/decision-bg.webp" glows={['bg-[radial-gradient(ellipse_90%_55%_at_50%_0%,_rgba(210,80,230,0.22)_0%,_transparent_70%)]', 'bg-[radial-gradient(ellipse_60%_40%_at_80%_80%,_rgba(160,40,200,0.12)_0%,_transparent_60%)]']}>
+      <RoomScreenFrame backgroundSrc="/images/decision/decision-room-hero.webp" dimBackground glows={['bg-[radial-gradient(ellipse_90%_55%_at_50%_0%,_rgba(210,80,230,0.22)_0%,_transparent_70%)]', 'bg-[radial-gradient(ellipse_60%_40%_at_80%_80%,_rgba(160,40,200,0.12)_0%,_transparent_60%)]']}>
 
         {tokenCapReached && <TokenCapModal onClose={dismissTokenCap} />}
 
@@ -84,41 +83,25 @@ export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initia
           <div className="w-8 h-8" />
         </div>
 
-        {/* Progress dots */}
-        <div className="flex items-center justify-center gap-1.5 px-5 pt-2 pb-1">
-          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-            <div
-              key={i}
-              className={`h-1.5 rounded-full transition-all duration-(--motion-slow) ${
-                i + 1 < 3
-                  ? 'bg-purple-400 w-5'
-                  : i + 1 === 3
-                  ? 'bg-fuchsia-300 w-8 shadow-[0_0_8px_rgba(240,100,255,0.7)]'
-                  : 'bg-white/15 w-4'
-              }`}
-            />
-          ))}
-        </div>
-
         {/* Header */}
         <div className="text-center px-6 pt-4 pb-3">
           <h2 className="text-white text-lg font-light">&quot;{decisionTitle}&quot;</h2>
-          <p className="text-fuchsia-300/60 text-xs mt-1 uppercase tracking-widest">
-            Step 03: Body Emotion Mapping
+          <p className="text-[var(--color-amber-300)] text-xs mt-2 uppercase tracking-[0.18em]">
+            Step 3 of 6 · Body Emotion Mapping
           </p>
         </div>
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto no-scrollbar px-5 space-y-4 pb-4 animate-settle-in">
-          <div className="bg-fuchsia-950/40 border border-fuchsia-600/25 rounded-2xl px-4 py-4 space-y-3">
+          <div className="bg-white/[0.05] border border-white/12 rounded-2xl px-4 py-4 space-y-3">
             <FeltSummary emotionsFelt={emotionsFelt} bodyPlacements={bodyPlacements} emotion={emotion} bodyResponse={bodyResponse} />
-            <p className="text-[var(--color-text-tertiary)] text-xs font-medium uppercase tracking-wide">A word from Us:</p>
-            <p className="text-white/80 text-sm leading-relaxed">{reflection}</p>
+            <p className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.2em]">A word from us</p>
+            <p className="text-white/85 text-sm lg:text-base leading-relaxed">{reflection}</p>
           </div>
 
           {/* Do You Agree? */}
           <div className="space-y-3">
-            <p className="text-[var(--color-text-tertiary)] text-xs text-center tracking-widest">— Do You Agree? —</p>
+            <p className="text-white/70 text-sm text-center">Does this feel accurate?</p>
             <div className="grid grid-cols-2 gap-2">
               {([
                 ['accurate', 'Accurate'],
@@ -149,7 +132,7 @@ export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initia
             </div>
             {response === 'refine' && (
               <div className="pt-1 space-y-1 animate-settle-in">
-                <p className="text-[var(--color-text-tertiary)] text-xs">Add or edit — make it yours:</p>
+                <p className="text-[var(--color-text-tertiary)] text-xs">Add or edit to make it yours:</p>
                 <Dictatable>
                   <textarea
                     autoFocus
@@ -186,7 +169,7 @@ export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initia
             disabled={!response || (response === 'refine' && !userRefinement.trim())}
             className="flex-1 h-12 rounded-full bg-gradient-to-r from-fuchsia-700 to-purple-600 text-white text-sm font-medium hover:from-fuchsia-600 hover:to-purple-500 transition-all shadow-lg shadow-fuchsia-900/40 disabled:opacity-40 disabled:pointer-events-none"
           >
-            Keep Exploring →
+            Keep Exploring
           </button>
         </div>
       </RoomScreenFrame>

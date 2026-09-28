@@ -26,12 +26,12 @@ export default function CommitmentScreen({ decisionTitle, nextStep, onDone, onBa
   const calendarDate = reviewDate ?? addDays(7)
 
   return (
-    <RoomScreenFrame backgroundSrc="/images/backgrounds/decision-bg.webp" glows={['bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.45)_0%,_rgba(80,20,140,0.25)_45%,_transparent_75%)]']}>
+    <RoomScreenFrame backgroundSrc="/images/decision/decision-room-hero.webp" dimBackground glows={['bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.45)_0%,_rgba(80,20,140,0.25)_45%,_transparent_75%)]']}>
 
       {/* Header */}
       <div className="pt-14 lg:pt-8 px-5 pb-4 text-center space-y-1">
         <h1 className="text-white text-lg font-medium">&quot;{decisionTitle}&quot;</h1>
-        <p className="text-white/50 text-sm">Last Step: Before You Leave</p>
+        <p className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.18em]">Step 6 of 6 · Before you leave</p>
       </div>
 
       {/* Scrollable body */}
@@ -63,9 +63,13 @@ export default function CommitmentScreen({ decisionTitle, nextStep, onDone, onBa
           />
         </Dictatable>
 
-        {/* Add to Calendar */}
-        <div className="space-y-2">
-          <p className="text-[var(--color-text-tertiary)] text-xs text-center">Add a reminder</p>
+        {/* Add to Calendar: clearly tappable, clearly optional (founder feedback 2026-09-28 #17). */}
+        <div className="rounded-3xl border border-white/12 bg-white/[0.04] px-4 py-4 space-y-3">
+          <div className="text-center">
+            <p className="text-[var(--color-amber-300)] text-[11px] uppercase tracking-[0.2em]">Optional</p>
+            <p className="text-white/85 text-sm mt-1">Add a check-in to your calendar</p>
+            <p className="text-white/55 text-xs mt-1 leading-relaxed">Tap a calendar to save a gentle reminder to look back at this. You can also just tap Done.</p>
+          </div>
           <CalendarButtons
             title={calendarTitle}
             date={calendarDate}

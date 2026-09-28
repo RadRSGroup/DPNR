@@ -47,7 +47,7 @@ export default function SummaryInsightScreen({
       <div className="flex-1 flex flex-col justify-between pt-2 pb-2">
 
         {/* Section label */}
-        <p className="text-purple-400 text-xs uppercase tracking-widest text-center pb-3">Your Story</p>
+        <h3 className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.2em] text-center pb-3">Your story</h3>
 
         {/* Insight card */}
         <div className="flex-1 flex flex-col justify-center space-y-5">
@@ -69,16 +69,14 @@ export default function SummaryInsightScreen({
                 Generating your insight…
               </div>
             ) : (
-              <p className="text-white/75 text-sm text-center leading-relaxed">
+              <p className="text-white/85 text-sm lg:text-base text-center leading-relaxed">
                 {insight}
               </p>
             )}
 
             {/* Divider */}
             <div className="flex items-center gap-3 pt-1">
-              <div className="flex-1 h-px bg-white/10" />
-              <p className="text-[var(--color-text-tertiary)] text-xs">Do You Agree?</p>
-              <div className="flex-1 h-px bg-white/10" />
+              <p className="flex-1 text-white/70 text-sm text-center">Does this feel accurate?</p>
             </div>
 
             {/* Agreement options */}

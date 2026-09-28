@@ -55,15 +55,15 @@ export default function ClarityToActionScreen({
 
         {/* Header */}
         <div className="text-center space-y-1">
-          <p className="text-white/60 text-sm">Based on what became clear for you.</p>
+          <h3 className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.2em]">Based on what became clear for you</h3>
         </div>
 
         {/* Next step section */}
         <Card className="space-y-3">
           <div className="space-y-1">
-            <p className="text-white text-sm font-medium">Your Next Small Step</p>
-            <p className="text-[var(--color-text-tertiary)] text-xs">What is one small step that moves you slightly toward this direction?</p>
-            <p className="text-[var(--color-text-tertiary)] text-xs">It should feel: <span className="text-white/50">Small • Safe • Possible within the next few days</span></p>
+            <p className="font-display text-white text-lg lg:text-xl">Your next small step</p>
+            <p className="text-white/70 text-sm">What is one small step that moves you slightly toward this direction?</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs">It should feel: <span className="text-white/50">small, safe, and possible within the next few days</span></p>
           </div>
 
           <div className="space-y-1">
@@ -92,7 +92,7 @@ export default function ClarityToActionScreen({
 
         {/* Body feelings */}
         <div className="space-y-2">
-          <p className="text-white/50 text-xs text-center">When you imagine this — what happens in you?</p>
+          <p className="text-white/50 text-xs text-center">When you imagine this, what happens in you?</p>
           <div className="flex flex-wrap gap-2">
             {BODY_FEELINGS.map(f => (
               <button

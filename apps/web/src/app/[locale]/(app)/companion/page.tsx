@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect, useLayoutEffect, useRef, Suspense } from 'react'
 import Image from 'next/image'
-import { Link } from '@/i18n/navigation'
 import { useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
@@ -12,6 +11,7 @@ import { getCompanionContext, sendCompanionMessage, getPreferences, createCompan
 import type { CompanionDirective, ChatBackground } from '@dpnr/shared-types'
 import DirectiveCard from '@/components/companion/DirectiveCard'
 import PullACard from '@/components/companion/PullACard'
+import PullACardTeaser from '@/components/companion/PullACardTeaser'
 import RecentConversations from '@/components/companion/RecentConversations'
 import FocusMode from '@/components/companion/FocusMode'
 import TimeTodayIndicator from '@/components/companion/TimeTodayIndicator'
@@ -21,6 +21,7 @@ import { useOnboardingFlow } from '@/components/companion/onboarding/useOnboardi
 import OnboardingCardPanel from '@/components/companion/onboarding/OnboardingCardPanel'
 import OnboardingSummaryCard from '@/components/companion/onboarding/OnboardingSummaryCard'
 import Dictatable from '@/components/ui/Dictatable'
+import FeelBodyButton from '@/components/shared/FeelBodyButton'
 import { speechRecognitionCtor, startDictation, type DictationError, type DictationHandle } from '@/lib/dictation'
 
 interface ChatMessage {
@@ -563,31 +564,34 @@ function CompanionContent() {
           shows the clock), then Music (Focus Mode in a sheet: the only way to
           start music on a phone) and Recent Conversations, which has no room
           in the single-column layout (desktop shows both in the right
-          column). The fade keeps scrolling content from colliding with it. */}
+          column). A solid bar like MobileHeader above it (a see-through fade
+          let the scrolled greeting show through, 2026-09-28 phone report),
+          and icon buttons so the date line has room on a 375px phone. */}
       {!onboarding.active && (
-        <div className="lg:hidden fixed top-12 inset-x-0 z-30 flex items-center gap-2 px-4 pt-2 pb-4 bg-gradient-to-b from-[var(--color-bg-base)]/90 via-[var(--color-bg-base)]/50 to-transparent pointer-events-none">
+        <div className="lg:hidden fixed top-12 inset-x-0 z-30 flex items-center gap-2 px-4 py-1.5 bg-[#0a0a0f]/90 backdrop-blur-sm">
           <MobileDateLine />
-          <div className="ms-auto flex items-center gap-2 pointer-events-auto">
+          <div className="ms-auto flex items-center gap-2">
+            <FeelBodyButton variant="icon" />
             <button
               onClick={() => setMusicOpen(true)}
-              className="inline-flex items-center gap-1.5 liquid-glass rounded-full px-3 py-1.5 text-xs text-white/80"
+              className="w-9 h-9 flex items-center justify-center liquid-glass rounded-full text-white/80 active:scale-[0.96]"
               aria-label={tc('focusMode.openMusic')}
             >
-              <Music className="w-3.5 h-3.5" /> {tc('focusMode.music')}
+              <Music className="w-4 h-4" />
             </button>
             <button
               onClick={() => setHistoryOpen(true)}
-              className="inline-flex items-center gap-1.5 liquid-glass rounded-full px-3 py-1.5 text-xs text-white/80"
+              className="w-9 h-9 flex items-center justify-center liquid-glass rounded-full text-white/80 active:scale-[0.96]"
               aria-label={tr('showHistory')}
             >
-              <MessagesSquare className="w-3.5 h-3.5" /> {tr('showHistory')}
+              <MessagesSquare className="w-4 h-4" />
             </button>
           </div>
         </div>
       )}
       {musicOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex items-end bg-black/50" onClick={() => setMusicOpen(false)}>
-          <div className="w-full max-h-[85dvh] overflow-y-auto p-3 pb-6" onClick={(e) => e.stopPropagation()}>
+        <div className="lg:hidden fixed inset-0 z-50 flex items-end bg-black/75 backdrop-blur-sm animate-fade-in" onClick={() => setMusicOpen(false)}>
+          <div className="w-full max-h-[85dvh] overflow-y-auto p-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] animate-settle-in" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-end mb-2">
               <button
                 onClick={() => setMusicOpen(false)}
@@ -602,8 +606,8 @@ function CompanionContent() {
         </div>
       )}
       {historyOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex items-end bg-black/50" onClick={() => setHistoryOpen(false)}>
-          <div className="w-full max-h-[75dvh] overflow-y-auto p-3 pb-6" onClick={(e) => e.stopPropagation()}>
+        <div className="lg:hidden fixed inset-0 z-50 flex items-end bg-black/75 backdrop-blur-sm animate-fade-in" onClick={() => setHistoryOpen(false)}>
+          <div className="w-full max-h-[75dvh] overflow-y-auto p-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] animate-settle-in" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-end mb-2">
               <button
                 onClick={() => setHistoryOpen(false)}
@@ -634,8 +638,8 @@ function CompanionContent() {
           the menu opens it here as a sheet (founder feedback 2026-09-27:
           every existing destination reachable on mobile). */}
       {cardSheetOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex items-end bg-black/50" onClick={closeCardSheet}>
-          <div className="w-full max-h-[85dvh] overflow-y-auto p-3 pb-6" onClick={(e) => e.stopPropagation()}>
+        <div className="lg:hidden fixed inset-0 z-50 flex items-end bg-black/75 backdrop-blur-sm animate-fade-in" onClick={closeCardSheet}>
+          <div className="w-full max-h-[85dvh] overflow-y-auto p-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] animate-settle-in" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-end mb-2">
               <button
                 onClick={closeCardSheet}
@@ -668,10 +672,10 @@ function CompanionContent() {
         >
           {/* Mobile: plain text greeting, no room for hero art here. Only on
               the true landing state — see isLanding's doc comment above. */}
-          {/* pt-24 clears the fixed header + utility row (the row, added
+          {/* pt-28 clears the fixed header + utility row (the row, added
               2026-09-27, isn't shown during onboarding, so pt-14 there). */}
           {isLanding && (
-            <div className={`px-5 ${onboarding.active ? 'pt-14' : 'pt-24'} pb-1 lg:hidden`}>
+            <div className={`px-5 ${onboarding.active ? 'pt-14' : 'pt-28'} pb-1 lg:hidden animate-settle-in`}>
               <h1 className="font-display text-2xl text-white">
                 {timeGreeting(tc)}{firstName ? `, ${firstName}` : ''}
               </h1>
@@ -707,30 +711,14 @@ function CompanionContent() {
             </div>
           )}
 
-          {/* Pull a Card — mobile position, inline above the thread. Desktop
-              shows the same widget in the always-visible right column
-              instead (below); mobile has no persistent sidebar, so it's
-              landing-only here, same tradeoff as the quick prompts and
-              Explore row just below. This used to show the old scheduled
-              Daily Card via DailyGuidanceCard — Session 42 replaced that
-              widget slot with Pull a Card on desktop ("replaces this exact
-              widget slot rather than stacking alongside the untouched Daily
-              Card elsewhere") but missed mobile, leaving it as the only way
-              left to reach Pull a Card being desktop-only. */}
-          {isLanding && (
-            <div className="lg:hidden px-5 pt-2">
-              <PullACard />
-            </div>
-          )}
-
-          {/* pt-24 replaces the greeting block's own safe-area top padding
+          {/* pt-28 replaces the greeting block's own safe-area top padding
               once the conversation is active and the greeting is hidden:
               room for the fixed mobile header plus the utility row under it
               (was pt-14 before the utility row, 2026-09-27). */}
           <div
             ref={scrollRef}
             key={threadKey}
-            className={`${threadKey > 0 ? 'animate-fade-in ' : ''}scrollbar-glass flex-1 overflow-y-auto px-5 lg:px-0 pb-2 flex flex-col ${isLanding ? 'pt-2 max-lg:flex-none max-lg:overflow-visible' : 'pt-24 lg:pt-2'} ${
+            className={`${threadKey > 0 ? 'animate-fade-in ' : ''}scrollbar-glass flex-1 overflow-y-auto px-5 lg:px-0 pb-2 flex flex-col ${isLanding ? 'pt-3 max-lg:flex-none max-lg:overflow-visible' : 'pt-28 lg:pt-2'} ${
               !pageLoading && messages.length === 0 && !onboarding.active ? 'justify-center' : 'space-y-3'
             }`}
           >
@@ -812,7 +800,7 @@ function CompanionContent() {
                 justify-center above, instead of top-aligned with a large dead
                 gap above the input bar. */}
             {!pageLoading && messages.length === 0 && !onboarding.active && (
-              <div className="flex justify-start">
+              <div className="flex justify-start animate-settle-in stagger-1">
                 <div className="max-w-[90%] lg:max-w-[480px] bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] text-white/85 rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed">
                   <p>{tc('emptyState.title')}</p>
                   <p className="text-[var(--color-text-tertiary)] text-xs mt-1.5">
@@ -922,34 +910,6 @@ function CompanionContent() {
             )}
           </div>
 
-          {/* Direct navigation to the wider platform from Main Chat itself —
-              spec Table 2's own "Surface / Navigation behavior" row. On
-              desktop the sidebar already covers every destination here, so
-              this row is mobile-only. Landing-only now too — the bottom tab
-              bar (Chat/Dashboard/Mirror/Decision/Profile) already gives
-              persistent mobile navigation once a conversation is active, so
-              this row's job here is a first-visit convenience, not the only
-              way to navigate. */}
-          {isLanding && (
-          <div className="px-5 pt-2 lg:hidden">
-            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-2">{tc('explore.label')}</p>
-            <div className="grid grid-cols-4 gap-2">
-              <Link href="/dashboard" className="liquid-glass active:scale-[0.98] rounded-2xl p-2.5 text-center">
-                <p className="text-white text-xs font-medium">{tc('explore.innerOS')}</p>
-              </Link>
-              <Link href="/rooms" className="liquid-glass active:scale-[0.98] rounded-2xl p-2.5 text-center">
-                <p className="text-white text-xs font-medium">{tc('explore.workRooms')}</p>
-              </Link>
-              <Link href="/growth" className="liquid-glass active:scale-[0.98] rounded-2xl p-2.5 text-center">
-                <p className="text-white text-xs font-medium">{tc('explore.growth')}</p>
-              </Link>
-              <Link href="/library" className="liquid-glass active:scale-[0.98] rounded-2xl p-2.5 text-center">
-                <p className="text-white text-xs font-medium">{tc('explore.library')}</p>
-              </Link>
-            </div>
-          </div>
-          )}
-
           {/* Quick-prompt chips — moved below the chat thread, directly above
               the input bar (was between the hero and the thread), per direct
               user feedback: sitting right where composing happens reads more
@@ -957,7 +917,7 @@ function CompanionContent() {
               the conversation. Still landing-only (showPrompts === isLanding),
               same gating as before. */}
           {showPrompts && (
-            <div className="px-5 lg:px-0 pt-1 pb-2">
+            <div className="px-5 lg:px-0 pt-1 pb-2 animate-settle-in stagger-2">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
                 {QUICK_PROMPT_KEYS.map((p) => (
                   <button
@@ -972,6 +932,17 @@ function CompanionContent() {
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Pull a Card on a phone (2026-09-28 phone report: the full card
+              was the first thing seen, above the chat). The landing leads
+              with the conversation; the card is one compact row under the
+              prompts that opens the same card in the ?card=1 sheet. Desktop
+              keeps the full card in the right column. */}
+          {isLanding && (
+            <div className="px-5 pb-2 lg:hidden animate-settle-in stagger-3">
+              <PullACardTeaser onOpen={() => router.push('/companion?card=1')} />
             </div>
           )}
 

@@ -1244,5 +1244,50 @@
       "reviewBy": "review by {date}",
       "footer": "Created with DPNR. The content was written and approved by the person named above."
     }
+  },
+  "FeelBody": {
+    "close": "Close",
+    "back": "Back",
+    "privacy": "Just for this moment. Nothing here is saved.",
+    "open": "Feel / Body",
+    "feel": {
+      "title": "Pause for a moment",
+      "body": "What are you feeling right now? Choose as many as fit.",
+      "next": "Where do you feel it?"
+    },
+    "locate": {
+      "wordsPlaceholder": "In your own words (optional)",
+      "next": "Continue"
+    },
+    "return": {
+      "title": "Noticed.",
+      "body": "Naming a feeling and finding it in the body is enough for now. Take this with you as you go back.",
+      "done": "Return"
+    }
+  },
+  "DecisionLenses": {
+    "groupLabel": "Choose a lens",
+    "intro": "Choose a perspective to explore this decision more deeply.",
+    "introMore": "You've explored {count, plural, one {one perspective} other {# perspectives}}. Choose another, go back to one, or continue.",
+    "done": "Explored",
+    "explore": "Explore this lens",
+    "revisit": "Go back to this lens",
+    "prosCons": {
+      "title": "Pros & Cons",
+      "body": "The potential benefits and drawbacks of each option, so you can see the bigger picture."
+    },
+    "fearsDesires": {
+      "title": "Fears & Desires",
+      "body": "What's holding you back and what's calling you forward, so you can understand both sides."
+    },
+    "valuesNeeds": {
+      "title": "Values & Needs",
+      "body": "What truly matters to you and what you need to feel aligned, so you can make a choice that fits."
+    },
+    "continue": "Continue to Future Projection",
+    "reminder": "{count, plural, one {{lenses} is} other {{lenses} are}} still here if you'd like another perspective before you move on. You're also welcome to continue.",
+    "listJoin": " and ",
+    "stay": "Stay with the lenses",
+    "continueAnyway": "Continue"
   }
 }

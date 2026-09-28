@@ -8,6 +8,7 @@ import { DecisionOption } from '@/lib/types'
 import AiThinking from '@/components/shared/AiThinking'
 import { staggerClass } from '@/lib/motion'
 import Dictatable from '@/components/ui/Dictatable'
+import { OptionContext, RoomHeading } from './RoomHeadings'
 interface Step07Props {
   decisionTitle: string
   optionA: DecisionOption
@@ -101,35 +102,13 @@ export default function Step07({
       <StepShell step={7} decisionTitle={decisionTitle} onBack={onBack} onSkip={onSkip}>
         {tokenCapReached && <TokenCapModal onClose={dismissTokenCap} />}
         <div className="flex-1 flex flex-col space-y-4 pt-2">
-          <div className="grid grid-cols-2 gap-2">
-            {(['A', 'B'] as const).map(label => (
-              <div
-                key={label}
-                className={`rounded-xl border p-3 transition-all ${
-                  currentOption === label
-                    ? 'border-purple-600/60 bg-purple-900/20'
-                    : 'border-white/10 bg-white/5 opacity-50'
-                }`}
-              >
-                <p className="text-purple-400 text-xs mb-1">Option {label}</p>
-                <p className="text-white/60 text-xs line-clamp-2">
-                  {label === 'A' ? optionA.content : optionB.content}
-                </p>
-              </div>
-            ))}
-          </div>
+          <OptionContext optionA={optionA} optionB={optionB} active={currentOption} />
 
-          {/* Section header */}
-          <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 bg-purple-900/40 border border-purple-600/40 rounded-full px-3 py-1 text-purple-300 text-xs font-semibold uppercase tracking-wider">
-              🔭 Future Projections
-            </span>
-            <div className="flex-1 h-px bg-white/8" />
-          </div>
-
-          <div className="space-y-0.5 text-center">
-            <p className="text-white/70 text-sm">Imagine your life in one year</p>
-            <p className="text-[var(--color-text-tertiary)] text-xs">if you choose Option {currentOption}.</p>
+          {/* The prompt as an intentional transition, not body text (#12). */}
+          <div key={currentOption} className="animate-settle-in py-2 lg:py-4">
+            <RoomHeading eyebrow={`Future Projection · Option ${currentOption}`} title={`Imagine your life one year from now, having chosen Option ${currentOption}.`} as="h2">
+              Which of these futures feel true? Choose any that resonate, or add your own.
+            </RoomHeading>
           </div>
 
           <div className="flex-1 space-y-2 no-scrollbar overflow-y-auto">
@@ -153,7 +132,7 @@ export default function Step07({
                   }`}>
                     {selected.includes(s) && <span className="text-white text-xs">✓</span>}
                   </div>
-                  <span className={`text-sm ${selected.includes(s) ? 'text-white/90' : 'text-white/60'}`}>
+                  <span className={`text-sm lg:text-base leading-snug ${selected.includes(s) ? 'text-white/90' : 'text-white/70'}`}>
                     {s}
                   </span>
                 </button>
@@ -188,7 +167,7 @@ export default function Step07({
           </div>
 
           <PrimaryButton
-            label={currentOption === 'A' ? 'Next Option →' : 'Reflect your decision'}
+            label={currentOption === 'A' ? 'Next: Option B' : 'Reflect on your decision'}
             onClick={handleProjectionsNext}
             disabled={loading && statements.length === 0}
           />
@@ -202,11 +181,9 @@ export default function Step07({
     return (
       <StepShell step={7} decisionTitle={decisionTitle} onBack={() => setPhase('projections')} onSkip={handleReflectNext}>
         <div className="flex-1 flex flex-col space-y-6 pt-2">
-          <div className="text-center space-y-1">
-            <p className="text-purple-400 text-xs uppercase tracking-widest">Step 7 · Reflect</p>
-            <h2 className="text-white text-lg font-light">You&apos;ve mapped both paths.</h2>
-            <p className="text-[var(--color-text-tertiary)] text-sm">Now let it settle. Which option leans closer to your truth?</p>
-          </div>
+          <RoomHeading eyebrow="Future Projection · Reflect" title="You've mapped both paths." as="h2">
+            Now let it settle. Which option leans closer to your truth?
+          </RoomHeading>
 
           {/* Option lean selector */}
           <div className="grid grid-cols-2 gap-3">
@@ -223,8 +200,8 @@ export default function Step07({
                       : 'border-white/10 bg-white/5 hover:border-white/20'
                   }`}
                 >
-                  <p className="text-purple-400 text-xs font-medium">Option {label}</p>
-                  <p className="text-white/70 text-xs leading-relaxed line-clamp-3">{opt.content}</p>
+                  <p className="text-[var(--color-amber-300)] text-[11px] uppercase tracking-[0.18em]">Option {label}</p>
+                  <p className="text-white/80 text-sm leading-snug line-clamp-3">{opt.content}</p>
                   {projSelected.length > 0 && (
                     <p className="text-[var(--color-text-tertiary)] text-xs">{projSelected.length} futures resonated</p>
                   )}
@@ -241,12 +218,12 @@ export default function Step07({
                 : 'border-white/10 text-[var(--color-text-tertiary)] hover:border-white/20 hover:text-white/60'
             }`}
           >
-            Still undecided — and that&apos;s okay
+            Still undecided, and that&apos;s okay
           </button>
 
           {/* One-line reflection */}
           <div className="space-y-2">
-            <p className="text-white/50 text-xs text-center">In one sentence — what feels true right now? <span className="text-[var(--color-text-tertiary)]">(optional)</span></p>
+            <p className="text-white/70 text-sm text-center">In one sentence, what feels true right now? <span className="text-[var(--color-text-tertiary)]">(optional)</span></p>
             <Dictatable>
               <textarea
                 value={reflectionNote}
@@ -259,7 +236,7 @@ export default function Step07({
           </div>
 
           <PrimaryButton
-            label="Continue →"
+            label="Continue"
             onClick={handleReflectNext}
             disabled={!chosenLean}
           />

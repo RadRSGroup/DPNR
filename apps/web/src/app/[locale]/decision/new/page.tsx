@@ -53,9 +53,11 @@ const BACK_MAP: Record<DecisionStepId, DecisionStepId | null> = {
   CHOOSE_LENS: 'BODY_EMOTION',
   DEEP_EXPLORATION: 'CHOOSE_LENS',
   DEEP_EXPLORATION_SUMMARY: 'DEEP_EXPLORATION',
-  VALUES_NEEDS: 'DEEP_EXPLORATION_SUMMARY',
+  // Each lens starts from, and its summary returns to, Choose Your Lens
+  // (all three lenses, any order: founder feedback 2026-09-28 #6/#7).
+  VALUES_NEEDS: 'CHOOSE_LENS',
   VALUES_NEEDS_SUMMARY: 'VALUES_NEEDS',
-  FUTURE_PROJECTION: 'VALUES_NEEDS_SUMMARY',
+  FUTURE_PROJECTION: 'CHOOSE_LENS',
   FUTURE_PROJECTION_SUMMARY: 'FUTURE_PROJECTION',
   SESSION_SUMMARY: 'FUTURE_PROJECTION',
   SUMMARY_INSIGHT: 'SESSION_SUMMARY',
@@ -76,9 +78,9 @@ const BACK_MAP: Record<DecisionStepId, DecisionStepId | null> = {
 const SKIP_MAP: Partial<Record<DecisionStepId, DecisionStepId>> = {
   MAP_OPTIONS: 'BODY_EMOTION',
   BODY_EMOTION: 'CHOOSE_LENS',
-  CHOOSE_LENS: 'DEEP_EXPLORATION',
-  DEEP_EXPLORATION: 'VALUES_NEEDS',
-  VALUES_NEEDS: 'FUTURE_PROJECTION',
+  // CHOOSE_LENS has its own Continue (Step04 → continueFromLenses).
+  DEEP_EXPLORATION: 'CHOOSE_LENS',
+  VALUES_NEEDS: 'CHOOSE_LENS',
 }
 
 /** Steps from CHOOSE_LENS onward all assume both options exist — same fallback the original had for currentStep >= 4. */
@@ -97,6 +99,8 @@ interface LocalDecisionState {
   emotionFelt?: Felt
   emotionReflection?: string
   lens?: Lens
+  /** Lenses already explored, in order (#6/#7). */
+  completedLenses?: Lens[]
 }
 
 const INITIAL_STATE: LocalDecisionState = { title: '', narrative: '' }
@@ -190,6 +194,7 @@ function NewDecisionContent() {
           subtitle: full.subtitle ?? undefined,
           narrative: full.narrative ?? '',
           lens: full.lens ?? undefined,
+          completedLenses: full.completedLenses ?? [],
           optionA: optA ? { label: 'A', content: optA.content, approved: optA.approved } : undefined,
           optionB: optB ? { label: 'B', content: optB.content, approved: optB.approved } : undefined,
           emotionFelt: full.emotion ? feltFromDecisionEmotion(full.emotion) : undefined,
@@ -338,6 +343,19 @@ function NewDecisionContent() {
   async function completeStep04(lens: Lens) {
     update({ lens })
     await submitStepAndAdvance('CHOOSE_LENS', { lens })
+  }
+
+  /** Leave the lens cards for Future Projection. Needs the 2026-09-28 backend (`continue`), so deploy it before this frontend. */
+  async function continueFromLenses() {
+    const res = await callCommand('CHOOSE_LENS', 'SUBMIT_STEP', { continue: true })
+    if (res?.nextStepId) setCurrentStepId(res.nextStepId as DecisionStepId)
+  }
+
+  /** A lens summary was dismissed: remember the lens as explored, then follow the server (back to the cards). */
+  async function completeLensSummary(stepId: 'DEEP_EXPLORATION_SUMMARY' | 'VALUES_NEEDS_SUMMARY') {
+    const done: Lens = stepId === 'VALUES_NEEDS_SUMMARY' ? 'values_needs' : state.lens === 'pros_cons' ? 'pros_cons' : 'fears_desires'
+    const res = await submitStepAndAdvance(stepId, {})
+    if (res) setState((prev) => ({ ...prev, completedLenses: [...new Set([...(prev.completedLenses ?? []), done])] }))
   }
 
   async function completeStep05(tags: Record<string, string[]>) {
@@ -535,9 +553,10 @@ function NewDecisionContent() {
             optionA={state.optionA!}
             optionB={state.optionB!}
             initialLens={state.lens}
+            completedLenses={state.completedLenses}
             onComplete={completeStep04}
+            onContinue={continueFromLenses}
             onBack={goBack}
-            onSkip={skipStep}
           />
         )
       case 'DEEP_EXPLORATION':
@@ -566,6 +585,8 @@ function NewDecisionContent() {
         return (
           <SectionSummaryScreen
             decisionTitle={state.title}
+            optionA={state.optionA ?? undefined}
+            optionB={state.optionB ?? undefined}
             stepType={summaryType}
             tagsA={{
               pro: sessionData.tags05?.pro ?? [], con: sessionData.tags05?.con ?? [],
@@ -576,7 +597,7 @@ function NewDecisionContent() {
               desire: sessionData.tags05?.B_desire ?? [], fear: sessionData.tags05?.B_fear ?? [],
             }}
             onRefine={makeRefine('DEEP_EXPLORATION_SUMMARY')}
-            onContinue={() => submitStepAndAdvance('DEEP_EXPLORATION_SUMMARY', {})}
+            onContinue={() => completeLensSummary('DEEP_EXPLORATION_SUMMARY')}
             onBack={goBack}
           />
         )
@@ -601,11 +622,13 @@ function NewDecisionContent() {
         return (
           <SectionSummaryScreen
             decisionTitle={state.title}
+            optionA={state.optionA ?? undefined}
+            optionB={state.optionB ?? undefined}
             stepType="values_needs"
             tagsA={{ values: sessionData.valuesA ?? [], needs: sessionData.needsA ?? [] }}
             tagsB={{ values: sessionData.valuesB ?? [], needs: sessionData.needsB ?? [] }}
             onRefine={makeRefine('VALUES_NEEDS_SUMMARY')}
-            onContinue={() => submitStepAndAdvance('VALUES_NEEDS_SUMMARY', {})}
+            onContinue={() => completeLensSummary('VALUES_NEEDS_SUMMARY')}
             onBack={goBack}
           />
         )
@@ -628,6 +651,8 @@ function NewDecisionContent() {
         return (
           <SectionSummaryScreen
             decisionTitle={state.title}
+            optionA={state.optionA ?? undefined}
+            optionB={state.optionB ?? undefined}
             stepType="projections"
             tagsA={{ projections: sessionData.projectionsA ?? [] }}
             tagsB={{ projections: sessionData.projectionsB ?? [] }}

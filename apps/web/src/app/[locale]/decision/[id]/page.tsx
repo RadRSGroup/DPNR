@@ -188,7 +188,7 @@ export default function DecisionDetailPage() {
                     href={`/decision/new?resume=${decision.decisionId}`}
                     className="inline-flex items-center gap-2 rounded-full bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] px-4 py-2 text-sm text-white transition-colors"
                   >
-                    Continue →
+                    Continue
                   </Link>
                 )}
 

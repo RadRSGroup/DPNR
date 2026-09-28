@@ -64,14 +64,14 @@ export function CalendarButtons({ title, date, description = '' }: Props) {
           href={buildGoogleUrl({ title, date, description })}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/80 text-xs transition-all"
+          className="flex items-center justify-center gap-1.5 py-3 rounded-xl border border-white/25 bg-white/[0.08] hover:bg-white/[0.14] hover:border-white/40 text-white/90 text-sm transition-all"
         >
           {calIcon}
           Google
         </a>
         <a
           href={buildICSUrl({ title, date, description })}
-          className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/80 text-xs transition-all"
+          className="flex items-center justify-center gap-1.5 py-3 rounded-xl border border-white/25 bg-white/[0.08] hover:bg-white/[0.14] hover:border-white/40 text-white/90 text-sm transition-all"
         >
           {calIcon}
           Apple
@@ -80,7 +80,7 @@ export function CalendarButtons({ title, date, description = '' }: Props) {
           href={buildOutlookUrl({ title, date, description })}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/80 text-xs transition-all"
+          className="flex items-center justify-center gap-1.5 py-3 rounded-xl border border-white/25 bg-white/[0.08] hover:bg-white/[0.14] hover:border-white/40 text-white/90 text-sm transition-all"
         >
           {calIcon}
           Outlook

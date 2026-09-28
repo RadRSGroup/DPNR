@@ -18,6 +18,7 @@ import { DOMAIN_META } from '@/components/shared/domain-meta'
 import StatTile from '@/components/shared/StatTile'
 import ArchetypeBadge from '@/components/shared/ArchetypeBadge'
 import CheckInModal from '@/components/shared/CheckInModal'
+import FeelBodyButton from '@/components/shared/FeelBodyButton'
 import { timeAgo } from '@/lib/format'
 
 /**
@@ -103,6 +104,7 @@ function GrowthTrackerContent() {
           >
             <Wind className="w-4 h-4 text-[var(--color-amber-400)]" /> {t('breatheCheckIn')}
           </button>
+          <FeelBodyButton className="shrink-0" />
         </div>
 
         {checkInOpen && <CheckInModal onClose={() => setCheckInOpen(false)} />}

@@ -52,7 +52,7 @@ export default function CompletionScreen({
     : chosenLean === 'undecided' ? 'Still undecided' : null
 
   return (
-    <RoomScreenFrame backgroundSrc="/images/backgrounds/decision-bg.webp" glows={['bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.5)_0%,_rgba(80,20,140,0.3)_45%,_transparent_75%)]']}>
+    <RoomScreenFrame backgroundSrc="/images/decision/decision-room-hero.webp" dimBackground glows={['bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.5)_0%,_rgba(80,20,140,0.3)_45%,_transparent_75%)]']}>
 
       {/* Scrollable content */}
       <div className="scrollbar-glass flex-1 overflow-y-auto px-6 pt-16 lg:pt-10 pb-32 space-y-6">

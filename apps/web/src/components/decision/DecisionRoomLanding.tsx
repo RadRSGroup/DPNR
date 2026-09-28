@@ -8,6 +8,8 @@ import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
 import Card from '@/components/ui/Card'
 import PrimaryButton from '@/components/ui/PrimaryButton'
+import BottomSheet from '@/components/ui/BottomSheet'
+import PullACard from '@/components/companion/PullACard'
 import { getCompanionContext, getDecisionsList } from '@/lib/api/v1-client'
 import type { CompanionContextResponse, DecisionsListResponse } from '@dpnr/shared-types'
 import { timeAgo } from '@/lib/format'
@@ -61,7 +63,9 @@ interface Props {
  * "Aligned" (no per-decision progress or alignment value exists); Options
  * Overview keeps its honest lean-based labels (see above); the "…" menu and
  * "View all decisions" / "See full breakdown" links are left out (nothing to
- * open yet); "Pull a New Card" opens Main Chat, where Pull a Card lives.
+ * open yet). "Pull a New Card" opens the same Pull a Card in a sheet here
+ * (founder feedback 2026-09-28 #19: it used to route to Main Chat and take
+ * the person out of the room).
  */
 export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props) {
   const locale = useLocale()
@@ -70,6 +74,9 @@ export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props
   const [decisions, setDecisions] = useState<DecisionsListResponse['decisions']>([])
   const [optionsOverview, setOptionsOverview] = useState<DecisionsListResponse['optionsOverview']>(null)
   const [decisionsLoading, setDecisionsLoading] = useState(true)
+  const [cardOpen, setCardOpen] = useState(false)
+  // Tapped journey phase (touch equivalent of the desktop hover, #21).
+  const [activePhase, setActivePhase] = useState<number | null>(null)
 
   useEffect(() => {
     getCompanionContext().then((c) => setDailyCard(c.dailyCard)).catch(() => {
@@ -131,6 +138,14 @@ export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props
                       className="object-cover object-[70%_center]"
                       priority
                     />
+                    {/* Light through the trees (founder feedback 2026-09-28 #23): a warm glow
+                        around the sun that breathes very slowly (opacity only, 5s, MOTION.md
+                        soft-glow), plus a faint wash of light from above. Presence, not motion. */}
+                    <div aria-hidden className="pointer-events-none absolute inset-0 mix-blend-screen">
+                      {/* Positioned on the photo's sun, which doesn't mirror in RTL. */}
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_46%_34%,rgba(251,203,107,0.32)_0%,rgba(251,203,107,0.1)_14%,transparent_28%)] lg:bg-[radial-gradient(circle_at_58%_30%,rgba(251,203,107,0.32)_0%,rgba(251,203,107,0.1)_12%,transparent_24%)] animate-soft-glow" />
+                      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(251,203,107,0.08)_0%,transparent_45%)] animate-soft-glow stagger-3" />
+                    </div>
                     <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r rtl:lg:bg-gradient-to-l from-[var(--color-bg-base)]/90 via-[var(--color-bg-base)]/30 to-transparent" />
                     <div className="absolute inset-0 flex flex-col justify-end lg:justify-center p-5 lg:p-12 lg:max-w-[52%]">
                       <h2 className="font-display text-2xl lg:text-4xl text-white leading-tight">Welcome to Your Decision Room</h2>
@@ -143,11 +158,20 @@ export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props
                 </Card>
 
                 <Card className="lg:px-7 lg:py-6">
-                  <p className="text-white text-base lg:text-lg">Your Decision Journey</p>
-                  <p className="text-[var(--color-text-tertiary)] text-xs lg:text-sm mt-1 mb-5">A simple process to move from confusion to clarity.</p>
+                  <p className="text-white text-lg lg:text-xl">Your Decision Journey</p>
+                  <p className="text-[var(--color-text-secondary)] text-sm lg:text-base mt-1 mb-5">A simple process to move from confusion to clarity.</p>
+                  {/* #20/#21 (2026-09-28): phase copy readable (it was 11px), and a
+                      restrained warm accent on hover (desktop) or tap/focus
+                      (touch). The copy never outgrows the phase title. */}
                   <ol className="grid grid-cols-3 lg:grid-cols-6 gap-y-5">
                     {JOURNEY.map((j, i) => (
-                      <li key={j.label} className="relative text-center px-1">
+                      <li
+                        key={j.label}
+                        tabIndex={0}
+                        onClick={() => setActivePhase((p) => (p === i ? null : i))}
+                        aria-describedby={`journey-copy-${i}`}
+                        className="group relative text-center px-1 rounded-2xl outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-amber-400)]/50 cursor-default"
+                      >
                         {i < JOURNEY.length - 1 && (
                           <span
                             aria-hidden
@@ -172,11 +196,23 @@ export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props
                         >
                           {i + 1}
                         </span>
-                        <p className="text-white text-sm mt-1.5">{j.label}</p>
-                        <p className="text-[var(--color-text-tertiary)] text-[11px] mt-1 leading-snug hidden lg:block">{j.copy}</p>
+                        <p className="text-white text-sm lg:text-base mt-1.5">{j.label}</p>
+                        <p
+                          id={`journey-copy-${i}`}
+                          className={`text-xs lg:text-[13px] mt-1 leading-snug hidden lg:block transition-colors lg:group-hover:text-[var(--color-amber-300)] lg:group-focus-visible:text-[var(--color-amber-300)] ${
+                            activePhase === i ? 'text-[var(--color-amber-300)]' : 'text-white/60'
+                          }`}
+                        >
+                          {j.copy}
+                        </p>
                       </li>
                     ))}
                   </ol>
+                  {/* Phones have no room for six descriptions under the icons: the
+                      tapped phase's copy shows here instead. */}
+                  <p aria-live="polite" className="lg:hidden mt-4 min-h-[2.5rem] text-center text-sm leading-snug text-[var(--color-amber-300)]">
+                    {activePhase !== null ? JOURNEY[activePhase].copy : <span className="text-white/45">Tap a phase to see what it&apos;s about.</span>}
+                  </p>
                 </Card>
 
                 <Card className="relative overflow-hidden lg:flex lg:items-center lg:justify-between lg:gap-6 lg:px-8 lg:py-7">
@@ -280,7 +316,7 @@ export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props
                     </p>
                   </div>
                   <button
-                    onClick={() => router.push('/companion')}
+                    onClick={() => setCardOpen(true)}
                     className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[var(--color-violet-600)]/20 hover:bg-[var(--color-violet-600)]/35 py-3 text-sm text-white/90 transition-colors"
                   >
                     <Layers className="w-4 h-4" /> Pull a New Card
@@ -296,6 +332,11 @@ export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props
         </div>
       </main>
       <MobileNav />
+      {cardOpen && (
+        <BottomSheet onClose={() => setCardOpen(false)} closeLabel="Close">
+          <PullACard />
+        </BottomSheet>
+      )}
     </div>
   )
 }

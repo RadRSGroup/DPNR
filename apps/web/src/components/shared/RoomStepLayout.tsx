@@ -32,6 +32,10 @@ export interface RoomStepLayoutProps {
   onSkip?: () => void
   /** Starting time budget in minutes — the seed for a real countdown. */
   minutesLeft: number
+  /** This screen's own name when `step` is a phase that spans several screens (Decision Room: "Future Projection" inside phase 5, Decide). */
+  screenLabel?: string
+  /** Dim a detailed photo into a low-contrast atmosphere behind the steps (Decision Room, 2026-09-28 #22). */
+  dimBackground?: boolean
 }
 
 /**
@@ -62,6 +66,8 @@ export default function RoomStepLayout({
   onBack,
   onSkip,
   minutesLeft: initialMinutes,
+  screenLabel,
+  dimBackground = false,
 }: RoomStepLayoutProps) {
   const router = useRouter()
   const roomExit = useRoomExit()
@@ -95,7 +101,8 @@ export default function RoomStepLayout({
         <div className="relative isolate h-dvh flex flex-col bg-[var(--color-bg-base)] overflow-hidden max-w-[393px] mx-auto lg:h-auto lg:min-h-screen lg:max-w-none lg:overflow-visible">
           {/* Galaxy background */}
           <div className="absolute inset-0 -z-10 overflow-hidden">
-            <Image src={backgroundSrc} alt="" fill sizes="100vw" className="object-cover lg:opacity-60" />
+            <Image src={backgroundSrc} alt="" fill sizes="100vw" className={`object-cover ${dimBackground ? 'opacity-35 lg:opacity-30' : 'lg:opacity-60'}`} />
+            {dimBackground && <div className="absolute inset-0 bg-[var(--color-bg-base)]/45" />}
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
           </div>
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)] -z-10" />
@@ -146,13 +153,19 @@ export default function RoomStepLayout({
 
           {/* Title + step label */}
           <div className="text-center px-6 pt-4 pb-2 lg:text-start lg:px-10 lg:pt-6 lg:pb-0">
-            <p className="hidden lg:block text-[var(--color-violet-300)] text-xs uppercase tracking-[0.2em]">
-              Step {step} of {totalSteps}
+            <p className={`hidden lg:block text-xs uppercase tracking-[0.2em] ${screenLabel ? 'text-[var(--color-amber-300)]' : 'text-[var(--color-violet-300)]'}`}>
+              Step {step} of {totalSteps}{screenLabel ? <> · {screenLabel}</> : null}
             </p>
             <h2 className="text-white text-lg font-light lg:font-display lg:text-3xl lg:mt-2 lg:truncate">{hasTitle ? <>&quot;{title}&quot;</> : stepLabels[step]}</h2>
-            <p className="text-white/50 text-xs mt-1 lg:hidden">
-              Step {stepNumber}: {stepLabels[step]}
-            </p>
+            {screenLabel ? (
+              <p className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.16em] mt-1.5 lg:hidden">
+                Step {step} of {totalSteps} · {screenLabel}
+              </p>
+            ) : (
+              <p className="text-white/50 text-xs mt-1 lg:hidden">
+                Step {stepNumber}: {stepLabels[step]}
+              </p>
+            )}
           </div>
 
           <ol className="hidden lg:flex items-start px-10 pt-6 pb-8" aria-label="Steps">

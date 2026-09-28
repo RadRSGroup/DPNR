@@ -12,7 +12,7 @@ interface Props {
 export default function MomentScreen({ onNext, onBack }: Props) {
   const router = useRouter()
   return (
-    <RoomScreenFrame backgroundSrc="/images/backgrounds/decision-bg.webp" glows={['bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)]']}>
+    <RoomScreenFrame backgroundSrc="/images/decision/decision-room-hero.webp" dimBackground glows={['bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,_rgba(139,92,246,0.18)_0%,_transparent_70%)]']}>
 
       {/* Top bar — matches RoomStepLayout */}
       <div className="flex items-center justify-between px-5 pt-14 pb-2 lg:px-8 lg:pt-6">
@@ -40,7 +40,7 @@ export default function MomentScreen({ onNext, onBack }: Props) {
           </h1>
 
           <p className="text-white/60 text-sm lg:text-base leading-relaxed">
-            Take a breath. You&apos;re about to give yourself the gift of real clarity. There&apos;s no rush here — just honest reflection, one step at a time.
+            Take a breath. You&apos;re about to give yourself the gift of real clarity. There&apos;s no rush here, just honest reflection, one step at a time.
           </p>
 
           <PrimaryButton label="Make a decision" onClick={onNext} />

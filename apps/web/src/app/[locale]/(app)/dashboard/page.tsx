@@ -23,6 +23,7 @@ import Card from '@/components/ui/Card'
 import RoadmapTimelineCard from '@/components/shared/RoadmapTimelineCard'
 import TwinCalibrationCard from '@/components/shared/TwinCalibrationCard'
 import CheckInModal from '@/components/shared/CheckInModal'
+import FeelBodyButton from '@/components/shared/FeelBodyButton'
 import AccountMenu from '@/components/layout/AccountMenu'
 import PullACard from '@/components/companion/PullACard'
 import InnerSelfHero from '@/components/dashboard/InnerSelfHero'
@@ -189,6 +190,7 @@ function DashboardContent() {
             <Plus className="w-4 h-4" aria-hidden />
             {t('checkIn')}
           </button>
+          <FeelBodyButton className="shrink-0" />
           <div className="hidden lg:block">
             <AccountMenu />
           </div>

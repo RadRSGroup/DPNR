@@ -52,6 +52,7 @@ export const nameDecisionStep: StepDefinition = {
       status: 'active',
       currentStep: DECISION_ROOM_STEP_NUMBER.MAP_OPTIONS, // matches original: completing step 1 sets current_step to 2
       lens: existing?.lens ?? null,
+      completedLenses: existing?.completedLenses,
       reviewDate: existing?.reviewDate ?? null,
       content: await ctx.crypto.encryptField<DecisionContent>({
         title,

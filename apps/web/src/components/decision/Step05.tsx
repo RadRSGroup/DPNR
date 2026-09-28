@@ -8,6 +8,7 @@ import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { Lens, DecisionOption, PRESET_TAGS } from '@/lib/types'
 import AiThinking from '@/components/shared/AiThinking'
 import Dictatable from '@/components/ui/Dictatable'
+import { OptionContext, RoomHeading } from './RoomHeadings'
 
 interface Step05Props {
   decisionTitle: string
@@ -24,8 +25,10 @@ interface Step05Props {
 
 export default function Step05({ decisionTitle, optionA, optionB, lens, initialTagsA, initialTagsB, onRefine, onComplete, onBack, onSkip }: Step05Props) {
   const sections = lens === 'pros_cons'
-    ? [{ type: 'pro', label: 'Pros', icon: '✓' }, { type: 'con', label: 'Cons', icon: '✗' }]
-    : [{ type: 'desire', label: 'Desires', icon: '♡' }, { type: 'fear', label: 'Fears', icon: '⚡' }]
+    ? [{ type: 'pro', label: 'Pros' }, { type: 'con', label: 'Cons' }]
+    : [{ type: 'desire', label: 'Desires' }, { type: 'fear', label: 'Fears' }]
+  // The lens is always named, so moving between layers is visible (#10).
+  const lensName = lens === 'pros_cons' ? 'Pros & Cons' : 'Fears & Desires'
 
   const [sectionIdx, setSectionIdx] = useState(0)
   const [currentOption, setCurrentOption] = useState<'A' | 'B'>('A')
@@ -110,10 +113,10 @@ export default function Step05({ decisionTitle, optionA, optionB, lens, initialT
   const canAdvance = currentTags.length > 0
 
   const buttonLabel = currentOption === 'A'
-    ? `Option B: ${currentSection.label} →`
+    ? `Option B: ${currentSection.label}`
     : isLastSection
-    ? 'Next Step →'
-    : `Next: ${sections[sectionIdx + 1].label} →`
+    ? 'Next step'
+    : `Next: ${sections[sectionIdx + 1].label}`
 
   const promptText = lens === 'pros_cons'
     ? `What are the ${currentSection.label.toLowerCase()} of Option ${currentOption}?`
@@ -136,42 +139,19 @@ export default function Step05({ decisionTitle, optionA, optionB, lens, initialT
       {tokenCapReached && <TokenCapModal onClose={dismissTokenCap} />}
       <div className="flex-1 flex flex-col space-y-4 pt-2">
 
-        {/* Option cards */}
-        <div className="grid grid-cols-2 gap-2">
-          {(['A', 'B'] as const).map(label => (
-            <div
-              key={label}
-              className={`rounded-xl border p-3 transition-all ${
-                currentOption === label
-                  ? 'border-purple-600/60 bg-purple-900/20'
-                  : 'border-white/10 bg-white/5 opacity-40'
-              }`}
-            >
-              <p className="text-purple-400 text-xs mb-1">Option {label}</p>
-              <p className="text-white/60 text-xs line-clamp-2">
-                {label === 'A' ? optionA.content : optionB.content}
-              </p>
-            </div>
-          ))}
-        </div>
+        <OptionContext optionA={optionA} optionB={optionB} active={currentOption} />
 
-        {/* Section header */}
-        <div className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-1.5 bg-purple-900/40 border border-purple-600/40 rounded-full px-3 py-1 text-purple-300 text-xs font-semibold uppercase tracking-wider">
-            {currentSection.icon} {currentSection.label} — Option {currentOption}
-          </span>
-          <div className="flex-1 h-px bg-white/8" />
-          {/* Section progress dots */}
-          <div className="flex items-center gap-1.5">
+        {/* Lens + section heading (#10/#14), with the section's progress. */}
+        <div key={`${sectionIdx}-${currentOption}`} className="animate-settle-in space-y-3">
+          <RoomHeading eyebrow={`${lensName} · ${currentSection.label} · Option ${currentOption}`} title={promptText} />
+          <div className="flex items-center justify-center gap-1.5" aria-hidden>
             {sections.map((s, i) => (
               <div key={s.type} className={`h-1.5 rounded-full transition-all ${
-                i < sectionIdx ? 'bg-purple-400 w-4' : i === sectionIdx ? 'bg-fuchsia-300 w-5' : 'bg-white/15 w-3'
+                i < sectionIdx ? 'bg-[var(--color-amber-300)]/70 w-4' : i === sectionIdx ? 'bg-[var(--color-amber-300)] w-6' : 'bg-white/15 w-3'
               }`} />
             ))}
           </div>
         </div>
-
-        <p className="text-white/60 text-sm text-center leading-relaxed">{promptText}</p>
 
         {/* Chips */}
         <div className="flex-1 no-scrollbar overflow-y-auto space-y-3">

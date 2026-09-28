@@ -8,6 +8,7 @@ import { TokenCapModal } from '@/components/ui/TokenCapModal'
 import { DecisionOption, PRESET_TAGS } from '@/lib/types'
 import AiThinking from '@/components/shared/AiThinking'
 import Dictatable from '@/components/ui/Dictatable'
+import { OptionContext, RoomHeading } from './RoomHeadings'
 
 interface Step06Props {
   decisionTitle: string
@@ -25,9 +26,9 @@ interface Step06Props {
 
 type Round = 'values' | 'needs'
 
-const ROUNDS: { round: Round; label: string; icon: string }[] = [
-  { round: 'values', label: 'Values', icon: '💎' },
-  { round: 'needs',  label: 'Needs',  icon: '🫀' },
+const ROUNDS: { round: Round; label: string }[] = [
+  { round: 'values', label: 'Values' },
+  { round: 'needs',  label: 'Needs' },
 ]
 
 export default function Step06({ decisionTitle, optionA, optionB, initialValuesA, initialNeedsA, initialValuesB, initialNeedsB, onRefine, onComplete, onBack, onSkip }: Step06Props) {
@@ -112,51 +113,29 @@ export default function Step06({ decisionTitle, optionA, optionB, initialValuesA
     : `Which of the 6 core needs does Option ${currentOption} fulfil?`
 
   const ctaLabel = currentOption === 'A'
-    ? `Option B: ${currentRound.label} →`
+    ? `Option B: ${currentRound.label}`
     : isLastRound
-    ? 'Next Step →'
-    : `Next: ${ROUNDS[roundIdx + 1].label} →`
+    ? 'Next step'
+    : `Next: ${ROUNDS[roundIdx + 1].label}`
 
   return (
     <StepShell step={6} decisionTitle={decisionTitle} onBack={onBack} onSkip={onSkip}>
       {tokenCapReached && <TokenCapModal onClose={dismissTokenCap} />}
       <div className="flex-1 flex flex-col space-y-4 pt-2">
 
-        {/* Option cards */}
-        <div className="grid grid-cols-2 gap-2">
-          {(['A', 'B'] as const).map(label => (
-            <div
-              key={label}
-              className={`rounded-xl border p-3 transition-all ${
-                currentOption === label
-                  ? 'border-purple-600/60 bg-purple-900/20'
-                  : 'border-white/10 bg-white/5 opacity-40'
-              }`}
-            >
-              <p className="text-purple-400 text-xs mb-1">Option {label}</p>
-              <p className="text-white/60 text-xs line-clamp-2">
-                {label === 'A' ? optionA.content : optionB.content}
-              </p>
-            </div>
-          ))}
-        </div>
+        <OptionContext optionA={optionA} optionB={optionB} active={currentOption} />
 
-        {/* Section header */}
-        <div className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-1.5 bg-purple-900/40 border border-purple-600/40 rounded-full px-3 py-1 text-purple-300 text-xs font-semibold uppercase tracking-wider">
-            {currentRound.icon} {currentRound.label} — Option {currentOption}
-          </span>
-          <div className="flex-1 h-px bg-white/8" />
-          <div className="flex items-center gap-1.5">
+        {/* Lens + round heading (#10/#14), with the round's progress. */}
+        <div key={`${roundIdx}-${currentOption}`} className="animate-settle-in space-y-3">
+          <RoomHeading eyebrow={`Values & Needs · ${currentRound.label} · Option ${currentOption}`} title={prompt} />
+          <div className="flex items-center justify-center gap-1.5" aria-hidden>
             {ROUNDS.map((r, i) => (
               <div key={r.round} className={`h-1.5 rounded-full transition-all ${
-                i < roundIdx ? 'bg-purple-400 w-4' : i === roundIdx ? 'bg-fuchsia-300 w-5' : 'bg-white/15 w-3'
+                i < roundIdx ? 'bg-[var(--color-amber-300)]/70 w-4' : i === roundIdx ? 'bg-[var(--color-amber-300)] w-6' : 'bg-white/15 w-3'
               }`} />
             ))}
           </div>
         </div>
-
-        <p className="text-white/60 text-sm text-center leading-relaxed">{prompt}</p>
 
         {/* Chip grid */}
         <div className="flex-1 flex flex-wrap gap-2 content-start no-scrollbar overflow-y-auto">

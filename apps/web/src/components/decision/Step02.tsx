@@ -60,7 +60,7 @@ export default function Step02({ decisionTitle, initialNarrative = '', initialOp
           /* Narrative input */
           <div className="flex-1 flex flex-col space-y-3">
             <p className="text-white/60 text-sm text-center">
-              Tell me about this decision. Write freely — what&apos;s happening, what makes it hard?
+              Tell me about this decision. Write freely: what&apos;s happening, what makes it hard?
             </p>
             <Dictatable className="flex-1 flex flex-col">
               <textarea
@@ -86,8 +86,6 @@ export default function Step02({ decisionTitle, initialNarrative = '', initialOp
         ) : (
           /* Options cards */
           <div className="flex-1 flex flex-col space-y-3">
-            <p className="text-white/50 text-xs text-center">Step 02: Map the Options</p>
-
             {/* Option A */}
             <OptionCard
               label="Option A"
@@ -109,7 +107,7 @@ export default function Step02({ decisionTitle, initialNarrative = '', initialOp
               onClick={() => setParsed(false)}
               className="text-[var(--color-text-tertiary)] hover:text-white/50 text-xs text-center transition-colors"
             >
-              ↺ Rewrite narrative
+              Rewrite the whole story
             </button>
 
             <PrimaryButton
@@ -124,6 +122,13 @@ export default function Step02({ decisionTitle, initialNarrative = '', initialOp
   )
 }
 
+/**
+ * One option DPNR drafted. Rewrite (founder feedback 2026-09-28 #3) no
+ * longer empties the field: it opens the same text for editing with the
+ * cursor at the end, and keeps DPNR's original wording visible underneath
+ * in a softer line so a small correction stays small. Clearing the text is
+ * a separate, explicit choice.
+ */
 function OptionCard({
   label, option, onEdit, onApprove,
 }: {
@@ -133,45 +138,76 @@ function OptionCard({
   onApprove: () => void
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [editing, setEditing] = useState(false)
+  const [original, setOriginal] = useState<string | null>(null)
 
   function handleRewrite() {
-    onEdit('')
-    setTimeout(() => textareaRef.current?.focus(), 0)
+    setOriginal(option.content)
+    setEditing(true)
+    setTimeout(() => {
+      const el = textareaRef.current
+      if (!el) return
+      el.focus()
+      el.setSelectionRange(el.value.length, el.value.length)
+    }, 0)
   }
 
   return (
     <div className={`rounded-2xl border p-4 space-y-3 transition-all duration-(--motion-calm) ${
       option.approved
-        ? 'bg-purple-900/20 border-purple-600/50'
-        : 'bg-white/5 border-white/15'
+        ? 'bg-white/[0.07] border-[var(--color-amber-300)]/50'
+        : editing
+          ? 'bg-white/[0.06] border-[var(--color-violet-400)]/50'
+          : 'bg-white/5 border-white/15'
     }`}>
-      <p className="text-purple-400 text-xs font-medium uppercase tracking-wide">{label}</p>
-      <textarea
-        ref={textareaRef}
-        value={option.content}
-        onChange={e => onEdit(e.target.value)}
-        disabled={option.approved}
-        rows={3}
-        placeholder="Describe this option in your own words..."
-        className="w-full bg-transparent text-white/80 text-sm resize-none focus:outline-none placeholder-[var(--color-text-tertiary)] disabled:opacity-70"
-      />
-      <div className="flex items-center gap-2">
-        <button
-          onClick={handleRewrite}
+      <p className="text-[var(--color-amber-300)] text-[11px] uppercase tracking-[0.18em]">{label}</p>
+      <Dictatable>
+        <textarea
+          ref={textareaRef}
+          value={option.content}
+          onChange={e => onEdit(e.target.value)}
           disabled={option.approved}
-          className="flex-1 py-2 rounded-full border border-purple-700/50 text-purple-400 hover:bg-purple-900/30 text-xs transition-colors disabled:opacity-40"
-        >
-          Rewrite
-        </button>
+          rows={3}
+          placeholder="Describe this option in your own words..."
+          className="w-full bg-transparent text-white/90 text-sm lg:text-base leading-relaxed resize-none focus:outline-none placeholder-[var(--color-text-tertiary)] disabled:opacity-80 pe-10"
+        />
+      </Dictatable>
+      {editing && original !== null && original !== option.content && (
+        <div className="rounded-xl bg-black/20 px-3 py-2 text-xs text-white/50 leading-relaxed animate-fade-in">
+          <span className="text-white/40">DPNR suggested: </span>{original}
+          <button onClick={() => onEdit(original)} className="ms-2 underline underline-offset-2 text-white/60 hover:text-white/85">
+            Use this again
+          </button>
+        </div>
+      )}
+      <div className="flex items-center gap-2">
+        {editing ? (
+          <button
+            onClick={() => { onEdit(''); textareaRef.current?.focus() }}
+            disabled={option.approved || !option.content}
+            className="flex-1 py-2 rounded-full border border-white/15 text-white/55 hover:text-white/80 text-xs transition-colors disabled:opacity-40"
+          >
+            Clear and start over
+          </button>
+        ) : (
+          <button
+            onClick={handleRewrite}
+            disabled={option.approved}
+            className="flex-1 py-2 rounded-full border border-[var(--color-violet-400)]/50 text-[var(--color-violet-200)] hover:bg-white/[0.06] text-xs transition-colors disabled:opacity-40"
+          >
+            Rewrite
+          </button>
+        )}
         <button
-          onClick={onApprove}
-          className={`flex-1 py-2 rounded-full text-xs transition-all ${
+          onClick={() => { setEditing(false); onApprove() }}
+          disabled={!option.content.trim()}
+          className={`flex-1 py-2 rounded-full text-xs transition-all disabled:opacity-40 ${
             option.approved
-              ? 'bg-purple-600 border border-purple-500 text-white'
-              : 'border border-white/20 text-white/60 hover:border-white/40'
+              ? 'bg-[var(--color-violet-600)] border border-[var(--color-violet-500)] text-white'
+              : 'border border-white/20 text-white/70 hover:border-white/40'
           }`}
         >
-          {option.approved ? 'Approved ✓' : 'Approve'}
+          {option.approved ? 'Approved' : 'Approve'}
         </button>
       </div>
     </div>

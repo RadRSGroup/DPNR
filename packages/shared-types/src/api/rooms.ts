@@ -53,6 +53,8 @@ export const DecisionRoomFullResponseSchema = z.object({
   status: DecisionStatusSchema,
   currentStep: z.number().int().min(1).max(7),
   lens: LensSchema.nullable(),
+  /** Lenses already explored (any order); absent from older backends/decisions. */
+  completedLenses: z.array(LensSchema).optional(),
   reviewDate: z.string().date().nullable(),
   title: z.string(),
   subtitle: z.string().nullable(),

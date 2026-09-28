@@ -106,8 +106,11 @@ export const deepExplorationStep: StepDefinition = {
       }
     }
 
-    const newTags = [...flattenTags('A', tagsA), ...flattenTags('B', tagsB)]
-    await replaceTagsOfTypes(ctx.crypto, ctx.pk, ctx.sessionId, ['pro', 'con', 'desire', 'fear'], newTags)
+    // Only this lens's own tag types are replaced. With several lenses per
+    // decision (2026-09-28), replacing all four would erase the other
+    // lens's answers (the client sends every bucket it holds).
+    const newTags = [...flattenTags('A', tagsA), ...flattenTags('B', tagsB)].filter((t) => (requiredKeys as TagType[]).includes(t.tagType))
+    await replaceTagsOfTypes(ctx.crypto, ctx.pk, ctx.sessionId, requiredKeys, newTags)
 
     // DecisionItem.currentStep does NOT advance here — matches the original
     // exactly: `completeStep05` persists tags but current_step only becomes

@@ -1,5 +1,5 @@
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
-import { DECISION_ROOM_STEP_NUMBER } from '@dpnr/shared-types'
+import { DECISION_ROOM_STEP_NUMBER, type DecisionItem, type Lens } from '@dpnr/shared-types'
 import { resolvePromptVersion, promptRef } from '../../lib/prompt-registry'
 import { callPromptModel } from '../../lib/model-call'
 import { ddb, TABLE_NAME, PROMPT_REGISTRY_TABLE_NAME } from './db'
@@ -23,6 +23,8 @@ interface SectionSummaryConfig {
   nextStepId: string
   /** Set only for the 2 interstitials that own the currentStep advance (see the schema doc comment) — undefined for FUTURE_PROJECTION_SUMMARY, which doesn't touch DecisionItem at all. */
   advanceCurrentStepTo?: number
+  /** The lens this summary closes; recorded in `completedLenses` on continue (2026-09-28 #6/#7). */
+  completesLens?: (decision: DecisionItem) => Lens
   computeStepTypeAndSelections(
     pk: string,
     sessionId: string,
@@ -64,7 +66,12 @@ function createSectionSummaryStep(config: SectionSummaryConfig): StepDefinition 
         await ddb.send(
           new PutCommand({
             TableName: TABLE_NAME,
-            Item: { ...decision, currentStep: config.advanceCurrentStepTo, updatedAt: now },
+            Item: {
+              ...decision,
+              currentStep: config.advanceCurrentStepTo,
+              ...(config.completesLens ? { completedLenses: addLens(decision.completedLenses, config.completesLens(decision)) } : {}),
+              updatedAt: now,
+            },
           })
         )
       }
@@ -74,9 +81,20 @@ function createSectionSummaryStep(config: SectionSummaryConfig): StepDefinition 
   }
 }
 
+/** Adds a lens once, keeping the order the person explored them in. */
+export function addLens(done: Lens[] | undefined, lens: Lens): Lens[] {
+  const list = done ?? []
+  return list.includes(lens) ? list : [...list, lens]
+}
+
+// Both lens summaries return to CHOOSE_LENS (all three lenses, any order).
+// Before 2026-09-28 this went on to VALUES_NEEDS, which then always ran.
 export const deepExplorationSummaryStep = createSectionSummaryStep({
-  nextStepId: 'VALUES_NEEDS',
-  advanceCurrentStepTo: DECISION_ROOM_STEP_NUMBER.VALUES_NEEDS,
+  nextStepId: 'CHOOSE_LENS',
+  advanceCurrentStepTo: DECISION_ROOM_STEP_NUMBER.CHOOSE_LENS,
+  // A pre-2026-09-28 decision could run Step05 under the values_needs lens
+  // (as Desires/Fears); that counts as the Fears & Desires lens.
+  completesLens: (decision) => (decision.lens === 'pros_cons' ? 'pros_cons' : 'fears_desires'),
   computeStepTypeAndSelections: async (pk, sessionId, context) => {
     const decision = await getDecision(pk, sessionId)
     const kind = decision.lens ? tagKindForLens(decision.lens) : 'pros_cons'
@@ -93,8 +111,9 @@ export const deepExplorationSummaryStep = createSectionSummaryStep({
 })
 
 export const valuesNeedsSummaryStep = createSectionSummaryStep({
-  nextStepId: 'FUTURE_PROJECTION',
-  advanceCurrentStepTo: DECISION_ROOM_STEP_NUMBER.FUTURE_PROJECTION,
+  nextStepId: 'CHOOSE_LENS',
+  advanceCurrentStepTo: DECISION_ROOM_STEP_NUMBER.CHOOSE_LENS,
+  completesLens: () => 'values_needs',
   computeStepTypeAndSelections: async (_pk, _sessionId, context) => ({
     stepType: 'values_needs',
     selectionsA: [...context.tagsA.value, ...context.tagsA.need].join(', '),

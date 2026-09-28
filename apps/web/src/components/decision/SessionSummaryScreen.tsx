@@ -82,17 +82,17 @@ export default function SessionSummaryScreen({
         ) : (
           <>
             <div className="space-y-1">
-              <p className="text-purple-400 text-xs uppercase tracking-widest">The situation:</p>
-              <p className="text-white/70 text-sm leading-relaxed">{situation}</p>
+              <h3 className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.2em]">The situation</h3>
+              <p className="text-white/85 text-sm lg:text-base leading-relaxed">{situation}</p>
             </div>
 
             {/* Per-section summaries */}
             <div className="space-y-3">
               {SECTIONS.map(({ key, label }) => (
                 summaries[key] ? (
-                  <Card key={key} className="space-y-1">
-                    <p className="text-white text-xs font-medium">{label}</p>
-                    <p className="text-white/55 text-xs leading-relaxed">{summaries[key]}</p>
+                  <Card key={key} className="space-y-2">
+                    <h3 className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.2em]">{label}</h3>
+                    <p className="text-white/80 text-sm lg:text-base leading-relaxed">{summaries[key]}</p>
                     {key === 'bodyAwareness' && felt && (
                       <div className="pt-2">
                         <FeltSummary {...felt} />
@@ -108,9 +108,7 @@ export default function SessionSummaryScreen({
         {/* Do You Agree */}
         <div className="pt-2">
           <div className="flex items-center gap-3 pb-3">
-            <div className="flex-1 h-px bg-white/10" />
-            <p className="text-[var(--color-text-tertiary)] text-xs">Do You Agree?</p>
-            <div className="flex-1 h-px bg-white/10" />
+            <p className="flex-1 text-white/70 text-sm text-center">Does this feel accurate?</p>
           </div>
           <div className="grid grid-cols-2 gap-2.5">
             {AGREEMENT_OPTIONS.map(({ key, label }) => (
@@ -140,7 +138,7 @@ export default function SessionSummaryScreen({
           disabled={!agreement || loading}
           className="w-full py-3.5 rounded-full bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white text-sm font-semibold transition-all disabled:opacity-40 disabled:pointer-events-none hover:from-purple-500 hover:to-fuchsia-500 active:scale-[0.98]"
         >
-          Supporting Yourself →
+          Supporting Yourself
         </button>
       </div>
     </StepShell>

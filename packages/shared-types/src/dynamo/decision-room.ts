@@ -100,7 +100,11 @@ export const DecisionItemSchema = z.object({
   decisionId: z.string(),
   status: DecisionStatusSchema,
   currentStep: z.number().int().min(1).max(7),
-  lens: LensSchema.nullable(),
+  lens: LensSchema.nullable(), // the lens being explored now (or last)
+  // Lenses whose summary the person has finished, in the order they did
+  // them (founder feedback 2026-09-28 #6/#7: all three lenses, any order,
+  // back to the cards after each). Absent on decisions from before that.
+  completedLenses: z.array(LensSchema).optional(),
   reviewDate: z.string().date().nullable(),
   content: EncryptedBlobSchema, // wraps { title, subtitle, narrative }
   // Intelligence Spec §18/Appendix B — see mirror-room.ts's
