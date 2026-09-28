@@ -1,7 +1,13 @@
 {
   "Dictation": {
     "start": "Dictate",
-    "stop": "Stop dictation"
+    "stop": "Stop dictation",
+    "listening": "Listening…",
+    "errors": {
+      "blocked": "Microphone access is off. Allow it for this site in your browser settings (on iPhone, also turn on Dictation in Settings).",
+      "no_speech": "Didn't catch that — tap the mic and try again.",
+      "unavailable": "Talk-to-text isn't available in this browser right now."
+    }
   },
   "Common": {
     "appName": "InnerOS"

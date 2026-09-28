@@ -21,6 +21,7 @@ import { useOnboardingFlow } from '@/components/companion/onboarding/useOnboardi
 import OnboardingCardPanel from '@/components/companion/onboarding/OnboardingCardPanel'
 import OnboardingSummaryCard from '@/components/companion/onboarding/OnboardingSummaryCard'
 import Dictatable from '@/components/ui/Dictatable'
+import { speechRecognitionCtor, startDictation, type DictationError, type DictationHandle } from '@/lib/dictation'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -96,6 +97,7 @@ function CompanionContent() {
   const locale = useLocale()
   const t = useTranslations('Onboarding')
   const tc = useTranslations('Companion')
+  const td = useTranslations('Dictation')
   const tr = useTranslations('Companion.recentConversations')
   const onboarding = useOnboardingFlow()
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -151,12 +153,10 @@ function CompanionContent() {
   // (an extra mic button shifts every sibling after it) — reproduced and
   // fixed live rather than assumed safe.
   const [speechSupported, setSpeechSupported] = useState(false)
-  // No official TS lib.dom typings for the (non-standard, webkit-prefixed)
-  // Web Speech API yet — `any` here is the constructor itself, not app data.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const SpeechRecognitionCtorRef = useRef<any>(null)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any>(null)
+  // The engine (and its mobile hardening) is shared with every Dictatable
+  // field: lib/dictation.ts.
+  const dictationRef = useRef<DictationHandle | null>(null)
+  const [dictationHint, setDictationHint] = useState<DictationError | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -179,38 +179,31 @@ function CompanionContent() {
     // — this codebase's lint rule flags a direct synchronous setState call
     // in an effect body regardless of why, and a bare feature-detection
     // isn't exempt just because it's cheap.
-    Promise.resolve().then(() => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const ctor = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
-      if (ctor) {
-        SpeechRecognitionCtorRef.current = ctor
-        setSpeechSupported(true)
-      }
-    })
+    Promise.resolve().then(() => setSpeechSupported(!!speechRecognitionCtor()))
   }, [])
 
   function toggleDictation() {
-    const SpeechRecognitionCtor = SpeechRecognitionCtorRef.current
-    if (!SpeechRecognitionCtor) return
     if (listening) {
-      recognitionRef.current?.stop()
+      dictationRef.current?.stop()
       return
     }
-    const recognition = new SpeechRecognitionCtor()
-    recognition.lang = locale === 'he' ? 'he-IL' : 'en-US'
-    recognition.interimResults = false
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    recognition.onresult = (e: any) => {
-      const transcript = Array.from(e.results as ArrayLike<{ 0: { transcript: string } }>)
-        .map((r) => r[0].transcript)
-        .join(' ')
-      setInput((prev) => (prev ? `${prev} ${transcript}` : transcript))
+    setDictationHint(null)
+    const handle = startDictation({
+      locale,
+      onText: (transcript) => setInput((prev) => (prev ? `${prev} ${transcript}` : transcript)),
+      onEnd: () => {
+        setListening(false)
+        dictationRef.current = null
+      },
+      onError: (error) => {
+        setDictationHint(error)
+        window.setTimeout(() => setDictationHint((h) => (h === error ? null : h)), 4000)
+      },
+    })
+    if (handle) {
+      dictationRef.current = handle
+      setListening(true)
     }
-    recognition.onend = () => setListening(false)
-    recognition.onerror = () => setListening(false)
-    recognitionRef.current = recognition
-    setListening(true)
-    recognition.start()
   }
 
   function handleAttachClick() {
@@ -1028,6 +1021,11 @@ function CompanionContent() {
                 disabled={composerDisabled}
                 className="flex-1 min-w-0 bg-[var(--color-surface-glass)] border border-white/15 rounded-2xl ps-4 pe-10 lg:pe-16 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base leading-6 resize-none focus:outline-none focus:border-[var(--color-violet-500)]/60 transition-colors max-h-32 placeholder:truncate max-lg:placeholder:text-sm"
               />
+              {dictationHint && (
+                <p role="alert" className="absolute end-0 bottom-full mb-2 z-10 max-w-[18rem] rounded-xl bg-[#1d1530] border border-white/15 px-3 py-1.5 text-xs text-white/85 shadow-lg animate-fade-in">
+                  {td(`errors.${dictationHint}`)}
+                </p>
+              )}
               <div className="absolute end-3 bottom-3 flex items-center gap-2.5">
                 {speechSupported && (
                   <button
