@@ -3,6 +3,7 @@ import createMiddleware from 'next-intl/middleware'
 import { routing } from '@/i18n/routing'
 import { resolveSafeNext } from '@/lib/navigation/safeNext'
 import { buildSecurityHeaders } from '@/lib/securityHeaders'
+import { isAppPath } from '@/lib/navigation/app-paths'
 
 const handleI18nRouting = createMiddleware(routing)
 
@@ -90,21 +91,7 @@ async function resolveRoutingResponse(request: NextRequest) {
   // (`useOnboardingFlow`), instead of a dedicated page.
   const hasOnboarding = request.cookies.get('dpnr_onboarding')?.value === '1'
 
-  const isProtected =
-    pathname.startsWith('/dashboard') ||
-    pathname.startsWith('/decision') ||
-    pathname.startsWith('/companion') ||
-    pathname.startsWith('/twin') ||
-    pathname.startsWith('/rooms') ||
-    pathname.startsWith('/library') ||
-    pathname.startsWith('/mirror') ||
-    pathname.startsWith('/journal') ||
-    // Session 83: these (app) pages were only guarded client-side.
-    pathname.startsWith('/growth') ||
-    pathname.startsWith('/evolution-map') ||
-    pathname.startsWith('/account') ||
-    pathname.startsWith('/wallet') ||
-    pathname.startsWith('/therapist-summary')
+  const isProtected = isAppPath(pathname)
   // /signup deliberately excluded from this gate — see the "Already
   // authenticated" check below for why.
   const isLoginPage = pathname.startsWith('/login')

@@ -235,23 +235,21 @@ The person's latest message:
   },
   {
     name: 'continuation',
-    systemTemplate: `You write the short opening DPNR's Companion says when someone comes back — like meeting again with someone who remembers you, not a generic greeting. A fresh conversation starts with it; the earlier one stays saved.
+    systemTemplate: `You write the short line DPNR's Companion says when someone comes back to Main Chat. A fresh conversation starts with it; the earlier one stays saved.
 
 {{languageInstruction}}
 
-The app already shows a greeting with their name, so never write a greeting word or a name yourself. Write the rest in this rhythm (founder feedback, 2026-09-27):
-1. Presence — a very short line of being here with them (e.g. "I'm here with you.").
-2. Continuity, only when the material supports it — one or two sentences: what you last explored together, and, if there is real evidence for it, how it seemed to meet them emotionally or what felt alive for them ("Yesterday, we touched on … It seemed to leave you somewhere between … and …").
-3. Return to now — one open question about how they are arriving today, leaving them free to continue that subject or start somewhere new.
+The screen already greets them by name ("Good morning, {name}" and "I'm here with you"), so never write a greeting word, their name, or a presence line yourself.
+
+Write exactly two short sentences (the user's spec, 2026-09-29):
+1. A brief summary of the last conversation, starting "Last time we talked about …" — the subject only, in a few words (e.g. "Last time we talked about speaking up with your manager.").
+2. Then ask: "Do you want to continue with that, or talk about something else?"
 
 Rules:
-- Ground every detail in the material below (the last conversation, confirmed signals, session summaries). Never invent an event, detail or feeling.
-- Emotional language must be tentative and evidence-based ("it seemed…", "it sounded like…"). If the material doesn't show how it felt, name only the subject — never guess an emotion.
-- If the material gives you nothing specific, skip the continuity sentence and just offer presence and the question.
-- Do not summarise the whole session. At most two continuity sentences; three or four short sentences in total.
-- If the last conversation was painful, touch it gently rather than naming the hardest detail.
-- Warm and non-diagnostic. No advice, no analysis, no urgency or streak pressure.
-- Output plain text only — the message itself, nothing else.`,
+- Take the subject from the most recent conversation below. If it has nothing clear to name, use the most recent guided-room session summary instead. If neither gives you a clear subject (small talk, a greeting, nothing said yet), write only: "What would you like to talk about today?" and do not mention the earlier conversation at all.
+- Name only what was talked about. No feelings, interpretation, analysis or advice, and never invent a detail.
+- If the subject was painful, name it gently and briefly rather than repeating the hardest detail.
+- Plain text only — the two sentences, nothing else.`,
     userTemplate: `The most recent conversation with this person, oldest to newest (may be empty):
 {{recentConversation}}
 
@@ -261,14 +259,17 @@ Confirmed Digital Twin signals about this person, most recent first (may be empt
 Summaries of their recent guided-room sessions, most recent first (may be empty):
 {{recentSessionSummaries}}
 
-Write the opening line now.`,
+Write the line now.`,
     variables: ['recentConversation', 'confirmedSignalsList', 'recentSessionSummaries', 'languageInstruction'],
     notes:
       'Called by companion/context.ts on every context read that has at least one user message (Session 60 made it ' +
-      'per-visit; returned as an ephemeral `greeting` field, never stored). Output must not start with a greeting word or ' +
-      'name: the frontend prefixes Companion.returnGreetingHi ("Hi {name},") — the name never reaches the model. recentConversation = the last few turns as "User: ..."/"Companion: ..." lines, or ' +
-      '"(none — this will be their first message to Companion)". confirmedSignalsList/recentSessionSummaries share the ' +
-      'exact same gatherContinuityContext() read the Continuity composers use, formatted as "- ..." lines or "(none yet)". ' +
+      'per-visit; returned as an ephemeral `greeting` field, never stored). Deliberately brief (user, 2026-09-29): ' +
+      '"Last time we talked about …" + "Do you want to continue with that, or talk about something else?". Output must ' +
+      'not start with a greeting word, name or presence line: on a fresh visit the Main Chat hero shows the greeting and ' +
+      'the bubble holds only this output; inside an existing thread the frontend prefixes Companion.returnGreetingHi. The ' +
+      'name never reaches the model. recentConversation = the last few turns as "User: ..."/"Companion: ..." lines. ' +
+      'confirmedSignalsList/recentSessionSummaries share the exact same gatherContinuityContext() read the Continuity ' +
+      'composers use, formatted as "- ..." lines or "(none yet)". Same variables as before, so re-seeding needs no deploy. ' +
       'Plain text output (no outputSchema) — the raw response string is returned verbatim.',
   },
   {

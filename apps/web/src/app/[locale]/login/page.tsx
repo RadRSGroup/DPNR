@@ -11,6 +11,7 @@ import { establishSessionTicket } from '@/lib/auth/keyBootstrap'
 import { resolveSafeNext } from '@/lib/navigation/safeNext'
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton'
 import { savedLocale } from '@/lib/saved-locale'
+import { touchVisit } from '@/lib/visit'
 
 function LoginForm() {
   const t = useTranslations('Login')
@@ -35,8 +36,12 @@ function LoginForm() {
       // Best-effort — a failure here must never block a successful sign-in;
       // nothing consumes session tickets server-side until Stage 4.
       await establishSessionTicket(password).catch(() => {})
-      // Open in the saved language (this also sets the domain's locale cookie).
-      router.push(next, { locale: await savedLocale(locale) })
+      // A new visit starts in Main Chat (lib/visit.ts). Only a sign-in in
+      // the middle of a visit (the token lapsed while in use) returns to
+      // `next`. Open in the saved language (this also sets the domain's
+      // locale cookie).
+      const { isNew } = touchVisit()
+      router.push(isNew ? '/companion' : next, { locale: await savedLocale(locale) })
       router.refresh()
     } catch (err) {
       // err.message comes straight from the Cognito SDK and is English-only

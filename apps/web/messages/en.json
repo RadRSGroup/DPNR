@@ -808,10 +808,10 @@
       "evening": "Good evening"
     },
     "hero": {
-      "subtitle": "I'm here with you. Let's continue where you are."
+      "subtitle": "I'm here with you."
     },
     "emptyState": {
-      "title": "Hi — what's on your mind?",
+      "title": "How are you today? What would you like to talk about?",
       "body": "I can help you think something through, or point you to a Room or a Library topic."
     },
     "quickPrompts": {

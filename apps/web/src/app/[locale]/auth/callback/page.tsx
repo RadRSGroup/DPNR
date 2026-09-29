@@ -15,6 +15,7 @@ import {
 import { bootstrapKeysAtSignup, establishSessionTicket, recoverAndRewrapDek } from '@/lib/auth/keyBootstrap'
 import { ApiError, getUserKeys, updatePreferences } from '@/lib/api/v1-client'
 import { savedLocale } from '@/lib/saved-locale'
+import { touchVisit } from '@/lib/visit'
 import { resolveSafeNext } from '@/lib/navigation/safeNext'
 import type { RecoveryCode } from '@/lib/crypto'
 import RecoveryCodeReveal from '@/components/auth/RecoveryCodeReveal'
@@ -89,7 +90,9 @@ function CallbackFlow() {
     // New accounts go through consent / profile setup; proxy.ts routes them.
     // Existing ones open in their saved language (this also sets the
     // domain's locale cookie; see lib/saved-locale.ts).
-    router.push(isNew ? '/consent' : next, { locale: isNew ? locale : await savedLocale(locale) })
+    // An existing account starting a new visit goes to Main Chat (lib/visit.ts).
+    if (isNew) router.push('/consent', { locale })
+    else router.push(touchVisit().isNew ? '/companion' : next, { locale: await savedLocale(locale) })
     router.refresh()
   }
 

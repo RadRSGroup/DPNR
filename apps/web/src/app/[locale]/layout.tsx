@@ -7,6 +7,7 @@ import { routing } from "@/i18n/routing";
 import "../globals.css";
 import GlobalMusicPlayer from "@/components/layout/GlobalMusicPlayer";
 import TimeOnDpnrTracker from "@/components/layout/TimeOnDpnrTracker";
+import VisitGate from "@/components/layout/VisitGate";
 
 // All fonts are self-hosted from `src/fonts/` (variable .woff2 files built
 // from google/fonts' OFL sources, subset to Latin + Hebrew — licences in
@@ -104,6 +105,7 @@ export default async function RootLayout({
           {/* Outside every page so the music and the time count survive navigation (Session 70). */}
           <GlobalMusicPlayer />
           <TimeOnDpnrTracker />
+          <VisitGate />
         </NextIntlClientProvider>
       </body>
     </html>

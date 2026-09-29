@@ -4,6 +4,7 @@ import MirrorStepShell from './MirrorStepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import type { MirrorEntry } from '@dpnr/shared-types'
 import Dictatable from '@/components/ui/Dictatable'
+import { findReferencePattern } from '@/lib/mirror-patterns'
 
 interface Props {
   sessionTitle: string
@@ -40,6 +41,26 @@ function recurringQuestion(entry?: MirrorEntry): { question: string; placeholder
   }
 }
 
+/**
+ * When someone came in through a pattern, this step starts from what's
+ * already known about it instead of a blank field (user, 2026-09-29): their
+ * own reading of it (a Twin signal, quoted), or for a reference pattern the
+ * general "how it may show up" line. Plain, visible, editable text, so the
+ * AI sees exactly what the person kept; they add where else it shows up.
+ */
+function patternPrefill(entry?: MirrorEntry): string {
+  if (entry?.mode !== 'pattern') return ''
+  if (entry.patternSource === 'reference') {
+    const showsUp = findReferencePattern(entry.patternName)?.showsUp
+    return showsUp ? `${showsUp}
+
+For me, it tends to show up: ` : ''
+  }
+  return entry.patternDescription ? `What I've noticed before: "${entry.patternDescription}"
+
+It also shows up: ` : ''
+}
+
 /** PATTERN — SUBMIT_STEP only, {copingResponse, recurringPattern}, see mirror-steps/pattern.ts. */
 export default function Step03Pattern({
   sessionTitle,
@@ -51,7 +72,7 @@ export default function Step03Pattern({
 }: Props) {
   const { question, placeholder } = recurringQuestion(entry)
   const [copingResponse, setCopingResponse] = useState(initialCopingResponse)
-  const [recurringPattern, setRecurringPattern] = useState(initialRecurringPattern)
+  const [recurringPattern, setRecurringPattern] = useState(initialRecurringPattern || patternPrefill(entry))
 
   function handleContinue() {
     if (!copingResponse.trim() || !recurringPattern.trim()) return

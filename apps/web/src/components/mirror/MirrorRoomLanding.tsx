@@ -74,10 +74,18 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
   const [showAllReflections, setShowAllReflections] = useState(false)
   const [tab, setTab] = useState<'confirmed' | 'candidate'>('confirmed')
   const [pickerOpen, setPickerOpen] = useState(false)
+  // Patterns that failed to load show as an error, not as "no patterns" and
+  // not as a placeholder that never resolves (user, 2026-09-29).
+  const [twinFailed, setTwinFailed] = useState(false)
 
   useEffect(() => {
     getDailyCard().then(setDailyCard).catch(() => {})
-    getTwin().then(setTwin).catch(() => {})
+    // One retry: the first request after a page load can race the session
+    // ticket being refreshed.
+    getTwin()
+      .catch(() => new Promise<TwinListResponse>((resolve, reject) => setTimeout(() => getTwin().then(resolve, reject), 1500)))
+      .then(setTwin)
+      .catch(() => setTwinFailed(true))
     getMirrorsList()
       .then((res) => setMirrors([...res.mirrors].sort((a, b) => b.createdAt.localeCompare(a.createdAt))))
       .catch(() => setMirrors([]))
@@ -286,7 +294,9 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                 </div>
 
                 <div className="mt-3 flex-1">
-                  {twin === null ? (
+                  {twin === null && twinFailed ? (
+                    <p className="text-sm text-[var(--color-text-tertiary)] mt-2">Your patterns couldn&apos;t load right now. Try again in a moment.</p>
+                  ) : twin === null ? (
                     <span aria-hidden className="block h-3 w-2/3 rounded-full bg-white/[0.07] animate-soft-pulse mt-3" />
                   ) : patterns.length > 0 ? (
                     <ul className="divide-y divide-white/[0.06]">

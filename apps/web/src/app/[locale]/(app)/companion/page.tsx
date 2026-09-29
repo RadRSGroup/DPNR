@@ -23,6 +23,7 @@ import OnboardingSummaryCard from '@/components/companion/onboarding/OnboardingS
 import Dictatable from '@/components/ui/Dictatable'
 import FeelBodyButton from '@/components/shared/FeelBodyButton'
 import { speechRecognitionCtor, startDictation, type DictationError, type DictationHandle } from '@/lib/dictation'
+import { claimFreshMainChat } from '@/lib/visit'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -49,9 +50,6 @@ const QUICK_PROMPT_KEYS = [
   { icon: Shuffle, key: 'decision' as const },
   { icon: UserCircle, key: 'guide' as const },
 ]
-
-/** sessionStorage flag: this tab has already opened Main Chat this visit. */
-const VISIT_KEY = 'dpnr.mainChatVisit'
 
 /** Tallest the composer grows before it scrolls — matches its `max-h-32` (8rem). */
 const COMPOSER_MAX_HEIGHT = 128
@@ -225,11 +223,12 @@ function CompanionContent() {
         const email = session.getIdToken().payload.email as string | undefined
         setEmailName(displayFirstName(null, email))
 
-        // First Main Chat load of this visit (this tab's session): start a
-        // fresh conversation with a welcome-back line about the last one
-        // (founder feedback 2026-09-27). Coming back to Main Chat later in
-        // the same visit resumes the open thread instead.
-        const fresh = startsVisit()
+        // First Main Chat load of this visit (lib/visit.ts; shared by every
+        // tab, ends after 30 min away): start a fresh conversation with a
+        // welcome-back line about the last one (founder feedback
+        // 2026-09-27). Coming back to Main Chat later in the same visit
+        // resumes the open thread instead.
+        const fresh = claimFreshMainChat()
         const context = await getCompanionContext(undefined, { fresh })
         nextScrollInstant.current = true
         setMessages(context.messages.map((m) => ({ role: m.role, text: m.text, createdAt: m.createdAt, persisted: true })))
@@ -679,6 +678,7 @@ function CompanionContent() {
               <h1 className="font-display text-2xl text-white">
                 {timeGreeting(tc)}{firstName ? `, ${firstName}` : ''}
               </h1>
+              {!onboarding.active && <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{tc('hero.subtitle')}</p>}
             </div>
           )}
 
@@ -799,13 +799,13 @@ function CompanionContent() {
                 does. Vertically centered in the thread area via the parent's
                 justify-center above, instead of top-aligned with a large dead
                 gap above the input bar. */}
-            {!pageLoading && messages.length === 0 && !onboarding.active && (
+            {/* Only when there's no welcome-back line: greet → check in →
+                invite is one flow (the hero greets; this bubble or the
+                welcome-back line invites), never two invitations stacked. */}
+            {!pageLoading && messages.length === 0 && !onboarding.active && !returnGreetingLine && (
               <div className="flex justify-start animate-settle-in stagger-1">
                 <div className="max-w-[90%] lg:max-w-[480px] bg-[var(--color-surface-glass)] border border-[var(--color-border-glass)] text-white/85 rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed">
                   <p>{tc('emptyState.title')}</p>
-                  <p className="text-[var(--color-text-tertiary)] text-xs mt-1.5">
-                    {tc('emptyState.body')}
-                  </p>
                 </div>
               </div>
             )}
@@ -1091,12 +1091,3 @@ function MobileDateLine() {
 }
 
 /** True once per visit (this tab's session): the first Main Chat load. */
-function startsVisit(): boolean {
-  try {
-    if (sessionStorage.getItem(VISIT_KEY)) return false
-    sessionStorage.setItem(VISIT_KEY, '1')
-    return true
-  } catch {
-    return false // storage blocked: resume as before rather than start fresh every load
-  }
-}
