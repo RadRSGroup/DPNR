@@ -5,7 +5,9 @@
  * PKCE; the web client has no secret) for Cognito tokens, which
  * `adoptOAuthSession` then stores exactly like an SRP sign-in.
  */
-const OAUTH_DOMAIN = process.env.NEXT_PUBLIC_COGNITO_OAUTH_DOMAIN ?? 'dpnr-auth.auth.us-east-1.amazoncognito.com'
+// Custom domain (Session 83): Google's consent screen must only show domains
+// DPNR owns. The dpnr-auth prefix domain still works as a fallback via the env var.
+const OAUTH_DOMAIN = process.env.NEXT_PUBLIC_COGNITO_OAUTH_DOMAIN ?? 'auth.be-dpnr.com'
 export const COGNITO_OAUTH_ORIGIN = `https://${OAUTH_DOMAIN}`
 const CLIENT_ID = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!
 const PENDING_KEY = 'dpnr_oauth_pending'

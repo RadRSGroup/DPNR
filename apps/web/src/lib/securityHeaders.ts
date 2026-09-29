@@ -10,7 +10,7 @@ export function buildSecurityHeaders(nonce: string): Record<string, string> {
   const cognitoOrigin = cognitoIdpOrigin(process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID)
   const s3UploadOrigin = s3RegionalWildcard(process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID)
   // Google sign-in exchanges its code at the Cognito domain's /oauth2/token.
-  const oauthOrigin = `https://${process.env.NEXT_PUBLIC_COGNITO_OAUTH_DOMAIN ?? 'dpnr-auth.auth.us-east-1.amazoncognito.com'}`
+  const oauthOrigin = `https://${process.env.NEXT_PUBLIC_COGNITO_OAUTH_DOMAIN ?? 'auth.be-dpnr.com'}`
   // Verified live (2026-09-22, this slice): React dev mode genuinely needs
   // eval() for its debugging/stack-reconstruction tooling — confirmed via a
   // real CSP violation in the browser console ("React will never use
