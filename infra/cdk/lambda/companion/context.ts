@@ -10,7 +10,8 @@ import {
   type DailyCardItem,
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
-import { getProfileForLanguage, toLanguageInstruction } from '../lib/locale'
+import { getProfileForLanguage, screenLocale, toLanguageInstruction, type Locale } from '../lib/locale'
+import { readLocalized } from '../lib/localized-content'
 import { getOnboardingSnapshotContext } from '../lib/onboarding-snapshot-context'
 import { getSessionCrypto, type SessionCrypto } from '../lib/session-crypto'
 import { resolvePromptVersion } from '../lib/prompt-registry'
@@ -90,7 +91,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       const body: CompanionContextResponse = {
         sessionId: null,
         messages: [],
-        dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
+        dailyCard: await getUndismissedDailyCard(requireCrypto, pk, screenLocale(event)),
         greeting: null,
       }
       return jsonResponse(200, body)
@@ -104,7 +105,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       const body: CompanionContextResponse = {
         sessionId,
         messages,
-        dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
+        dailyCard: await getUndismissedDailyCard(requireCrypto, pk, screenLocale(event)),
         greeting: await synthesizeReturnGreeting(requireCrypto, userId, pk, messages),
       }
       return jsonResponse(200, body)
@@ -123,7 +124,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         const body: CompanionContextResponse = {
           sessionId: null,
           messages: [],
-          dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
+          dailyCard: await getUndismissedDailyCard(requireCrypto, pk, screenLocale(event)),
           greeting: null,
         }
         return jsonResponse(200, body)
@@ -134,7 +135,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       const body: CompanionContextResponse = {
         sessionId,
         messages: opener ? [opener] : [],
-        dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
+        dailyCard: await getUndismissedDailyCard(requireCrypto, pk, screenLocale(event)),
         greeting: null,
       }
       return jsonResponse(200, body)
@@ -152,7 +153,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     // The previous conversation stays in Recent Conversations.
     if (event.queryStringParameters?.fresh === '1') {
       const [dailyCard, greeting] = await Promise.all([
-        getUndismissedDailyCard(requireCrypto, pk),
+        getUndismissedDailyCard(requireCrypto, pk, screenLocale(event)),
         synthesizeReturnGreeting(requireCrypto, userId, pk, messages),
       ])
       const body: CompanionContextResponse = {
@@ -166,7 +167,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     }
 
     const [dailyCard, greeting] = await Promise.all([
-      getUndismissedDailyCard(requireCrypto, pk),
+      getUndismissedDailyCard(requireCrypto, pk, screenLocale(event)),
       synthesizeReturnGreeting(requireCrypto, userId, pk, messages),
     ])
     const body: CompanionContextResponse = {
@@ -219,7 +220,8 @@ async function loadRecentMessages(
  */
 async function getUndismissedDailyCard(
   requireCrypto: RequireCrypto,
-  pk: string
+  pk: string,
+  locale: Locale
 ): Promise<CompanionContextResponse['dailyCard']> {
   try {
     const today = new Date().toISOString().slice(0, 10)
@@ -228,10 +230,10 @@ async function getUndismissedDailyCard(
     if (!item || item.dismissedAt) return null
 
     const crypto = await requireCrypto()
-    const { text, kind } = await crypto.decryptField<{
+    const { text, kind } = await readLocalized<{
       text: string
       kind: 'thought' | 'question' | 'reminder' | 'micro_practice'
-    }>(item.content)
+    }>(crypto, item, locale)
     return { kind, text, feedback: item.feedback ?? null }
   } catch {
     return null

@@ -82,6 +82,8 @@ export interface PromptSeed {
    * other domain onto it. Omit to keep the shared default.
    */
   model?: string
+  /** Per-prompt output cap override (defaults below: 600 with an outputSchema, 500 without). */
+  maxTokens?: number
 }
 
 export const DECISION_ROOM_PROMPT_SEEDS: PromptSeed[] = [

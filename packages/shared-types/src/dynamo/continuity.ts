@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { EncryptedBlobSchema } from './crypto'
+import { EncryptedBlobSchema, TranslatedContentSchema } from './crypto'
 import { LifeDomainCategorySchema } from './twin'
 
 export const CommitmentStatusSchema = z.enum(['open', 'completed', 'dropped'])
@@ -40,6 +40,7 @@ export const DailyCardItemSchema = z.object({
   pk: z.string(),
   sk: z.string(), // Sk.dailyCard(isoDate)
   content: EncryptedBlobSchema, // wraps { text: string, kind: 'thought'|'question'|'reminder'|'micro_practice' }
+  translated: TranslatedContentSchema.optional(), // wraps { text }
   promptRef: z.string(),
   createdAt: z.string().datetime(),
   // Data captured per spec §4 Daily Card contract ("Open/dismiss/save response;
@@ -54,6 +55,7 @@ export const WeeklyRecapItemSchema = z.object({
   pk: z.string(),
   sk: z.string(), // Sk.weeklyRecap(isoWeek)
   content: EncryptedBlobSchema, // wraps { stoodOut, shifted, remainsActive, suggestion }
+  translated: TranslatedContentSchema.optional(), // same four fields
   promptRef: z.string(),
   createdAt: z.string().datetime(),
 })

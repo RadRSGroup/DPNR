@@ -36,6 +36,14 @@ export function getRequestedLocale(event: APIGatewayProxyEventV2WithJWTAuthorize
   return raw === 'en' || raw === 'he' ? raw : null
 }
 
+/**
+ * The screen's language for a read of stored AI text: `?lang=` first, then
+ * the JWT locale claim, then English. For handlers with no profile read.
+ */
+export function screenLocale(event: APIGatewayProxyEventV2WithJWTAuthorizer): Locale {
+  return getRequestedLocale(event) ?? getLocaleClaim(event) ?? 'en'
+}
+
 export function resolveLocale(
   profile: Pick<UserProfileItem, 'preferredLanguage'> | undefined,
   claimLocale?: Locale | null

@@ -39,10 +39,20 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     } while (exclusiveStartKey)
 
     const exportedItems = await Promise.all(
-      items.map(async ({ pk: _pk, content, ...rest }) => ({
+      items.map(async ({ pk: _pk, content, translated, ...rest }) => ({
         ...rest,
         ...(content !== undefined
           ? { content: isEncryptedBlob(content) ? await crypto.decryptField<unknown>(content) : content }
+          : {}),
+        // A stored translation of AI text (lib/relocalize.ts), decrypted
+        // like `content` so the export stays readable.
+        ...(translated && typeof translated === 'object' && isEncryptedBlob((translated as { content?: unknown }).content)
+          ? {
+              translated: {
+                lang: (translated as { lang?: unknown }).lang,
+                content: await crypto.decryptField<unknown>((translated as { content: EncryptedBlob }).content),
+              },
+            }
           : {}),
       }))
     )

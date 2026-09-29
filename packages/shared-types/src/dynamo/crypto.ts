@@ -20,6 +20,20 @@ export const EncryptedBlobSchema = z.object({
 export type EncryptedBlob = z.infer<typeof EncryptedBlobSchema>
 
 /**
+ * An AI-written item's copy in the other app language (2026-09-29), written
+ * by the relocalize worker (lambda/account/relocalize.ts) after the person
+ * switches language, and shown instead of `content` when the screen is in
+ * `lang`. Same shape as `content` (text fields only), encrypted with the
+ * same key. Every writer of these items replaces the whole item, so a new
+ * `content` never keeps a stale translation.
+ */
+export const TranslatedContentSchema = z.object({
+  lang: z.enum(['en', 'he']),
+  content: EncryptedBlobSchema,
+})
+export type TranslatedContent = z.infer<typeof TranslatedContentSchema>
+
+/**
  * The first real `EncryptedBlob.v` value (ADR 0009/ADR 0014, Phase 6 Stage
  * 4) — real AES-256-GCM, auth tag appended to `ciphertext` (not the
  * optional `tag` field), matching WebCrypto's own AES-GCM output

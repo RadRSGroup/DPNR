@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { EncryptedBlobSchema } from './crypto'
+import { EncryptedBlobSchema, TranslatedContentSchema } from './crypto'
 
 /**
  * USER#<id> / ROADMAP — current focus/theme/direction. Content is encrypted;
@@ -36,6 +36,7 @@ export const RoadmapItemSchema = z.object({
   pk: z.string(),
   sk: z.string(), // Sk.roadmap() or Sk.roadmapVersion(n) for history
   content: EncryptedBlobSchema, // wraps { currentFocus, theme, direction, suggestedSpaces }
+  translated: TranslatedContentSchema.optional(), // wraps { currentFocus, theme, direction }
   version: z.number().int().positive(),
   lifecycleState: RoadmapLifecycleStateSchema,
   updatedAt: z.string().datetime(),
@@ -202,6 +203,21 @@ export const ARCHETYPE_LABELS: Record<Archetype, string> = {
 export const TwinRejectReasonSchema = z.enum(['not_really', 'partly', 'different'])
 export type TwinRejectReason = z.infer<typeof TwinRejectReasonSchema>
 
+/**
+ * Mirror Room's 21 reference patterns, by their canonical English name
+ * (apps/web/src/lib/mirror-patterns.ts REFERENCE_PATTERNS, same order).
+ * Stored on a signal as `referencePattern`, an id that stays English
+ * whatever language the signal's own name is in.
+ */
+export const REFERENCE_PATTERN_NAMES = [
+  'People-Pleasing', 'Avoidance', 'Over-Control', 'Perfectionism', 'Over-Responsibility',
+  'Emotional Suppression', 'Conflict Avoidance', 'Hyper-Independence', 'Reassurance Seeking',
+  'Withdrawal', 'Overthinking', 'Self-Abandonment', 'Fear-Based Procrastination', 'Anger as Protection',
+  'Fixing / Rescuing', 'Testing / Pushing Away', 'Over-Accommodation', 'Freeze / Shutdown',
+  'Comparison', 'Self-Criticism', 'Push-Pull / Approach-Avoidance',
+] as const
+export type ReferencePatternName = (typeof REFERENCE_PATTERN_NAMES)[number]
+
 export const TwinSignalItemSchema = z.object({
   pk: z.string(),
   sk: z.string(), // Sk.twinSignal(domain, signalId)
@@ -215,6 +231,12 @@ export const TwinSignalItemSchema = z.object({
   // short tentative label such as "People-Pleasing", absent for signals
   // extracted before it existed.
   content: EncryptedBlobSchema,
+  translated: TranslatedContentSchema.optional(), // wraps { description, name? }
+  // One of REFERENCE_PATTERN_NAMES when this is one of Mirror Room's 21
+  // reference patterns (2026-09-29): set by twin/extract_signals, or by the
+  // relocalize worker for older signals. An id, not display text, so the
+  // pattern's details are found whatever language `name` is in.
+  referencePattern: z.string().optional(),
   // Set at confirm-time (Session 19) by a real `twin/classify_signal`
   // Bedrock call (twin/confirm.ts → lib/signal-classification.ts) — absent
   // for signals confirmed before this existed, or if classification failed
@@ -267,6 +289,7 @@ export const LifeDomainSummaryItemSchema = z.object({
   sk: z.string(), // Sk.lifeDomainSummary(domain)
   domain: LifeDomainCategorySchema,
   content: EncryptedBlobSchema,
+  translated: TranslatedContentSchema.optional(), // wraps { summary }
   basedOnSignals: z.number().int().min(0),
   updatedAt: z.string().datetime(),
 })

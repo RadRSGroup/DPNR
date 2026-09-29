@@ -1581,6 +1581,31 @@ export class ApiStack extends Stack {
     props.sessionTicketsKmsKey.grantDecrypt(composeWeeklyRecapFn)
     props.sessionTicketsTable.grantReadData(composeWeeklyRecapFn)
 
+    // 2026-09-29 — translates a person's stored AI text after a language
+    // switch (lambda/lib/relocalize.ts). Invoked asynchronously by
+    // UserPreferencesFn, never by API Gateway, so the batch timeout applies.
+    const relocalizeFn = new lambda.NodejsFunction(this, 'RelocalizeFn', {
+      ...sharedProductLambdaProps,
+      timeout: compositionBatchTimeout,
+      entry: path.join(__dirname, '../lambda/account/relocalize.ts'),
+      environment: {
+        ...sharedProductLambdaProps.environment,
+        PROMPT_REGISTRY_TABLE_NAME: props.promptRegistryTable.tableName,
+        SESSION_TICKET_KMS_KEY_ID: props.sessionTicketsKmsKey.keyId,
+        SESSION_TICKETS_TABLE_NAME: props.sessionTicketsTable.tableName,
+        ...safetyGuardrailEnv,
+      },
+      description: 'Async (from PUT /v1/user/preferences) — translates stored AI text into the newly saved language.',
+    })
+    props.applicationTable.grantReadWriteData(relocalizeFn)
+    props.promptRegistryTable.grantReadData(relocalizeFn)
+    grantBedrockConverse(relocalizeFn)
+    grantApplyGuardrail(relocalizeFn)
+    props.sessionTicketsKmsKey.grantDecrypt(relocalizeFn)
+    props.sessionTicketsTable.grantReadData(relocalizeFn)
+    relocalizeFn.grantInvoke(userPreferencesFn)
+    userPreferencesFn.addEnvironment('RELOCALIZE_FUNCTION_NAME', relocalizeFn.functionName)
+
     // No Bedrock call — computeAlignmentScore is plain arithmetic over
     // already-real data, no PROMPT_REGISTRY_TABLE_NAME/grantBedrockConverse
     // needed unlike the two composers above.

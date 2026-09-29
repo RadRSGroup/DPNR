@@ -22,6 +22,7 @@
  * is) as final; the calling convention and data plumbing are what this
  * session actually verified live.
  */
+import { REFERENCE_PATTERN_NAMES } from '@dpnr/shared-types'
 import type { PromptSeed } from './decision-room-prompts.seed'
 
 export const TWIN_PROMPT_SEEDS: PromptSeed[] = [
@@ -34,7 +35,8 @@ Only extract a signal when the session gives real, specific evidence for it. Mos
 For each signal you do extract:
 - domain: exactly one of "pattern" (a recurring reaction/loop), "trigger" (something that reliably provokes a reaction), "value" (something they protect or seek), or "commitment" (a concrete action they committed to). Only "commitment" applies to a Decision Room session's own literal commitment text — never infer a commitment from anything else.
 - description: one plain sentence written to the person in second person ("You tend to…", "You may be…"), never "I" and never about them in the third person, using tentative language ("seems to", "may be emerging as") for anything inferred rather than explicitly stated by the person themselves.
-- name: a short, tentative label of one to three words for what this is (e.g. "People-Pleasing", "Conflict Avoidance", "Fairness"). For a pattern, prefer one of these reference names when it genuinely fits, otherwise write your own: People-Pleasing, Avoidance, Over-Control, Perfectionism, Over-Responsibility, Emotional Suppression, Conflict Avoidance, Hyper-Independence, Reassurance Seeking, Withdrawal, Overthinking, Self-Abandonment, Fear-Based Procrastination, Anger as Protection, Fixing / Rescuing, Testing / Pushing Away, Over-Accommodation, Freeze / Shutdown, Comparison, Self-Criticism, Push-Pull. The name labels a pattern or moment, never the person (never "People-Pleaser").
+- name: a short, tentative label of one to three words for what this is (e.g. "People-Pleasing", "Conflict Avoidance", "Fairness"), in the same language as the description. The name labels a pattern or moment, never the person (never "People-Pleaser").
+- referencePattern: for a pattern only, the one reference pattern it clearly is, as this exact English id whatever language you write in: ${REFERENCE_PATTERN_NAMES.join(', ')}. When one genuinely fits, the name should be that pattern's name in the person's language. Use "none" when none clearly fits, and for every non-pattern signal.
 - confidence: 0–1. Use 0.9+ only for something the person stated directly in their own words. Use lower confidence the more this is your own inference from their behavior/choices rather than their explicit statement.
 
 Never invent detail beyond what the session summary actually contains. Never assign a fixed trait or label to the person — describe a pattern or moment, not an identity.
@@ -64,6 +66,7 @@ Readings the person said were not accurate (may be empty):
               name: { type: 'string' },
               description: { type: 'string' },
               confidence: { type: 'number' },
+              referencePattern: { type: 'string', enum: [...REFERENCE_PATTERN_NAMES, 'none'] },
             },
           },
         },

@@ -298,7 +298,7 @@ export async function deleteAccountData(): Promise<DeleteAccountResponse> {
 
 /** GET /v1/dashboard — aggregate read used by /dashboard (MVP_ARCHITECTURE.md §4). */
 export async function getDashboard(): Promise<DashboardResponse> {
-  const res = await authedFetch('/v1/dashboard')
+  const res = await authedFetch(withScreenLang('/v1/dashboard'))
   return parseOrThrow<DashboardResponse>(res)
 }
 
@@ -332,7 +332,7 @@ export async function getCompanionContext(sessionId?: string, options: { fresh?:
     : options.fresh
       ? '/v1/companion/context?fresh=1'
       : '/v1/companion/context'
-  const res = await authedFetch(path)
+  const res = await authedFetch(withScreenLang(path))
   return parseOrThrow<CompanionContextResponse>(res)
 }
 
@@ -341,7 +341,7 @@ export async function getCompanionContext(sessionId?: string, options: { fresh?:
  * greeting model call, for pages that only show the card.
  */
 export async function getDailyCard(): Promise<CompanionContextResponse['dailyCard']> {
-  const res = await authedFetch('/v1/companion/context?only=dailyCard')
+  const res = await authedFetch(withScreenLang('/v1/companion/context?only=dailyCard'))
   return (await parseOrThrow<CompanionContextResponse>(res)).dailyCard
 }
 
@@ -419,7 +419,7 @@ export async function updateRoadmapLifecycle(action: 'pause' | 'resume' | 'archi
 
 /** GET /v1/twin — every Digital Twin ("InnerSelf") signal the caller has, any status. */
 export async function getTwin(): Promise<TwinListResponse> {
-  const res = await authedFetch('/v1/twin')
+  const res = await authedFetch(withScreenLang('/v1/twin'))
   return parseOrThrow<TwinListResponse>(res)
 }
 
@@ -444,7 +444,7 @@ export async function rejectTwinSignal(signalId: string, followUp?: TwinRejectRe
  * returns null then, so callers can show an honest empty state.
  */
 export async function getWeeklyRecap(): Promise<WeeklyRecapResponse | null> {
-  const res = await authedFetch('/v1/weekly-recap')
+  const res = await authedFetch(withScreenLang('/v1/weekly-recap'))
   if (res.status === 404) return null
   return parseOrThrow<WeeklyRecapResponse>(res)
 }

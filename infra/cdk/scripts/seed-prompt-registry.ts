@@ -39,6 +39,7 @@ import { WEEKLY_RECAP_PROMPT_SEEDS } from './weekly-recap-prompts.seed'
 import { COMPANION_PROMPT_SEEDS } from './companion-prompts.seed'
 import { ROADMAP_PROMPT_SEEDS } from './roadmap-prompts.seed'
 import { SAFETY_PROMPT_SEEDS } from './safety-prompts.seed'
+import { LOCALIZE_PROMPT_SEEDS } from './localize-prompts.seed'
 import { applyReasoningLayer } from './reasoning-layer'
 
 const TABLE_NAME = process.env.PROMPT_REGISTRY_TABLE_NAME ?? 'dpnr-prompt-registry'
@@ -98,6 +99,12 @@ export const DOMAINS: { domain: string; seeds: PromptSeed[]; author: string; sou
     author: 'design:safety-prompts',
     sourceNote: 'Net-new — designed Claude-native, per spec §30/Appendix C and docs/SAFETY_SYSTEM_DESIGN.md (see safety-prompts.seed.ts).',
   },
+  {
+    domain: 'localize',
+    seeds: LOCALIZE_PROMPT_SEEDS,
+    author: 'design:localize-prompts',
+    sourceNote: 'Net-new (2026-09-29) — translates stored AI text after a language switch (see localize-prompts.seed.ts).',
+  },
 ]
 
 function buildVersionItem(
@@ -129,7 +136,7 @@ function buildVersionItem(
       // the same converse-call method before changing this value.
       model: seed.model ?? 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
       temperature: 0.7,
-      maxTokens: seed.outputSchema ? 600 : 500, // matches aiCallJSON vs aiCall's limits — unchanged, no evidence Claude needs more headroom here
+      maxTokens: seed.maxTokens ?? (seed.outputSchema ? 600 : 500), // matches aiCallJSON vs aiCall's limits — unchanged, no evidence Claude needs more headroom here
     },
     outputSchema: seed.outputSchema,
     status: 'active',

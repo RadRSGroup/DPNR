@@ -3,6 +3,8 @@ import { QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { userPk, type TwinSignalItem, type TwinListResponse } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
 import { getSessionCrypto } from '../lib/session-crypto'
+import { screenLocale } from '../lib/locale'
+import { readLocalized } from '../lib/localized-content'
 import { ddb, TABLE_NAME } from './helpers'
 
 /**
@@ -18,6 +20,8 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
   try {
     const userId = requireUserId(event)
     const crypto = await getSessionCrypto(userId, 'active_session')
+    // Names/descriptions in the screen's language when translated (lib/localized-content.ts).
+    const locale = screenLocale(event)
 
     const result = await ddb.send(
       new QueryCommand({
@@ -31,7 +35,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       ((result.Items ?? []) as TwinSignalItem[])
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
         .map(async (item) => {
-          const { description, name } = await crypto.decryptField<{ description: string; name?: string }>(item.content)
+          const { description, name } = await readLocalized<{ description: string; name?: string }>(crypto, item, locale)
           return {
             signalId: item.signalId,
             domain: item.domain,
@@ -45,6 +49,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
             direction: item.direction,
             strength: item.strength,
             createdAt: item.createdAt,
+            referencePattern: item.referencePattern,
           }
         })
     )

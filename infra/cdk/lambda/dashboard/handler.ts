@@ -18,6 +18,8 @@ import {
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
 import { getSessionCrypto } from '../lib/session-crypto'
+import { screenLocale } from '../lib/locale'
+import { readLocalized } from '../lib/localized-content'
 import { computeAlignmentScore } from '../lib/alignment-score'
 import { aggregateLifeDomains, aggregateArchetypes } from '../lib/signal-aggregates'
 
@@ -55,6 +57,9 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const userId = requireUserId(event)
     const pk = userPk(userId)
     const crypto = await getSessionCrypto(userId, 'active_session')
+    // Stored AI text (roadmap, domain summaries, daily card) in the screen's
+    // language when a translation exists (lib/localized-content.ts).
+    const locale = screenLocale(event)
     const today = new Date().toISOString().slice(0, 10)
     const historyStart = new Date(Date.now() - ALIGNMENT_HISTORY_WINDOW_DAYS * 24 * 60 * 60 * 1000)
       .toISOString()
@@ -111,7 +116,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const roadmapItem = roadmapResult.Item as RoadmapItem | undefined
     const roadmap = roadmapItem
       ? {
-          ...(await crypto.decryptField<RoadmapContent>(roadmapItem.content)),
+          ...(await readLocalized<RoadmapContent>(crypto, roadmapItem, locale)),
           // Intelligence Spec §17 — plaintext on the item itself, not part of
           // the encrypted content blob.
           lifecycleState: roadmapItem.lifecycleState,
@@ -148,7 +153,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     await Promise.all(
       ((domainSummariesResult.Items ?? []) as LifeDomainSummaryItem[]).map(async (item) => {
         try {
-          summaries.set(item.domain, (await crypto.decryptField<{ summary: string }>(item.content)).summary)
+          summaries.set(item.domain, (await readLocalized<{ summary: string }>(crypto, item, locale)).summary)
         } catch {
           // an unreadable summary just isn't shown
         }
@@ -176,8 +181,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const continuityCue = dailyCardItem
       ? {
           kind: 'daily_card' as const,
-          text: (await crypto.decryptField<{ text: string; kind: DailyCardResponse['kind'] }>(dailyCardItem.content))
-            .text,
+          text: (await readLocalized<{ text: string; kind: DailyCardResponse['kind'] }>(crypto, dailyCardItem, locale)).text,
         }
       : openCommitments[0]
         ? {

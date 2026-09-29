@@ -1,6 +1,7 @@
 import type { APIGatewayProxyHandlerV2WithJWTAuthorizer } from 'aws-lambda'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb'
+import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda'
 import { Sk, userPk, UpdatePreferencesRequestSchema, type PreferencesResponse } from '@dpnr/shared-types'
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { getAvatarPresignedUrl } from '../lib/avatar'
@@ -9,6 +10,29 @@ import { getVisionRemaining } from '../lib/vision-quota'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
+const RELOCALIZE_FUNCTION_NAME = process.env.RELOCALIZE_FUNCTION_NAME
+const lambdaClient = new LambdaClient({})
+
+/**
+ * After a language change, translate the AI text already stored for this
+ * person (account/relocalize.ts) in the background. Fire-and-forget: the
+ * setting is saved either way, and the worker is idempotent, so a failed
+ * or repeated trigger is harmless. Only the verified caller's id is sent.
+ */
+async function triggerRelocalize(userId: string): Promise<void> {
+  if (!RELOCALIZE_FUNCTION_NAME) return
+  try {
+    await lambdaClient.send(
+      new InvokeCommand({
+        FunctionName: RELOCALIZE_FUNCTION_NAME,
+        InvocationType: 'Event',
+        Payload: Buffer.from(JSON.stringify({ userId })),
+      })
+    )
+  } catch (err) {
+    console.error('Relocalize trigger failed (non-fatal):', err instanceof Error ? err.message : 'unknown error')
+  }
+}
 
 /**
  * PUT /v1/user/preferences — the write path `preferredLanguage`/
@@ -81,6 +105,8 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         }
         throw err
       })
+
+    if (preferredLanguage !== undefined) await triggerRelocalize(userId)
 
     const response: PreferencesResponse = {
       preferredLanguage: result.Attributes?.preferredLanguage as PreferencesResponse['preferredLanguage'],

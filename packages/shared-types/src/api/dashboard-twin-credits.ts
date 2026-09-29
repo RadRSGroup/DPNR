@@ -125,6 +125,8 @@ export const TwinListResponseSchema = z.object({
       signalType: SignalTypeSchema.optional(),
       direction: SignalDirectionSchema.optional(),
       strength: z.number().min(0).max(1).optional(),
+      // One of REFERENCE_PATTERN_NAMES, when set (see TwinSignalItemSchema).
+      referencePattern: z.string().optional(),
       // ISO timestamp (2026-09-29), so Growth Tracker can list the signals
       // behind its monthly counts with `confirmedThisMonth` below. Optional
       // only so a frontend on an older backend still parses.

@@ -3,6 +3,8 @@ import { GetCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, userPk, type WeeklyRecapItem, type WeeklyRecapResponse } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { getSessionCrypto } from '../lib/session-crypto'
+import { screenLocale } from '../lib/locale'
+import { readLocalized } from '../lib/localized-content'
 import { isoWeekString } from '../lib/iso-week'
 import { ddb, TABLE_NAME } from './helpers'
 
@@ -26,7 +28,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       throw new HttpError(404, 'weekly_recap_not_ready', 'No Weekly Recap composed yet for this week.')
     }
 
-    const decrypted = await crypto.decryptField<Omit<WeeklyRecapResponse, 'week'>>(item.content)
+    const decrypted = await readLocalized<Omit<WeeklyRecapResponse, 'week'>>(crypto, item, screenLocale(event))
     const body: WeeklyRecapResponse = { week, ...decrypted }
     return jsonResponse(200, body)
   } catch (err) {

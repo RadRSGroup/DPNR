@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
-import { Sk, type TwinSignalItem, type TwinSignalSource, type SessionSummaryItem } from '@dpnr/shared-types'
+import { REFERENCE_PATTERN_NAMES, Sk, type TwinSignalItem, type TwinSignalSource, type SessionSummaryItem } from '@dpnr/shared-types'
 import type { SessionCrypto } from '../lib/session-crypto'
 import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
@@ -51,7 +51,7 @@ export async function extractCandidateSignals(
 
     const now = new Date().toISOString()
     for (const raw of signals) {
-      const signal = raw as { domain?: string; name?: string; description?: string; confidence?: number }
+      const signal = raw as { domain?: string; name?: string; description?: string; confidence?: number; referencePattern?: string }
       if (
         !signal.domain ||
         !EXTRACTABLE_DOMAINS.has(signal.domain) ||
@@ -80,6 +80,13 @@ export async function extractCandidateSignals(
         signalType: 'model_inference',
         promptRef: promptRef('twin', 'extract_signals', version),
         modelRef: version.modelParams.model,
+        // An id, so Mirror Room finds the pattern's details whatever
+        // language the name is in (dynamo/twin.ts REFERENCE_PATTERN_NAMES).
+        ...(signal.domain === 'pattern' &&
+        typeof signal.referencePattern === 'string' &&
+        (REFERENCE_PATTERN_NAMES as readonly string[]).includes(signal.referencePattern)
+          ? { referencePattern: signal.referencePattern }
+          : {}),
         content: await crypto.encryptField(
           typeof signal.name === 'string' && signal.name.trim()
             ? { description: signal.description, name: signal.name.trim().slice(0, 60) }
