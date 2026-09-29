@@ -7,7 +7,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
 import Card from '@/components/ui/Card'
 import LotusIcon from '@/components/icons/LotusIcon'
-import { getCompanionContext, getTwin, getMirrorsList } from '@/lib/api/v1-client'
+import { getDailyCard, getTwin, getMirrorsList } from '@/lib/api/v1-client'
 import { ROOM_REFINE_COST } from '@dpnr/shared-types'
 import type { CompanionContextResponse, TwinListResponse, MirrorSummaryView } from '@dpnr/shared-types'
 import type { MirrorOpening } from './openings'
@@ -76,7 +76,7 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
   const [pickerOpen, setPickerOpen] = useState(false)
 
   useEffect(() => {
-    getCompanionContext().then((c) => setDailyCard(c.dailyCard)).catch(() => {})
+    getDailyCard().then(setDailyCard).catch(() => {})
     getTwin().then(setTwin).catch(() => {})
     getMirrorsList()
       .then((res) => setMirrors([...res.mirrors].sort((a, b) => b.createdAt.localeCompare(a.createdAt))))

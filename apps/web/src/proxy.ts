@@ -98,7 +98,13 @@ async function resolveRoutingResponse(request: NextRequest) {
     pathname.startsWith('/rooms') ||
     pathname.startsWith('/library') ||
     pathname.startsWith('/mirror') ||
-    pathname.startsWith('/journal')
+    pathname.startsWith('/journal') ||
+    // Session 83: these (app) pages were only guarded client-side.
+    pathname.startsWith('/growth') ||
+    pathname.startsWith('/evolution-map') ||
+    pathname.startsWith('/account') ||
+    pathname.startsWith('/wallet') ||
+    pathname.startsWith('/therapist-summary')
   // /signup deliberately excluded from this gate — see the "Already
   // authenticated" check below for why.
   const isLoginPage = pathname.startsWith('/login')

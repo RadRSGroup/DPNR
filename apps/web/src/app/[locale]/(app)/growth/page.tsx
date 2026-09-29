@@ -6,7 +6,7 @@ import { useRouter } from '@/i18n/navigation'
 import { TrendingUp, Wind, Layers, Waves } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { getCurrentSession } from '@/lib/cognito/client'
-import { getDashboard, getDecisionsList, getCompanionContext, getGrowthValuesNeeds } from '@/lib/api/v1-client'
+import { getDashboard, getDecisionsList, getDailyCard, getGrowthValuesNeeds } from '@/lib/api/v1-client'
 import type { DashboardResponse, DecisionsListResponse, CompanionContextResponse, GrowthValuesNeedsResponse } from '@dpnr/shared-types'
 import { LIFE_DOMAIN_LABELS } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
@@ -75,7 +75,7 @@ function GrowthTrackerContent() {
 
       // Fetched separately, own failure boundary — same pattern Dashboard uses.
       getDecisionsList().then((r) => setDecisions(r.decisions)).catch(() => {})
-      getCompanionContext().then((c) => setDailyCard(c.dailyCard)).catch(() => {})
+      getDailyCard().then(setDailyCard).catch(() => {})
       getGrowthValuesNeeds().then(setValuesNeeds).catch(() => {})
     }
     load()

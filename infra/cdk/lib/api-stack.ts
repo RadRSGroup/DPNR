@@ -154,6 +154,9 @@ export class ApiStack extends Stack {
           apigwv2.CorsHttpMethod.DELETE,
         ],
         allowHeaders: ['authorization', 'content-type'],
+        // Browsers cache the preflight for a day instead of re-asking before
+        // most authed calls (~120 ms each, Session 83 measurements).
+        maxAge: Duration.days(1),
       },
     })
 
@@ -200,6 +203,10 @@ export class ApiStack extends Stack {
     const sharedProductLambdaProps = {
       runtime: Runtime.NODEJS_24_X,
       bundling: { minify: true, sourceMap: true },
+      // Session 83: at the 128 MB default these ran at 88-90% memory, cold
+      // starts took 1-2 s and Dashboard's p99 hit its 3 s timeout. Lambda CPU
+      // scales with memory; at this traffic 512 MB costs cents a month.
+      memorySize: 512,
       environment: {
         APPLICATION_TABLE_NAME: props.applicationTable.tableName,
       },

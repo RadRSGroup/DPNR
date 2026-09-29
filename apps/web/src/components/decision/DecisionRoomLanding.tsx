@@ -10,7 +10,7 @@ import Card from '@/components/ui/Card'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import BottomSheet from '@/components/ui/BottomSheet'
 import PullACard from '@/components/companion/PullACard'
-import { getCompanionContext, getDecisionsList } from '@/lib/api/v1-client'
+import { getDailyCard, getDecisionsList } from '@/lib/api/v1-client'
 import type { CompanionContextResponse, DecisionsListResponse } from '@dpnr/shared-types'
 import { timeAgo } from '@/lib/format'
 
@@ -79,7 +79,7 @@ export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props
   const [activePhase, setActivePhase] = useState<number | null>(null)
 
   useEffect(() => {
-    getCompanionContext().then((c) => setDailyCard(c.dailyCard)).catch(() => {
+    getDailyCard().then(setDailyCard).catch(() => {
       // Honest degrade — the guidance card just doesn't render.
     })
     getDecisionsList()

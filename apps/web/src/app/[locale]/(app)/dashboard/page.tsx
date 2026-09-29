@@ -9,14 +9,14 @@ import { useTranslations } from 'next-intl'
 import { ArrowRight, Compass, Plus } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { uniquePatterns } from '@/lib/mirror-patterns'
+import { loadPreferences } from '@/lib/useAvatarUrl'
 import {
   getDashboard,
   getTwin,
-  getCompanionContext,
+  getDailyCard,
   acceptRoadmapProposal,
   rejectRoadmapProposal,
   updateRoadmapLifecycle,
-  getPreferences,
 } from '@/lib/api/v1-client'
 import { displayFirstName } from '@/lib/displayName'
 import type { DashboardResponse, TwinListResponse, CompanionContextResponse } from '@dpnr/shared-types'
@@ -72,11 +72,12 @@ function DashboardContent() {
         setFirstName(displayFirstName(null, email))
         // The profile's own name (Session 70), best-effort — the email-derived
         // one above stays if this fails or none is set.
-        getPreferences()
-          .then((p) => {
-            if (p.firstName) setFirstName(p.firstName)
-          })
-          .catch(() => {})
+        loadPreferences().then((p) => {
+          if (p?.firstName) setFirstName(p.firstName)
+        })
+        // Own failure boundary — a daily-card hiccup shouldn't take down the
+        // rest of the Dashboard. Started now so it runs alongside the rest.
+        getDailyCard().then(setDailyCard).catch(() => {})
 
         const [data, twinData] = await Promise.all([getDashboard(), getTwin()])
         setDashboard(data)
@@ -87,9 +88,6 @@ function DashboardContent() {
         setLoading(false)
       }
 
-      // Fetched separately, own failure boundary — a Companion-context
-      // hiccup shouldn't take down the rest of the Dashboard over one widget.
-      getCompanionContext().then((c) => setDailyCard(c.dailyCard)).catch(() => {})
     }
     load()
   }, [router])

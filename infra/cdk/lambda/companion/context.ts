@@ -83,6 +83,19 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     // open. The fresh return-greeting still applies, same as the
     // pointer-based path below — reopening any conversation with existing
     // history deserves the same "welcome back" treatment.
+    // Dashboard, Growth and the room landings only show the daily card.
+    // Answer them without the conversation read or the greeting model call
+    // (that call took 4-10 s per page load, Session 83 measurements).
+    if (event.queryStringParameters?.only === 'dailyCard') {
+      const body: CompanionContextResponse = {
+        sessionId: null,
+        messages: [],
+        dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
+        greeting: null,
+      }
+      return jsonResponse(200, body)
+    }
+
     const requestedSessionId = event.queryStringParameters?.sessionId
     if (requestedSessionId) {
       const sessionId = await resolveOrCreateSession(ddb, TABLE_NAME, pk, requestedSessionId)
@@ -138,21 +151,29 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     // sends something, so unused visits don't leave empty threads behind.
     // The previous conversation stays in Recent Conversations.
     if (event.queryStringParameters?.fresh === '1') {
+      const [dailyCard, greeting] = await Promise.all([
+        getUndismissedDailyCard(requireCrypto, pk),
+        synthesizeReturnGreeting(requireCrypto, userId, pk, messages),
+      ])
       const body: CompanionContextResponse = {
         sessionId: null,
         messages: [],
-        dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
-        greeting: await synthesizeReturnGreeting(requireCrypto, userId, pk, messages),
+        dailyCard,
+        greeting,
         continuesFromSessionId: pointer.sessionId,
       }
       return jsonResponse(200, body)
     }
 
+    const [dailyCard, greeting] = await Promise.all([
+      getUndismissedDailyCard(requireCrypto, pk),
+      synthesizeReturnGreeting(requireCrypto, userId, pk, messages),
+    ])
     const body: CompanionContextResponse = {
       sessionId: pointer.sessionId,
       messages,
-      dailyCard: await getUndismissedDailyCard(requireCrypto, pk),
-      greeting: await synthesizeReturnGreeting(requireCrypto, userId, pk, messages),
+      dailyCard,
+      greeting,
     }
     return jsonResponse(200, body)
   } catch (err) {

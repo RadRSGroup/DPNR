@@ -348,6 +348,15 @@ export async function getCompanionContext(sessionId?: string, options: { fresh?:
   return parseOrThrow<CompanionContextResponse>(res)
 }
 
+/**
+ * The daily card alone (`?only=dailyCard`): no conversation read and no
+ * greeting model call, for pages that only show the card.
+ */
+export async function getDailyCard(): Promise<CompanionContextResponse['dailyCard']> {
+  const res = await authedFetch('/v1/companion/context?only=dailyCard')
+  return (await parseOrThrow<CompanionContextResponse>(res)).dailyCard
+}
+
 /** GET /v1/companion/conversations — Recent Conversations, newest first. */
 export async function getCompanionConversations(): Promise<CompanionConversationsListResponse> {
   const res = await authedFetch('/v1/companion/conversations')

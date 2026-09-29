@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { getPreferences } from '@/lib/api/v1-client'
+import type { PreferencesResponse } from '@dpnr/shared-types'
 
 // Shared by every place that shows the profile photo (Sidebar, MobileHeader,
 // MobileNav, TopBar) — they used to fetch preferences independently on each
@@ -10,16 +11,19 @@ import { getPreferences } from '@/lib/api/v1-client'
 const MAX_AGE_MS = 10 * 60 * 1000
 
 let cached: { url: string | null; at: number } | null = null
-let inflight: Promise<string | null> | null = null
+let inflight: Promise<PreferencesResponse | null> | null = null
 const listeners = new Set<(url: string | null) => void>()
 
-function loadAvatarUrl(): Promise<string | null> {
-  if (cached && Date.now() - cached.at < MAX_AGE_MS) return Promise.resolve(cached.url)
+/**
+ * GET /v1/user/preferences, shared: concurrent callers (the avatar spots,
+ * Dashboard's first name) get one request instead of one each.
+ */
+export function loadPreferences(): Promise<PreferencesResponse | null> {
   if (!inflight) {
     inflight = getPreferences()
       .then((p) => {
         cached = { url: p.avatarUrl, at: Date.now() }
-        return p.avatarUrl
+        return p
       })
       .catch(() => null) // not cached — a later mount retries
       .finally(() => {
@@ -27,6 +31,11 @@ function loadAvatarUrl(): Promise<string | null> {
       })
   }
   return inflight
+}
+
+function loadAvatarUrl(): Promise<string | null> {
+  if (cached && Date.now() - cached.at < MAX_AGE_MS) return Promise.resolve(cached.url)
+  return loadPreferences().then((p) => (p ? p.avatarUrl : null))
 }
 
 /** Call after the person uploads or removes their photo, so every avatar updates without a reload. */
