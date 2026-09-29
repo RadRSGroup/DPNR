@@ -143,7 +143,7 @@ export type CompanionDeleteConversationResponse = z.infer<typeof CompanionDelete
 
 /**
  * POST /v1/companion/pull-card — context-aware pull from the 300-card
- * library (`docs/DPNR_Pull_A_Card_300_Question_Bank_v2.pdf`). Metadata axes
+ * library (`docs/reference-screens/Pull_a_card_reference/DPNR_Pull_A_Card_300_Question_Bank_English_v2.pdf`). Metadata axes
  * mirror the source doc's own "Recommended metadata per card" (see
  * dynamo/global-tables.ts's `GuidanceCardItemSchema` doc comment for the
  * full reasoning). `directive` reuses `CompanionDirectiveSchema` rather than

@@ -1,6 +1,6 @@
 # First-Time Onboarding — Scoping (docs/AGENT_LOG.md Session 51/52)
 
-Scopes `DPNR_First_Time_Onboarding_MVP_Implementation_Guide_v3.pdf` (repo root,
+Scopes `docs/reference-screens/platform_photos/DPNR_First_Time_Onboarding_MVP_Implementation_Guide_v3.pdf` (originally at the repo root,
 added by the user 2026-09-15) against the real live codebase. **Research and
 planning only — no code changes in this pass**, matching the same
 survey-before-build discipline `HEBREW_LOCALIZATION_PLAN.md` used before its

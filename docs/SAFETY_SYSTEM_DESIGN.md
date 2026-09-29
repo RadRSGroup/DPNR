@@ -1,7 +1,7 @@
 # DPNR — Safety/Crisis System Design Scope
 
 **Written:** 2026-09-02, Session 29 part 4 (scoping only — no code changes this session). Source:
-`docs/DPNR_operating_spec_principles.pdf` §30 ("Safety, Crisis, Boundaries & Respectful Interaction Contract"),
+`docs/reference-screens/specs_and_guidance_docs/DPNR_operating_spec_principles.pdf` §30 ("Safety, Crisis, Boundaries & Respectful Interaction Contract"),
 §31 ("Claude Product-Decision & Escalation Protocol"), §33's safety acceptance tests, and Appendix A/C. This
 is `docs/INTELLIGENCE_SPEC_AUDIT.md`'s Critical Finding #1 — the one remaining critical finding from that
 audit, and "the single highest-priority gap in the whole spec" by the spec's own stated precedence (safety

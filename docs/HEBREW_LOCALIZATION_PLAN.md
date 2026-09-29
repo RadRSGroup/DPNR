@@ -987,10 +987,10 @@ click-through prior slices did when a working session was available, and
 that gap should be named plainly rather than glossed over.
 
 **New context surfaced mid-session, not yet acted on**: the user has added
-Hebrew-translated Content Library (`docs/DPNR_Content_Library_Hebrew_54_Topics_v2.pdf`)
-and Pull-a-Card (`docs/DPNR_Pull_A_Card_300_Hebrew_Male_v2.pdf`) source
+Hebrew-translated Content Library (`docs/reference-screens/library_content/DPNR_Content_Library_Hebrew_54_Topics_v2.pdf`)
+and Pull-a-Card (`docs/reference-screens/Pull_a_card_reference/DPNR_Pull_A_Card_300_Hebrew_Male_v2.pdf`) source
 material to the repo locally, stating it has already been QA'd by a native
-Hebrew speaker. Also added: `docs/DPNR_First_Time_Onboarding_MVP_Implementation_Guide_v3.pdf`
+Hebrew speaker. Also added: `docs/reference-screens/platform_photos/DPNR_First_Time_Onboarding_MVP_Implementation_Guide_v3.pdf`
 and `docs/onboardinglanding.png` (not yet reviewed by this session — unclear
 which workstream they belong to, flagged for whoever picks this up next
 rather than guessed at). None of these four files have been opened, parsed,

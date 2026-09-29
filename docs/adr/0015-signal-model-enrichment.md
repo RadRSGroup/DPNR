@@ -20,7 +20,7 @@ only), medium (also build `direction`/`strength`), or everything including `goal
 `direction`/`strength` are the harder pieces — no mechanism anywhere in the pipeline compares a
 new signal against a user's history. `goal_id` has nothing to reference yet (Roadmap is freeform
 `currentFocus`/`theme`/`direction` text, not discrete goals) and `reason_code`'s exact spec
-taxonomy wasn't independently re-verified against `docs/DPNR_operating_spec_principles.pdf` this
+taxonomy wasn't independently re-verified against `docs/reference-screens/specs_and_guidance_docs/DPNR_operating_spec_principles.pdf` this
 session (`pdftoppm`/poppler isn't installed in this environment to re-render it — relying on the
 Session 29 audit's own paraphrase for everything in this ADR). Both, plus `subdimension`, are
 deliberately deferred, not silently dropped — flagged in `docs/AGENT_LOG.md`.

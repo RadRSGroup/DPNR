@@ -5,7 +5,7 @@
 ## 1. Where things stand
 
 - **Focus Mode today is a stub.** `apps/web/src/components/companion/FocusMode.tsx` renders a card ("Focus Mode · Deep Work · DPNR Playlist") with a **disabled** play button and a disabled settings button — no audio, no source. Used once: the desktop right column of `companion/page.tsx` (~line 878). **Mobile has no Focus Mode at all.**
-- **The spec doesn't name a provider.** `docs/DPNR_Main_Chat_UX_Update_MVP.pdf` §7 asks for a small, secondary player: current playlist/track, play/pause, a small settings control. `docs/MAIN_CHAT_UX_UPDATE_PLAN.md` §3.4 left "real playback vs stub" open, resolved as stub pending real audio.
+- **The spec doesn't name a provider.** `docs/reference-screens/specs_and_guidance_docs/DPNR_Main_Chat_UX_Update_MVP.pdf` §7 asks for a small, secondary player: current playlist/track, play/pause, a small settings control. `docs/MAIN_CHAT_UX_UPDATE_PLAN.md` §3.4 left "real playback vs stub" open, resolved as stub pending real audio.
 - **Nothing to reuse for third-party auth.** Cognito only; no OAuth client, no token storage. One Secrets Manager secret exists (`dpnr/grow-credentials`), so that pattern is available if ever needed.
 - **CSP blocks any player today** (`apps/web/src/lib/securityHeaders.ts`): no `frame-src` / `media-src` (fall back to `'self'`), `connect-src` limited to Cognito/API/S3.
 

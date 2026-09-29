@@ -88,11 +88,11 @@ asset) and `companion-bg-environment.webp` (new).
 ---
 
 Written Session 59 (2026-09-17)
-against the source doc `docs/DPNR_Main_Chat_UX_Update_MVP.pdf` ("MVP
+against the source doc `docs/reference-screens/specs_and_guidance_docs/DPNR_Main_Chat_UX_Update_MVP.pdf` ("MVP
 Refinement Guide for Rad & Claude"), then revised same session once the
 user pointed to two full-fidelity reference mockups already in the repo —
-`docs/CHAT UX.png` (Option B, photographic "DPNR Environment" background)
-and `docs/CHAT UX 2.png` (Option A, cosmic "Digital Twin" character
+`docs/reference-screens/chat/CHAT UX.png` (Option B, photographic "DPNR Environment" background)
+and `docs/reference-screens/chat/CHAT UX 2.png` (Option A, cosmic "Digital Twin" character
 background) — as **the actual target UI**, not just the PDF's text
 description. The source doc is explicit that this is a **refinement**, not
 a redesign: keep the existing architecture, routes, nav, and composer;

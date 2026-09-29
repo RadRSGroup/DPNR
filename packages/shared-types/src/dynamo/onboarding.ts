@@ -5,7 +5,7 @@ import { InteractionModeSchema, type InteractionMode } from './session'
 
 /**
  * First-Time Onboarding, Slice A (`docs/FIRST_TIME_ONBOARDING_PLAN.md` §3/§4,
- * source spec `docs/DPNR_First_Time_Onboarding_MVP_Implementation_Guide_v3.pdf`
+ * source spec `docs/reference-screens/platform_photos/DPNR_First_Time_Onboarding_MVP_Implementation_Guide_v3.pdf`
  * §5.2 "Card 1 — Current State"). Verbatim from the doc — no existing
  * equivalent anywhere in the schema (checked `TwinSignalDomainSchema`,
  * Decision Room's free-text `values_needs_tags`/`fear_desire_tags` prompts —

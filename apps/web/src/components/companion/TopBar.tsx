@@ -58,7 +58,7 @@ export function useClock(): Date | null {
 /**
  * Main Chat UX Update (docs/MAIN_CHAT_UX_UPDATE_PLAN.md §0/§3) — net-new
  * chrome, confirmed directly against the two reference mockups
- * (docs/CHAT UX.png / docs/CHAT UX 2.png), not a relocation of anything
+ * (docs/reference-screens/chat/CHAT UX.png / docs/reference-screens/chat/CHAT UX 2.png), not a relocation of anything
  * that exists elsewhere. The mockups'
  * "12 min today" is TimeTodayIndicator (Session 70): a real count, kept in
  * this browser (lib/time-on-dpnr.ts). The search input is a real, focusable control but doesn't run a

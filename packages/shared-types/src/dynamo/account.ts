@@ -39,7 +39,7 @@ export type GenderIdentity = z.infer<typeof GenderIdentitySchema>
 /**
  * Main Chat UX Update (docs/MAIN_CHAT_UX_UPDATE_PLAN.md §3.1) — two curated
  * presets, both real finished designs per the reference mockups
- * (docs/CHAT UX.png / CHAT UX 2.png), not a "pick one, defer the other"
+ * (docs/reference-screens/chat/CHAT UX.png / CHAT UX 2.png), not a "pick one, defer the other"
  * choice. `digital_twin` (the cosmic character, continuing this app's
  * existing InnerSelf/Digital Twin branding) is the default for new users,
  * matching the PDF's own stated reasoning for that option. `custom` means

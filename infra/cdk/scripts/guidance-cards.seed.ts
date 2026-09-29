@@ -10,7 +10,7 @@ import type {
 
 /**
  * Companion "Pull a Card" library seed data — full 300-question bank from
- * `docs/DPNR_Pull_A_Card_300_Question_Bank_v2.pdf`, replacing Session 42's
+ * `docs/reference-screens/Pull_a_card_reference/DPNR_Pull_A_Card_300_Question_Bank_English_v2.pdf`, replacing Session 42's
  * 8-card placeholder set. Question `text` is extracted verbatim from the
  * source PDF (copied, not retyped or reworded) — the PDF's own card numbers
  * 001-300 are used as `cardId`, zero-padded to 3 digits, NOT prefixed with

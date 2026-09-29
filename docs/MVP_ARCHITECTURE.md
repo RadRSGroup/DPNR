@@ -4,7 +4,7 @@
 
 ## 0. What this document is
 
-**2026-09-01 update:** `docs/DPNR_operating_spec_principles.pdf` ("DPNR — Product Intelligence & AI Operating
+**2026-09-01 update:** `docs/reference-screens/specs_and_guidance_docs/DPNR_operating_spec_principles.pdf` ("DPNR — Product Intelligence & AI Operating
 Specification," v1.6) is now in the repo and places itself at **priority 2** in its own conflict-precedence
 table — below only privacy/safety/healthy-use rules, and **above** this document, the Product Logic & Data
 Definitions Addendum, and Figma. It is the canonical source for Digital Twin meaning, signal/evidence

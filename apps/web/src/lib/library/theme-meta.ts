@@ -9,7 +9,7 @@ import type { ExploreTheme } from '@dpnr/shared-types'
  * lucide icon (used inline in the small "Explore by Theme" chip row
  * alongside the image, and anywhere a photo would be too small to read) and
  * a real per-theme image (`public/images/categories/<theme>.webp`), cropped
- * directly from `docs/UI reference for platform.pdf` page 5's own mandala
+ * directly from `docs/reference-screens/platform_photos/UI reference for platform.pdf` page 5's own mandala
  * row and photo shelves — see `docs/AGENT_LOG.md` Session 48 for the exact
  * source crop per theme. **This is still an aesthetic pairing, not a
  * semantic one** — the reference's own example topics (Pleasure, Anger,

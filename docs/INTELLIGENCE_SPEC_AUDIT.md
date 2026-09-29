@@ -1,7 +1,7 @@
 # DPNR — Product Intelligence & AI Operating Specification: Alignment Audit
 
 **Written:** 2026-09-01, dedicated audit session (no feature code changed). Source document:
-`docs/DPNR_operating_spec_principles.pdf` v1.6, 30 August 2026, 40 pages, 33 sections + 4 appendices — new
+`docs/reference-screens/specs_and_guidance_docs/DPNR_operating_spec_principles.pdf` v1.6, 30 August 2026, 40 pages, 33 sections + 4 appendices — new
 this session, previously unreviewed by any agent. Full text extracted to prose and read in full before writing
 this document (`pdftoppm` isn't installed on this machine; used `pymupdf`'s `get_text()` with
 `PYTHONIOENCODING=utf-8` instead — plain bullet characters (``) need that encoding fix or extraction

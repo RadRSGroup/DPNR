@@ -130,7 +130,7 @@ export const LibraryTopicAliasItemSchema = z.object({
 export type LibraryTopicAliasItem = z.infer<typeof LibraryTopicAliasItemSchema>
 
 /**
- * Pull a Card's own metadata taxonomy (`docs/DPNR_Pull_A_Card_300_Question_Bank_v2.pdf`
+ * Pull a Card's own metadata taxonomy (`docs/reference-screens/Pull_a_card_reference/DPNR_Pull_A_Card_300_Question_Bank_English_v2.pdf`
  * p.2 "Recommended metadata per card") — six axes, each a fixed enum the
  * source doc names explicitly. Deliberately kept as its own namespace, not
  * reconciled with Library's `ExploreTheme`/`lifeDomains` (global-tables.ts

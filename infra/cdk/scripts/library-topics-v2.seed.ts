@@ -1,6 +1,6 @@
 /**
  * Content Library catalog seed data -- v2, replacing the original 6-topic
- * catalog wholesale. Source: `docs/DPNR_Content_Library_Master_Architecture_and_Complete_Content_v2.pdf`
+ * catalog wholesale. Source: `docs/reference-screens/library_content/DPNR_Content_Library_Master_Architecture_and_Complete_Content_v2.pdf`
  * ("Content Library Master Architecture, Complete Catalog & Model Guide"),
  * a founder-authored document, not Claude-drafted content -- unlike every
  * earlier seed batch in this file's history, these 54 topics' prose is

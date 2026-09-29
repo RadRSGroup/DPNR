@@ -145,7 +145,7 @@ export type SignalDirection = z.infer<typeof SignalDirectionSchema>
 /**
  * Life Domains taxonomy (Session 19) — the 7 categories Growth Tracker/My
  * Evolution Map/Dashboard all show percentages for. Labels match the
- * visual design reference exactly (`docs/UI reference for platform.pdf`).
+ * visual design reference exactly (`docs/reference-screens/platform_photos/UI reference for platform.pdf`).
  */
 export const LifeDomainCategorySchema = z.enum([
   'self_inner_world',

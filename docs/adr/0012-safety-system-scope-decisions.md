@@ -4,7 +4,7 @@
 
 ## Context
 
-`docs/DPNR_operating_spec_principles.pdf` §30 requires a safety/crisis contract that ranks above the spec
+`docs/reference-screens/specs_and_guidance_docs/DPNR_operating_spec_principles.pdf` §30 requires a safety/crisis contract that ranks above the spec
 itself in precedence — the single highest-priority gap `docs/INTELLIGENCE_SPEC_AUDIT.md` found (Critical
 Finding #1). Scoping this system (`docs/SAFETY_SYSTEM_DESIGN.md`) surfaced three questions that, per spec
 §31's own escalation rule, must go to the user rather than be decided unilaterally: a new user-facing promise

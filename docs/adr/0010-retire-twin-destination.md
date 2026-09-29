@@ -4,7 +4,7 @@
 
 ## Context
 
-`docs/DPNR_operating_spec_principles.pdf` (the new "DPNR — Product Intelligence & AI Operating Specification,"
+`docs/reference-screens/specs_and_guidance_docs/DPNR_operating_spec_principles.pdf` (the new "DPNR — Product Intelligence & AI Operating Specification,"
 v1.6) ranks above `MVP_ARCHITECTURE.md` in its own conflict-precedence table. Its §6, "Digital Twin Across
 the Product: No Separate User-Facing Room," is explicit: *"Do not create a duplicate InnerSelf destination
 for MVP... The Twin should be experienced, not operated... No dedicated Twin/InnerSelf screen is required for

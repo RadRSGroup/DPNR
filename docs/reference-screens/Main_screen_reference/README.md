@@ -2,7 +2,7 @@
 
 These 8 PNGs are the source-of-truth reference requirement for each of
 DPNR's 8 mocked screens — persisted, full-resolution (2880×1620) renders of
-`docs/UI reference for platform.pdf`, one page per file, in the same order
+`docs/reference-screens/platform_photos/UI reference for platform.pdf`, one page per file, in the same order
 the PDF itself uses.
 
 | File | Screen | Live route |

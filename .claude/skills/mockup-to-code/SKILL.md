@@ -1,6 +1,6 @@
 ---
 name: mockup-to-code
-description: Use this skill whenever porting one of the 8 screens in docs/UI reference for platform.pdf (Main Chat, Dashboard, Mirror Room, Decision Room, Content & Learning, Growth Tracker, My Evolution Map, My Wallet) into real code under apps/web — reskinning an existing page against the reference, wiring in a cropped hero image, building one of the still-unbuilt net-new surfaces (Growth Tracker, My Evolution Map, My Wallet, or the Account/InnerSelf reskin), or anything from the 8-phase redesign plan in docs/AGENT_LOG.md. Also reach for this the moment the user says a ported screen "doesn't look like" the reference, pushes back on a redesign phase, or asks to compare the live app against the mockup — that reaction is exactly what this skill exists to prevent. Do not rediscover the PDF-rendering method, the composition-analysis step, or the hero-image Card convention from scratch; they're already worked out below.
+description: Use this skill whenever porting one of the 8 screens in docs/reference-screens/platform_photos/UI reference for platform.pdf (Main Chat, Dashboard, Mirror Room, Decision Room, Content & Learning, Growth Tracker, My Evolution Map, My Wallet) into real code under apps/web — reskinning an existing page against the reference, wiring in a cropped hero image, building one of the still-unbuilt net-new surfaces (Growth Tracker, My Evolution Map, My Wallet, or the Account/InnerSelf reskin), or anything from the 8-phase redesign plan in docs/AGENT_LOG.md. Also reach for this the moment the user says a ported screen "doesn't look like" the reference, pushes back on a redesign phase, or asks to compare the live app against the mockup — that reaction is exactly what this skill exists to prevent. Do not rediscover the PDF-rendering method, the composition-analysis step, or the hero-image Card convention from scratch; they're already worked out below.
 ---
 
 # Porting a mockup screen to real code
@@ -24,7 +24,7 @@ installed"). Use the bundled script instead:
 
 ```bash
 python3 "C:\Users\rekkawi\decision-room\.claude\skills\mockup-to-code\scripts\render_pages.py" \
-  "C:\Users\rekkawi\decision-room\docs\UI reference for platform.pdf" \
+  "C:\Users\rekkawi\decision-room\docs\reference-screens\platform_photos\UI reference for platform.pdf" \
   "<some-output-dir>" --pages 1-8 --scale 1.5
 ```
 

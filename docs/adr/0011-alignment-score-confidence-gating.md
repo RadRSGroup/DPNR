@@ -4,7 +4,7 @@
 
 ## Context
 
-`docs/DPNR_operating_spec_principles.pdf` §11 ("Numbers, Scores & Reflection Indices") requires that before
+`docs/reference-screens/specs_and_guidance_docs/DPNR_operating_spec_principles.pdf` §11 ("Numbers, Scores & Reflection Indices") requires that before
 any reflection-index number appears, the construct must be operationally defined, component inputs must have
 defined evidence sources, minimum evidence/source/time thresholds must be met, and confidence must be above a
 configured threshold. §12 gives a concrete table (`Insufficient: <5 meaningful items OR <2 sources OR <14-day
