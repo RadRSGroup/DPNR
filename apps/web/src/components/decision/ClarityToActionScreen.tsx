@@ -1,10 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import StepShell from './StepShell'
 import { useAI, RefineFn } from '@/lib/useAI'
 import InvertedButton from '@/components/ui/InvertedButton'
 import Card from '@/components/ui/Card'
 import Dictatable from '@/components/ui/Dictatable'
+import { useDecisionLabels } from '@/lib/decision-labels'
 
 interface ClarityToActionScreenProps {
   decisionTitle: string
@@ -14,6 +16,7 @@ interface ClarityToActionScreenProps {
   onBack: () => void
 }
 
+// Stored/sent as these English ids; shown via DecisionRoom.bodyFeelings.
 const BODY_FEELINGS = [
   'Lightness', 'Excitement', 'Tension in the body', 'Calm confidence',
   'Nervous but curious', 'Relief', 'Resistance', 'Openness', 'Doubt', 'Readiness',
@@ -23,6 +26,8 @@ export default function ClarityToActionScreen({
   decisionTitle, onRefine,
   onCommit, onSkip, onBack,
 }: ClarityToActionScreenProps) {
+  const t = useTranslations('DecisionRoom')
+  const { bodyFeeling } = useDecisionLabels()
   const [suggestedStep, setSuggestedStep] = useState('')
   const [nextStep, setNextStep] = useState('')
   const [selectedFeelings, setSelectedFeelings] = useState<string[]>([])
@@ -55,26 +60,26 @@ export default function ClarityToActionScreen({
 
         {/* Header */}
         <div className="text-center space-y-1">
-          <h3 className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.2em]">Based on what became clear for you</h3>
+          <h3 className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.2em]">{t('clarity.basedOn')}</h3>
         </div>
 
         {/* Next step section */}
         <Card className="space-y-3">
           <div className="space-y-1">
-            <p className="font-display text-white text-lg lg:text-xl">Your next small step</p>
-            <p className="text-white/70 text-sm">What is one small step that moves you slightly toward this direction?</p>
-            <p className="text-[var(--color-text-tertiary)] text-xs">It should feel: <span className="text-white/50">small, safe, and possible within the next few days</span></p>
+            <p className="font-display text-white text-lg lg:text-xl">{t('clarity.title')}</p>
+            <p className="text-white/70 text-sm">{t('clarity.question')}</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs">{t.rich('clarity.shouldFeel', { muted: (chunks) => <span className="text-white/50">{chunks}</span> })}</p>
           </div>
 
           <div className="space-y-1">
-            <p className="text-white/50 text-xs">My next step:</p>
+            <p className="text-white/50 text-xs">{t('clarity.myNextStep')}</p>
             {loading && !suggestedStep ? (
               <div className="flex items-center gap-2 text-[var(--color-text-tertiary)] text-xs py-2">
                 <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                 </svg>
-                Suggesting a step…
+                {t('clarity.suggesting')}
               </div>
             ) : (
               <Dictatable>
@@ -83,7 +88,7 @@ export default function ClarityToActionScreen({
                   onChange={e => setNextStep(e.target.value.slice(0, 5000))}
                   rows={3}
                   className="w-full bg-white/8 border border-white/10 rounded-xl px-3 py-2.5 text-white/80 text-sm resize-none focus:outline-none focus:border-purple-500/50 transition-colors placeholder-[var(--color-text-tertiary)]"
-                  placeholder="Describe your next small step…"
+                  placeholder={t('clarity.placeholder')}
                 />
               </Dictatable>
             )}
@@ -92,7 +97,7 @@ export default function ClarityToActionScreen({
 
         {/* Body feelings */}
         <div className="space-y-2">
-          <p className="text-white/50 text-xs text-center">When you imagine this, what happens in you?</p>
+          <p className="text-white/50 text-xs text-center">{t('clarity.imagine')}</p>
           <div className="flex flex-wrap gap-2">
             {BODY_FEELINGS.map(f => (
               <button
@@ -104,7 +109,7 @@ export default function ClarityToActionScreen({
                     : 'border-white/15 bg-white/5 text-white/50 hover:border-white/30'
                 }`}
               >
-                {f}
+                {bodyFeeling(f)}
               </button>
             ))}
           </div>
@@ -116,19 +121,19 @@ export default function ClarityToActionScreen({
             onClick={onBack}
             className="px-5 py-3.5 rounded-full border border-white/20 text-white/60 hover:text-white text-sm transition-all"
           >
-            Back
+            {t('back')}
           </button>
           <button
             onClick={onSkip}
             className="px-5 py-3.5 rounded-full border border-white/15 text-[var(--color-text-tertiary)] hover:text-white/60 text-sm transition-all"
           >
-            Skip
+            {t('skip')}
           </button>
           <InvertedButton
             onClick={() => onCommit(nextStep.trim(), selectedFeelings)}
             disabled={!nextStep.trim()}
             className="flex-1 py-3.5"
-            label="Commit to This Step"
+            label={t('clarity.commit')}
           />
         </div>
       </div>

@@ -1,18 +1,14 @@
 'use client'
 import { useRouter } from '@/i18n/navigation'
+import { useTranslations } from 'next-intl'
 import RoomScreenFrame from '@/components/shared/RoomScreenFrame'
 import InvertedButton from '@/components/ui/InvertedButton'
 import Card from '@/components/ui/Card'
 import FeltSummary from '@/components/shared/FeltSummary'
 import type { Felt } from '@/lib/body-map'
 
-const AFFIRMATIONS = [
-  'You showed up for yourself today. That takes real courage.',
-  'Every decision made with awareness is a step toward your truest self.',
-  'Clarity is a gift you\'ve given yourself today.',
-  'You did the inner work. That matters more than you know.',
-  'Slowing down to listen to yourself is never time wasted.',
-]
+// The first five of DecisionRoom.affirmations (the celebration screen uses all seven).
+const AFFIRMATION_COUNT = 5
 
 interface Props {
   userName: string
@@ -44,14 +40,15 @@ export default function CompletionScreen({
   onDone,
 }: Props) {
   const router = useRouter()
+  const t = useTranslations('DecisionRoom')
   const firstName = userName.includes('@')
     ? userName.split('@')[0]
     : userName.split(' ')[0] || userName
 
-  const affirmation = AFFIRMATIONS[Math.floor(decisionTitle.length % AFFIRMATIONS.length)]
+  const affirmation = t(`affirmations.${Math.floor(decisionTitle.length % AFFIRMATION_COUNT)}`)
 
-  const leanLabel = chosenLean === 'A' || chosenLean === 'B' || chosenLean === 'C' ? `Option ${chosenLean}`
-    : chosenLean === 'undecided' ? 'Still undecided' : null
+  const leanLabel = chosenLean === 'A' || chosenLean === 'B' || chosenLean === 'C' ? t('optionLabel', { label: chosenLean })
+    : chosenLean === 'undecided' ? t('completion.stillUndecided') : null
 
   return (
     <RoomScreenFrame backgroundSrc="/images/decision/decision-room-hero.webp" dimBackground glows={['bg-[radial-gradient(ellipse_at_center,_rgba(140,60,220,0.5)_0%,_rgba(80,20,140,0.3)_45%,_transparent_75%)]']}>
@@ -63,7 +60,7 @@ export default function CompletionScreen({
         <div className="text-center space-y-3">
           <div className="w-16 h-16 rounded-full bg-yellow-400/20 border border-yellow-400/40 mx-auto" />
           <h1 className="text-white text-2xl font-medium">
-            Well done, {firstName}!
+            {t('completion.wellDone', { name: firstName })}
           </h1>
           <p className="text-white/60 text-sm leading-relaxed italic">
             &quot;{affirmation}&quot;
@@ -72,7 +69,7 @@ export default function CompletionScreen({
 
         {/* Decision recap */}
         <Card className="space-y-4">
-          <p className="text-purple-400 text-xs uppercase tracking-wide font-medium">Your decision</p>
+          <p className="text-purple-400 text-xs uppercase tracking-wide font-medium">{t('completion.yourDecision')}</p>
           <p className="text-white text-base font-light">&quot;{decisionTitle}&quot;</p>
 
           {/* Options */}
@@ -80,7 +77,7 @@ export default function CompletionScreen({
             <div className={`grid gap-2 pt-1 ${optionC ? 'grid-cols-3' : 'grid-cols-2'}`}>
               {([['A', optionA], ['B', optionB], ['C', optionC]] as const).map(([label, text]) => text && (
                 <div key={label} className={`min-w-0 rounded-xl border p-3 space-y-1 ${chosenLean === label ? 'border-purple-500/60 bg-purple-900/20' : 'border-white/10 bg-white/5'}`}>
-                  <p className="text-purple-400 text-xs">Option {label} {chosenLean === label ? '· your lean' : ''}</p>
+                  <p className="text-purple-400 text-xs">{t('optionLabel', { label })} {chosenLean === label ? t('completion.yourLean') : ''}</p>
                   <p className="text-white/60 text-xs leading-relaxed line-clamp-3 break-words">{text}</p>
                 </div>
               ))}
@@ -90,7 +87,7 @@ export default function CompletionScreen({
           {/* Lean */}
           {leanLabel && (
             <div className="flex items-center gap-2 pt-1">
-              <span className="text-[var(--color-text-tertiary)] text-xs">Leaning:</span>
+              <span className="text-[var(--color-text-tertiary)] text-xs">{t('completion.leaning')}</span>
               <span className={`text-xs border rounded-full px-2.5 py-0.5 ${
                 chosenLean === 'undecided'
                   ? 'border-white/15 text-[var(--color-text-tertiary)]'
@@ -109,7 +106,7 @@ export default function CompletionScreen({
         {/* Reflection note */}
         {reflectionNote && (
           <div className="bg-purple-900/15 border border-purple-700/25 rounded-2xl p-4 space-y-1">
-            <p className="text-purple-400 text-xs uppercase tracking-wide">What felt true</p>
+            <p className="text-purple-400 text-xs uppercase tracking-wide">{t('completion.whatFeltTrue')}</p>
             <p className="text-white/70 text-sm italic leading-relaxed">&quot;{reflectionNote}&quot;</p>
           </div>
         )}
@@ -117,7 +114,7 @@ export default function CompletionScreen({
         {/* Commitment */}
         {commitment && (
           <Card className="space-y-1">
-            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">Your commitment</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">{t('completion.yourCommitment')}</p>
             <p className="text-white/70 text-sm leading-relaxed">{commitment}</p>
           </Card>
         )}
@@ -130,10 +127,10 @@ export default function CompletionScreen({
             onClick={() => router.push(`/decision/${decisionId}`)}
             className="w-full py-3.5 rounded-full border border-white/20 text-white/70 hover:text-white hover:border-white/35 text-sm font-medium transition-all"
           >
-            View full summary
+            {t('completion.viewSummary')}
           </button>
         )}
-        <InvertedButton onClick={onDone} className="w-full py-3.5" label="Back to InnerOS" />
+        <InvertedButton onClick={onDone} className="w-full py-3.5" label={t('backToInnerOS')} />
       </div>
     </RoomScreenFrame>
   )

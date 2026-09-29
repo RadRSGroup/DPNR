@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import StepShell from './StepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI, RefineFn } from '@/lib/useAI'
@@ -14,6 +15,7 @@ interface Step01Props {
 }
 
 export default function Step01({ initialTitle = '', initialSubtitle, onRefine, onComplete, onBack }: Step01Props) {
+  const t = useTranslations('DecisionRoom')
   const [title, setTitle] = useState(initialTitle)
   const [subtitle, setSubtitle] = useState<string | undefined>(initialSubtitle)
   const { callAI, loading } = useAI(onRefine)
@@ -35,7 +37,7 @@ export default function Step01({ initialTitle = '', initialSubtitle, onRefine, o
         <div className="space-y-6">
           {/* Prompt */}
           <p className="text-white/70 text-sm text-center leading-relaxed">
-            What decision are you sitting with?
+            {t('step01.prompt')}
           </p>
 
           {/* Title input */}
@@ -44,7 +46,7 @@ export default function Step01({ initialTitle = '', initialSubtitle, onRefine, o
               <textarea
                 value={title}
                 onChange={e => setTitle(e.target.value.slice(0, 5000))}
-                placeholder="Name your decision..."
+                placeholder={t('step01.placeholder')}
                 rows={2}
                 className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
               />
@@ -55,13 +57,13 @@ export default function Step01({ initialTitle = '', initialSubtitle, onRefine, o
           {/* AI subtitle */}
           {subtitle ? (
             <div className="bg-purple-900/20 border border-purple-700/30 rounded-2xl px-4 py-3 space-y-1 animate-settle-in">
-              <p className="text-purple-300 text-xs uppercase tracking-wide">AI Frame</p>
+              <p className="text-purple-300 text-xs uppercase tracking-wide">{t('step01.aiFrame')}</p>
               <p className="text-white/80 text-sm italic">&quot;{subtitle}&quot;</p>
               <button
                 onClick={() => setSubtitle(undefined)}
                 className="text-[var(--color-text-tertiary)] hover:text-white/50 text-xs transition-colors"
               >
-                Dismiss
+                {t('step01.dismiss')}
               </button>
             </div>
           ) : (
@@ -71,7 +73,7 @@ export default function Step01({ initialTitle = '', initialSubtitle, onRefine, o
                 disabled={loading}
                 className="text-purple-400 hover:text-purple-300 text-sm transition-colors flex items-center gap-1.5"
               >
-                {loading ? 'Thinking...' : 'Suggest a frame for this decision'}
+                {loading ? t('step01.thinking') : t('step01.suggestFrame')}
               </button>
             )
           )}
@@ -80,7 +82,7 @@ export default function Step01({ initialTitle = '', initialSubtitle, onRefine, o
         {/* CTA */}
         <div className="pt-6">
           <PrimaryButton
-            label="Continue"
+            label={t('continue')}
             onClick={handleContinue}
             disabled={!title.trim()}
           />

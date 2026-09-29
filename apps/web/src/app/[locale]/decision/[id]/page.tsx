@@ -13,6 +13,7 @@ import FeltSummary from '@/components/shared/FeltSummary'
 import { feltFromDecisionEmotion } from '@/lib/body-map'
 import { getDecisionFull, ApiError } from '@/lib/api/v1-client'
 import type { DecisionRoomFullResponse, DecisionRoomOptionView, TagType } from '@dpnr/shared-types'
+import { useDecisionLabels } from '@/lib/decision-labels'
 
 /**
  * Decision Room's post-completion review page — was Supabase-only
@@ -34,14 +35,7 @@ import type { DecisionRoomFullResponse, DecisionRoomOptionView, TagType } from '
  * editing/outcome-tracking once real write endpoints exist for it.
  */
 
-const TAG_LABEL: Record<TagType, string> = {
-  pro: 'Pros',
-  con: 'Cons',
-  desire: 'Desires',
-  fear: 'Fears',
-  value: 'Values',
-  need: 'Needs',
-}
+// Group labels: DecisionRoom.sections.{tagType}.
 
 const TAG_COLOR: Record<TagType, string> = {
   pro: 'text-emerald-400 border-emerald-700/40 bg-emerald-900/20',
@@ -57,13 +51,14 @@ function formatDate(iso: string, locale: string) {
 }
 
 function OptionSection({ option }: { option: DecisionRoomOptionView }) {
-  const tagsByType = (type: TagType) => option.tags.filter((t) => t.tagType === type)
+  const { t, tag: tagLabel } = useDecisionLabels()
+  const tagsByType = (type: TagType) => option.tags.filter((tg) => tg.tagType === type)
   const groups: TagType[] = ['pro', 'con', 'desire', 'fear', 'value', 'need']
   const selectedProjections = option.projections.filter((p) => p.selected)
 
   return (
     <Card>
-      <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-1">Option {option.label}</p>
+      <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-1">{t('optionLabel', { label: option.label })}</p>
       <p className="text-white/80 text-sm leading-relaxed mb-4">{option.content}</p>
 
       <div className="space-y-3">
@@ -72,11 +67,11 @@ function OptionSection({ option }: { option: DecisionRoomOptionView }) {
           if (tags.length === 0) return null
           return (
             <div key={type}>
-              <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-1.5">{TAG_LABEL[type]}</p>
+              <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-1.5">{t(`sections.${type}`)}</p>
               <div className="flex flex-wrap gap-1.5">
-                {tags.map((t, i) => (
+                {tags.map((tg, i) => (
                   <span key={i} className={`text-xs border rounded-full px-2.5 py-1 ${TAG_COLOR[type]}`}>
-                    {t.label}
+                    {tagLabel(type, tg.label)}
                   </span>
                 ))}
               </div>
@@ -87,7 +82,7 @@ function OptionSection({ option }: { option: DecisionRoomOptionView }) {
 
       {selectedProjections.length > 0 && (
         <div className="mt-4 pt-4 border-t border-[var(--color-border-glass)]">
-          <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-1.5">Future projections</p>
+          <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide mb-1.5">{t('detail.futureProjections')}</p>
           <div className="space-y-1.5">
             {selectedProjections.map((p, i) => (
               <p key={i} className="text-white/60 text-sm leading-relaxed">
@@ -107,6 +102,7 @@ const DECISION_REOPEN_STEPS = ['NAME_DECISION', 'MAP_OPTIONS', 'BODY_EMOTION', '
 export default function DecisionDetailPage() {
   const locale = useLocale()
   const tr = useTranslations('RoomsReopen')
+  const t = useTranslations('DecisionRoom')
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [decision, setDecision] = useState<DecisionRoomFullResponse | null>(null)
@@ -146,14 +142,14 @@ export default function DecisionDetailPage() {
 
           <div className="max-w-[393px] lg:max-w-2xl mx-auto px-5 lg:px-8 pt-14 lg:pt-8 pb-10 lg:pb-12">
             <Link href="/decision/new" className="text-[var(--color-violet-400)] text-sm">
-              ← Decision Room
+              {t('detail.backLink')}
             </Link>
 
-            {loading && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-12">Loading…</p>}
+            {loading && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-12">{t('detail.loading')}</p>}
 
             {!loading && notFound && (
               <div className="pt-12 text-center">
-                <p className="text-white/50">Decision not found.</p>
+                <p className="text-white/50">{t('detail.notFound')}</p>
               </div>
             )}
 
@@ -165,7 +161,7 @@ export default function DecisionDetailPage() {
                       decision.status === 'completed' ? 'text-emerald-400' : 'text-[var(--color-violet-400)]'
                     }`}
                   >
-                    {decision.status === 'completed' ? '✓ Completed' : `Step ${decision.currentStep}/7 in progress`}
+                    {decision.status === 'completed' ? t('detail.completed') : t('detail.inProgress', { step: decision.currentStep })}
                     {' · '}
                     {formatDate(decision.createdAt, locale)}
                   </p>
@@ -188,13 +184,13 @@ export default function DecisionDetailPage() {
                     href={`/decision/new?resume=${decision.decisionId}`}
                     className="inline-flex items-center gap-2 rounded-full bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] px-4 py-2 text-sm text-white transition-colors"
                   >
-                    Continue
+                    {t('continue')}
                   </Link>
                 )}
 
                 {decision.narrative && (
                   <Card>
-                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">Your story</p>
+                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">{t('detail.yourStory')}</p>
                     <p className="text-white/70 text-sm leading-relaxed">{decision.narrative}</p>
                   </Card>
                 )}
@@ -205,7 +201,7 @@ export default function DecisionDetailPage() {
 
                 {decision.emotion && (
                   <Card>
-                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">Body &amp; emotion</p>
+                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">{t('detail.bodyEmotion')}</p>
                     <div className="mb-3">
                       <FeltSummary {...feltFromDecisionEmotion(decision.emotion)} />
                     </div>
@@ -217,11 +213,11 @@ export default function DecisionDetailPage() {
 
                 {decision.outcomes.length > 0 && (
                   <Card>
-                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">What happened</p>
+                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">{t('detail.whatHappened')}</p>
                     <div className="space-y-3">
                       {decision.outcomes.map((o, i) => (
                         <div key={i} className="space-y-0.5">
-                          {o.chosenOptionLabel && <p className="text-[var(--color-text-tertiary)] text-xs">Chose Option {o.chosenOptionLabel}</p>}
+                          {o.chosenOptionLabel && <p className="text-[var(--color-text-tertiary)] text-xs">{t('detail.choseOption', { label: o.chosenOptionLabel })}</p>}
                           {o.reflection && <p className="text-white/70 text-sm leading-relaxed">{o.reflection}</p>}
                           <p className="text-[var(--color-text-tertiary)] text-xs">{formatDate(o.createdAt, locale)}</p>
                         </div>
@@ -232,14 +228,14 @@ export default function DecisionDetailPage() {
 
                 {decision.summary && (
                   <Card>
-                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">Summary</p>
+                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">{t('detail.summary')}</p>
                     <p className="text-white/70 text-sm leading-relaxed">{decision.summary}</p>
                   </Card>
                 )}
 
                 {decision.reviewDate && (
                   <Card>
-                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">Check-in date</p>
+                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">{t('detail.checkInDate')}</p>
                     <p className="text-white/60 text-sm">{formatDate(decision.reviewDate, locale)}</p>
                   </Card>
                 )}

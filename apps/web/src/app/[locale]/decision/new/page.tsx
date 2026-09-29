@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import DecisionRoomLanding from '@/components/decision/DecisionRoomLanding'
 import MomentScreen from '@/components/decision/MomentScreen'
 import Step01 from '@/components/decision/Step01'
@@ -121,6 +122,7 @@ function parseReflectionNote(reflection?: string | null): string | undefined {
 
 function NewDecisionContent() {
   const router = useRouter()
+  const t = useTranslations('DecisionRoom')
   const params = useSearchParams()
   const resumeId = params.get('resume')
   // Intelligence Spec §18/Appendix B — only set when arriving via a Library
@@ -245,20 +247,20 @@ function NewDecisionContent() {
       if (err.code === 'session_completed') { router.push('/dashboard'); return }
       if (err.code === 'credits_exhausted') { setCreditsExhausted(true); return }
       // Slice 6: Bedrock briefly unavailable — not fatal; the answers are kept and the credit was refunded.
-      if (err.code === 'model_unavailable') { setSyncNotice('DPNR is briefly unavailable — nothing was charged and your answers are kept. Please try again in a minute.'); return }
+      if (err.code === 'model_unavailable') { setSyncNotice(t('errors.modelUnavailable')); return }
       if (err.code === 'session_version_conflict' && sessionId) {
         try {
           const full = await getDecisionFull(sessionId)
           setSessionVersion(full.sessionVersion ?? sessionVersion)
           setCurrentStepId((full.currentStepId as DecisionStepId) ?? currentStepId)
-          setSyncNotice('This session moved on — you’ve been synced to the latest step.')
+          setSyncNotice(t('errors.synced'))
         } catch {
-          setFatalError('Something went wrong. Please go back to InnerOS and try again.')
+          setFatalError(t('errors.fatal'))
         }
         return
       }
     }
-    setFatalError('Something went wrong. Please go back to InnerOS and try again.')
+    setFatalError(t('errors.fatal'))
   }
 
   async function callCommand(
@@ -467,7 +469,7 @@ function NewDecisionContent() {
       </div>
             <p className="text-white/70 text-sm">{fatalError}</p>
             <button onClick={() => router.push('/dashboard')} className="text-purple-400 text-sm underline">
-              Back to InnerOS
+              {t('backToInnerOS')}
             </button>
           </main>
         </div>

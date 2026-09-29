@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import StepShell from './StepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI, RefineFn } from '@/lib/useAI'
@@ -28,6 +29,7 @@ const CHAR_LIMIT = 5000
 const emptyOption = (label: OptionLabel): DecisionOption => ({ label, content: '', approved: false })
 
 export default function Step02({ decisionTitle, initialNarrative = '', initialOptionA, initialOptionB, initialOptionC, onRefine, onComplete, onBack, onSkip }: Step02Props) {
+  const t = useTranslations('DecisionRoom')
   const [narrative, setNarrative] = useState(initialNarrative)
   const [optionA, setOptionA] = useState<DecisionOption>(initialOptionA ?? emptyOption('A'))
   const [optionB, setOptionB] = useState<DecisionOption>(initialOptionB ?? emptyOption('B'))
@@ -67,24 +69,24 @@ export default function Step02({ decisionTitle, initialNarrative = '', initialOp
           /* Narrative input */
           <div className="flex-1 flex flex-col space-y-3">
             <p className="text-white/60 text-sm text-center">
-              Tell me about this decision. Write freely: what&apos;s happening, what makes it hard?
+              {t('step02.prompt')}
             </p>
             <Dictatable className="flex-1 flex flex-col">
               <textarea
                 value={narrative}
                 onChange={e => setNarrative(e.target.value.slice(0, charLimit))}
-                placeholder="Write your story here..."
+                placeholder={t('step02.placeholder')}
                 className="flex-1 w-full min-h-[200px] bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
               />
             </Dictatable>
             <div className="flex justify-between items-center">
-              <span className="text-white/20 text-xs">{narrative.length}/{charLimit} chars</span>
+              <span className="text-white/20 text-xs">{t('step02.charCount', { count: narrative.length, limit: charLimit })}</span>
             </div>
             {error && error !== 'token_cap_reached' && (
-              <p className="text-red-400 text-xs text-center">AI error: {error}. Please try again.</p>
+              <p className="text-red-400 text-xs text-center">{t('step02.aiError', { error })}</p>
             )}
             <PrimaryButton
-              label="Find My Options"
+              label={t('step02.findOptions')}
               onClick={handleParse}
               disabled={narrative.trim().length < 30}
               loading={loading}
@@ -94,14 +96,14 @@ export default function Step02({ decisionTitle, initialNarrative = '', initialOp
           /* Options cards */
           <div className="flex-1 flex flex-col space-y-3">
             <OptionCard
-              label="Option A"
+              label={t('optionLabel', { label: 'A' })}
               option={optionA}
               onEdit={val => setOptionA(prev => ({ ...prev, content: val, approved: false }))}
               onApprove={() => setOptionA(toggleApproved)}
             />
 
             <OptionCard
-              label="Option B"
+              label={t('optionLabel', { label: 'B' })}
               option={optionB}
               onEdit={val => setOptionB(prev => ({ ...prev, content: val, approved: false }))}
               onApprove={() => setOptionB(toggleApproved)}
@@ -109,7 +111,7 @@ export default function Step02({ decisionTitle, initialNarrative = '', initialOp
 
             {optionC ? (
               <OptionCard
-                label="Option C"
+                label={t('optionLabel', { label: 'C' })}
                 option={optionC}
                 onEdit={val => setOptionC(prev => prev && ({ ...prev, content: val, approved: false }))}
                 onApprove={() => setOptionC(prev => prev && toggleApproved(prev))}
@@ -121,7 +123,7 @@ export default function Step02({ decisionTitle, initialNarrative = '', initialOp
                 onClick={() => setOptionC(emptyOption('C'))}
                 className="w-full py-3 rounded-2xl border border-dashed border-white/20 text-white/60 hover:text-white/85 hover:border-white/35 text-sm transition-colors"
               >
-                + Add a third option
+                {t('step02.addThird')}
               </button>
             )}
 
@@ -130,11 +132,11 @@ export default function Step02({ decisionTitle, initialNarrative = '', initialOp
               onClick={() => setParsed(false)}
               className="text-[var(--color-text-tertiary)] hover:text-white/50 text-xs text-center transition-colors"
             >
-              Rewrite the whole story
+              {t('step02.rewriteStory')}
             </button>
 
             <PrimaryButton
-              label="Continue process"
+              label={t('step02.continueProcess')}
               onClick={() => onComplete(narrative, optionC ? [optionA, optionB, optionC] : [optionA, optionB])}
               disabled={!canContinue()}
             />
@@ -164,6 +166,7 @@ function OptionCard({
   /** A new, empty option opens ready to write in. */
   startEditing?: boolean
 }) {
+  const t = useTranslations('DecisionRoom')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [editing, setEditing] = useState(startEditing)
   const [original, setOriginal] = useState<string | null>(null)
@@ -191,7 +194,7 @@ function OptionCard({
         <p className="text-[var(--color-amber-300)] text-[11px] uppercase tracking-[0.18em]">{label}</p>
         {onRemove && (
           <button onClick={onRemove} className="text-white/45 hover:text-white/75 text-xs underline underline-offset-2 transition-colors">
-            Remove
+            {t('step02.remove')}
           </button>
         )}
       </div>
@@ -202,15 +205,15 @@ function OptionCard({
           onChange={e => onEdit(e.target.value)}
           disabled={option.approved}
           rows={3}
-          placeholder="Describe this option in your own words..."
+          placeholder={t('step02.optionPlaceholder')}
           className="w-full bg-transparent text-white/90 text-sm lg:text-base leading-relaxed resize-none focus:outline-none placeholder-[var(--color-text-tertiary)] disabled:opacity-80 pe-10"
         />
       </Dictatable>
       {editing && original !== null && original !== option.content && (
         <div className="rounded-xl bg-black/20 px-3 py-2 text-xs text-white/50 leading-relaxed animate-fade-in">
-          <span className="text-white/40">DPNR suggested: </span>{original}
+          <span className="text-white/40">{t('step02.dpnrSuggested')}</span>{original}
           <button onClick={() => onEdit(original)} className="ms-2 underline underline-offset-2 text-white/60 hover:text-white/85">
-            Use this again
+            {t('step02.useAgain')}
           </button>
         </div>
       )}
@@ -221,7 +224,7 @@ function OptionCard({
             disabled={option.approved || !option.content}
             className="flex-1 py-2 rounded-full border border-white/15 text-white/55 hover:text-white/80 text-xs transition-colors disabled:opacity-40"
           >
-            Clear and start over
+            {t('step02.clear')}
           </button>
         ) : (
           <button
@@ -229,7 +232,7 @@ function OptionCard({
             disabled={option.approved}
             className="flex-1 py-2 rounded-full border border-[var(--color-violet-400)]/50 text-[var(--color-violet-200)] hover:bg-white/[0.06] text-xs transition-colors disabled:opacity-40"
           >
-            Rewrite
+            {t('step02.rewrite')}
           </button>
         )}
         <button
@@ -241,7 +244,7 @@ function OptionCard({
               : 'border border-white/20 text-white/70 hover:border-white/40'
           }`}
         >
-          {option.approved ? 'Approved' : 'Approve'}
+          {option.approved ? t('step02.approved') : t('step02.approve')}
         </button>
       </div>
     </div>

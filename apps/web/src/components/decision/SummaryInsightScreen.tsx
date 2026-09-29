@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import StepShell from './StepShell'
 import { useAI, RefineFn } from '@/lib/useAI'
 import InvertedButton from '@/components/ui/InvertedButton'
@@ -13,17 +14,19 @@ interface SummaryInsightScreenProps {
 
 type Agreement = 'accurate' | 'refine' | 'not_sure' | 'partly_true'
 
-const AGREEMENT_OPTIONS: { key: Agreement; label: string }[] = [
-  { key: 'accurate',    label: 'Accurate' },
-  { key: 'refine',      label: 'Refine this' },
-  { key: 'not_sure',    label: 'Not sure' },
-  { key: 'partly_true', label: 'Partly True' },
+// Labels: DecisionRoom.agreement.{labelKey}.
+const AGREEMENT_OPTIONS: { key: Agreement; labelKey: string }[] = [
+  { key: 'accurate',    labelKey: 'accurate' },
+  { key: 'refine',      labelKey: 'refine' },
+  { key: 'not_sure',    labelKey: 'notSure' },
+  { key: 'partly_true', labelKey: 'partlyTrue' },
 ]
 
 export default function SummaryInsightScreen({
   decisionTitle, onRefine,
   onContinue, onBack,
 }: SummaryInsightScreenProps) {
+  const t = useTranslations('DecisionRoom')
   const [insight, setInsight] = useState<string | null>(null)
   const [agreement, setAgreement] = useState<Agreement | null>(null)
   const { callAI, loading } = useAI(onRefine)
@@ -47,7 +50,7 @@ export default function SummaryInsightScreen({
       <div className="flex-1 flex flex-col justify-between pt-2 pb-2">
 
         {/* Section label */}
-        <h3 className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.2em] text-center pb-3">Your story</h3>
+        <h3 className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.2em] text-center pb-3">{t('insight.yourStory')}</h3>
 
         {/* Insight card */}
         <div className="flex-1 flex flex-col justify-center space-y-5">
@@ -55,8 +58,7 @@ export default function SummaryInsightScreen({
 
             {/* Fixed opener line with bold keywords */}
             <p className="text-white text-sm text-center leading-relaxed">
-              You explored this decision through your{' '}
-              <strong className="text-white font-semibold">body, thoughts, fears, and values.</strong>
+              {t.rich('insight.opener', { strong: (chunks) => <strong className="text-white font-semibold">{chunks}</strong> })}
             </p>
 
             {/* AI insight */}
@@ -66,7 +68,7 @@ export default function SummaryInsightScreen({
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                 </svg>
-                Generating your insight…
+                {t('insight.generating')}
               </div>
             ) : (
               <p className="text-white/85 text-sm lg:text-base text-center leading-relaxed">
@@ -76,12 +78,12 @@ export default function SummaryInsightScreen({
 
             {/* Divider */}
             <div className="flex items-center gap-3 pt-1">
-              <p className="flex-1 text-white/70 text-sm text-center">Does this feel accurate?</p>
+              <p className="flex-1 text-white/70 text-sm text-center">{t('doesThisFeelAccurate')}</p>
             </div>
 
             {/* Agreement options */}
             <div className="grid grid-cols-2 gap-2.5">
-              {AGREEMENT_OPTIONS.map(({ key, label }) => (
+              {AGREEMENT_OPTIONS.map(({ key, labelKey }) => (
                 <button
                   key={key}
                   onClick={() => setAgreement(key)}
@@ -96,7 +98,7 @@ export default function SummaryInsightScreen({
                   }`}>
                     {agreement === key && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                   </div>
-                  {label}
+                  {t(`agreement.${labelKey}`)}
                 </button>
               ))}
             </div>
@@ -109,13 +111,13 @@ export default function SummaryInsightScreen({
             onClick={onBack}
             className="flex-1 py-3.5 rounded-full border border-white/20 text-white/60 hover:text-white hover:border-white/35 text-sm font-medium transition-all"
           >
-            Back
+            {t('back')}
           </button>
           <InvertedButton
             onClick={onContinue}
             disabled={!agreement || !insight}
             className="flex-1 py-3.5"
-            label="Supporting Yourself"
+            label={t('supportingYourself')}
           />
         </div>
       </div>

@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { CalendarButtons } from '@/components/ui/CalendarButtons'
 import RoomScreenFrame from '@/components/shared/RoomScreenFrame'
 import InvertedButton from '@/components/ui/InvertedButton'
@@ -19,10 +20,11 @@ function addDays(days: number) {
 }
 
 export default function CommitmentScreen({ decisionTitle, nextStep, onDone, onBack }: CommitmentScreenProps) {
+  const t = useTranslations('DecisionRoom')
   const [commitment, setCommitment] = useState(nextStep ?? '')
   const [reviewDate] = useState<string | null>(null)
 
-  const calendarTitle = commitment.trim() || `Workshop Rooms check-in: "${decisionTitle}"`
+  const calendarTitle = commitment.trim() || t('commitment.eventTitle', { title: decisionTitle })
   const calendarDate = reviewDate ?? addDays(7)
 
   return (
@@ -31,7 +33,7 @@ export default function CommitmentScreen({ decisionTitle, nextStep, onDone, onBa
       {/* Header */}
       <div className="pt-14 lg:pt-8 px-5 pb-4 text-center space-y-1">
         <h1 className="text-white text-lg font-medium">&quot;{decisionTitle}&quot;</h1>
-        <p className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.18em]">Step 6 of 6 · Before you leave</p>
+        <p className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.18em]">{t('stepOf', { step: 6, total: 6, label: t('commitment.beforeYouLeave') })}</p>
       </div>
 
       {/* Scrollable body */}
@@ -40,16 +42,13 @@ export default function CommitmentScreen({ decisionTitle, nextStep, onDone, onBa
         {/* Inspirational card */}
         <div className="bg-white/8 border border-white/12 rounded-3xl px-5 py-6 space-y-4 text-center">
           <p className="text-white/60 text-sm leading-relaxed">
-            Many decisions carry different needs, hopes, and fears within them.
+            {t('commitment.intro')}
           </p>
           <div className="w-8 h-px bg-white/15 mx-auto" />
           <p className="text-white/80 text-sm leading-relaxed">
-            Before you leave this space, take a gentle moment with yourself.
-            Looking closely at a decision is not always easy.
-            It takes honesty, courage, and care. You&apos;ve taken the time to listen to your
-            thoughts, emotions, and what matters most to you.
+            {t('commitment.body')}
           </p>
-          <p className="text-white font-medium text-sm">What are you committing to from here?</p>
+          <p className="text-white font-medium text-sm">{t('commitment.question')}</p>
         </div>
 
         {/* Commitment input */}
@@ -58,7 +57,7 @@ export default function CommitmentScreen({ decisionTitle, nextStep, onDone, onBa
             value={commitment}
             onChange={e => setCommitment(e.target.value.slice(0, 5000))}
             rows={3}
-            placeholder='Type: "I commit to taking this step by:"'
+            placeholder={t('commitment.placeholder')}
             className="w-full bg-white/8 border border-white/15 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
           />
         </Dictatable>
@@ -66,14 +65,14 @@ export default function CommitmentScreen({ decisionTitle, nextStep, onDone, onBa
         {/* Add to Calendar: clearly tappable, clearly optional (founder feedback 2026-09-28 #17). */}
         <div className="rounded-3xl border border-white/12 bg-white/[0.04] px-4 py-4 space-y-3">
           <div className="text-center">
-            <p className="text-[var(--color-amber-300)] text-[11px] uppercase tracking-[0.2em]">Optional</p>
-            <p className="text-white/85 text-sm mt-1">Add a check-in to your calendar</p>
-            <p className="text-white/55 text-xs mt-1 leading-relaxed">Tap a calendar to save a gentle reminder to look back at this. You can also just tap Done.</p>
+            <p className="text-[var(--color-amber-300)] text-[11px] uppercase tracking-[0.2em]">{t('commitment.optional')}</p>
+            <p className="text-white/85 text-sm mt-1">{t('commitment.calendarTitle')}</p>
+            <p className="text-white/55 text-xs mt-1 leading-relaxed">{t('commitment.calendarHint')}</p>
           </div>
           <CalendarButtons
             title={calendarTitle}
             date={calendarDate}
-            description={`Workshop Rooms check-in for: "${decisionTitle}"`}
+            description={t('commitment.eventDescription', { title: decisionTitle })}
           />
         </div>
       </div>
@@ -84,9 +83,9 @@ export default function CommitmentScreen({ decisionTitle, nextStep, onDone, onBa
           onClick={onBack}
           className="flex-1 py-3.5 rounded-full border border-white/20 text-white/60 hover:text-white hover:border-white/35 text-sm font-medium transition-all"
         >
-          Back
+          {t('back')}
         </button>
-        <InvertedButton onClick={() => onDone(commitment.trim())} className="flex-1 py-3.5" label="Done" />
+        <InvertedButton onClick={() => onDone(commitment.trim())} className="flex-1 py-3.5" label={t('commitment.done')} />
       </div>
     </RoomScreenFrame>
   )

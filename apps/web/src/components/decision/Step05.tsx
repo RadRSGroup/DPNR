@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import StepShell from './StepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import Chip from '@/components/ui/Chip'
@@ -9,6 +10,7 @@ import { Lens, DecisionOption, OptionLabel, PRESET_TAGS } from '@/lib/types'
 import AiThinking from '@/components/shared/AiThinking'
 import Dictatable from '@/components/ui/Dictatable'
 import { OptionContext, RoomHeading } from './RoomHeadings'
+import { useDecisionLabels } from '@/lib/decision-labels'
 
 interface Step05Props {
   decisionTitle: string
@@ -26,11 +28,14 @@ interface Step05Props {
 const EMPTY_TAGS: Record<string, string[]> = { pro: [], con: [], desire: [], fear: [] }
 
 export default function Step05({ decisionTitle, options, lens, initialTags, onRefine, onComplete, onBack, onSkip }: Step05Props) {
+  const t = useTranslations('DecisionRoom')
+  const tLens = useTranslations('DecisionLenses')
+  const { tag: tagLabel } = useDecisionLabels()
   const sections = lens === 'pros_cons'
-    ? [{ type: 'pro', label: 'Pros' }, { type: 'con', label: 'Cons' }]
-    : [{ type: 'desire', label: 'Desires' }, { type: 'fear', label: 'Fears' }]
+    ? [{ type: 'pro', label: t('sections.pro') }, { type: 'con', label: t('sections.con') }]
+    : [{ type: 'desire', label: t('sections.desire') }, { type: 'fear', label: t('sections.fear') }]
   // The lens is always named, so moving between layers is visible (#10).
-  const lensName = lens === 'pros_cons' ? 'Pros & Cons' : 'Fears & Desires'
+  const lensName = lens === 'pros_cons' ? tLens('prosCons.title') : tLens('fearsDesires.title')
 
   const [sectionIdx, setSectionIdx] = useState(0)
   const [optionIdx, setOptionIdx] = useState(0)
@@ -104,16 +109,16 @@ export default function Step05({ decisionTitle, options, lens, initialTags, onRe
   const canAdvance = currentTags.length > 0
 
   const buttonLabel = !isLastOption
-    ? `Option ${options[optionIdx + 1].label}: ${currentSection.label}`
+    ? t('optionSection', { label: options[optionIdx + 1].label, section: currentSection.label })
     : isLastSection
-    ? 'Next step'
-    : `Next: ${sections[sectionIdx + 1].label}`
+    ? t('nextStep')
+    : t('nextSection', { section: sections[sectionIdx + 1].label })
 
   const promptText = lens === 'pros_cons'
-    ? `What are the ${currentSection.label.toLowerCase()} of Option ${currentOption}?`
+    ? (currentSection.type === 'pro' ? t('step05.promptPro', { option: currentOption }) : t('step05.promptCon', { option: currentOption }))
     : currentSection.type === 'desire'
-    ? `What does Option ${currentOption} make you long for?`
-    : `What does Option ${currentOption} make you afraid of?`
+    ? t('step05.promptDesire', { option: currentOption })
+    : t('step05.promptFear', { option: currentOption })
 
   const usePresets = currentSection.type === 'desire' || currentSection.type === 'fear'
   const chipList = [
@@ -134,7 +139,7 @@ export default function Step05({ decisionTitle, options, lens, initialTags, onRe
 
         {/* Lens + section heading (#10/#14), with the section's progress. */}
         <div key={`${sectionIdx}-${currentOption}`} className="animate-settle-in space-y-3">
-          <RoomHeading eyebrow={`${lensName} · ${currentSection.label} · Option ${currentOption}`} title={promptText} />
+          <RoomHeading eyebrow={t('step05.eyebrow', { lens: lensName, section: currentSection.label, option: currentOption })} title={promptText} />
           <div className="flex items-center justify-center gap-1.5" aria-hidden>
             {sections.map((s, i) => (
               <div key={s.type} className={`h-1.5 rounded-full transition-all ${
@@ -150,7 +155,7 @@ export default function Step05({ decisionTitle, options, lens, initialTags, onRe
             {chipList.map(chip => (
               <Chip
                 key={chip}
-                label={chip}
+                label={tagLabel(currentSection.type, chip)}
                 selected={currentTags.includes(chip)}
                 aiSuggested={(suggested[currentSection.type] ?? []).includes(chip)}
                 onClick={() => toggleTag(currentSection.type, chip)}
@@ -158,7 +163,7 @@ export default function Step05({ decisionTitle, options, lens, initialTags, onRe
             ))}
           </div>
 
-          {loading && <AiThinking shape="chips" count={5} label="Finding suggestions…" />}
+          {loading && <AiThinking shape="chips" count={5} label={t('findingSuggestions')} />}
 
           {/* Custom input */}
           <div className="flex gap-2">
@@ -167,7 +172,7 @@ export default function Step05({ decisionTitle, options, lens, initialTags, onRe
               value={customInput}
               onChange={e => setCustomInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addCustom()}
-              placeholder="Add your own..."
+              placeholder={t('addYourOwn')}
               className="w-full bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-white text-xs placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-purple-500/50"
             />
             </Dictatable>
@@ -175,7 +180,7 @@ export default function Step05({ decisionTitle, options, lens, initialTags, onRe
               onClick={addCustom}
               className="px-3 py-1.5 rounded-full bg-purple-900/30 border border-purple-700/40 text-purple-400 text-xs hover:bg-purple-800/40 transition-colors"
             >
-              Add
+              {t('add')}
             </button>
           </div>
         </div>

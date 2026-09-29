@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import StepShell from './StepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import Chip from '@/components/ui/Chip'
@@ -9,6 +10,7 @@ import { DecisionOption, OptionLabel, PRESET_TAGS } from '@/lib/types'
 import AiThinking from '@/components/shared/AiThinking'
 import Dictatable from '@/components/ui/Dictatable'
 import { OptionContext, RoomHeading } from './RoomHeadings'
+import { useDecisionLabels } from '@/lib/decision-labels'
 
 interface Step06Props {
   decisionTitle: string
@@ -24,12 +26,16 @@ interface Step06Props {
 
 type Round = 'values' | 'needs'
 
-const ROUNDS: { round: Round; label: string }[] = [
-  { round: 'values', label: 'Values' },
-  { round: 'needs',  label: 'Needs' },
+// Labels: DecisionRoom.sections.{labelKey}.
+const ROUNDS: { round: Round; labelKey: 'value' | 'need' }[] = [
+  { round: 'values', labelKey: 'value' },
+  { round: 'needs',  labelKey: 'need' },
 ]
 
 export default function Step06({ decisionTitle, options, initialValues, initialNeeds, onRefine, onComplete, onBack, onSkip }: Step06Props) {
+  const t = useTranslations('DecisionRoom')
+  const tLens = useTranslations('DecisionLenses')
+  const { tag: tagLabel } = useDecisionLabels()
   const [roundIdx, setRoundIdx] = useState(0)
   const [optionIdx, setOptionIdx] = useState(0)
   const [selected, setSelected] = useState<Partial<Record<OptionLabel, Record<Round, string[]>>>>(() =>
@@ -102,15 +108,16 @@ export default function Step06({ decisionTitle, options, initialValues, initialN
     ),
   ].filter((v, i, a) => a.indexOf(v) === i)
 
+  const roundLabel = t(`sections.${currentRound.labelKey}`)
   const prompt = currentRound.round === 'values'
-    ? `Which values does Option ${currentOption} honour most?`
-    : `Which of the 6 core needs does Option ${currentOption} fulfil?`
+    ? t('step06.promptValues', { option: currentOption })
+    : t('step06.promptNeeds', { option: currentOption })
 
   const ctaLabel = !isLastOption
-    ? `Option ${options[optionIdx + 1].label}: ${currentRound.label}`
+    ? t('optionSection', { label: options[optionIdx + 1].label, section: roundLabel })
     : isLastRound
-    ? 'Next step'
-    : `Next: ${ROUNDS[roundIdx + 1].label}`
+    ? t('nextStep')
+    : t('nextSection', { section: t(`sections.${ROUNDS[roundIdx + 1].labelKey}`) })
 
   return (
     <StepShell step={6} decisionTitle={decisionTitle} onBack={onBack} onSkip={onSkip}>
@@ -121,7 +128,7 @@ export default function Step06({ decisionTitle, options, initialValues, initialN
 
         {/* Lens + round heading (#10/#14), with the round's progress. */}
         <div key={`${roundIdx}-${currentOption}`} className="animate-settle-in space-y-3">
-          <RoomHeading eyebrow={`Values & Needs · ${currentRound.label} · Option ${currentOption}`} title={prompt} />
+          <RoomHeading eyebrow={t('step05.eyebrow', { lens: tLens('valuesNeeds.title'), section: roundLabel, option: currentOption })} title={prompt} />
           <div className="flex items-center justify-center gap-1.5" aria-hidden>
             {ROUNDS.map((r, i) => (
               <div key={r.round} className={`h-1.5 rounded-full transition-all ${
@@ -136,13 +143,13 @@ export default function Step06({ decisionTitle, options, initialValues, initialN
           {items.map(item => (
             <Chip
               key={item}
-              label={item}
+              label={tagLabel(presetKey, item)}
               selected={currentSelected.includes(item)}
               aiSuggested={(suggested[currentRound.round] ?? []).includes(item)}
               onClick={() => toggle(item)}
             />
           ))}
-          {loading && <AiThinking shape="chips" count={5} label="Finding suggestions…" className="pt-2" />}
+          {loading && <AiThinking shape="chips" count={5} label={t('findingSuggestions')} className="pt-2" />}
         </div>
 
         {/* Custom input */}
@@ -152,7 +159,7 @@ export default function Step06({ decisionTitle, options, initialValues, initialN
             value={customInput}
             onChange={e => setCustomInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addCustom()}
-            placeholder="Add your own..."
+            placeholder={t('addYourOwn')}
             className="w-full bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-white text-xs placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-purple-500/50"
           />
           </Dictatable>
@@ -160,7 +167,7 @@ export default function Step06({ decisionTitle, options, initialValues, initialN
             onClick={addCustom}
             className="px-3 py-1.5 rounded-full bg-purple-900/30 border border-purple-700/40 text-purple-400 text-xs hover:bg-purple-800/40 transition-colors"
           >
-            Add
+            {t('add')}
           </button>
         </div>
 

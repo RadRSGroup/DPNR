@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import StepShell from './StepShell'
 import { useAI, RefineFn } from '@/lib/useAI'
 import Card from '@/components/ui/Card'
@@ -17,24 +18,28 @@ interface SessionSummaryScreenProps {
 
 type Agreement = 'accurate' | 'refine' | 'not_sure' | 'partly_true'
 
+// Labels: DecisionRoom.sessionSummary.* or DecisionLenses.*.title (labelNs).
 const SECTIONS = [
-  { key: 'bodyAwareness',  label: 'Body Awareness' },
-  { key: 'prosAndCons',    label: 'Pros & Cons' },
-  { key: 'desireVsFear',   label: 'Desire VS Fear' },
-  { key: 'valuesAndNeeds', label: 'Values & Needs' },
-  { key: 'futureSelf',     label: 'Future Self' },
+  { key: 'bodyAwareness',  labelNs: 'DecisionRoom',   labelKey: 'sessionSummary.bodyAwareness' },
+  { key: 'prosAndCons',    labelNs: 'DecisionLenses', labelKey: 'prosCons.title' },
+  { key: 'desireVsFear',   labelNs: 'DecisionRoom',   labelKey: 'sessionSummary.desireVsFear' },
+  { key: 'valuesAndNeeds', labelNs: 'DecisionLenses', labelKey: 'valuesNeeds.title' },
+  { key: 'futureSelf',     labelNs: 'DecisionRoom',   labelKey: 'sessionSummary.futureSelf' },
 ] as const
 
-const AGREEMENT_OPTIONS: { key: Agreement; label: string }[] = [
-  { key: 'accurate',    label: 'Accurate' },
-  { key: 'refine',      label: 'Refine this' },
-  { key: 'not_sure',    label: 'Not sure' },
-  { key: 'partly_true', label: 'Partly True' },
+// Labels: DecisionRoom.agreement.{labelKey}.
+const AGREEMENT_OPTIONS: { key: Agreement; labelKey: string }[] = [
+  { key: 'accurate',    labelKey: 'accurate' },
+  { key: 'refine',      labelKey: 'refine' },
+  { key: 'not_sure',    labelKey: 'notSure' },
+  { key: 'partly_true', labelKey: 'partlyTrue' },
 ]
 
 export default function SessionSummaryScreen({
   decisionTitle, felt, onRefine, onContinue, onBack,
 }: SessionSummaryScreenProps) {
+  const t = useTranslations('DecisionRoom')
+  const tLens = useTranslations('DecisionLenses')
   const [summaries, setSummaries] = useState<Record<string, string>>({})
   const [situation, setSituation] = useState('')
   const [agreement, setAgreement] = useState<Agreement | null>(null)
@@ -77,21 +82,21 @@ export default function SessionSummaryScreen({
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
             </svg>
-            Generating your summary…
+            {t('sessionSummary.generating')}
           </div>
         ) : (
           <>
             <div className="space-y-1">
-              <h3 className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.2em]">The situation</h3>
+              <h3 className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.2em]">{t('sessionSummary.situation')}</h3>
               <p className="text-white/85 text-sm lg:text-base leading-relaxed">{situation}</p>
             </div>
 
             {/* Per-section summaries */}
             <div className="space-y-3">
-              {SECTIONS.map(({ key, label }) => (
+              {SECTIONS.map(({ key, labelNs, labelKey }) => (
                 summaries[key] ? (
                   <Card key={key} className="space-y-2">
-                    <h3 className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.2em]">{label}</h3>
+                    <h3 className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.2em]">{labelNs === 'DecisionLenses' ? tLens(labelKey) : t(labelKey)}</h3>
                     <p className="text-white/80 text-sm lg:text-base leading-relaxed">{summaries[key]}</p>
                     {key === 'bodyAwareness' && felt && (
                       <div className="pt-2">
@@ -108,10 +113,10 @@ export default function SessionSummaryScreen({
         {/* Do You Agree */}
         <div className="pt-2">
           <div className="flex items-center gap-3 pb-3">
-            <p className="flex-1 text-white/70 text-sm text-center">Does this feel accurate?</p>
+            <p className="flex-1 text-white/70 text-sm text-center">{t('doesThisFeelAccurate')}</p>
           </div>
           <div className="grid grid-cols-2 gap-2.5">
-            {AGREEMENT_OPTIONS.map(({ key, label }) => (
+            {AGREEMENT_OPTIONS.map(({ key, labelKey }) => (
               <button
                 key={key}
                 onClick={() => setAgreement(key)}
@@ -126,7 +131,7 @@ export default function SessionSummaryScreen({
                 }`}>
                   {agreement === key && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                 </div>
-                {label}
+                {t(`agreement.${labelKey}`)}
               </button>
             ))}
           </div>
@@ -138,7 +143,7 @@ export default function SessionSummaryScreen({
           disabled={!agreement || loading}
           className="w-full py-3.5 rounded-full bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white text-sm font-semibold transition-all disabled:opacity-40 disabled:pointer-events-none hover:from-purple-500 hover:to-fuchsia-500 active:scale-[0.98]"
         >
-          Supporting Yourself
+          {t('supportingYourself')}
         </button>
       </div>
     </StepShell>
