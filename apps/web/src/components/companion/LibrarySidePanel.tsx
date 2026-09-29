@@ -1,10 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { useRouter } from '@/i18n/navigation'
 import type { LibraryTopicDetailResponse } from '@dpnr/shared-types'
 import { getLibraryTopic } from '@/lib/api/v1-client'
-import { THEME_META } from '@/lib/library/theme-meta'
 import TopicCover from '@/components/library/TopicCover'
 
 interface Props {
@@ -13,11 +13,6 @@ interface Props {
   onClose: () => void
 }
 
-const ROOM_LABEL: Record<'mirror' | 'decision' | 'companion', string> = {
-  mirror: 'Explore in Mirror Room',
-  decision: 'Explore in Decision Room',
-  companion: 'Talk it through in Main Chat',
-}
 
 /**
  * Intelligence Spec §18/§20 "Side Panel" depth — the middle rung of the
@@ -41,6 +36,8 @@ const ROOM_LABEL: Record<'mirror' | 'decision' | 'companion', string> = {
  * placeholder — see LibraryTopicVersionItemSchema's own doc comment.
  */
 export default function LibrarySidePanel({ slug, sourceSessionId, onClose }: Props) {
+  const t = useTranslations('Library')
+  const ts = useTranslations('Shared.librarySidePanel')
   const router = useRouter()
   const [topic, setTopic] = useState<LibraryTopicDetailResponse | null>(null)
   const [error, setError] = useState(false)
@@ -74,56 +71,56 @@ export default function LibrarySidePanel({ slug, sourceSessionId, onClose }: Pro
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="scrollbar-glass relative w-full sm:w-[420px] sm:h-full max-h-[85vh] sm:max-h-none bg-[#130d1f] border-t sm:border-t-0 sm:border-l border-purple-700/40 rounded-t-3xl sm:rounded-none overflow-y-auto">
         <div className="sticky top-0 bg-[#130d1f]/95 backdrop-blur-sm border-b border-white/10 px-5 py-4 flex items-center justify-between">
-          <p className="text-purple-300/70 text-xs uppercase tracking-wide">From the Library</p>
-          <button onClick={onClose} className="text-[var(--color-text-tertiary)] hover:text-white/70 text-sm" aria-label="Close">✕</button>
+          <p className="text-purple-300/70 text-xs uppercase tracking-wide">{ts('fromLibrary')}</p>
+          <button onClick={onClose} className="text-[var(--color-text-tertiary)] hover:text-white/70 text-sm" aria-label={ts('close')}>✕</button>
         </div>
 
         <div className="px-5 py-5 space-y-6">
-          {!topic && !error && <p className="text-[var(--color-text-tertiary)] text-sm text-center py-8">Loading…</p>}
-          {error && <p className="text-red-400/80 text-sm text-center py-8">Couldn&apos;t load this topic.</p>}
+          {!topic && !error && <p className="text-[var(--color-text-tertiary)] text-sm text-center py-8">{t('loading')}</p>}
+          {error && <p className="text-red-400/80 text-sm text-center py-8">{t('topic.loadError')}</p>}
 
           {topic && (
             <>
               <div className="space-y-3">
                 <TopicCover slug={topic.slug} theme={topic.exploreTheme} className="h-40" sizes="420px" />
                 <div>
-                  <p className="text-purple-300/70 text-xs uppercase tracking-wide">{THEME_META[topic.exploreTheme].label}</p>
+                  <p className="text-purple-300/70 text-xs uppercase tracking-wide">{t(`themes.${topic.exploreTheme}`)}</p>
                   <h2 className="font-display text-xl text-white">{topic.title}</h2>
                 </div>
               </div>
 
-              <Section title="Understand">
+              <Section title={ts('understand')}>
                 <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{topic.body}</p>
               </Section>
 
               {topic.personalizedExplanation && (
                 <div className="bg-purple-900/20 border border-purple-700/30 rounded-xl p-3">
-                  <p className="text-purple-300/70 text-xs uppercase tracking-wide mb-1">For you</p>
+                  <p className="text-purple-300/70 text-xs uppercase tracking-wide mb-1">{t('topic.forYou')}</p>
                   <p className="text-white/70 text-sm leading-relaxed">{topic.personalizedExplanation}</p>
                 </div>
               )}
 
               {topic.howItMayShowUp && topic.howItMayShowUp.length > 0 && (
-                <Section title="Recognize — how it may show up">
+                <Section title={t('topic.recognize')}>
                   <BulletList items={topic.howItMayShowUp} />
                 </Section>
               )}
 
               {topic.possibleRoots && topic.possibleRoots.length > 0 && (
-                <Section title="Possible roots — what may be underneath">
-                  <p className="text-[var(--color-text-tertiary)] text-xs mb-2">Possibilities to consider, not a diagnosis — only one might fit, or none.</p>
+                <Section title={t('topic.possibleRootsTitle')}>
+                  <p className="text-[var(--color-text-tertiary)] text-xs mb-2">{t('topic.possibleRootsHint')}</p>
                   <BulletList items={topic.possibleRoots} />
                 </Section>
               )}
 
               {topic.reflectionQuestions && topic.reflectionQuestions.length > 0 && (
-                <Section title="Personal reflection">
+                <Section title={t('topic.personalReflection')}>
                   <BulletList items={topic.reflectionQuestions} />
                 </Section>
               )}
 
               {topic.waysToWorkWithIt && topic.waysToWorkWithIt.length > 0 && (
-                <Section title="Work with it">
+                <Section title={t('topic.workWithIt')}>
                   <BulletList items={topic.waysToWorkWithIt} />
                 </Section>
               )}
@@ -135,15 +132,15 @@ export default function LibrarySidePanel({ slug, sourceSessionId, onClose }: Pro
                     onClick={() => exploreInRoom(room)}
                     className="w-full text-left bg-purple-600/20 border border-purple-500/40 hover:bg-purple-600/30 rounded-2xl px-4 py-3 transition-colors"
                   >
-                    <p className="text-purple-200 text-sm font-medium">{ROOM_LABEL[room]}</p>
-                    <p className="text-purple-300/60 text-xs mt-0.5">Tap to open →</p>
+                    <p className="text-purple-200 text-sm font-medium">{t(`topic.rooms.${room}`)}</p>
+                    <p className="text-purple-300/60 text-xs mt-0.5">{t('topic.tapToOpen')}</p>
                   </button>
                 ))}
                 <Link
                   href={`/library/${slug}`}
                   className="block w-full text-center text-[var(--color-text-tertiary)] hover:text-white/60 text-xs underline py-2"
                 >
-                  View full topic
+                  {ts('viewFullTopic')}
                 </Link>
               </div>
             </>

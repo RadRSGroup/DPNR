@@ -116,6 +116,7 @@ function PlanTile({
 
 export default function WalletPage() {
   const t = useTranslations('Wallet')
+  const ts = useTranslations('Shared')
   const locale = useLocale()
   const router = useRouter()
   const [credits, setCredits] = useState<CreditsResponse | null>(null)
@@ -235,7 +236,7 @@ export default function WalletPage() {
                 {subscriptions.map((p) => (
                   <PlanTile
                     key={p.planId}
-                    name={p.displayName}
+                    name={ts.has(`plans.${p.planId}`) ? ts(`plans.${p.planId}`) : p.displayName}
                     price={formatPrice(p.priceMinorUnits, p.currency, locale)}
                     perMonth={p.billingFrequency === 'monthly' ? t('plans.perMonth') : undefined}
                     detail={t('plans.monthlyCredits', { count: p.credits })}

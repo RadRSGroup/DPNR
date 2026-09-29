@@ -20,6 +20,13 @@ const ROOM_LABEL_KEY: Record<'mirror' | 'decision' | 'companion', string> = {
   companion: 'companion',
 }
 
+// The catalog's `level` is an English enum value; keys into LibraryExtra.levels.
+const LEVEL_KEY: Record<NonNullable<LibraryTopicDetailResponse['level']>, string> = {
+  Foundation: 'foundation',
+  Intermediate: 'intermediate',
+  'Deep Dive': 'deepDive',
+}
+
 /**
  * Topic detail — reads the same canonical `LibraryTopicDetailResponse`
  * `DirectiveCard`/`LibrarySidePanel` read, and renders the same Intelligence
@@ -31,6 +38,7 @@ const ROOM_LABEL_KEY: Record<'mirror' | 'decision' | 'companion', string> = {
  */
 export default function LibraryTopicPage() {
   const t = useTranslations('Library')
+  const tx = useTranslations('LibraryExtra')
   const router = useRouter()
   const params = useParams<{ slug: string }>()
   const [topic, setTopic] = useState<LibraryTopicDetailResponse | null>(null)
@@ -81,7 +89,7 @@ export default function LibraryTopicPage() {
             />
             <div>
               <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-1">
-                {t(`themes.${topic.exploreTheme}`)}{topic.level ? ` · ${topic.level}` : ''}
+                {t(`themes.${topic.exploreTheme}`)}{topic.level ? ` · ${LEVEL_KEY[topic.level] ? tx(`levels.${LEVEL_KEY[topic.level]}`) : topic.level}` : ''}
               </p>
               <h1 className="font-display text-xl md:text-2xl lg:text-3xl text-white">{topic.title}</h1>
             </div>

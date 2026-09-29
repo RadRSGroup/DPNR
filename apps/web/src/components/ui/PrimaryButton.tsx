@@ -1,4 +1,5 @@
 'use client'
+import { useTranslations } from 'next-intl'
 import { usePendingClick, SPINNER_PATH } from './usePendingClick'
 
 interface PrimaryButtonProps {
@@ -20,6 +21,7 @@ function Spinner() {
 }
 
 export default function PrimaryButton({ label, onClick, disabled, loading, className = '' }: PrimaryButtonProps) {
+  const t = useTranslations('Shared')
   const { pending, handleClick } = usePendingClick(onClick)
   // `pending` keeps the violet fill (the tap registered); `disabled`/`loading` grey it out.
   const inactive = disabled || loading
@@ -42,7 +44,7 @@ export default function PrimaryButton({ label, onClick, disabled, loading, class
       {loading ? (
         <span className="flex items-center justify-center gap-2">
           <Spinner />
-          Thinking...
+          {t('thinking')}
         </span>
       ) : pending ? (
         <span className="flex items-center justify-center gap-2">

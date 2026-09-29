@@ -40,6 +40,16 @@ const ROOM_LINK: Record<'decision' | 'mirror' | 'library', { href: string; label
   library: { href: '/library', labelKey: 'library' },
 }
 
+// The backend builds one continuity cue in English
+// (infra/cdk/lambda/dashboard/handler.ts): `Consider exploring: ${space}`,
+// where `space` is the roadmap's first suggested space. Recognise exactly
+// that shape and render it translated; any other cue text is shown as is.
+const CONSIDER_EXPLORING = /^Consider exploring: (.+)$/
+function cueSpaceKey(space: string): 'mirror' | 'decision' | 'library' | null {
+  const s = space.trim().toLowerCase().replace(/\s+room$/, '')
+  return s === 'mirror' || s === 'decision' || s === 'library' ? s : null
+}
+
 // This page previously listed every past decision via the old Supabase
 // `getDecisions()` query — dropped in this rewrite onto the real
 // `GET /v1/dashboard` (docs/PHASE_AUDIT.md §4.6), which has no equivalent
@@ -50,6 +60,7 @@ const ROOM_LINK: Record<'decision' | 'mirror' | 'library', { href: string; label
 function DashboardContent() {
   const t = useTranslations('Dashboard')
   const tc = useTranslations('Companion')
+  const ts = useTranslations('Shared.continuity')
   const router = useRouter()
   const params = useSearchParams()
   const justCompleted = params.get('completed') === 'true'
@@ -133,7 +144,10 @@ function DashboardContent() {
 
   const hour = new Date().getHours()
   const greeting = tc(hour < 12 ? 'greeting.morning' : hour < 18 ? 'greeting.afternoon' : 'greeting.evening')
-  const cueText = dashboard?.continuityCue && dashboard.continuityCue.kind !== 'daily_card' ? dashboard.continuityCue.text : null
+  const rawCueText = dashboard?.continuityCue && dashboard.continuityCue.kind !== 'daily_card' ? dashboard.continuityCue.text : null
+  const cueMatch = rawCueText?.match(CONSIDER_EXPLORING)
+  const cueSpace = cueMatch ? cueSpaceKey(cueMatch[1]) : null
+  const cueText = cueSpace ? ts('considerExploring', { space: ts(`spaces.${cueSpace}`) }) : rawCueText
   const roadmap = dashboard?.roadmap ?? null
 
   const lifecycleActions = roadmap && (

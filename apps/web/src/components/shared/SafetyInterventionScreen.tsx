@@ -1,5 +1,6 @@
 'use client'
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 
@@ -25,6 +26,7 @@ export default function SafetyInterventionScreen({
   message: string
   safetyState: 'safety_concern' | 'immediate_danger'
 }) {
+  const t = useTranslations('Shared')
   const router = useRouter()
 
   return (
@@ -41,7 +43,7 @@ export default function SafetyInterventionScreen({
         onClick={() => router.push('/dashboard')}
         className="w-full py-3 rounded-2xl bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] text-white text-sm font-medium transition-colors"
       >
-        Return to Dashboard
+        {t('returnToDashboard')}
       </button>
     </div>
       </main>

@@ -2,6 +2,7 @@
 import Image from 'next/image'
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
+import { useAuthErrorMessage } from '@/lib/cognito/error-messages'
 import { useRouter } from '@/i18n/navigation'
 import { Link } from '@/i18n/navigation'
 import { signUp, confirmSignUp, resendConfirmationCode, signIn } from '@/lib/cognito/client'
@@ -14,6 +15,7 @@ import type { RecoveryCode } from '@/lib/crypto'
 
 export default function SignupPage() {
   const t = useTranslations('Signup')
+  const authError = useAuthErrorMessage()
   const router = useRouter()
   const locale = useLocale()
   const [email, setEmail] = useState('')
@@ -48,7 +50,7 @@ export default function SignupPage() {
       await signUp(email, password)
       setStage('confirm')
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('errorSignUpFailed'))
+      setError(authError(err, t('errorSignUpFailed')))
     } finally {
       setLoading(false)
     }
@@ -90,7 +92,7 @@ export default function SignupPage() {
       router.push('/consent')
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('errorInvalidCode'))
+      setError(authError(err, t('errorInvalidCode')))
       setLoading(false)
     }
   }
@@ -108,7 +110,7 @@ export default function SignupPage() {
       await resendConfirmationCode(email)
       setResent(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('errorResendFailed'))
+      setError(authError(err, t('errorResendFailed')))
     }
   }
 

@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { Link } from '@/i18n/navigation'
 import { Suspense } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
+import { useAuthErrorMessage } from '@/lib/cognito/error-messages'
 import { signIn } from '@/lib/cognito/client'
 import { establishSessionTicket } from '@/lib/auth/keyBootstrap'
 import { resolveSafeNext } from '@/lib/navigation/safeNext'
@@ -15,6 +16,8 @@ import { touchVisit } from '@/lib/visit'
 
 function LoginForm() {
   const t = useTranslations('Login')
+  const ts = useTranslations('Shared')
+  const authError = useAuthErrorMessage()
   const router = useRouter()
   const locale = useLocale() as 'en' | 'he'
   const params = useSearchParams()
@@ -44,12 +47,9 @@ function LoginForm() {
       router.push(isNew ? '/companion' : next, { locale: await savedLocale(locale) })
       router.refresh()
     } catch (err) {
-      // err.message comes straight from the Cognito SDK and is English-only
-      // regardless of locale — mapping every Cognito error code to a
-      // localized message is real future work, not attempted here (Slice D
-      // only localizes this app's own static strings). Only the fallback
-      // (no message at all) is localized.
-      setError(err instanceof Error ? err.message : t('signInFailed'))
+      // err.message comes straight from the Cognito SDK and is English-only;
+      // useAuthErrorMessage maps the common codes for other locales.
+      setError(authError(err, t('signInFailed')))
       setLoading(false)
     }
   }
@@ -73,7 +73,7 @@ function LoginForm() {
       <div className="max-w-[393px] mx-auto px-5 min-h-screen flex flex-col justify-center">
         <div className="mb-10 text-center">
           <p className="text-purple-400 text-xs tracking-widest uppercase mb-2">DPNR</p>
-          <h1 className="text-white text-2xl font-light">Your Human Operating System</h1>
+          <h1 className="text-white text-2xl font-light">{ts('humanOS')}</h1>
           <p className="text-[var(--color-text-tertiary)] text-sm mt-2">{t('subtitle')}</p>
         </div>
 

@@ -4,10 +4,10 @@ import { useEffect } from 'react'
 import { Link, useRouter } from '@/i18n/navigation'
 import { useParams } from 'next/navigation'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { getCurrentSession } from '@/lib/cognito/client'
 import Card from '@/components/ui/Card'
-import { DPNR_METHOD, getMethodPiece, readingMinutes, markMethodRead } from '@/lib/library/method-content'
+import { getMethod, getMethodPiece, readingMinutes, markMethodRead } from '@/lib/library/method-content'
 
 /**
  * One piece of "The DPNR Method" (lib/library/method-content.ts). Static
@@ -20,9 +20,11 @@ export default function MethodPiecePage() {
   const t = useTranslations('Library')
   const router = useRouter()
   const params = useParams<{ slug: string }>()
-  const piece = getMethodPiece(params.slug)
-  const index = DPNR_METHOD.findIndex((p) => p.slug === params.slug)
-  const next = index >= 0 ? DPNR_METHOD[(index + 1) % DPNR_METHOD.length] : undefined
+  const locale = useLocale()
+  const pieces = getMethod(locale)
+  const piece = getMethodPiece(params.slug, locale)
+  const index = pieces.findIndex((p) => p.slug === params.slug)
+  const next = index >= 0 ? pieces[(index + 1) % pieces.length] : undefined
 
   useEffect(() => {
     getCurrentSession().then((session) => { if (!session) router.push('/login') }).catch(() => {})

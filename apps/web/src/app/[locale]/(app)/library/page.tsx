@@ -45,11 +45,12 @@ const NAMED_SHELVES: { titleKey: string; theme: ExploreTheme }[] = [
  * Patterns, Self-Trust, Attachment, Regulation." None of those 8 words are
  * exact topic titles, so each is resolved to the closest real Foundation-
  * level topic below — a judgment call, not a literal lookup (flagged here
- * rather than silently guessed).
+ * rather than silently guessed). Matched by slug (infra/cdk/scripts/
+ * library-topics-v2.seed.ts), not title: titles come back translated.
  */
-const START_HERE_TITLES = [
-  'Needs vs. Neediness', 'Values', 'Boundaries', 'Emotion vs. Reaction',
-  'Avoidance', 'Self-Trust', 'Attachment Styles - Overview', 'Emotional Regulation',
+const START_HERE_SLUGS = [
+  'needs-vs-neediness', 'values', 'boundaries', 'emotion-vs-reaction',
+  'avoidance', 'self-trust', 'attachment-styles-overview', 'emotional-regulation',
 ]
 
 /**
@@ -230,7 +231,7 @@ export default function LibraryPage() {
 
   const startHere = useMemo(() => {
     if (!topics) return []
-    return START_HERE_TITLES.map((title) => topics.find((t) => t.title === title)).filter(
+    return START_HERE_SLUGS.map((slug) => topics.find((t) => t.slug === slug)).filter(
       (t): t is LibraryTopicSummary => t !== undefined
     )
   }, [topics])

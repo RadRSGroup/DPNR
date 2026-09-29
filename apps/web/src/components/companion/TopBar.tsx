@@ -1,5 +1,6 @@
 'use client'
 import { useSyncExternalStore } from 'react'
+import { useLocale } from 'next-intl'
 import LanguageSelector from '@/components/shared/LanguageSelector'
 import AccountMenu from '@/components/layout/AccountMenu'
 import TimeTodayIndicator from '@/components/companion/TimeTodayIndicator'
@@ -64,6 +65,7 @@ export function useClock(): Date | null {
  */
 export default function TopBar() {
   const now = useClock()
+  const locale = useLocale()
 
   return (
     <div className="hidden lg:flex items-center gap-4 pb-4">
@@ -77,9 +79,9 @@ export default function TopBar() {
         {now && (
           <>
             <p className="text-white/80 text-sm font-medium">
-              {now.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+              {now.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })}
             </p>
-            <p>{now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
+            <p>{now.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
             <TimeTodayIndicator className="mt-0.5 text-white/40" />
           </>
         )}

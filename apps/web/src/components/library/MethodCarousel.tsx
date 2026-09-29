@@ -2,9 +2,9 @@
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
-import { DPNR_METHOD } from '@/lib/library/method-content'
+import { getMethod } from '@/lib/library/method-content'
 
 const AUTO_ADVANCE_MS = 9000
 const SWIPE_PX = 40
@@ -23,10 +23,11 @@ const SWIPE_PX = 40
  */
 export default function MethodCarousel() {
   const t = useTranslations('Library')
+  const pieces = getMethod(useLocale())
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
   const pointerStart = useRef<number | null>(null)
-  const count = DPNR_METHOD.length
+  const count = pieces.length
 
   useEffect(() => {
     if (paused) return
@@ -61,7 +62,7 @@ export default function MethodCarousel() {
         go((dx < 0) !== rtl ? 1 : -1)
       }}
     >
-      {DPNR_METHOD.map((piece, i) => {
+      {pieces.map((piece, i) => {
         const active = i === index
         return (
           <Link
@@ -114,7 +115,7 @@ export default function MethodCarousel() {
       </button>
 
       <div className="absolute z-20 bottom-4 inset-x-0 flex justify-center gap-2">
-        {DPNR_METHOD.map((piece, i) => (
+        {pieces.map((piece, i) => (
           <button
             key={piece.slug}
             type="button"

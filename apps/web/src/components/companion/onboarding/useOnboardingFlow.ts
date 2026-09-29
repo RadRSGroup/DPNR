@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { getOnboardingSnapshot, updateOnboardingSnapshot } from '@/lib/api/v1-client'
 import { markOnboardingCompleteLocally } from '@/lib/cognito/client'
 import {
@@ -41,6 +42,7 @@ const CARD_STEPS: CardStep[] = ['currentState', 'activeDomains', 'desiredStates'
  * only the UI's location and the intention step's input surface moved.
  */
 export function useOnboardingFlow() {
+  const t = useTranslations('Onboarding')
   const [loading, setLoading] = useState(true)
   const [active, setActive] = useState(false)
   const [cardStep, setCardStep] = useState<CardStep | null>(null)
@@ -120,7 +122,7 @@ export function useOnboardingFlow() {
       await updateOnboardingSnapshot(fields)
       return true
     } catch {
-      setError('Something went wrong. Please try again.')
+      setError(t('errorGeneric'))
       return false
     } finally {
       setSaving(false)
