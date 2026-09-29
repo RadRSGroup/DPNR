@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import MirrorRoomLanding from '@/components/mirror/MirrorRoomLanding'
 import { DEFAULT_OPENING, openingFromEntry, type MirrorOpening } from '@/components/mirror/openings'
 import Step01Situation from '@/components/mirror/Step01Situation'
@@ -77,6 +78,7 @@ const INITIAL_STATE: LocalState = {
 
 function NewMirrorContent() {
   const router = useRouter()
+  const t = useTranslations('MirrorRoom')
   const params = useSearchParams()
   const resumeId = params.get('resume')
   // Intelligence Spec §18/Appendix B "Mirror receives context (topic +
@@ -188,20 +190,20 @@ function NewMirrorContent() {
       if (err.code === 'session_completed') { router.push('/dashboard'); return }
       if (err.code === 'credits_exhausted') { setCreditsExhausted(true); return }
       // Slice 6: Bedrock briefly unavailable — not fatal; the answers are kept and the credit was refunded.
-      if (err.code === 'model_unavailable') { setSyncNotice('DPNR is briefly unavailable — nothing was charged and your answers are kept. Please try again in a minute.'); return }
+      if (err.code === 'model_unavailable') { setSyncNotice(t('session.modelUnavailable')); return }
       if (err.code === 'session_version_conflict' && sessionId) {
         try {
           const full = await getMirrorFull(sessionId)
           setSessionVersion(full.sessionVersion ?? sessionVersion)
           setCurrentStepId((full.currentStepId as MirrorRoomStepId) ?? currentStepId)
-          setSyncNotice('This session moved on — you’ve been synced to the latest step.')
+          setSyncNotice(t('session.synced'))
         } catch {
-          setFatalError('Something went wrong. Please go back to InnerOS and try again.')
+          setFatalError(t('session.fatal'))
         }
         return
       }
     }
-    setFatalError('Something went wrong. Please go back to InnerOS and try again.')
+    setFatalError(t('session.fatal'))
   }
 
   async function callCommand(
@@ -322,7 +324,7 @@ function NewMirrorContent() {
     setCompleted(true)
   }
 
-  const sessionTitle = state.situation.trim().slice(0, 40) || 'Mirror Room'
+  const sessionTitle = state.situation.trim().slice(0, 40) || t('title')
 
   function renderStep() {
     if (resumeLoading) {
@@ -351,7 +353,7 @@ function NewMirrorContent() {
       </div>
             <p className="text-white/70 text-sm">{fatalError}</p>
             <button onClick={() => router.push('/dashboard')} className="text-purple-400 text-sm underline">
-              Back to InnerOS
+              {t('backToInnerOS')}
             </button>
           </main>
         </div>

@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import type { MirrorBodyPlacement, MirrorEmotionFelt } from '@dpnr/shared-types'
 import MirrorStepShell from './MirrorStepShell'
 import BodyMap from '@/components/shared/BodyMap'
@@ -44,6 +45,7 @@ export default function Step02AutomaticReaction({ sessionTitle, initial, onRefin
   const [emotionsFelt, setEmotionsFelt] = useState<MirrorEmotionFelt[]>(initial.emotionsFelt)
   const [bodyPlacements, setBodyPlacements] = useState<MirrorBodyPlacement[]>(initial.bodyPlacements)
   const [reflection, setReflection] = useState<string | undefined>(undefined)
+  const t = useTranslations('MirrorRoom')
   const { callAI, loading } = useAI(onRefine)
 
   const hasEmotion = emotionsFelt.length > 0 || !!emotion.trim()
@@ -73,12 +75,12 @@ export default function Step02AutomaticReaction({ sessionTitle, initial, onRefin
       <div className="flex-1 flex flex-col justify-between pt-4">
         <div className="space-y-6">
           <div className="space-y-2">
-            <p className="text-white/70 text-sm leading-relaxed">What went through your mind in that moment?</p>
+            <p className="text-white/70 text-sm leading-relaxed">{t('step2.thoughtQuestion')}</p>
             <Dictatable>
               <textarea
                 value={thought}
                 onChange={e => setThought(e.target.value.slice(0, 5000))}
-                placeholder="The first thought that crossed your mind..."
+                placeholder={t('step2.thoughtPlaceholder')}
                 rows={2}
                 className={textarea}
               />
@@ -87,15 +89,15 @@ export default function Step02AutomaticReaction({ sessionTitle, initial, onRefin
 
           <div className="space-y-3">
             <div className="space-y-1">
-              <p className="text-white/70 text-sm leading-relaxed">What did you feel?</p>
-              <p className="text-[var(--color-text-tertiary)] text-xs">Choose any that fit. There&apos;s no right answer.</p>
+              <p className="text-white/70 text-sm leading-relaxed">{t('step2.feelQuestion')}</p>
+              <p className="text-[var(--color-text-tertiary)] text-xs">{t('step2.feelHint')}</p>
             </div>
             <EmotionChips emotionsFelt={emotionsFelt} setEmotionsFelt={setEmotionsFelt} setBodyPlacements={setBodyPlacements} />
             <Dictatable>
               <textarea
                 value={emotion}
                 onChange={e => setEmotion(e.target.value.slice(0, 5000))}
-                placeholder={emotionsFelt.length ? 'Anything to add, in your own words? (optional)' : 'Or name the feeling in your own words...'}
+                placeholder={emotionsFelt.length ? t('step2.emotionPlaceholderMore') : t('step2.emotionPlaceholder')}
                 rows={2}
                 className={textarea}
               />
@@ -108,15 +110,15 @@ export default function Step02AutomaticReaction({ sessionTitle, initial, onRefin
 
           <div className="space-y-2">
             {emotionsFelt.length === 0 && (
-              <p className="text-white/70 text-sm leading-relaxed">Where did you feel it in your body?</p>
+              <p className="text-white/70 text-sm leading-relaxed">{t('step2.bodyQuestion')}</p>
             )}
             <Dictatable>
               <textarea
                 value={bodyResponse}
                 onChange={e => setBodyResponse(e.target.value.slice(0, 5000))}
                 placeholder={bodyPlacements.length
-                  ? 'How did it feel there? Tight, heavy, hot... (optional)'
-                  : 'Tight chest, clenched jaw, a knot in your stomach...'}
+                  ? t('step2.bodyPlaceholderMore')
+                  : t('step2.bodyPlaceholder')}
                 rows={2}
                 className={textarea}
               />
@@ -125,7 +127,7 @@ export default function Step02AutomaticReaction({ sessionTitle, initial, onRefin
 
           {reflection ? (
             <div className="bg-purple-900/20 border border-purple-700/30 rounded-2xl px-4 py-3 space-y-1 animate-settle-in">
-              <p className="text-purple-300 text-xs uppercase tracking-wide">Reflection</p>
+              <p className="text-purple-300 text-xs uppercase tracking-wide">{t('step2.reflection')}</p>
               <p className="text-white/80 text-sm italic">&quot;{reflection}&quot;</p>
             </div>
           ) : (
@@ -135,18 +137,18 @@ export default function Step02AutomaticReaction({ sessionTitle, initial, onRefin
                 disabled={loading}
                 className="text-purple-400 hover:text-purple-300 text-sm transition-colors flex items-center gap-1.5"
               >
-                {loading ? 'Thinking...' : 'Reflect on this'}
+                {loading ? t('step2.thinking') : t('step2.reflect')}
               </button>
             )
           )}
 
           <div className="space-y-2">
-            <p className="text-white/70 text-sm leading-relaxed">What did you actually do or say?</p>
+            <p className="text-white/70 text-sm leading-relaxed">{t('step2.actionQuestion')}</p>
             <Dictatable>
               <textarea
                 value={automaticReaction}
                 onChange={e => setAutomaticReaction(e.target.value.slice(0, 5000))}
-                placeholder="Your actual reaction, not what you wish you'd done..."
+                placeholder={t('step2.actionPlaceholder')}
                 rows={2}
                 className={textarea}
               />
@@ -155,7 +157,7 @@ export default function Step02AutomaticReaction({ sessionTitle, initial, onRefin
         </div>
 
         <div className="pt-6">
-          <PrimaryButton label="Continue" onClick={handleContinue} disabled={!readyToContinue} />
+          <PrimaryButton label={t('continue')} onClick={handleContinue} disabled={!readyToContinue} />
         </div>
       </div>
     </MirrorStepShell>

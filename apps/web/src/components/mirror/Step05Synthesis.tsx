@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import MirrorStepShell from './MirrorStepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI, RefineFn } from '@/lib/useAI'
@@ -20,6 +21,7 @@ interface Props {
  * to COMMITMENT. See mirror-steps/synthesis.ts.
  */
 export default function Step05Synthesis({ sessionTitle, initialSynthesis, onRefine, onComplete, onBack }: Props) {
+  const t = useTranslations('MirrorRoom')
   const [synthesis, setSynthesis] = useState<string | undefined>(initialSynthesis)
   const { callAI, loading, error } = useAI(onRefine)
   const fetched = useRef(!!initialSynthesis)
@@ -38,28 +40,28 @@ export default function Step05Synthesis({ sessionTitle, initialSynthesis, onRefi
       <div className="flex-1 flex flex-col justify-between pt-4">
         <div className="space-y-6">
           <p className="text-white/70 text-sm text-center leading-relaxed">
-            Here&apos;s what came up, reflected back to you.
+            {t('step5.intro')}
           </p>
 
           {loading && !synthesis && (
-            <AiThinking count={4} label="Reflecting on what you shared…" className="py-4" />
+            <AiThinking count={4} label={t('step5.thinking')} className="py-4" />
           )}
 
           {synthesis && (
             <div className="bg-purple-900/20 border border-purple-700/30 rounded-2xl px-5 py-5 space-y-1 animate-settle-in">
-              <p className="text-purple-300 text-xs uppercase tracking-wide">Synthesis</p>
+              <p className="text-purple-300 text-xs uppercase tracking-wide">{t('synthesis')}</p>
               <p className="text-white/85 text-sm italic leading-relaxed">&quot;{synthesis}&quot;</p>
             </div>
           )}
 
           {error && !synthesis && (
-            <p className="text-red-400/80 text-sm text-center">Something went wrong generating this reflection — you can still continue.</p>
+            <p className="text-red-400/80 text-sm text-center">{t('step5.error')}</p>
           )}
         </div>
 
         <div className="pt-6">
           <PrimaryButton
-            label="Continue"
+            label={t('continue')}
             onClick={() => onComplete(synthesis ?? '')}
             disabled={loading && !synthesis}
           />

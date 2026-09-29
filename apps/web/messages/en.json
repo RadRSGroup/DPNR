@@ -1441,5 +1441,364 @@
     "feelingToPlace": "Feeling to place",
     "whatYouFelt": "What you felt",
     "whereBodyFelt": "Where your body felt it"
+  },
+  "MirrorRoom": {
+    "title": "Mirror Room",
+    "continue": "Continue",
+    "synthesis": "Synthesis",
+    "backToInnerOS": "Back to InnerOS",
+    "tags": {
+      "confirmed": "Active",
+      "candidate": "Exploring"
+    },
+    "archetypes": {
+      "Protector": "Protector",
+      "Healer": "Healer",
+      "Seeker": "Seeker",
+      "Visionary": "Visionary"
+    },
+    "landing": {
+      "intro": "Notice what this moment reveals within you.",
+      "breathe": "Breathe and begin.",
+      "exploringTopic": "Exploring: {title}",
+      "welcomeTitle": "Welcome to Mirror Room",
+      "welcomeBody": "This is your space to pause, observe, and explore your inner patterns. The more you see, the more you're free to choose.",
+      "start": "Start Mirror",
+      "creditsPerRefine": "{count, plural, one {# credit} other {# credits}} per refine",
+      "insightTitle": "Today's Insight",
+      "insights": {
+        "0": "Awareness is the first step. Choice is the next.",
+        "1": "What you notice, you can begin to change.",
+        "2": "A pattern seen clearly loses some of its hold.",
+        "3": "Pause. The reaction is not the whole of you.",
+        "4": "Curiosity is gentler than judgement, and it sees more."
+      },
+      "keepReflecting": "Keep reflecting",
+      "weekTitle": "Your Week",
+      "weekSubtitle": "Just for you to notice. No streak to keep.",
+      "weekdays": {
+        "mon": "M",
+        "tue": "T",
+        "wed": "W",
+        "thu": "T",
+        "fri": "F",
+        "sat": "S",
+        "sun": "S"
+      },
+      "reflectionsThisWeek": "{count, plural, one {reflection} other {reflections}} this week",
+      "firstThisWeek": "Your first reflection this week is here whenever you're ready.",
+      "inTotal": "{count} in total",
+      "startTitle": "Start Your Reflection",
+      "startSubtitle": "Choose how you want to look within.",
+      "modes": {
+        "pattern": {
+          "title": "By Pattern",
+          "text": "Choose a pattern to look at, or let DPNR help you notice one."
+        },
+        "situation": {
+          "title": "By Situation",
+          "text": "Reflect on a current situation or recent experience."
+        },
+        "archetype": {
+          "title": "Trigger Archetypes",
+          "text": "Notice which part of you takes over when you're triggered."
+        }
+      },
+      "patternsTitle": "Your Patterns",
+      "patternsSubtitle": "See clearly. Understand deeply. Choose differently.",
+      "tabs": {
+        "confirmed": "Active Patterns",
+        "candidate": "Exploring"
+      },
+      "patternsFailed": "Your patterns couldn't load right now. Try again in a moment.",
+      "exploreAria": "Explore: {description}",
+      "emptyConfirmed": "Patterns show up here once you confirm the ones DPNR notices (on your Dashboard).",
+      "emptyCandidate": "Nothing new noticed right now. Patterns DPNR picks up from your sessions appear here first.",
+      "exploreNew": "Explore something new",
+      "recentTitle": "Recent Reflections",
+      "recentSubtitle": "Come back to what you looked at.",
+      "recentEmpty": "Your reflections will appear here once you've started your first one.",
+      "read": "Read",
+      "resume": "Continue",
+      "showMore": "Show more",
+      "showLess": "Show less"
+    },
+    "steps": {
+      "labels": {
+        "1": "The Situation",
+        "2": "In the Moment",
+        "3": "The Pattern",
+        "4": "The Impact",
+        "5": "Synthesis",
+        "6": "Commitment"
+      },
+      "info": {
+        "1": "Naming exactly what happened — without judgment — is the first step to seeing it clearly.",
+        "2": "Your thought, feeling, body sensation, and reaction usually arrive together, faster than you can think. Slowing down to name each one separately is where insight starts.",
+        "3": "How you coped afterward, and whether this keeps happening with the same people or situations, is often more revealing than the incident itself.",
+        "4": "Every reaction ripples outward — into your energy, your mood, and the parts of your life it actually touches.",
+        "5": "Seeing the whole arc reflected back can surface a thread you didn't consciously connect yourself.",
+        "6": "A commitment only has to be small enough to actually happen."
+      },
+      "reflections": {
+        "1": "What you name clearly, you can finally look at.",
+        "2": "Your body often knows before your mind finds the words.",
+        "3": "Patterns repeat until they're seen.",
+        "4": "Nothing that affects you is really \"just in your head.\"",
+        "5": "Reflection is how experience becomes understanding.",
+        "6": "A small, honest step is worth more than a perfect plan."
+      }
+    },
+    "picker": {
+      "title": "Start from a pattern",
+      "intro": "A pattern is a lens, not a label. Choose one that feels relevant, or start without one.",
+      "close": "Close",
+      "suggestionAria": "DPNR's suggestion",
+      "fromConfirmed": "From what you’ve confirmed",
+      "dpnrNoticed": "Something DPNR noticed",
+      "unnamed": "A pattern in your reflections",
+      "mayBeShowingUpNamed": "{name} may be showing up for you. Does it feel relevant to look at now?",
+      "mayBeShowingUpUnnamed": "This pattern may be showing up for you. Does it feel relevant to look at now?",
+      "exploreThis": "Explore this",
+      "yourOthers": "Your other patterns",
+      "otherPatterns": "Other patterns",
+      "browsePatterns": "Browse patterns",
+      "referenceNote": "Common patterns people notice. None of them is a verdict about you.",
+      "notSure": "I'm not sure",
+      "notSureHint": "Start with what happened",
+      "helpNotice": "Help me notice what's happening",
+      "helpNoticeHint": "DPNR looks at it with you as you go",
+      "whatItIs": "What it is",
+      "howShowsUp": "How it may show up",
+      "howShowsUpForYou": "How it may show up for you"
+    },
+    "step1": {
+      "startingFromPattern": "Starting from a pattern",
+      "exploringPossible": "Exploring a possible pattern",
+      "describeMoment": "Describe one recent moment when it showed up.",
+      "mayOrMayNotNamed": "{name} may be showing up for you, or it may not. Describe one recent moment and see whether it fits.",
+      "mayOrMayNotUnnamed": "This pattern may be showing up for you, or it may not. Describe one recent moment and see whether it fits.",
+      "editLine": "Edit or remove the pattern line if it doesn't fit.",
+      "noticeTogetherTitle": "Let's notice it together",
+      "noticeTogetherBody": "Start with what happened. As you go, DPNR will reflect back what may be at play and, if something seems to fit, gently name a possible pattern for you to check. You decide whether it feels true.",
+      "archetypesTitle": "Trigger archetypes",
+      "archetypesBody": "Think of a recent moment you felt triggered. Which part of you took over? Tap one to add it to your trigger, or write your own.",
+      "archetypeLine": "The part of me that took over felt like the {name}.",
+      "whatHappened": "What happened?",
+      "situationPlaceholder": "Describe the moment, as plainly as you can...",
+      "whatTriggered": "What triggered this for you?",
+      "triggerPlaceholder": "What was it, specifically, that set this off?",
+      "prefillReference": "A pattern that may be showing up for me: {name}\n\nA recent moment I noticed it: ",
+      "prefillOwn": "A pattern I keep noticing: \"{text}\"\n\nA recent moment it showed up: "
+    },
+    "step2": {
+      "thoughtQuestion": "What went through your mind in that moment?",
+      "thoughtPlaceholder": "The first thought that crossed your mind...",
+      "feelQuestion": "What did you feel?",
+      "feelHint": "Choose any that fit. There's no right answer.",
+      "emotionPlaceholderMore": "Anything to add, in your own words? (optional)",
+      "emotionPlaceholder": "Or name the feeling in your own words...",
+      "bodyQuestion": "Where did you feel it in your body?",
+      "bodyPlaceholderMore": "How did it feel there? Tight, heavy, hot... (optional)",
+      "bodyPlaceholder": "Tight chest, clenched jaw, a knot in your stomach...",
+      "reflection": "Reflection",
+      "thinking": "Thinking...",
+      "reflect": "Reflect on this",
+      "actionQuestion": "What did you actually do or say?",
+      "actionPlaceholder": "Your actual reaction, not what you wish you'd done..."
+    },
+    "step3": {
+      "copingQuestion": "How did you cope with it afterward?",
+      "copingPlaceholder": "Did you shut down, vent to someone, distract yourself...",
+      "patternQuestionNamed": "Beyond this moment, where else does “{name}” tend to show up for you?",
+      "patternQuestionUnnamed": "Beyond this moment, where else does this pattern tend to show up for you?",
+      "patternPlaceholder": "With certain people, places, times, or kinds of pressure...",
+      "archetypeQuestion": "When else does the {name} in you tend to take over?",
+      "archetypePlaceholder": "Notice the people or situations that seem to call it up...",
+      "defaultQuestion": "Does this happen with certain people or situations?",
+      "defaultPlaceholder": "Notice if this keeps showing up in a particular way...",
+      "prefillReference": "{showsUp}\n\nFor me, it tends to show up: ",
+      "prefillOwn": "What I've noticed before: \"{text}\"\n\nIt also shows up: "
+    },
+    "step4": {
+      "energyQuestion": "How did this affect your energy or mood?",
+      "energyPlaceholder": "Drained, on edge, foggy for the rest of the day...",
+      "domainQuestion": "Which part of your life does this touch most?",
+      "domainPlaceholder": "Work, a relationship, how you see yourself..."
+    },
+    "step5": {
+      "intro": "Here's what came up, reflected back to you.",
+      "thinking": "Reflecting on what you shared…",
+      "error": "Something went wrong generating this reflection — you can still continue."
+    },
+    "commitment": {
+      "subtitle": "Last Step: Before You Leave",
+      "recap": "You looked closely at a moment that got under your skin — the reaction, the pattern underneath it, what it touches in your life.",
+      "honesty": "That kind of honesty isn't easy. Before you go, take a moment with two gentle questions.",
+      "possibilityQuestion": "What's one new possibility you'd like to try from here?",
+      "possibilityPlaceholder": "\"Next time this happens, I could...\" (optional)",
+      "addReminder": "Add a reminder",
+      "calendarTitle": "Mirror Room check-in: \"{title}\"",
+      "calendarDescription": "Mirror Room check-in for: \"{title}\"",
+      "back": "Back",
+      "done": "Done"
+    },
+    "completion": {
+      "wellDone": "Well done, {name}!",
+      "affirmations": {
+        "0": "Looking honestly at yourself takes real courage.",
+        "1": "Every pattern you notice is one you can start to change.",
+        "2": "Awareness is the first, quiet act of change.",
+        "3": "You showed up for yourself today. That matters.",
+        "4": "Understanding your reactions is how you loosen their grip."
+      },
+      "lookedAt": "What you looked at",
+      "triggeredBy": "Triggered by: {trigger}",
+      "commitment": "Your commitment"
+    },
+    "session": {
+      "modelUnavailable": "DPNR is briefly unavailable — nothing was charged and your answers are kept. Please try again in a minute.",
+      "synced": "This session moved on — you’ve been synced to the latest step.",
+      "fatal": "Something went wrong. Please go back to InnerOS and try again."
+    },
+    "detail": {
+      "backLink": "← Mirror Room",
+      "loading": "Loading…",
+      "notFound": "Reflection not found.",
+      "completed": "✓ Completed",
+      "inProgress": "In progress",
+      "title": "Reflection",
+      "titleWithDomain": "Reflection — {domain}",
+      "continue": "Continue →",
+      "sections": {
+        "moment": "The moment",
+        "inTheMoment": "In the moment",
+        "pattern": "The pattern",
+        "lifeImpact": "Life impact",
+        "deeper": "Going deeper",
+        "support": "What would support you",
+        "commitment": "Commitment"
+      },
+      "fields": {
+        "situation": "Situation",
+        "trigger": "Trigger",
+        "thought": "Thought",
+        "whatYouDid": "What you did",
+        "coping": "How you tried to cope",
+        "recurring": "Recurring pattern",
+        "energyMood": "Effect on energy & mood",
+        "underneath": "Quieter underneath the feeling",
+        "payoff": "What the reaction protected or gave you",
+        "belief": "What it seemed to say about you",
+        "origin": "Where it feels familiar from"
+      }
+    },
+    "patterns": {
+      "peoplePleasing": {
+        "name": "People-Pleasing",
+        "meaning": "Prioritizing approval, harmony or another person's comfort over one's own needs, truth or boundaries.",
+        "showsUp": "You might notice it when a yes comes out before you've checked what you actually want."
+      },
+      "avoidance": {
+        "name": "Avoidance",
+        "meaning": "Pulling away, delaying, distracting or disengaging when something feels difficult, uncertain or exposing.",
+        "showsUp": "You might notice it when a hard conversation, message or decision keeps sliding to later."
+      },
+      "overControl": {
+        "name": "Over-Control",
+        "meaning": "Trying to reduce uncertainty by tightly managing outcomes, timing, details, people or the environment.",
+        "showsUp": "You might notice it when plans change and you feel a pull to take everything back into your own hands."
+      },
+      "perfectionism": {
+        "name": "Perfectionism",
+        "meaning": "Rigid standards that can turn 'good enough' into something unsafe, incomplete or unacceptable.",
+        "showsUp": "You might notice it when something is finished but still doesn't feel safe to share."
+      },
+      "overResponsibility": {
+        "name": "Over-Responsibility",
+        "meaning": "Taking emotional or practical responsibility for things that may not fully belong to the user.",
+        "showsUp": "You might notice it when someone else's mood or problem starts to feel like yours to fix."
+      },
+      "emotionalSuppression": {
+        "name": "Emotional Suppression",
+        "meaning": "Minimizing, intellectualizing or pushing away feelings instead of allowing them to be noticed and processed.",
+        "showsUp": "You might notice it when you explain a feeling away, or say \"I'm fine\", before letting yourself feel it."
+      },
+      "conflictAvoidance": {
+        "name": "Conflict Avoidance",
+        "meaning": "Avoiding disagreement or difficult conversations in order to preserve safety, harmony or acceptance.",
+        "showsUp": "You might notice it when you swallow a disagreement to keep the peace."
+      },
+      "hyperIndependence": {
+        "name": "Hyper-Independence",
+        "meaning": "Reluctance to ask for help, rely on others or show need because dependence feels uncomfortable or unsafe.",
+        "showsUp": "You might notice it when help is offered and something in you says you'll manage alone."
+      },
+      "reassuranceSeeking": {
+        "name": "Reassurance Seeking",
+        "meaning": "Repeatedly looking outside oneself for confirmation, approval or certainty when internal confidence feels unstable.",
+        "showsUp": "You might notice it when you check again, or ask again, to feel sure it's okay."
+      },
+      "withdrawal": {
+        "name": "Withdrawal",
+        "meaning": "Becoming quiet, distant or unavailable when emotionally activated.",
+        "showsUp": "You might notice it when you go quiet or slip away just as things become emotional."
+      },
+      "overthinking": {
+        "name": "Overthinking",
+        "meaning": "Repeated analysis used to seek certainty, prevent mistakes or avoid emotional exposure.",
+        "showsUp": "You might notice it when you replay a conversation, or run through every outcome, to feel ready."
+      },
+      "selfAbandonment": {
+        "name": "Self-Abandonment",
+        "meaning": "Ignoring one's own needs, truth or limits to preserve connection or avoid rejection or conflict.",
+        "showsUp": "You might notice it when your own need gets set aside so the connection stays smooth."
+      },
+      "fearBasedProcrastination": {
+        "name": "Fear-Based Procrastination",
+        "meaning": "Delay driven by risk, exposure, possible failure, judgment or uncertainty.",
+        "showsUp": "You might notice it when something that matters keeps waiting until it feels less risky."
+      },
+      "angerAsProtection": {
+        "name": "Anger as Protection",
+        "meaning": "Anger may sometimes appear alongside hurt, fear, powerlessness, shame or a boundary violation. Treat this as a possibility, never an assumed cause.",
+        "showsUp": "You might notice it when anger arrives quickly, and something softer may be sitting underneath it."
+      },
+      "fixingRescuing": {
+        "name": "Fixing / Rescuing",
+        "meaning": "Moving quickly to solve, manage or rescue others instead of staying with one's own experience and allowing shared responsibility.",
+        "showsUp": "You might notice it when you jump in with solutions before staying with what you feel."
+      },
+      "testingPushingAway": {
+        "name": "Testing / Pushing Away",
+        "meaning": "Creating distance, conflict or tests to check whether another person will stay, care or respond.",
+        "showsUp": "You might notice it when you create distance to see whether someone will come closer."
+      },
+      "overAccommodation": {
+        "name": "Over-Accommodation",
+        "meaning": "Changing oneself excessively to fit an environment, relationship or expectation.",
+        "showsUp": "You might notice it when you reshape yourself around what a room or a person seems to expect."
+      },
+      "freezeShutdown": {
+        "name": "Freeze / Shutdown",
+        "meaning": "Reduced access to words, action or decision-making when the system feels overwhelmed.",
+        "showsUp": "You might notice it when words, choices or action suddenly feel out of reach."
+      },
+      "comparison": {
+        "name": "Comparison",
+        "meaning": "Using other people as the main reference point for worth, success, progress or identity.",
+        "showsUp": "You might notice it when someone else's progress changes how you feel about your own."
+      },
+      "selfCriticism": {
+        "name": "Self-Criticism",
+        "meaning": "Turning discomfort, mistakes or vulnerability into internal judgment or attack.",
+        "showsUp": "You might notice it when a small mistake turns into a harsh voice inside."
+      },
+      "pushPullApproachAvoidance": {
+        "name": "Push-Pull / Approach-Avoidance",
+        "meaning": "Wanting closeness, success or change while also pulling away when it becomes emotionally real.",
+        "showsUp": "You might notice it when something you want comes closer and part of you starts to step back."
+      }
+    }
   }
 }

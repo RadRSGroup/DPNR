@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import MirrorStepShell from './MirrorStepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import Dictatable from '@/components/ui/Dictatable'
@@ -20,6 +21,7 @@ export default function Step04LifeImpact({
   onComplete,
   onBack,
 }: Props) {
+  const t = useTranslations('MirrorRoom')
   const [energyMoodEffect, setEnergyMoodEffect] = useState(initialEnergyMoodEffect)
   const [lifeDomain, setLifeDomain] = useState(initialLifeDomain)
 
@@ -33,12 +35,12 @@ export default function Step04LifeImpact({
       <div className="flex-1 flex flex-col justify-between pt-4">
         <div className="space-y-6">
           <div className="space-y-2">
-            <p className="text-white/70 text-sm leading-relaxed">How did this affect your energy or mood?</p>
+            <p className="text-white/70 text-sm leading-relaxed">{t('step4.energyQuestion')}</p>
             <Dictatable>
               <textarea
                 value={energyMoodEffect}
                 onChange={e => setEnergyMoodEffect(e.target.value.slice(0, 5000))}
-                placeholder="Drained, on edge, foggy for the rest of the day..."
+                placeholder={t('step4.energyPlaceholder')}
                 rows={3}
                 className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
               />
@@ -46,12 +48,12 @@ export default function Step04LifeImpact({
           </div>
 
           <div className="space-y-2">
-            <p className="text-white/70 text-sm leading-relaxed">Which part of your life does this touch most?</p>
+            <p className="text-white/70 text-sm leading-relaxed">{t('step4.domainQuestion')}</p>
             <Dictatable>
               <textarea
                 value={lifeDomain}
                 onChange={e => setLifeDomain(e.target.value.slice(0, 5000))}
-                placeholder="Work, a relationship, how you see yourself..."
+                placeholder={t('step4.domainPlaceholder')}
                 rows={2}
                 className="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-base resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
               />
@@ -61,7 +63,7 @@ export default function Step04LifeImpact({
 
         <div className="pt-6">
           <PrimaryButton
-            label="Continue"
+            label={t('continue')}
             onClick={handleContinue}
             disabled={!energyMoodEffect.trim() || !lifeDomain.trim()}
           />
