@@ -19,9 +19,8 @@ import Card from '@/components/ui/Card'
  *
  * Per the project's Wallet-purchasing decision: the real plan/package
  * catalog renders, but every "Choose Plan"/"Buy" button stays disabled —
- * `initiate-purchase.ts` has unconfirmed field-shape guesses (ADR 0008) and
- * no real Grow credentials exist regardless, so nobody should be sent
- * through a checkout that can't finish. No real `PlanItem`s are seeded yet
+ * there is no payment provider (Grow was removed in Session 83), so nobody
+ * should be sent through a checkout that can't finish. No real `PlanItem`s are seeded yet
  * either (blocked on a pack-pricing decision), so both catalog sections
  * honestly render empty rather than the reference's fabricated $9/$19/$39
  * and 100–2500-credit numbers.

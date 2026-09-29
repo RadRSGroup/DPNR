@@ -188,23 +188,6 @@ export const CreditsResponseSchema = z.object({
 })
 export type CreditsResponse = z.infer<typeof CreditsResponseSchema>
 
-/**
- * POST /v1/credits/purchase — initiates a Grow hosted checkout page, it does
- * NOT synchronously grant credits (corrected Session 18, see ADR 0008 —
- * Grow's real API is a redirect-to-hosted-page flow, not a client-side
- * tokenized charge; the real balance change only happens later via the
- * `/v1/webhooks/payment` callback once Grow confirms payment).
- */
-export const CreditsPurchaseRequestSchema = z.object({
-  planId: z.string(),
-})
-export type CreditsPurchaseRequest = z.infer<typeof CreditsPurchaseRequestSchema>
-
-export const CreditsPurchaseResponseSchema = z.object({
-  paymentPageUrl: z.string(),
-  purchaseId: z.string(),
-})
-export type CreditsPurchaseResponse = z.infer<typeof CreditsPurchaseResponseSchema>
 
 /**
  * GET /v1/credits/transactions — the real ledger, most-recent first. Reads

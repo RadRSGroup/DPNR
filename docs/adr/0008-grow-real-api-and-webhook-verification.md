@@ -1,6 +1,6 @@
 # ADR 0008 — Grow's real API shape, and webhook verification without a signature
 
-**Status:** Accepted (2026-08-25)
+**Status:** Superseded (2026-09-29): Grow is no longer the payment provider (user, 2026-09-27) and its code was removed in Session 83 (both Lambdas, `/v1/credits/purchase`, the unauthenticated `/v1/webhooks/payment`, the purchase/webhook types and `PendingPurchaseItem`; production held 0 `PURCHASE#` items). No provider is chosen yet; a future one needs its own ADR. Originally accepted 2026-08-25.
 
 **Supersedes:** ADR 0003's "Payment provider for Credits" section, specifically its framing of `apps/web/src/lib/grow.ts`/`webhooks/grow/route.ts` as "the starting point... not a throwaway." That code (and `packages/shared-types/src/api/webhooks.ts`'s `GrowWebhookEventSchema`, `dashboard-twin-credits.ts`'s `CreditsPurchaseRequest/ResponseSchema`) was written before anyone had read Grow's real API docs — it's pre-migration, Supabase-based, targets a fabricated endpoint (`https://api.grow.co.il/v1/checkout/sessions`) that doesn't exist, and assumes a client-tokenized/synchronous purchase model Grow's real API doesn't support. ADR 0003's decision to keep Grow as the provider stands; everything else about *how* to integrate with it is corrected here.
 
