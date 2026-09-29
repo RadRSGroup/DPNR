@@ -129,6 +129,15 @@ export const MirrorRoomFullResponseSchema = z.object({
   emotionsFelt: z.array(MirrorEmotionFeltSchema).optional(),
   bodyPlacements: z.array(MirrorBodyPlacementSchema).optional(),
   synthesis: z.string().optional(),
+  // Mirror depth slice 2 (founder #30/#31): the optional "go a little
+  // deeper" answers and the Support note. The person's own words, returned
+  // so resume and the review page can show them; the backend uses them only
+  // in the synthesis prompt, never in Twin extraction.
+  emotionUnderneath: z.string().optional(),
+  payoff: z.string().optional(),
+  deeperBelief: z.string().optional(),
+  origin: z.string().optional(),
+  support: z.string().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })

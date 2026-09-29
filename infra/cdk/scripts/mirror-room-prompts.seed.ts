@@ -63,6 +63,10 @@ Write a 3–4 sentence closing reflection that:
 - Ends with one gentle thing they might notice next time this shows up — an invitation to observe, not a task or a call to action
 - Speaks to them directly, in second person ("you"), never about them
 
+If they chose to go deeper (see "When they went deeper"), you may weave in what they found there — the quieter feeling underneath, what the reaction protected them from or gave them, what the moment seemed to say about them — using their own words, gently and tentatively. A belief is a thought they noticed, not a truth about them. The feeling underneath doesn't cancel what they felt on the surface; both can be true.
+If they shared where this feels familiar from, acknowledge it only as they described it. Never add a cause, a childhood explanation or a root they didn't name, and never suggest the past explains everything. If they didn't share one, don't mention the past at all.
+If they didn't go deeper, don't mention it or imply they should have.
+
 {{languageInstruction}}
 
 No bullet points. No headers. Pure flowing prose.
@@ -76,12 +80,14 @@ How they coped afterward: {{copingResponse}}
 Where this tends to recur: {{recurringPattern}}
 Effect on energy/mood: {{energyMoodEffect}}
 Life domain affected: {{lifeDomain}}
-How they came in: {{entryContext}}`,
+How they came in: {{entryContext}}
+When they went deeper:
+{{depthContext}}`,
     variables: [
       'situationExcerpt', 'trigger', 'thought', 'emotion', 'bodyResponse',
       'automaticReaction', 'copingResponse', 'recurringPattern', 'energyMoodEffect', 'lifeDomain',
-      'entryContext', 'languageInstruction',
+      'entryContext', 'depthContext', 'languageInstruction',
     ],
-    notes: 'situationExcerpt = situation.slice(0, 600) — same truncation convention as `reflection`. Added at the user\'s explicit request for a closing synthesis, consistent with Decision Room\'s own closing sequence. Session 72: entry-aware + emotion/body-map aware (Appendix B), ends on one next observation; needs the Session 72 Lambda (deploy before seeding).',
+    notes: 'situationExcerpt = situation.slice(0, 600) — same truncation convention as `reflection`. Added at the user\'s explicit request for a closing synthesis, consistent with Decision Room\'s own closing sequence. Session 72: entry-aware + emotion/body-map aware (Appendix B), ends on one next observation; needs the Session 72 Lambda (deploy before seeding). Session 82 (Mirror depth slice 2): depthContext = helpers.ts formatDepthContext (the optional emotion-underneath / payoff / deeper-belief / origin answers, or "They did not go deeper this time."); needs the Session 82 Lambda — deploy before seeding, or fillTemplate throws on the unsent var.',
   },
 ]

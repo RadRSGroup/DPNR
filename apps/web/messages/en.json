@@ -1300,8 +1300,9 @@
     },
     "deeper": {
       "label": "A little deeper",
-      "hint": "Just notice what comes. You don't need to write anything down, and nothing here is saved.",
-      "continue": "Continue"
+      "hint": "Everything here is optional. Write as much or as little as you like, or just notice what comes. What you write is private and only shapes your closing reflection.",
+      "continue": "Continue",
+      "placeholder": "In your own words (optional)"
     },
     "prompts": {
       "underneath": {
@@ -1316,6 +1317,17 @@
         "title": "What did this moment seem to say about you?",
         "body": "Only notice the words that come. They're a thought, not a verdict."
       }
+    },
+    "origin": {
+      "title": "Does this feel familiar from earlier in your life?",
+      "body": "Only if you want to go there. You can leave this closed, and nothing will be assumed either way.",
+      "open": "I'd like to look at that",
+      "close": "Leave this closed",
+      "placeholder": "Only what you want to share (optional)"
+    },
+    "support": {
+      "title": "What would support you the next time this shows up?",
+      "placeholder": "A person, a reminder, a pause... (optional)"
     },
     "pause": {
       "label": "A pause",

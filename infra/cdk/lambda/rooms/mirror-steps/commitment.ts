@@ -8,7 +8,10 @@ import { extractCandidateSignals, persistSessionSummary } from '../twin-signals'
 import { refreshRoadmapAfterSession } from '../../lib/roadmap-refresh'
 import type { StepDefinition } from '../types'
 
-const SubmitInput = z.object({ commitment: z.string().optional() })
+// Mirror depth slice 2: `support` ("what would support you next time") is
+// the person's own note. Stored and shown back, but deliberately left out of
+// the summary below, like every depth answer (see helpers.ts MirrorContent).
+const SubmitInput = z.object({ commitment: z.string().optional(), support: z.string().max(5000).optional() })
 
 /**
  * Added in Session 6 per explicit product request, for UX parity with
@@ -33,7 +36,7 @@ const SubmitInput = z.object({ commitment: z.string().optional() })
 export const commitmentStep: StepDefinition = {
   allowedActions: ['SUBMIT_STEP'],
   handle: async (ctx) => {
-    const { commitment } = parseValue(ctx.input, SubmitInput)
+    const { commitment, support } = parseValue(ctx.input, SubmitInput)
     const session = await getMirrorSession(ctx.pk, ctx.sessionId)
     const content = await ctx.crypto.decryptField<MirrorContent>(session.content)
     const now = new Date().toISOString()
@@ -43,7 +46,12 @@ export const commitmentStep: StepDefinition = {
       ...(alreadyGranted ? {} : { reflectionCreditGrantedAt: now }),
       status: 'completed' as const,
       currentStepId: 'COMMITMENT',
-      content: await ctx.crypto.encryptField<MirrorContent>({ ...content, commitment: commitment?.trim() ?? '' }),
+      content: await ctx.crypto.encryptField<MirrorContent>({
+        ...content,
+        commitment: commitment?.trim() ?? '',
+        // Same absent-keeps / empty-clears rule as the depth answers.
+        ...(typeof support === 'string' ? { support: support.trim() || undefined } : {}),
+      }),
       updatedAt: now,
     }
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: updatedSession }))

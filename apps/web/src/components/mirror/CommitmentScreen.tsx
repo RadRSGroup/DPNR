@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { CalendarButtons } from '@/components/ui/CalendarButtons'
 import RoomScreenFrame from '@/components/shared/RoomScreenFrame'
 import InvertedButton from '@/components/ui/InvertedButton'
@@ -7,7 +8,8 @@ import Dictatable from '@/components/ui/Dictatable'
 
 interface Props {
   sessionTitle: string
-  onDone: (commitment: string) => void
+  initialSupport?: string
+  onDone: (commitment: string, support: string) => void
   onBack: () => void
 }
 
@@ -21,10 +23,14 @@ function addDays(days: number) {
  * COMMITMENT — SUBMIT_STEP only, {commitment?} (genuinely optional), ends
  * the session. Adapted from components/decision/CommitmentScreen.tsx.
  * Mirror depth slice 1 (#30/#31): Support + "new possibility" wording, softer
- * than a task ("committing"), per Figma's closing stages. Still one field.
+ * than a task ("committing"), per Figma's closing stages.
+ * Slice 2: Support is its own optional field ({support?}, encrypted, kept
+ * out of the Twin summary — see mirror-steps/commitment.ts).
  */
-export default function CommitmentScreen({ sessionTitle, onDone, onBack }: Props) {
+export default function CommitmentScreen({ sessionTitle, initialSupport = '', onDone, onBack }: Props) {
+  const t = useTranslations('MirrorDepth')
   const [commitment, setCommitment] = useState('')
+  const [support, setSupport] = useState(initialSupport)
 
   const calendarTitle = commitment.trim() || `Mirror Room check-in: "${sessionTitle}"`
   const calendarDate = addDays(7)
@@ -44,10 +50,25 @@ export default function CommitmentScreen({ sessionTitle, onDone, onBack }: Props
           </p>
           <div className="w-8 h-px bg-white/15 mx-auto" />
           <p className="text-white/80 text-sm leading-relaxed">
-            That kind of honesty isn&apos;t easy. Before you go, think about what would support you the next time this shows up.
+            That kind of honesty isn&apos;t easy. Before you go, take a moment with two gentle questions.
           </p>
-          <p className="text-white font-medium text-sm">What&apos;s one new possibility you&apos;d like to try from here?</p>
         </div>
+
+        <div className="space-y-2">
+          <p className="text-white font-medium text-sm text-center">{t('support.title')}</p>
+          <Dictatable>
+            <textarea
+              value={support}
+              onChange={e => setSupport(e.target.value.slice(0, 5000))}
+              rows={2}
+              aria-label={t('support.title')}
+              placeholder={t('support.placeholder')}
+              className="w-full bg-white/8 border border-white/15 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
+            />
+          </Dictatable>
+        </div>
+
+        <p className="text-white font-medium text-sm text-center">What&apos;s one new possibility you&apos;d like to try from here?</p>
 
         <Dictatable>
           <textarea
@@ -76,7 +97,7 @@ export default function CommitmentScreen({ sessionTitle, onDone, onBack }: Props
         >
           Back
         </button>
-        <InvertedButton onClick={() => onDone(commitment.trim())} className="flex-1 py-3.5" label="Done" />
+        <InvertedButton onClick={() => onDone(commitment.trim(), support.trim())} className="flex-1 py-3.5" label="Done" />
       </div>
     </RoomScreenFrame>
   )

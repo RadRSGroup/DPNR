@@ -12,7 +12,7 @@ import Step04LifeImpact from '@/components/mirror/Step04LifeImpact'
 import Step05Synthesis from '@/components/mirror/Step05Synthesis'
 import CommitmentScreen from '@/components/mirror/CommitmentScreen'
 import CompletionScreen from '@/components/mirror/CompletionScreen'
-import DepthMoment, { type DepthMomentKind } from '@/components/mirror/DepthMoment'
+import DepthMoment, { type DepthMomentKind, type DepthAnswers } from '@/components/mirror/DepthMoment'
 import ContainmentPause from '@/components/mirror/ContainmentPause'
 import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
 import SafetyInterventionScreen from '@/components/shared/SafetyInterventionScreen'
@@ -28,10 +28,12 @@ import type { RoomCommandResponse, MirrorRoomStepId, MirrorEntry, MirrorEmotionF
 type MirrorPageStepId = 'WELCOME' | MirrorRoomStepId
 
 /**
- * Client-only screens between backend steps (Mirror depth slice 1, #30/#31):
- * a "stay a little longer / continue" moment after Steps 2 and 4, and a pause
- * before the synthesis. The backend is already on the next step while one
- * shows; nothing here is sent or saved.
+ * Client-only screens between backend steps (Mirror depth, #30/#31): a "stay
+ * a little longer / continue" moment after Steps 2 and 4, and a pause before
+ * the synthesis. The backend is already on the next step while one shows, so
+ * the optional depth answers (slice 2) ride on the NEXT command:
+ * emotionUnderneath on the PATTERN submit, payoff/deeperBelief/origin on the
+ * SYNTHESIS REFINE (no extra paid call). See mirror-steps/helpers.ts.
  */
 type Interlude = DepthMomentKind | 'pause'
 
@@ -58,15 +60,19 @@ interface LocalMirrorState {
   lifeDomain: string
   synthesis: string
   commitment: string
+  support: string
   emotionsFelt: MirrorEmotionFelt[]
   bodyPlacements: MirrorBodyPlacement[]
   entry?: MirrorEntry
 }
 
-const INITIAL_STATE: LocalMirrorState = {
+type LocalState = LocalMirrorState & DepthAnswers
+
+const INITIAL_STATE: LocalState = {
   situation: '', trigger: '', thought: '', emotion: '', bodyResponse: '', automaticReaction: '',
   copingResponse: '', recurringPattern: '', energyMoodEffect: '', lifeDomain: '', synthesis: '', commitment: '',
-  emotionsFelt: [], bodyPlacements: [],
+  support: '', emotionsFelt: [], bodyPlacements: [],
+  emotionUnderneath: '', payoff: '', deeperBelief: '', origin: '',
 }
 
 function NewMirrorContent() {
@@ -87,7 +93,7 @@ function NewMirrorContent() {
   const [resumedArchetype, setResumedArchetype] = useState<string | undefined>(undefined)
   const [completed, setCompleted] = useState(false)
   const [userName, setUserName] = useState('')
-  const [state, setState] = useState<LocalMirrorState>(INITIAL_STATE)
+  const [state, setState] = useState<LocalState>(INITIAL_STATE)
   const [resumeLoading, setResumeLoading] = useState(!!resumeId)
 
   const [currentStepId, setCurrentStepId] = useState<MirrorRoomStepId>('SITUATION')
@@ -137,6 +143,11 @@ function NewMirrorContent() {
           // Kept since Session 72, so resuming on SYNTHESIS doesn't regenerate (and re-charge) it.
           synthesis: full.synthesis ?? '',
           commitment: full.commitment ?? '',
+          support: full.support ?? '',
+          emotionUnderneath: full.emotionUnderneath ?? '',
+          payoff: full.payoff ?? '',
+          deeperBelief: full.deeperBelief ?? '',
+          origin: full.origin ?? '',
           emotionsFelt: full.emotionsFelt ?? [],
           bodyPlacements: full.bodyPlacements ?? [],
           entry: full.entry,
@@ -152,7 +163,7 @@ function NewMirrorContent() {
     return () => { ignore = true }
   }, [resumeId])
 
-  function update(patch: Partial<LocalMirrorState>) {
+  function update(patch: Partial<LocalState>) {
     setState(prev => ({ ...prev, ...patch }))
   }
 
@@ -161,9 +172,9 @@ function NewMirrorContent() {
    * longer describes the session, so it's dropped and SYNTHESIS regenerates
    * it (the backend does the same, see mirror-steps/helpers.ts withAnswers).
    */
-  function updateAnswers(patch: Partial<LocalMirrorState>) {
+  function updateAnswers(patch: Partial<LocalState>) {
     setState(prev => {
-      const changed = (Object.keys(patch) as (keyof LocalMirrorState)[]).some(
+      const changed = (Object.keys(patch) as (keyof LocalState)[]).some(
         (key) => JSON.stringify(patch[key] ?? null) !== JSON.stringify(prev[key] ?? null)
       )
       return { ...prev, ...patch, ...(changed ? { synthesis: '' } : {}) }
@@ -242,7 +253,11 @@ function NewMirrorContent() {
 
   function makeRefine(stepId: MirrorRoomStepId): RefineFn {
     return async (refineInput) => {
-      const res = await callCommand(stepId, 'REFINE', refineInput)
+      // The Step 4 depth answers ride on the synthesis REFINE ('' clears).
+      const input = stepId === 'SYNTHESIS'
+        ? { ...refineInput, payoff: state.payoff, deeperBelief: state.deeperBelief, origin: state.origin }
+        : refineInput
+      const res = await callCommand(stepId, 'REFINE', input)
       // The backend saves the synthesis as soon as it's generated; keep the
       // page in step so Back → Continue shows it again instead of regenerating.
       const synthesis = stepId === 'SYNTHESIS' ? res?.result?.synthesis : undefined
@@ -278,7 +293,8 @@ function NewMirrorContent() {
 
   async function completeStep03(copingResponse: string, recurringPattern: string) {
     updateAnswers({ copingResponse, recurringPattern })
-    await submitStepAndAdvance('PATTERN', { copingResponse, recurringPattern })
+    // The Step 2 depth answer rides on this submit ('' clears).
+    await submitStepAndAdvance('PATTERN', { copingResponse, recurringPattern, emotionUnderneath: state.emotionUnderneath })
   }
 
   async function completeStep04(energyMoodEffect: string, lifeDomain: string) {
@@ -299,10 +315,10 @@ function NewMirrorContent() {
     await submitStepAndAdvance('SYNTHESIS', {})
   }
 
-  async function finishFlow(commitment: string) {
-    const res = await submitStep('COMMITMENT', { commitment: commitment.trim() || undefined })
+  async function finishFlow(commitment: string, support: string) {
+    const res = await submitStep('COMMITMENT', { commitment: commitment.trim() || undefined, support: support.trim() })
     if (!res) return
-    update({ commitment })
+    update({ commitment, support })
     setCompleted(true)
   }
 
@@ -388,7 +404,11 @@ function NewMirrorContent() {
           key={interlude}
           kind={interlude}
           sessionTitle={sessionTitle}
-          onContinue={() => setInterlude(interlude === 'after_impact' ? 'pause' : null)}
+          initial={{ emotionUnderneath: state.emotionUnderneath, payoff: state.payoff, deeperBelief: state.deeperBelief, origin: state.origin }}
+          onContinue={(answers) => {
+            if (answers) updateAnswers(answers)
+            setInterlude(interlude === 'after_impact' ? 'pause' : null)
+          }}
           onBack={interludeBack}
         />
       )
@@ -461,6 +481,7 @@ function NewMirrorContent() {
         return (
           <CommitmentScreen
             sessionTitle={sessionTitle}
+            initialSupport={state.support}
             onDone={finishFlow}
             onBack={goBack}
           />

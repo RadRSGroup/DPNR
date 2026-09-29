@@ -25,6 +25,54 @@ export type MirrorContent = {
   bodyPlacements?: MirrorBodyPlacement[]
   /** Last generated SYNTHESIS text; dropped whenever an earlier answer changes (see withAnswers). */
   synthesis?: string
+  // Mirror depth slice 2 (founder #30/#31, decided Session 78): optional
+  // answers from the "go a little deeper" moments. Used ONLY in the
+  // synthesis prompt (formatDepthContext) — never in the COMMITMENT summary
+  // that feeds Twin extraction and the stored session summary.
+  /** After Step 2; sent with the PATTERN submit. */
+  emotionUnderneath?: string
+  /** After Step 4; sent with the SYNTHESIS REFINE. */
+  payoff?: string
+  deeperBelief?: string
+  /** User-led only, never prompted by the AI, never sent to Twin extraction. */
+  origin?: string
+  /** Sent with COMMITMENT; the person's own note, kept out of the Twin summary too. */
+  support?: string
+}
+
+export type MirrorDepthField = 'emotionUnderneath' | 'payoff' | 'deeperBelief' | 'origin'
+
+/**
+ * Optional depth answers from a step's input: an absent key keeps what's
+ * stored (older clients, a resume), a string sets it, and an empty string
+ * clears it (undefined, so withAnswers treats "never answered" and "cleared"
+ * alike and doesn't drop the synthesis for nothing).
+ */
+export function depthPatch<K extends MirrorDepthField>(
+  input: Partial<Record<K, string>>,
+  keys: readonly K[]
+): Partial<Record<K, string | undefined>> {
+  const patch: Partial<Record<K, string | undefined>> = {}
+  for (const key of keys) {
+    const value = input[key]
+    if (typeof value === 'string') patch[key] = value.trim() || undefined
+  }
+  return patch
+}
+
+/**
+ * The synthesis prompt's {{depthContext}}: the person's own words from the
+ * depth moments, or a plain note that they didn't go deeper (templates have
+ * no conditionals, so the caller always sends a line).
+ */
+export function formatDepthContext(content: MirrorContent): string {
+  const lines = [
+    content.emotionUnderneath ? `Something quieter underneath the feeling: "${content.emotionUnderneath}"` : null,
+    content.payoff ? `What the reaction protected them from or gave them: "${content.payoff}"` : null,
+    content.deeperBelief ? `What the moment seemed to say about them: "${content.deeperBelief}"` : null,
+    content.origin ? `Something they chose to share about where this feels familiar from: "${content.origin}"` : null,
+  ].filter(Boolean)
+  return lines.length > 0 ? lines.join('\n') : 'They did not go deeper this time.'
 }
 
 export async function getMirrorSession(pk: string, mirrorId: string): Promise<MirrorSessionItem> {

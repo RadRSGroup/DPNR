@@ -64,6 +64,11 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       emotionsFelt: content.emotionsFelt,
       bodyPlacements: content.bodyPlacements,
       synthesis: content.synthesis ? content.synthesis : undefined,
+      emotionUnderneath: content.emotionUnderneath || undefined,
+      payoff: content.payoff || undefined,
+      deeperBelief: content.deeperBelief || undefined,
+      origin: content.origin || undefined,
+      support: content.support || undefined,
       createdAt: session.createdAt,
       updatedAt: session.updatedAt,
     }

@@ -21,11 +21,22 @@ vi.mock('../../lib/model-call', () => ({
   }),
 }))
 
+// COMMITMENT's side effects: capture what would reach Twin extraction and the
+// stored session summary (Mirror depth slice 2 keeps every depth answer out).
+const twinSummaries: string[] = []
+vi.mock('../twin-signals', () => ({
+  extractCandidateSignals: vi.fn(async (...args: unknown[]) => { twinSummaries.push(args[5] as string); return [] }),
+  persistSessionSummary: vi.fn(async (...args: unknown[]) => { twinSummaries.push(args[3] as string) }),
+}))
+vi.mock('../../lib/credits', () => ({ grantCredits: vi.fn(async () => undefined), EARN_REFLECTION_COMPLETED_CREDITS: 1 }))
+vi.mock('../../lib/roadmap-refresh', () => ({ refreshRoadmapAfterSession: vi.fn(async () => undefined) }))
+
 import { situationStep } from './situation'
 import { automaticReactionStep } from './automatic-reaction'
 import { patternStep } from './pattern'
 import { synthesisStep } from './synthesis'
-import { withAnswers, formatEntryContext, formatEmotion, formatBody, type MirrorContent } from './helpers'
+import { commitmentStep } from './commitment'
+import { withAnswers, formatEntryContext, formatEmotion, formatBody, formatDepthContext, type MirrorContent } from './helpers'
 
 const ddbMock = mockClient(DynamoDBDocumentClient)
 const PK = 'USER#u1'
@@ -52,6 +63,7 @@ function storedContent(): MirrorContent {
 beforeEach(() => {
   ddbMock.reset()
   modelVars.length = 0
+  twinSummaries.length = 0
   stored = undefined
   ddbMock.on(GetCommand).callsFake(() => ({ Item: stored }))
   ddbMock.on(PutCommand).callsFake((input: { Item: Record<string, unknown> }) => {
@@ -193,5 +205,66 @@ describe('SYNTHESIS kept on resume', () => {
     expect(storedContent().synthesis).toBe('A generated reflection.')
     await patternStep.handle(ctx('SUBMIT_STEP', { copingResponse: 'Called a friend', recurringPattern: BASE.recurringPattern }))
     expect(storedContent().synthesis).toBeUndefined()
+  })
+})
+
+describe('Mirror depth slice 2 (optional depth answers)', () => {
+  const core = { copingResponse: BASE.copingResponse, recurringPattern: BASE.recurringPattern }
+
+  it('PATTERN stores emotionUnderneath; absent keeps it, an empty string clears it', async () => {
+    seed(BASE)
+    await patternStep.handle(ctx('SUBMIT_STEP', { ...core, emotionUnderneath: '  hurt  ' }))
+    expect(storedContent().emotionUnderneath).toBe('hurt')
+    await patternStep.handle(ctx('SUBMIT_STEP', core))
+    expect(storedContent().emotionUnderneath).toBe('hurt')
+    await patternStep.handle(ctx('SUBMIT_STEP', { ...core, emotionUnderneath: '' }))
+    expect(storedContent().emotionUnderneath).toBeUndefined()
+  })
+
+  it('an unanswered depth field sent as "" does not drop the synthesis', async () => {
+    seed({ ...BASE, synthesis: 'kept' })
+    await patternStep.handle(ctx('SUBMIT_STEP', { ...core, emotionUnderneath: '' }))
+    expect(storedContent().synthesis).toBe('kept')
+  })
+
+  it('SYNTHESIS REFINE saves payoff/belief/origin and gives them to the prompt', async () => {
+    seed({ ...BASE, emotionUnderneath: 'hurt' })
+    await synthesisStep.handle(ctx('REFINE', { payoff: 'kept me safe', deeperBelief: "I'm too much", origin: 'my dad' }))
+    const c = storedContent()
+    expect([c.payoff, c.deeperBelief, c.origin, c.synthesis]).toEqual(['kept me safe', "I'm too much", 'my dad', 'A generated reflection.'])
+    expect(modelVars[0].depthContext).toContain('"hurt"')
+    expect(modelVars[0].depthContext).toContain('"kept me safe"')
+    expect(modelVars[0].depthContext).toContain('"my dad"')
+  })
+
+  it('SYNTHESIS REFINE with {} keeps stored answers and says when they did not go deeper', async () => {
+    seed({ ...BASE, payoff: 'p' })
+    await synthesisStep.handle(ctx('REFINE', {}))
+    expect(storedContent().payoff).toBe('p')
+    expect(formatDepthContext(BASE)).toBe('They did not go deeper this time.')
+  })
+
+  it('a changed depth answer invalidates the old synthesis before regenerating', async () => {
+    seed({ ...BASE, payoff: 'old', synthesis: 'old synthesis' })
+    await synthesisStep.handle(ctx('REFINE', { payoff: 'new' }))
+    expect(storedContent().synthesis).toBe('A generated reflection.')
+    expect(modelVars[0].depthContext).toContain('"new"')
+  })
+
+  it('rejects an over-long depth answer', async () => {
+    seed(BASE)
+    await expect(synthesisStep.handle(ctx('REFINE', { origin: 'x'.repeat(5001) }))).rejects.toMatchObject({ statusCode: 400 })
+  })
+
+  it('COMMITMENT stores support, and no depth answer or support reaches Twin extraction or the session summary', async () => {
+    seed({ ...BASE, emotionUnderneath: 'UNDERNEATH', payoff: 'PAYOFF', deeperBelief: 'BELIEF', origin: 'ORIGIN' })
+    await commitmentStep.handle(ctx('SUBMIT_STEP', { commitment: 'Pause first', support: 'SUPPORT' }))
+    expect(storedContent().support).toBe('SUPPORT')
+    expect(storedContent().origin).toBe('ORIGIN')
+    expect(twinSummaries).toHaveLength(2)
+    for (const summary of twinSummaries) {
+      expect(summary).toContain('Commitment: Pause first')
+      for (const secret of ['UNDERNEATH', 'PAYOFF', 'BELIEF', 'ORIGIN', 'SUPPORT']) expect(summary).not.toContain(secret)
+    }
   })
 })

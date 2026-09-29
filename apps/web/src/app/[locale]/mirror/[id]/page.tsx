@@ -168,10 +168,29 @@ export default function MirrorDetailPage() {
                   </Card>
                 )}
 
+                {(session.emotionUnderneath || session.payoff || session.deeperBelief || session.origin) && (
+                  <Card>
+                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-3">Going deeper</p>
+                    <div className="space-y-3">
+                      <Field label="Quieter underneath the feeling" value={session.emotionUnderneath} />
+                      <Field label="What the reaction protected or gave you" value={session.payoff} />
+                      <Field label="What it seemed to say about you" value={session.deeperBelief} />
+                      <Field label="Where it feels familiar from" value={session.origin} />
+                    </div>
+                  </Card>
+                )}
+
                 {session.synthesis && (
                   <Card>
                     <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">Synthesis</p>
                     <p className="text-white/70 text-sm italic leading-relaxed">&quot;{session.synthesis}&quot;</p>
+                  </Card>
+                )}
+
+                {session.support && (
+                  <Card>
+                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">What would support you</p>
+                    <p className="text-white/70 text-sm leading-relaxed">{session.support}</p>
                   </Card>
                 )}
 
