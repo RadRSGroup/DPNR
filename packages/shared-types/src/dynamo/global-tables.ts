@@ -66,6 +66,24 @@ export const EXPLORE_THEMES = [
 ] as const
 export type ExploreTheme = (typeof EXPLORE_THEMES)[number]
 
+/**
+ * A topic's Hebrew text (2026-09-29): the founder's native-reviewed Hebrew
+ * library (library-topics-he.seed.ts). Same sections as the English fields
+ * it replaces when the request is in Hebrew; a section left out falls back
+ * to English.
+ */
+export const LibraryTopicTranslationSchema = z.object({
+  title: z.string(),
+  body: z.string(),
+  expandTheLens: z.string().optional(),
+  quickDefinition: z.string().optional(),
+  howItMayShowUp: z.array(z.string()).optional(),
+  reflectionQuestions: z.array(z.string()).optional(),
+  waysToWorkWithIt: z.array(z.string()).optional(),
+  goDeeperGuidance: z.array(z.string()).optional(),
+})
+export type LibraryTopicTranslation = z.infer<typeof LibraryTopicTranslationSchema>
+
 /** Content Library catalog — config-like, same profile as Prompt Registry. */
 export const LibraryTopicVersionItemSchema = z.object({
   pk: z.string(), // GlobalKeys.libraryTopicPk(slug)
@@ -115,6 +133,7 @@ export const LibraryTopicVersionItemSchema = z.object({
   // prompts, per the source) for personalizing further — distinct from
   // `recommendedRooms` below, which is a fixed routing enum, not guidance.
   goDeeperGuidance: z.array(z.string()).optional(),
+  he: LibraryTopicTranslationSchema.optional(),
   recommendedRooms: z.array(z.enum(['mirror', 'decision', 'companion'])).optional(), // Go Deeper routing — 'companion' added per the operating-spec's §20 Go Deeper list (Mirror Room, Decision Room, Companion, Evolution Map, or a related topic); Evolution Map isn't a live nav destination for this yet, left off rather than added as a dead link
   status: z.enum(['draft', 'active', 'retired']),
   createdAt: z.string().datetime(),
@@ -206,6 +225,9 @@ export const GuidanceCardItemSchema = z.object({
   pk: z.string(), // GlobalKeys.guidanceCardPk(cardId)
   sk: z.literal('CONFIG'),
   text: z.string(),
+  // Founder-reviewed Hebrew, gendered (guidance-cards-he.seed.ts). Optional
+  // so a card seeded before it existed still parses; `text` is the fallback.
+  textHe: z.object({ male: z.string(), female: z.string() }).optional(),
   topic: z.enum(GUIDANCE_CARD_TOPICS),
   lifeDomain: z.enum(GUIDANCE_CARD_LIFE_DOMAINS).optional(),
   core: z.enum(GUIDANCE_CARD_CORES),

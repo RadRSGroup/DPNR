@@ -363,27 +363,39 @@ export async function deleteCompanionConversation(sessionId: string): Promise<Co
   return parseOrThrow<CompanionDeleteConversationResponse>(res)
 }
 
+/**
+ * `?lang=` with the language on screen (the root layout's `<html lang>`), for
+ * authored content (Library topics, Pull a Card) that the server has in
+ * both languages. It keeps the text matching the UI even right after a
+ * language switch, before LocaleSync's profile update has landed.
+ */
+function withScreenLang(path: string): string {
+  const lang = typeof document !== 'undefined' ? document.documentElement.lang : ''
+  if (lang !== 'en' && lang !== 'he') return path
+  return `${path}${path.includes('?') ? '&' : '?'}lang=${lang}`
+}
+
 /** POST /v1/companion/pull-card — one random active card from the Pull-a-Card library. */
 export async function pullCompanionCard(): Promise<PullCardResponse> {
-  const res = await authedFetch('/v1/companion/pull-card', { method: 'POST' })
+  const res = await authedFetch(withScreenLang('/v1/companion/pull-card'), { method: 'POST' })
   return parseOrThrow<PullCardResponse>(res)
 }
 
 /** GET /v1/library/topics/{slug} — used by /companion to render an `open_library_topic` directive inline, and by /library/[slug]. */
 export async function getLibraryTopic(slug: string): Promise<LibraryTopicDetailResponse> {
-  const res = await authedFetch(`/v1/library/topics/${encodeURIComponent(slug)}`)
+  const res = await authedFetch(withScreenLang(`/v1/library/topics/${encodeURIComponent(slug)}`))
   return parseOrThrow<LibraryTopicDetailResponse>(res)
 }
 
 /** GET /v1/library/topics — the public catalog listing, used by /library. */
 export async function getLibraryTopics(): Promise<LibraryTopicsResponse> {
-  const res = await authedFetch('/v1/library/topics')
+  const res = await authedFetch(withScreenLang('/v1/library/topics'))
   return parseOrThrow<LibraryTopicsResponse>(res)
 }
 
 /** GET /v1/library/recommendations — deployed but currently always empty (see the Lambda's own doc comment); used by /library so it starts rendering the moment real recommendations exist, with no further frontend work. */
 export async function getLibraryRecommendations(): Promise<LibraryRecommendationsResponse> {
-  const res = await authedFetch('/v1/library/recommendations')
+  const res = await authedFetch(withScreenLang('/v1/library/recommendations'))
   return parseOrThrow<LibraryRecommendationsResponse>(res)
 }
 

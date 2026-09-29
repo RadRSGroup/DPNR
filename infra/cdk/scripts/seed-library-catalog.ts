@@ -42,6 +42,7 @@ import {
   type LibraryTopicAliasItem,
 } from '@dpnr/shared-types'
 import { LIBRARY_TOPIC_SEEDS_V2, RETIRED_TOPIC_SLUGS } from './library-topics-v2.seed'
+import { LIBRARY_TOPICS_HE } from './library-topics-he.seed'
 
 const TABLE_NAME = process.env.LIBRARY_CATALOG_TABLE_NAME ?? 'dpnr-library-catalog'
 const ONLY_SLUGS = process.env.ONLY_SLUGS?.split(',').map((s) => s.trim()).filter(Boolean)
@@ -51,6 +52,9 @@ async function main() {
   const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
   const now = new Date().toISOString()
   let count = 0
+
+  const missingHe = LIBRARY_TOPIC_SEEDS_V2.filter((t) => !LIBRARY_TOPICS_HE[t.slug]).map((t) => t.slug)
+  if (missingHe.length > 0) throw new Error(`No Hebrew text for topics: ${missingHe.join(', ')}`)
 
   let topics = LIBRARY_TOPIC_SEEDS_V2
   if (ONLY_SLUGS) {
@@ -77,6 +81,7 @@ async function main() {
       reflectionQuestions: topic.reflectionQuestions,
       waysToWorkWithIt: topic.waysToWorkWithIt,
       goDeeperGuidance: topic.goDeeperGuidance,
+      he: LIBRARY_TOPICS_HE[topic.slug],
       status: 'active',
       createdAt: now,
     })

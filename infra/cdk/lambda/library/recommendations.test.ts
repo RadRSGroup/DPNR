@@ -70,3 +70,12 @@ describe('GET /v1/library/recommendations — basis', () => {
     expect(body.basis).toBeUndefined()
   })
 })
+
+describe('recommendationReason', () => {
+  it('is in Hebrew with the Hebrew theme name, and English otherwise', async () => {
+    const { recommendationReason } = await import('./recommendations')
+    expect(recommendationReason('he', 'FEEL', 2, false)).toBe('קשור ל-2 תובנות שאישרתם בתחום רגשות וויסות')
+    expect(recommendationReason('he', 'ME', 1, true)).toBe('קשור למה ששיתפתם כשהתחלתם')
+    expect(recommendationReason('en', 'FEEL', 1, false)).toBe('Related to a confirmed feel signal')
+  })
+})

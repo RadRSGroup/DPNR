@@ -1,6 +1,7 @@
 import type { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb'
 import { BatchGetCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
 import { GlobalKeys, type LibraryTopicAliasItem, type LibraryTopicVersionItem } from '@dpnr/shared-types'
+import type { Locale } from './locale'
 
 export interface ActiveLibraryTopic {
   slug: string
@@ -8,6 +9,28 @@ export interface ActiveLibraryTopic {
   exploreTheme: LibraryTopicVersionItem['exploreTheme']
   lifeDomains: string[]
   level?: LibraryTopicVersionItem['level']
+}
+
+/**
+ * A topic's text in `locale`: the stored Hebrew (`he`, from
+ * library-topics-he.seed.ts) replaces each English section it has; a
+ * section it lacks, or a topic with no Hebrew at all, stays English.
+ * Taxonomy fields (theme, domains, level) are ids and never change here.
+ */
+export function localizeTopic(item: LibraryTopicVersionItem, locale: Locale): LibraryTopicVersionItem {
+  if (locale !== 'he' || !item.he) return item
+  const he = item.he
+  return {
+    ...item,
+    title: he.title,
+    body: he.body,
+    expandTheLens: he.expandTheLens ?? item.expandTheLens,
+    quickDefinition: he.quickDefinition ?? item.quickDefinition,
+    howItMayShowUp: he.howItMayShowUp ?? item.howItMayShowUp,
+    reflectionQuestions: he.reflectionQuestions ?? item.reflectionQuestions,
+    waysToWorkWithIt: he.waysToWorkWithIt ?? item.waysToWorkWithIt,
+    goDeeperGuidance: he.goDeeperGuidance ?? item.goDeeperGuidance,
+  }
 }
 
 // DynamoDB's own BatchGetItem limit — 100 keys per table per request.
@@ -36,7 +59,8 @@ function chunk<T>(items: T[], size: number): T[][] {
  */
 export async function listActiveTopics(
   ddb: DynamoDBDocumentClient,
-  tableName: string
+  tableName: string,
+  locale: Locale = 'en'
 ): Promise<ActiveLibraryTopic[]> {
   const scanResult = await ddb.send(
     new ScanCommand({
@@ -66,7 +90,7 @@ export async function listActiveTopics(
     .filter((item) => item.status === 'active')
     .map((item) => ({
       slug: item.pk.replace('LIBRARY#TOPIC#', ''),
-      title: item.title,
+      title: localizeTopic(item, locale).title,
       exploreTheme: item.exploreTheme,
       lifeDomains: item.lifeDomains,
       level: item.level,

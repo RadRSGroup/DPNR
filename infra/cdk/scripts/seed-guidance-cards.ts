@@ -18,11 +18,15 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb'
 import { GlobalKeys, GuidanceCardItemSchema, type GuidanceCardItem } from '@dpnr/shared-types'
 import { GUIDANCE_CARD_SEEDS } from './guidance-cards.seed'
+import { GUIDANCE_CARD_TEXT_HE } from './guidance-cards-he.seed'
 
 const TABLE_NAME = process.env.LIBRARY_CATALOG_TABLE_NAME ?? 'dpnr-library-catalog'
 const PLACEHOLDER_IMAGE = '/images/companion/pull-a-card.webp'
 
 async function main() {
+  const missingHe = GUIDANCE_CARD_SEEDS.filter((c) => !GUIDANCE_CARD_TEXT_HE[c.cardId]).map((c) => c.cardId)
+  if (missingHe.length > 0) throw new Error(`No Hebrew text for cards: ${missingHe.join(', ')}`)
+
   const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
   let count = 0
 
@@ -31,6 +35,7 @@ async function main() {
       pk: GlobalKeys.guidanceCardPk(card.cardId),
       sk: 'CONFIG',
       text: card.text,
+      textHe: GUIDANCE_CARD_TEXT_HE[card.cardId],
       topic: card.topic,
       lifeDomain: card.lifeDomain,
       core: card.core,

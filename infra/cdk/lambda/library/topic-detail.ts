@@ -11,7 +11,8 @@ import {
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { getSessionCrypto } from '../lib/session-crypto'
-import { getProfileForLanguage, toLanguageInstruction } from '../lib/locale'
+import { getProfileForLanguage, getRequestedLocale, toLanguageInstruction } from '../lib/locale'
+import { localizeTopic } from '../lib/library-catalog'
 import { resolvePromptVersion, promptRef } from '../lib/prompt-registry'
 import { callPromptModel } from '../lib/model-call'
 
@@ -65,10 +66,17 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         Key: { pk: catalogPk, sk: GlobalKeys.promptVersion(aliasItem.version) },
       })
     )
-    const versionItem = versionResult.Item as LibraryTopicVersionItem | undefined
-    if (!versionItem || versionItem.status !== 'active') {
+    const storedItem = versionResult.Item as LibraryTopicVersionItem | undefined
+    if (!storedItem || storedItem.status !== 'active') {
       throw new HttpError(404, 'topic_not_found', `No topic "${slug}".`)
     }
+
+    // The topic text follows the screen's language (`?lang=`), falling back
+    // to the profile; the personalized explanation below uses the same one
+    // so the page never mixes languages.
+    const profile = await getProfileForLanguage(ddb, APPLICATION_TABLE_NAME, userPk(userId))
+    const locale = getRequestedLocale(event) ?? profile.preferredLanguage
+    const versionItem = localizeTopic(storedItem, locale)
 
     let personalizedExplanation: string | null = null
     let usedPromptRef: string | undefined
@@ -100,8 +108,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
         // Companion — a small targeted read via getProfileForLanguage,
         // called only in this branch (personalization actually firing),
         // not on every plain topic GET.
-        const profile = await getProfileForLanguage(ddb, APPLICATION_TABLE_NAME, userPk(userId))
-        const languageInstruction = toLanguageInstruction(profile.preferredLanguage, profile.genderIdentity)
+        const languageInstruction = toLanguageInstruction(locale, profile.genderIdentity)
         const modelResult = await callPromptModel(version, {
           topicTitle: versionItem.title,
           topicBodyExcerpt: versionItem.body.slice(0, 500),
@@ -144,7 +151,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
           )
           const relatedVersion = versionR.Item as LibraryTopicVersionItem | undefined
           if (!relatedVersion || relatedVersion.status !== 'active') return null
-          return { slug: relatedSlug, title: relatedVersion.title }
+          return { slug: relatedSlug, title: localizeTopic(relatedVersion, locale).title }
         })
       )
       relatedTopics = relatedResults.filter((r): r is { slug: string; title: string } => r !== null)

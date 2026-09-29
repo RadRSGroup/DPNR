@@ -4,6 +4,7 @@ import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb'
 import type { LibraryTopicsResponse } from '@dpnr/shared-types'
 import { jsonResponse, errorResponse } from '../lib/http'
 import { listActiveTopics } from '../lib/library-catalog'
+import { getRequestedLocale } from '../lib/locale'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.LIBRARY_CATALOG_TABLE_NAME as string
@@ -22,9 +23,11 @@ const TABLE_NAME = process.env.LIBRARY_CATALOG_TABLE_NAME as string
  * into hundreds+ of topics — it won't for a long time (spec §10: "not
  * hundreds of hand-authored Library items" for MVP).
  */
-export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async () => {
+export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
-    const topics = await listActiveTopics(ddb, TABLE_NAME)
+    // Titles in the screen's language (`?lang=`, see getRequestedLocale);
+    // no profile read here, so English when the client sends none.
+    const topics = await listActiveTopics(ddb, TABLE_NAME, getRequestedLocale(event) ?? 'en')
     const body: LibraryTopicsResponse = { topics }
     return jsonResponse(200, body)
   } catch (err) {

@@ -25,6 +25,17 @@ export function getLocaleClaim(event: APIGatewayProxyEventV2WithJWTAuthorizer): 
   return raw === 'en' || raw === 'he' ? raw : null
 }
 
+/**
+ * The language the screen is showing, sent by the web client as `?lang=`
+ * on content reads (Library, Pull a Card). Preferred over the profile for
+ * authored content so the text always matches the UI, including the moment
+ * right after a language switch, before LocaleSync's profile update lands.
+ */
+export function getRequestedLocale(event: APIGatewayProxyEventV2WithJWTAuthorizer): Locale | null {
+  const raw = event.queryStringParameters?.lang
+  return raw === 'en' || raw === 'he' ? raw : null
+}
+
 export function resolveLocale(
   profile: Pick<UserProfileItem, 'preferredLanguage'> | undefined,
   claimLocale?: Locale | null

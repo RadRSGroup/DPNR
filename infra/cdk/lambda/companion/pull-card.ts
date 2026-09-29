@@ -14,6 +14,8 @@ import {
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { getOnboardingActiveDomains } from '../lib/onboarding-snapshot-context'
+import { getProfileForLanguage, getRequestedLocale } from '../lib/locale'
+import { cardText } from './card-text'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const CATALOG_TABLE_NAME = process.env.LIBRARY_CATALOG_TABLE_NAME as string
@@ -116,7 +118,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const userId = requireUserId(event)
     const pk = userPk(userId)
 
-    const [cardsResult, signalsResult, onboardingActiveDomains] = await Promise.all([
+    const [cardsResult, signalsResult, onboardingActiveDomains, profile] = await Promise.all([
       ddb.send(
         new ScanCommand({
           TableName: CATALOG_TABLE_NAME,
@@ -136,6 +138,9 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       // domainScores fallback below). Plaintext-only read, no session
       // ticket required.
       getOnboardingActiveDomains(ddb, APPLICATION_TABLE_NAME, pk),
+      // Gender for the Hebrew form (same masculine fallback as AI replies,
+      // lib/locale.ts), and the language when the client sends no `?lang=`.
+      getProfileForLanguage(ddb, APPLICATION_TABLE_NAME, pk),
     ])
 
     const cards = (cardsResult.Items ?? []) as GuidanceCardItem[]
@@ -184,7 +189,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
 
     const body: PullCardResponse = {
       cardId: card.pk.replace('GUIDANCE_CARD#', ''),
-      text: card.text,
+      text: cardText(card, getRequestedLocale(event) ?? profile.preferredLanguage, profile.genderIdentity),
       imageRef: card.imageRef,
       topic: card.topic,
       lifeDomain: card.lifeDomain,

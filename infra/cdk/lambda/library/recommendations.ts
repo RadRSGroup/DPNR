@@ -10,6 +10,7 @@ import {
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
 import { listActiveTopics } from '../lib/library-catalog'
+import { getRequestedLocale, type Locale } from '../lib/locale'
 import { getOnboardingActiveDomains } from '../lib/onboarding-snapshot-context'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
@@ -102,11 +103,43 @@ const LIFE_DOMAIN_TO_EXPLORE_THEME: Record<LifeDomainCategory, ExploreTheme> = {
  * "has confirmed signals but nothing ranked" is what's actually available
  * today; flagged for product review, not treated as final.
  */
-const INTEGRATION_SPACE_MESSAGE = 'You may already have enough to take with you for now.'
+const INTEGRATION_SPACE_MESSAGE: Record<Locale, string> = {
+  en: 'You may already have enough to take with you for now.',
+  he: 'ייתכן שכבר יש לכם מספיק לקחת איתכם לעכשיו.',
+}
+
+// Theme names as the Hebrew UI shows them (he.json Library.themes).
+const THEME_LABEL_HE: Record<ExploreTheme, string> = {
+  ME: 'זהות ועצמי',
+  FEEL: 'רגשות וויסות',
+  PATTERNS: 'דפוסים ומעגלים',
+  NEED: 'צרכים וערכים',
+  RELATE: 'התקשרות וקרבה',
+  REPAIR: 'תיקון וחמלה עצמית',
+  BODY: 'גוף ומערכת עצבים',
+  CHOOSE: 'החלטות וכיוון',
+  CREATE: 'עבודה, כסף ויצירה',
+  LIFE: 'משמעות וחיים',
+}
+
+/** The "why this" line under a recommended topic, in the screen's language. */
+export function recommendationReason(locale: Locale, theme: ExploreTheme, score: number, fromOnboarding: boolean): string {
+  if (locale === 'he') {
+    if (fromOnboarding) return 'קשור למה ששיתפתם כשהתחלתם'
+    return score === 1
+      ? `קשור לתובנה אחת שאישרתם בתחום ${THEME_LABEL_HE[theme]}`
+      : `קשור ל-${score} תובנות שאישרתם בתחום ${THEME_LABEL_HE[theme]}`
+  }
+  if (fromOnboarding) return `Related to what you shared when you got started`
+  return score === 1
+    ? `Related to a confirmed ${theme.toLowerCase()} signal`
+    : `Related to ${score} confirmed ${theme.toLowerCase()} signals`
+}
 export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) => {
   try {
     const userId = requireUserId(event)
     const pk = userPk(userId)
+    const locale = getRequestedLocale(event) ?? 'en'
 
     const [signalsResult, topics, onboardingActiveDomains] = await Promise.all([
       ddb.send(
@@ -116,7 +149,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
           ExpressionAttributeValues: { ':pk': pk, ':prefix': 'TWIN#SIGNAL#' },
         })
       ),
-      listActiveTopics(ddb, CATALOG_TABLE_NAME),
+      listActiveTopics(ddb, CATALOG_TABLE_NAME, locale),
       // First-Time Onboarding Slice E — see themeScores' fallback below.
       // Plaintext-only read, no session ticket required.
       getOnboardingActiveDomains(ddb, APPLICATION_TABLE_NAME, pk),
@@ -155,16 +188,12 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
       .slice(0, 4)
       .map((r) => ({
         topic: r.topic,
-        reason: rankedFromOnboarding
-          ? `Related to what you shared when you got started`
-          : r.score === 1
-            ? `Related to a confirmed ${r.topic.exploreTheme.toLowerCase()} signal`
-            : `Related to ${r.score} confirmed ${r.topic.exploreTheme.toLowerCase()} signals`,
+        reason: recommendationReason(locale, r.topic.exploreTheme, r.score, rankedFromOnboarding),
       }))
 
     const body: LibraryRecommendationsResponse =
       ranked.length === 0 && confirmedSignals.length > 0
-        ? { recommendations: ranked, noActionReason: 'integration_space', message: INTEGRATION_SPACE_MESSAGE }
+        ? { recommendations: ranked, noActionReason: 'integration_space', message: INTEGRATION_SPACE_MESSAGE[locale] }
         : ranked.length > 0
           ? { recommendations: ranked, basis: rankedFromOnboarding ? 'onboarding' : 'signals' }
           : { recommendations: ranked }
