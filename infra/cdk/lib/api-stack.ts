@@ -1846,6 +1846,22 @@ export class ApiStack extends Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     }).addAlarmAction(opsAlarmAction)
 
+    // Lambda throttling, account-wide (the dimensionless AWS/Lambda metric
+    // covers every function). Every Lambda here shares one account
+    // concurrency pool — it was 10 until a quota increase was requested on
+    // 2026-09-29 after 63 throttles on 2026-09-22 went unnoticed. Any
+    // throttle on an API function is a request API Gateway turned into a
+    // 5xx, so the threshold is 1, not a rate.
+    new cloudwatch.Alarm(this, 'LambdaThrottleAlarm', {
+      alarmDescription:
+        'Lambda throttled 1+ invocations in 5 minutes — the account concurrency limit was hit and requests were rejected. ' +
+        'Check Service Quotas > AWS Lambda > Concurrent executions (and any reserved concurrency).',
+      metric: new cloudwatch.Metric({ namespace: 'AWS/Lambda', metricName: 'Throttles', period: Duration.minutes(5), statistic: 'Sum' }),
+      threshold: 1,
+      evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    }).addAlarmAction(opsAlarmAction)
+
     // Cost (DPNR-11) — complements, does not replace, the AWS Budgets
     // alert already live in this account (docs/AGENT_LOG.md Session 6 part
     // 3: dpnr-monthly-dev-budget, $20/month, 80%/100% actual-spend email).
