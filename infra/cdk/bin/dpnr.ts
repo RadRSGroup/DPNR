@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// First: retries the Windows EPERM bundling rename (see the file's comment).
+import './win-rename-retry'
 import * as cdk from 'aws-cdk-lib'
 import { BackupDrStack, DR_REGION, DR_BACKUP_VAULT_NAME } from '../lib/backup-dr-stack'
 import { DataStack } from '../lib/data-stack'
