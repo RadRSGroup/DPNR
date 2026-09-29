@@ -1,4 +1,5 @@
 'use client'
+import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 
 interface Props {
@@ -6,13 +7,14 @@ interface Props {
 }
 
 export function TokenCapModal({ onClose }: Props) {
+  const t = useTranslations('Shared')
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center px-4 pb-6 sm:pb-0">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-[393px] bg-[#130d1f] border border-purple-700/40 rounded-3xl p-6 space-y-5">
         <div className="text-center space-y-2">
-          <h2 className="text-white text-lg font-medium">You&apos;ve used all your AI sessions</h2>
-          <p className="text-white/50 text-sm">Your free tier includes ~5 AI-guided decisions per month. Upgrade to continue exploring.</p>
+          <h2 className="text-white text-lg font-medium">{t('tokenCap.title')}</h2>
+          <p className="text-white/50 text-sm">{t('tokenCap.body')}</p>
         </div>
 
         <div className="space-y-3">
@@ -21,8 +23,8 @@ export function TokenCapModal({ onClose }: Props) {
             className="flex items-center justify-between w-full bg-purple-600 hover:bg-purple-500 active:scale-[0.98] text-white rounded-2xl px-5 py-4 transition-all"
           >
             <div>
-              <p className="font-medium text-sm">Core — $15/mo</p>
-              <p className="text-purple-200/60 text-xs mt-0.5">~55 AI decisions per month</p>
+              <p className="font-medium text-sm">{t('tokenCap.core')}</p>
+              <p className="text-purple-200/60 text-xs mt-0.5">{t('tokenCap.coreDetail')}</p>
             </div>
             <span className="text-white/60">›</span>
           </Link>
@@ -31,15 +33,15 @@ export function TokenCapModal({ onClose }: Props) {
             className="flex items-center justify-between w-full bg-white/5 border border-white/10 hover:border-white/20 active:scale-[0.98] text-white rounded-2xl px-5 py-4 transition-all"
           >
             <div>
-              <p className="font-medium text-sm">Pro — $25/mo</p>
-              <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">Unlimited AI decisions</p>
+              <p className="font-medium text-sm">{t('tokenCap.pro')}</p>
+              <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">{t('tokenCap.proDetail')}</p>
             </div>
             <span className="text-white/20">›</span>
           </Link>
         </div>
 
         <button onClick={onClose} className="w-full text-[var(--color-text-tertiary)] text-sm hover:text-white/50 transition-colors py-1">
-          Not now
+          {t('notNow')}
         </button>
       </div>
     </div>

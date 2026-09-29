@@ -2176,5 +2176,88 @@
         "showsUp": "You might notice it when something you want comes closer and part of you starts to step back."
       }
     }
+  },
+  "Shared": {
+    "humanOS": "Your Human Operating System",
+    "thinking": "Thinking...",
+    "returnToDashboard": "Return to Dashboard",
+    "notNow": "Not now",
+    "roomStep": {
+      "close": "Close",
+      "aboutThisStep": "About this step",
+      "minutesLeft": "{minutes} min",
+      "stepOf": "Step {step} of {total}",
+      "stepNumbered": "Step {number}: {label}",
+      "stepDot": "Step {number} · {label}",
+      "steps": "Steps",
+      "back": "Back",
+      "next": "Next",
+      "savedNote": "Everything you write is saved as you go — you can pause and come back any time.",
+      "checkInTitle": "A gentle check-in",
+      "checkInBody": "You've been with this for a while now. However you continue, what you've already explored is saved — nothing is lost by pausing here.",
+      "keepGoing": "Keep going",
+      "pauseLater": "Pause, continue later"
+    },
+    "tokenCap": {
+      "title": "You've used all your AI sessions",
+      "body": "Your free tier includes ~5 AI-guided decisions per month. Upgrade to continue exploring.",
+      "core": "Core — $15/mo",
+      "coreDetail": "~55 AI decisions per month",
+      "pro": "Pro — $25/mo",
+      "proDetail": "Unlimited AI decisions"
+    },
+    "creditsExhausted": {
+      "title": "You're out of credits",
+      "body": "Every AI-guided step in a Room or a message with your Companion uses a credit. Check your balance on your account page.",
+      "viewCredits": "View my credits"
+    },
+    "librarySidePanel": {
+      "fromLibrary": "From the Library",
+      "close": "Close",
+      "understand": "Understand",
+      "viewFullTopic": "View full topic"
+    },
+    "dailyGuidance": {
+      "title": "Today's Guidance",
+      "dismiss": "Dismiss",
+      "useful": "Useful",
+      "notForMe": "Not for me"
+    },
+    "authErrors": {
+      "incorrectCredentials": "Incorrect email or password.",
+      "userNotFound": "We couldn't find an account with that email.",
+      "userExists": "An account with this email already exists.",
+      "codeMismatch": "That code is incorrect. Check it and try again.",
+      "codeExpired": "That code has expired. Request a new one.",
+      "invalidPassword": "The password doesn't meet the requirements.",
+      "tooManyAttempts": "Too many attempts. Wait a little and try again.",
+      "notConfirmed": "This email hasn't been confirmed yet.",
+      "invalidParameter": "Some of the details aren't valid. Check them and try again.",
+      "noActiveSession": "Your session has ended. Sign in again.",
+      "network": "Couldn't connect. Check your connection and try again."
+    },
+    "plans": {
+      "beta_trial": "Beta Trial",
+      "core_monthly": "Self",
+      "pro_monthly": "Pro",
+      "credits_50": "50 Credits",
+      "credits_120": "120 Credits",
+      "credits_300": "300 Credits"
+    },
+    "continuity": {
+      "considerExploring": "Consider exploring: {space}",
+      "spaces": {
+        "mirror": "Mirror Room",
+        "decision": "Decision Room",
+        "library": "Library"
+      }
+    }
+  },
+  "LibraryExtra": {
+    "levels": {
+      "foundation": "Foundation",
+      "intermediate": "Intermediate",
+      "deepDive": "Deep Dive"
+    }
   }
 }

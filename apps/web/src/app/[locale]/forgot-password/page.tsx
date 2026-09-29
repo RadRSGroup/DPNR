@@ -2,6 +2,7 @@
 import Image from 'next/image'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { useAuthErrorMessage } from '@/lib/cognito/error-messages'
 import { useRouter } from '@/i18n/navigation'
 import { Link } from '@/i18n/navigation'
 import { forgotPassword, confirmForgotPassword, signIn } from '@/lib/cognito/client'
@@ -22,6 +23,7 @@ import type { RecoveryCode } from '@/lib/crypto'
  */
 export default function ForgotPasswordPage() {
   const t = useTranslations('ForgotPassword')
+  const authError = useAuthErrorMessage()
   const router = useRouter()
   const [stage, setStage] = useState<'request' | 'reset' | 'recover' | 'done'>('request')
   const [email, setEmail] = useState('')
@@ -43,7 +45,7 @@ export default function ForgotPasswordPage() {
       await forgotPassword(email)
       setStage('reset')
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('errorRequestFailed'))
+      setError(authError(err, t('errorRequestFailed')))
     } finally {
       setLoading(false)
     }
@@ -63,7 +65,7 @@ export default function ForgotPasswordPage() {
       await signIn(email, newPassword)
       setStage('recover')
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('errorInvalidCode'))
+      setError(authError(err, t('errorInvalidCode')))
     } finally {
       setLoading(false)
     }

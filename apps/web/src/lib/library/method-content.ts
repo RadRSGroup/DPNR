@@ -15,8 +15,11 @@
  * Static and frontend-only on purpose: this is fixed product content, not
  * a catalog topic (no Explore Theme, no AI personalization layer), so it
  * doesn't belong in `dpnr-library-catalog` and needs no deploy to change.
- * English-only for now, same as the Library topics.
+ * The Hebrew edition is a parallel object in method-content.he.ts; pages
+ * pick the language with `getMethod(locale)` / `getMethodPiece(slug, locale)`.
  */
+
+import { DPNR_METHOD_HE } from './method-content.he'
 
 export interface MethodSection {
   heading?: string
@@ -290,8 +293,13 @@ export const DPNR_METHOD: MethodPiece[] = [
   },
 ]
 
-export function getMethodPiece(slug: string): MethodPiece | undefined {
-  return DPNR_METHOD.find((piece) => piece.slug === slug)
+/** The six pieces in the given UI locale (English for anything but Hebrew). */
+export function getMethod(locale: string): MethodPiece[] {
+  return locale === 'he' ? DPNR_METHOD_HE : DPNR_METHOD
+}
+
+export function getMethodPiece(slug: string, locale = 'en'): MethodPiece | undefined {
+  return getMethod(locale).find((piece) => piece.slug === slug)
 }
 
 /** Rough reading time at ~200 words per minute, rounded up. */

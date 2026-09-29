@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 import Card from '@/components/ui/Card'
 import { sendDailyCardFeedback } from '@/lib/api/v1-client'
 import type { CompanionContextResponse } from '@dpnr/shared-types'
@@ -25,7 +26,8 @@ interface Props {
  * `dailyCard` is required non-null — callers already gate rendering on
  * `dailyCard &&`, since there's nothing honest to show otherwise.
  */
-export default function DailyGuidanceCard({ dailyCard: initial, title = "Today's Guidance", showImage = true }: Props) {
+export default function DailyGuidanceCard({ dailyCard: initial, title, showImage = true }: Props) {
+  const t = useTranslations('Shared.dailyGuidance')
   const [dailyCard, setDailyCard] = useState(initial)
   const [dismissed, setDismissed] = useState(false)
 
@@ -47,8 +49,8 @@ export default function DailyGuidanceCard({ dailyCard: initial, title = "Today's
   return (
     <Card className="relative overflow-hidden">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">{title}</p>
-        <button onClick={() => feedback('dismiss')} className="text-[var(--color-text-tertiary)] hover:text-white/60 text-sm" title="Dismiss">
+        <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wide">{title ?? t('title')}</p>
+        <button onClick={() => feedback('dismiss')} className="text-[var(--color-text-tertiary)] hover:text-white/60 text-sm" title={t('dismiss')}>
           ×
         </button>
       </div>
@@ -74,7 +76,7 @@ export default function DailyGuidanceCard({ dailyCard: initial, title = "Today's
               : 'border-white/10 text-[var(--color-text-tertiary)] hover:text-white/60 disabled:opacity-40'
           }`}
         >
-          Useful
+          {t('useful')}
         </button>
         <button
           onClick={() => feedback('not_relevant')}
@@ -85,7 +87,7 @@ export default function DailyGuidanceCard({ dailyCard: initial, title = "Today's
               : 'border-white/10 text-[var(--color-text-tertiary)] hover:text-white/60 disabled:opacity-40'
           }`}
         >
-          Not for me
+          {t('notForMe')}
         </button>
       </div>
     </Card>

@@ -2,6 +2,7 @@
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
+import { useAuthErrorMessage } from '@/lib/cognito/error-messages'
 import { useRouter } from '@/i18n/navigation'
 import { Link } from '@/i18n/navigation'
 import { getCurrentSession, deleteCognitoUser, changePassword, isFederatedOnly } from '@/lib/cognito/client'
@@ -35,6 +36,7 @@ import PlaylistsCard from '@/components/profile/PlaylistsCard'
  */
 export default function AccountPage() {
   const t = useTranslations('Account')
+  const authError = useAuthErrorMessage()
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(true)
@@ -184,7 +186,7 @@ export default function AccountPage() {
       setConfirmNewPassword('')
       setPasswordChanged(true)
     } catch (err) {
-      setPasswordError(err instanceof Error ? err.message : t('security.errorGeneric'))
+      setPasswordError(authError(err, t('security.errorGeneric')))
     } finally {
       setPasswordChanging(false)
     }

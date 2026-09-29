@@ -1077,12 +1077,13 @@ function markLastUserPersisted(messages: ChatMessage[], serverCreatedAt: string 
 /** Mobile utility row's start side: today's date and time on DPNR. */
 function MobileDateLine() {
   const now = useClock()
+  const locale = useLocale()
   if (!now) return null
   return (
     <div className="flex items-baseline gap-1.5 text-xs text-white/55 min-w-0 pointer-events-auto">
       {/* Weekday then day ("Sun 27"): a combined format puts the day first in some locales. */}
       <span className="whitespace-nowrap">
-        {now.toLocaleDateString(undefined, { weekday: 'short' })} {now.getDate()}
+        {now.toLocaleDateString(locale, { weekday: 'short' })} {now.getDate()}
       </span>
       <span aria-hidden>·</span>
       <TimeTodayIndicator className="!text-white/55 whitespace-nowrap" />

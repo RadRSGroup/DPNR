@@ -2176,5 +2176,88 @@
         "showsUp": "אולי תשימו לב לזה כשמשהו שאתם רוצים מתקרב, וחלק מכם מתחיל לצעוד אחורה."
       }
     }
+  },
+  "Shared": {
+    "humanOS": "מערכת ההפעלה האנושית שלכם",
+    "thinking": "חושבים...",
+    "returnToDashboard": "חזרה ללוח הבקרה",
+    "notNow": "לא עכשיו",
+    "roomStep": {
+      "close": "סגירה",
+      "aboutThisStep": "על השלב הזה",
+      "minutesLeft": "{minutes} דק׳",
+      "stepOf": "שלב {step} מתוך {total}",
+      "stepNumbered": "שלב {number}: {label}",
+      "stepDot": "שלב {number} · {label}",
+      "steps": "שלבים",
+      "back": "חזרה",
+      "next": "הבא",
+      "savedNote": "כל מה שאתם כותבים נשמר תוך כדי — אפשר לעצור ולחזור מתי שתרצו.",
+      "checkInTitle": "רגע קטן לעצור ולבדוק",
+      "checkInBody": "אתם כבר זמן מה עם זה. איך שלא תבחרו להמשיך, מה שכבר חקרתם נשמר — שום דבר לא הולך לאיבוד אם עוצרים כאן.",
+      "keepGoing": "להמשיך",
+      "pauseLater": "לעצור ולהמשיך אחר כך"
+    },
+    "tokenCap": {
+      "title": "ניצלתם את כל סשני ה-AI שלכם",
+      "body": "המסלול החינמי כולל כ-5 החלטות בליווי AI בחודש. שדרגו כדי להמשיך לחקור.",
+      "core": "Core — 15$ לחודש",
+      "coreDetail": "כ-55 החלטות AI בחודש",
+      "pro": "Pro — 25$ לחודש",
+      "proDetail": "החלטות AI ללא הגבלה"
+    },
+    "creditsExhausted": {
+      "title": "נגמרו לכם הקרדיטים",
+      "body": "כל שלב בליווי AI בחדר, וכל הודעה ל-Companion שלכם, משתמשים בקרדיט. אפשר לבדוק את היתרה בעמוד החשבון.",
+      "viewCredits": "לקרדיטים שלי"
+    },
+    "librarySidePanel": {
+      "fromLibrary": "מהספרייה",
+      "close": "סגירה",
+      "understand": "להבין",
+      "viewFullTopic": "צפייה בנושא המלא"
+    },
+    "dailyGuidance": {
+      "title": "ההכוונה של היום",
+      "dismiss": "הסתרה",
+      "useful": "מועיל",
+      "notForMe": "לא בשבילי"
+    },
+    "authErrors": {
+      "incorrectCredentials": "האימייל או הסיסמה שגויים.",
+      "userNotFound": "לא מצאנו חשבון עם האימייל הזה.",
+      "userExists": "כבר קיים חשבון עם האימייל הזה.",
+      "codeMismatch": "הקוד שגוי. בדקו אותו ונסו שוב.",
+      "codeExpired": "פג תוקף הקוד. בקשו קוד חדש.",
+      "invalidPassword": "הסיסמה לא עומדת בדרישות.",
+      "tooManyAttempts": "היו יותר מדי ניסיונות. חכו מעט ונסו שוב.",
+      "notConfirmed": "האימייל הזה עדיין לא אומת.",
+      "invalidParameter": "חלק מהפרטים לא תקינים. בדקו אותם ונסו שוב.",
+      "noActiveSession": "החיבור שלכם הסתיים. התחברו שוב.",
+      "network": "לא הצלחנו להתחבר. בדקו את החיבור לאינטרנט ונסו שוב."
+    },
+    "plans": {
+      "beta_trial": "ניסיון בטא",
+      "core_monthly": "Self",
+      "pro_monthly": "Pro",
+      "credits_50": "50 קרדיטים",
+      "credits_120": "120 קרדיטים",
+      "credits_300": "300 קרדיטים"
+    },
+    "continuity": {
+      "considerExploring": "אולי כדאי לחקור: {space}",
+      "spaces": {
+        "mirror": "חדר המראה",
+        "decision": "חדר ההחלטות",
+        "library": "הספרייה"
+      }
+    }
+  },
+  "LibraryExtra": {
+    "levels": {
+      "foundation": "בסיס",
+      "intermediate": "מתקדם",
+      "deepDive": "העמקה"
+    }
   }
 }

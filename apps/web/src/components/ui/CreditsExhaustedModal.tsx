@@ -1,4 +1,5 @@
 'use client'
+import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 
 interface Props {
@@ -13,25 +14,26 @@ interface Props {
  * "coming soon" purchase flow, since there is no pack-purchase flow live yet.
  */
 export function CreditsExhaustedModal({ onClose }: Props) {
+  const t = useTranslations('Shared')
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center px-4 pb-6 sm:pb-0">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-[393px] bg-[#130d1f] border border-purple-700/40 rounded-3xl p-6 space-y-5">
         <div className="text-center space-y-2">
-          <h2 className="text-white text-lg font-medium">You&apos;re out of credits</h2>
-          <p className="text-white/50 text-sm">Every AI-guided step in a Room or a message with your Companion uses a credit. Check your balance on your account page.</p>
+          <h2 className="text-white text-lg font-medium">{t('creditsExhausted.title')}</h2>
+          <p className="text-white/50 text-sm">{t('creditsExhausted.body')}</p>
         </div>
 
         <Link
           href="/account"
           className="flex items-center justify-between w-full bg-purple-600 hover:bg-purple-500 active:scale-[0.98] text-white rounded-2xl px-5 py-4 transition-all"
         >
-          <span className="font-medium text-sm">View my credits</span>
+          <span className="font-medium text-sm">{t('creditsExhausted.viewCredits')}</span>
           <span className="text-white/60">›</span>
         </Link>
 
         <button onClick={onClose} className="w-full text-[var(--color-text-tertiary)] text-sm hover:text-white/50 transition-colors py-1">
-          Not now
+          {t('notNow')}
         </button>
       </div>
     </div>

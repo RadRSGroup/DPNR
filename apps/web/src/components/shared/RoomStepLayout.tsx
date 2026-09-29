@@ -1,6 +1,7 @@
 'use client'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import { useRoomSessionClock } from '@/components/shared/RoomSessionClock'
@@ -69,6 +70,7 @@ export default function RoomStepLayout({
   screenLabel,
   dimBackground = false,
 }: RoomStepLayoutProps) {
+  const t = useTranslations('Shared.roomStep')
   const router = useRouter()
   const roomExit = useRoomExit()
   const [infoOpen, setInfoOpen] = useState(false)
@@ -111,7 +113,7 @@ export default function RoomStepLayout({
           <div className="flex items-center justify-between px-5 pt-14 pb-2 lg:px-10 lg:pt-8">
             <button
               onClick={() => (roomExit ? roomExit() : router.push('/dashboard'))}
-              aria-label="Close"
+              aria-label={t('close')}
               className="w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white text-lg"
             >
               ✕
@@ -120,13 +122,13 @@ export default function RoomStepLayout({
             <div className="flex items-center gap-2 lg:gap-3">
               <span className="text-[var(--color-text-tertiary)] text-xs lg:text-sm">{roomLabel}</span>
               <span className="text-[var(--color-text-tertiary)] text-xs lg:text-sm lg:rounded-full lg:border lg:border-white/15 lg:px-3 lg:py-1">
-                {minutesLeft} min
+                {t('minutesLeft', { minutes: minutesLeft })}
               </span>
             </div>
 
             <button
               onClick={() => setInfoOpen(true)}
-              aria-label="About this step"
+              aria-label={t('aboutThisStep')}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white/60 text-sm lg:invisible"
             >
               ?
@@ -154,21 +156,21 @@ export default function RoomStepLayout({
           {/* Title + step label */}
           <div className="text-center px-6 pt-4 pb-2 lg:text-start lg:px-10 lg:pt-6 lg:pb-0">
             <p className={`hidden lg:block text-xs uppercase tracking-[0.2em] ${screenLabel ? 'text-[var(--color-amber-300)]' : 'text-[var(--color-violet-300)]'}`}>
-              Step {step} of {totalSteps}{screenLabel ? <> · {screenLabel}</> : null}
+              {t('stepOf', { step, total: totalSteps })}{screenLabel ? <> · {screenLabel}</> : null}
             </p>
             <h2 className="text-white text-lg font-light lg:font-display lg:text-3xl lg:mt-2 lg:truncate">{hasTitle ? <>&quot;{title}&quot;</> : stepLabels[step]}</h2>
             {screenLabel ? (
               <p className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.16em] mt-1.5 lg:hidden">
-                Step {step} of {totalSteps} · {screenLabel}
+                {t('stepOf', { step, total: totalSteps })} · {screenLabel}
               </p>
             ) : (
               <p className="text-white/50 text-xs mt-1 lg:hidden">
-                Step {stepNumber}: {stepLabels[step]}
+                {t('stepNumbered', { number: stepNumber, label: stepLabels[step] ?? '' })}
               </p>
             )}
           </div>
 
-          <ol className="hidden lg:flex items-start px-10 pt-6 pb-8" aria-label="Steps">
+          <ol className="hidden lg:flex items-start px-10 pt-6 pb-8" aria-label={t('steps')}>
             {Array.from({ length: totalSteps }).map((_, i) => {
               const n = i + 1
               const state = n < step ? 'done' : n === step ? 'current' : 'todo'
@@ -233,7 +235,7 @@ export default function RoomStepLayout({
                   onClick={onBack}
                   disabled={!onBack}
                   className="w-12 h-12 flex items-center justify-center rounded-full border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-20 transition-all"
-                  aria-label="Back"
+                  aria-label={t('back')}
                 >
                   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="rtl:-scale-x-100">
                     <path d="M11 4L6 9L11 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -243,7 +245,7 @@ export default function RoomStepLayout({
                   <button
                     onClick={onSkip}
                     className="w-12 h-12 flex items-center justify-center rounded-full border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-all"
-                    aria-label="Next"
+                    aria-label={t('next')}
                   >
                     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="rtl:-scale-x-100">
                       <path d="M7 4L12 9L7 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -258,9 +260,9 @@ export default function RoomStepLayout({
             <aside className="hidden lg:flex flex-col gap-4 sticky top-8">
               <div className="liquid-glass rounded-3xl p-6">
                 <p className="text-[var(--color-violet-300)] text-xs uppercase tracking-[0.2em]">
-                  Step {stepNumber} · {stepLabels[step]}
+                  {t('stepDot', { number: stepNumber, label: stepLabels[step] ?? '' })}
                 </p>
-                <p className="font-display text-white text-lg mt-3">About this step</p>
+                <p className="font-display text-white text-lg mt-3">{t('aboutThisStep')}</p>
                 <p className="text-white/70 text-sm leading-relaxed mt-2">{stepInfo[step] ?? '—'}</p>
               </div>
               <div className="liquid-glass rounded-3xl p-6">
@@ -268,7 +270,7 @@ export default function RoomStepLayout({
                 <p className="text-white/80 text-sm leading-relaxed italic mt-1">{stepReflections[step]}</p>
               </div>
               <p className="text-[var(--color-text-tertiary)] text-xs px-2 leading-relaxed">
-                Everything you write is saved as you go — you can pause and come back any time.
+                {t('savedNote')}
               </p>
             </aside>
           </div>
@@ -285,11 +287,11 @@ export default function RoomStepLayout({
               >
                 <div className="flex items-center justify-between">
                   <p className="text-[var(--color-violet-300)] text-xs uppercase tracking-widest">
-                    Step {stepNumber} · {stepLabels[step]}
+                    {t('stepDot', { number: stepNumber, label: stepLabels[step] ?? '' })}
                   </p>
                   <button
                     onClick={() => setInfoOpen(false)}
-                    aria-label="Close"
+                    aria-label={t('close')}
                     className="text-[var(--color-text-tertiary)] hover:text-white/60 text-lg transition-colors"
                   >
                     ✕
@@ -304,23 +306,20 @@ export default function RoomStepLayout({
           {showStoppingCue && (
             <div className="absolute lg:fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end lg:items-center justify-center z-50 pb-8 px-5 lg:p-10">
               <div className="w-full lg:max-w-md bg-[var(--color-violet-900)] border border-[var(--color-violet-600)]/40 rounded-3xl p-6 space-y-4">
-                <p className="text-[var(--color-violet-300)] text-xs uppercase tracking-widest">A gentle check-in</p>
-                <p className="text-white/70 text-sm leading-relaxed">
-                  You&apos;ve been with this for a while now. However you continue, what you&apos;ve already explored is
-                  saved — nothing is lost by pausing here.
-                </p>
+                <p className="text-[var(--color-violet-300)] text-xs uppercase tracking-widest">{t('checkInTitle')}</p>
+                <p className="text-white/70 text-sm leading-relaxed">{t('checkInBody')}</p>
                 <div className="flex gap-2">
                   <button
                     onClick={dismissStoppingCue}
                     className="flex-1 py-3 rounded-2xl bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] text-white text-sm font-medium transition-colors"
                   >
-                    Keep going
+                    {t('keepGoing')}
                   </button>
                   <button
                     onClick={() => router.push('/dashboard')}
                     className="flex-1 py-3 rounded-2xl border border-white/15 text-white/60 hover:text-white hover:border-white/30 text-sm transition-colors"
                   >
-                    Pause, continue later
+                    {t('pauseLater')}
                   </button>
                 </div>
               </div>
