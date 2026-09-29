@@ -3,12 +3,12 @@ import { useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import Card from '@/components/ui/Card'
-import { LifeDomainCategorySchema, type DashboardResponse, type LifeDomainCategory } from '@dpnr/shared-types'
+import { LIFE_DOMAIN_IDS, type DashboardResponse } from '@dpnr/shared-types'
 import { DOMAIN_META } from '@/components/shared/domain-meta'
 import InfoPopover from '@/components/ui/InfoPopover'
 
 /**
- * Life Domains as the reference draws them: all seven domains as a scrolling
+ * Life Domains as the reference draws them: all eight domains as a scrolling
  * row of tiles (icon, name, share, bar), with the leading one marked
  * "Current area". Percentages are the real aggregate over confirmed,
  * classified Twin signals; a domain with no evidence yet shows "—" and an
@@ -26,7 +26,6 @@ export default function LifeDomainsCarousel({ lifeDomains, loading = false }: { 
   const byDomain = new Map(lifeDomains.map((d) => [d.domain, d.percent]))
   const summaryByDomain = new Map(lifeDomains.map((d) => [d.domain, d.summary ?? null]))
   const current = [...lifeDomains].sort((a, b) => b.percent - a.percent)[0]?.domain
-  const domains = LifeDomainCategorySchema.options as LifeDomainCategory[]
 
   function scroll(dir: 1 | -1) {
     const row = rowRef.current
@@ -60,7 +59,7 @@ export default function LifeDomainsCarousel({ lifeDomains, loading = false }: { 
           <ChevronLeft className="w-5 h-5 rtl:-scale-x-100" />
         </button>
         <div ref={rowRef} className="no-scrollbar flex-1 min-w-0 flex gap-2 overflow-x-auto snap-x snap-mandatory scroll-smooth motion-reduce:scroll-auto">
-          {domains.map((domain) => {
+          {LIFE_DOMAIN_IDS.map((domain) => {
             const meta = DOMAIN_META[domain]
             const Icon = meta.icon
             const percent = byDomain.get(domain)

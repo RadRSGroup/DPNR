@@ -285,7 +285,6 @@
       "subtitle": "Explore and grow in every area of your life"
     },
     "focusAreas": {
-      "title": "Focus Areas — {domain}",
       "subtitle": "What DPNR has confirmed with you here",
       "empty": "Nothing confirmed in this domain yet."
     },
@@ -453,12 +452,13 @@
       "notYet": "Not explored yet",
       "labels": {
         "self_inner_world": "Self & Inner World",
-        "relationships": "Relationships",
-        "career_purpose": "Career & Purpose",
+        "relationships": "Relationships & Connection",
         "health_body": "Health & Body",
+        "work_purpose": "Work, Purpose & Contribution",
         "money_abundance": "Money & Abundance",
-        "creativity_expression": "Creativity & Expression",
-        "spirituality": "Spirituality"
+        "growth_expansion": "Growth & Expansion",
+        "home_lifestyle": "Home & Lifestyle",
+        "meaning_spirituality": "Meaning & Spirituality"
       }
     },
     "proposal": { "title": "A shift worth naming?", "updateRoadmap": "Update my Roadmap", "notNow": "Not now" },

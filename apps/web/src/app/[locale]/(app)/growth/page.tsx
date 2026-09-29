@@ -159,6 +159,8 @@ function GrowthTrackerContent() {
                 <div className="space-y-3">
                   {dashboard!.lifeDomains.map((d) => {
                     const meta = DOMAIN_META[d.domain]
+                    // An id from an older/newer API bundle is skipped, not a crash.
+                    if (!meta) return null
                     const Icon = meta.icon
                     return (
                       <div key={d.domain} className="flex items-center gap-3">

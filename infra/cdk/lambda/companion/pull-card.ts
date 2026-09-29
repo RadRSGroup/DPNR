@@ -40,23 +40,20 @@ const DOMAIN_TO_CARD_TOPIC: Record<TwinSignalDomain, GuidanceCardTopic> = {
 
 /**
  * Maps a confirmed Twin signal's optional `lifeDomain` (`LifeDomainCategorySchema`,
- * dynamo/twin.ts — the 7-value Growth Tracker/Dashboard taxonomy) to Pull a
- * Card's own 9-value `lifeDomain` axis. The two taxonomies were authored from
- * different source docs at different times and don't line up 1:1 (same
- * situation as Library's `exploreTheme`, see global-tables.ts's own comment)
- * — this is a best-effort join for card selection, not a reconciliation of
- * the two taxonomies. `creativity_expression` has no clean single match;
- * mapped to 'Personal Growth' as the closer of the two plausible options
- * ('Personal Growth' vs. a nonexistent "Creativity" domain in this bank).
+ * dynamo/twin.ts — the spec's 8) to Pull a Card's own 9-value `lifeDomain`
+ * axis. Each of the 8 has one natural card domain
+ * (`docs/LIFE_DOMAINS_MIGRATION.md` §2); the card bank's "Family" sits under
+ * Relationships and has no Twin domain of its own.
  */
 const LIFE_DOMAIN_TO_CARD_DOMAIN: Record<LifeDomainCategory, GuidanceCardLifeDomain> = {
-  self_inner_world: 'Personal Growth',
+  self_inner_world: 'Emotional Well-being',
   relationships: 'Relationships',
-  career_purpose: 'Work-Career',
   health_body: 'Health',
+  work_purpose: 'Work-Career',
   money_abundance: 'Finance',
-  creativity_expression: 'Personal Growth',
-  spirituality: 'Spirituality',
+  growth_expansion: 'Personal Growth',
+  home_lifestyle: 'Leisure',
+  meaning_spirituality: 'Spirituality',
 }
 
 /**

@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { useTranslations } from 'next-intl'
-import { Infinity as InfinityIcon, Eye, HeartHandshake, Repeat, Plus, Target } from 'lucide-react'
+import { Infinity as InfinityIcon, Eye, HeartHandshake, Repeat, Plus, Target, ChevronDown } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getDashboard, getTwin, getCommitments, createCommitment, completeCommitment } from '@/lib/api/v1-client'
 import type { DashboardResponse, TwinListResponse, CommitmentsResponse, LifeDomainCategory } from '@dpnr/shared-types'
@@ -55,6 +55,8 @@ function EvolutionMapContent() {
   const [commitments, setCommitments] = useState<CommitmentsResponse['commitments']>([])
   const [loading, setLoading] = useState(true)
   const [selectedDomain, setSelectedDomain] = useState<LifeDomainCategory | null>(null)
+  // Which domain's Focus Areas are open under its row; all start collapsed.
+  const [expandedDomain, setExpandedDomain] = useState<LifeDomainCategory | null>(null)
   const [showAddGoal, setShowAddGoal] = useState(false)
   const [goalDescription, setGoalDescription] = useState('')
   const [goalReviewDate, setGoalReviewDate] = useState('')
@@ -81,10 +83,14 @@ function EvolutionMapContent() {
     load()
   }, [router])
 
-  const focusAreas = useMemo(
-    () => (twin?.signals ?? []).filter((s) => s.status === 'confirmed' && s.lifeDomain === selectedDomain),
-    [twin, selectedDomain]
-  )
+  const focusAreasByDomain = useMemo(() => {
+    const byDomain = new Map<LifeDomainCategory, NonNullable<typeof twin>['signals']>()
+    for (const s of twin?.signals ?? []) {
+      if (s.status !== 'confirmed' || !s.lifeDomain) continue
+      byDomain.set(s.lifeDomain, [...(byDomain.get(s.lifeDomain) ?? []), s])
+    }
+    return byDomain
+  }, [twin])
 
   // Every open goal, always — goals in the selected domain first. This used
   // to filter to the selected domain (auto-set to the first one on load), so
@@ -213,44 +219,60 @@ function EvolutionMapContent() {
                 <div className="space-y-2">
                   {dashboard!.lifeDomains.map((d) => {
                     const meta = DOMAIN_META[d.domain]
+                    // An id from an older/newer API bundle is skipped, not a crash.
+                    if (!meta) return null
                     const Icon = meta.icon
                     const selected = d.domain === selectedDomain
+                    const expanded = d.domain === expandedDomain
+                    const focusAreas = focusAreasByDomain.get(d.domain) ?? []
+                    const panelId = `focus-areas-${d.domain}`
                     return (
-                      <button
+                      <div
                         key={d.domain}
-                        onClick={() => setSelectedDomain(d.domain)}
-                        className={`w-full flex items-center gap-3 rounded-xl px-2 py-2 text-start transition-colors ${
+                        className={`rounded-xl transition-colors ${
                           selected ? 'bg-white/10 border border-[var(--color-violet-500)]/50' : 'border border-transparent hover:bg-white/5'
                         }`}
                       >
-                        <ProgressRing percent={d.percent} size={40} strokeWidth={4} colorClassName={meta.ringClass}>
-                          <Icon className="w-3 h-3" style={{ color: meta.color }} />
-                        </ProgressRing>
-                        <span className="text-sm text-white/80 flex-1">{LIFE_DOMAIN_LABELS[d.domain]}</span>
-                        <span className="text-xs text-[var(--color-text-tertiary)] shrink-0">{d.percent}%</span>
-                      </button>
+                        <button
+                          onClick={() => {
+                            setSelectedDomain(d.domain)
+                            setExpandedDomain(expanded ? null : d.domain)
+                          }}
+                          aria-expanded={expanded}
+                          aria-controls={panelId}
+                          className="w-full flex items-center gap-3 px-2 py-2 text-start"
+                        >
+                          <ProgressRing percent={d.percent} size={40} strokeWidth={4} colorClassName={meta.ringClass}>
+                            <Icon className="w-3 h-3" style={{ color: meta.color }} />
+                          </ProgressRing>
+                          <span className="text-sm text-white/80 flex-1">{LIFE_DOMAIN_LABELS[d.domain]}</span>
+                          <span className="text-xs text-[var(--color-text-tertiary)] shrink-0">{d.percent}%</span>
+                          <ChevronDown
+                            className={`w-4 h-4 text-white/50 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`}
+                            aria-hidden
+                          />
+                        </button>
+                        {expanded && (
+                          <div id={panelId} className="animate-settle-in px-3 pb-3 ps-[3.75rem]">
+                            <p className="text-xs text-[var(--color-text-tertiary)] mb-2">{t('focusAreas.subtitle')}</p>
+                            {focusAreas.length === 0 ? (
+                              <p className="text-xs text-[var(--color-text-tertiary)]">{t('focusAreas.empty')}</p>
+                            ) : (
+                              <ul className="space-y-2">
+                                {focusAreas.map((s) => (
+                                  <li key={s.signalId} className="flex items-start gap-2 text-sm text-white/70">
+                                    <Target className="w-3.5 h-3.5 mt-0.5 text-[var(--color-violet-400)] shrink-0" />
+                                    <span>{s.description}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     )
                   })}
                 </div>
-              </Card>
-            )}
-
-            {hasDomains && selectedDomain && (
-              <Card>
-                <p className="text-sm text-white mb-1">{t('focusAreas.title', { domain: LIFE_DOMAIN_LABELS[selectedDomain] })}</p>
-                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">{t('focusAreas.subtitle')}</p>
-                {focusAreas.length === 0 ? (
-                  <p className="text-xs text-[var(--color-text-tertiary)]">{t('focusAreas.empty')}</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {focusAreas.map((s) => (
-                      <li key={s.signalId} className="flex items-start gap-2 text-sm text-white/70">
-                        <Target className="w-3.5 h-3.5 mt-0.5 text-[var(--color-violet-400)] shrink-0" />
-                        <span>{s.description}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </Card>
             )}
 

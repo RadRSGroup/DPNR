@@ -285,7 +285,6 @@
       "subtitle": "חקרו וצמחו בכל תחום בחייכם"
     },
     "focusAreas": {
-      "title": "תחומי מיקוד — {domain}",
       "subtitle": "מה ש-DPNR אישר איתכם כאן",
       "empty": "עדיין לא אושר כלום בתחום הזה."
     },
@@ -453,12 +452,13 @@
       "notYet": "טרם נחקר",
       "labels": {
         "self_inner_world": "עצמי ועולם פנימי",
-        "relationships": "מערכות יחסים",
-        "career_purpose": "קריירה ותכלית",
+        "relationships": "מערכות יחסים וחיבור",
         "health_body": "בריאות וגוף",
+        "work_purpose": "עבודה, ייעוד ותרומה",
         "money_abundance": "כסף ושפע",
-        "creativity_expression": "יצירתיות וביטוי",
-        "spirituality": "רוחניות"
+        "growth_expansion": "צמיחה והתרחבות",
+        "home_lifestyle": "בית ואורח חיים",
+        "meaning_spirituality": "משמעות ורוחניות"
       }
     },
     "proposal": { "title": "שינוי ששווה לתת לו שם?", "updateRoadmap": "עדכון מפת הדרכים שלי", "notNow": "לא עכשיו" },

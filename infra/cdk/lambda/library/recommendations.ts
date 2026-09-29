@@ -50,21 +50,22 @@ const DOMAIN_TO_EXPLORE_THEME: Record<string, ExploreTheme> = {
  * — the two axes were never designed to line up 1:1, so this is a real
  * editorial call, not a derived fact. Grounded in what each theme's actual
  * seeded topics are about (`library-topics-v2.seed.ts`), not guessed cold:
- * `career_purpose`→CHOOSE matches how `direction`/`commitment` already land
+ * `work_purpose`→CHOOSE matches how `direction`/`commitment` already land
  * there above (both are "where someone is headed"); `money_abundance`/
- * `creativity_expression`→CREATE both land on real CREATE topics ("Money
- * Meaning", "Ambition", "Creative Block"); `spirituality`→LIFE matches
- * LIFE's own "Meaning vs. Happiness" topic, the closest fit among the 10
- * fixed themes (none of them is "spirituality" itself).
+ * `growth_expansion`→CREATE both land on real CREATE topics ("Money
+ * Meaning", "Ambition", "Creative Block"); `home_lifestyle`/
+ * `meaning_spirituality`→LIFE matches LIFE's "Meaning vs. Happiness" and
+ * way-of-living topics, the closest fit among the 10 fixed themes.
  */
 const LIFE_DOMAIN_TO_EXPLORE_THEME: Record<LifeDomainCategory, ExploreTheme> = {
   self_inner_world: 'ME',
   relationships: 'RELATE',
-  career_purpose: 'CHOOSE',
   health_body: 'BODY',
+  work_purpose: 'CHOOSE',
   money_abundance: 'CREATE',
-  creativity_expression: 'CREATE',
-  spirituality: 'LIFE',
+  growth_expansion: 'CREATE',
+  home_lifestyle: 'LIFE',
+  meaning_spirituality: 'LIFE',
 }
 
 /**

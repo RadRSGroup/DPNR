@@ -62,35 +62,23 @@ export type OnboardingActiveDomainOption = (typeof ONBOARDING_ACTIVE_DOMAIN_OPTI
  * taxonomy on top of the three already flagged as unreconciled tech debt
  * (`docs/AGENT_LOG.md` Sessions 45/46, `INTELLIGENCE_SPEC_AUDIT.md` §4).
  * Several source options collapse onto the same category
- * (Love/Family/Friends -> relationships, Work/Purpose -> career_purpose) —
- * expected, not a bug, and already the plan doc's own example.
- *
- * Two of the ten had no clean fit and the plan doc left them explicitly
- * open ("resolve during Slice B, not here" for Growth; "no clean home in
- * any of the 7" for Fun) — but the same doc's Slice A description names
- * finalizing the ambiguous cases as in-scope for *this* slice, so they're
- * resolved here rather than carried forward again. Both are small,
- * reversible taxonomy calls (same authority level as Session 24's Library
- * domain mapping or Session 46's Pull-a-Card `lifeDomain` mapping, both
- * self-authored without a user round-trip), not product decisions needing
- * the user's own sign-off:
- * - `Growth` -> `self_inner_world` (personal-development framing, same
- *   bucket as `Me`).
- * - `Fun` -> `creativity_expression` (closest available bucket — no
- *   category in the reused 7-value taxonomy actually covers leisure/fun on
- *   its own; flagged here rather than silently guessed).
+ * (Love/Family/Friends -> relationships, Work/Purpose -> work_purpose) —
+ * expected, not a bug, and already the plan doc's own example. Growth and
+ * Fun moved to the spec's own domains in Session 83
+ * (`docs/LIFE_DOMAINS_MIGRATION.md`): Growth -> growth_expansion, Fun ->
+ * home_lifestyle (the spec lists recreation there).
  */
 export const ACTIVE_DOMAIN_TO_LIFE_DOMAIN: Record<OnboardingActiveDomainOption, LifeDomainCategory> = {
   Me: 'self_inner_world',
   Love: 'relationships',
   Family: 'relationships',
   Friends: 'relationships',
-  Work: 'career_purpose',
+  Work: 'work_purpose',
   Money: 'money_abundance',
   Body: 'health_body',
-  Growth: 'self_inner_world',
-  Purpose: 'career_purpose',
-  Fun: 'creativity_expression',
+  Growth: 'growth_expansion',
+  Purpose: 'work_purpose',
+  Fun: 'home_lifestyle',
 }
 
 /**

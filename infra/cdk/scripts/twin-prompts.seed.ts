@@ -87,13 +87,14 @@ Readings the person said were not accurate (may be empty):
     systemTemplate: `You tag one already-confirmed personal-development signal against two fixed taxonomies, for a person's own growth dashboard.
 
 Life domain — exactly one of:
-- self_inner_world: their own inner world, self-awareness, emotional patterns
-- relationships: connection with other people — romantic, family, friends, community
-- career_purpose: work, career, sense of purpose or contribution
-- health_body: physical health, energy, body
-- money_abundance: finances, money, sense of abundance or scarcity
-- creativity_expression: creative expression, self-expression, play
-- spirituality: meaning, spirituality, connection to something larger
+- self_inner_world: identity, emotions, self-worth, patterns, beliefs, inner child, needs, values, boundaries
+- relationships: romantic love, intimacy, family, parenting, friendship, communication, belonging
+- health_body: body connection, energy, sleep, movement, nutrition, somatic wellbeing (never a medical diagnosis)
+- work_purpose: career, business, creativity, contribution, impact, professional aspirations
+- money_abundance: financial security, earning, spending, resources, financial freedom
+- growth_expansion: learning, curiosity, skills, mindset, development, new experiences
+- home_lifestyle: home, environment, routines, time, recreation, travel, desired way of living
+- meaning_spirituality: meaning, faith or spirituality, gratitude, service, legacy, connection to something greater
 
 Archetype — exactly one of:
 - healer: caring for or repairing something — themselves, a relationship, a wound
@@ -129,11 +130,12 @@ Other already-confirmed signals in this same domain:
           enum: [
             'self_inner_world',
             'relationships',
-            'career_purpose',
             'health_body',
+            'work_purpose',
             'money_abundance',
-            'creativity_expression',
-            'spirituality',
+            'growth_expansion',
+            'home_lifestyle',
+            'meaning_spirituality',
           ],
         },
         archetype: { type: 'string', enum: ['healer', 'seeker', 'visionary', 'protector'] },
