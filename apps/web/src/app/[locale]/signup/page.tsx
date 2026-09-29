@@ -8,6 +8,7 @@ import { signUp, confirmSignUp, resendConfirmationCode, signIn } from '@/lib/cog
 import { bootstrapKeysAtSignup, establishSessionTicket } from '@/lib/auth/keyBootstrap'
 import { updatePreferences } from '@/lib/api/v1-client'
 import RecoveryCodeReveal from '@/components/auth/RecoveryCodeReveal'
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton'
 import PasswordCreationField, { passwordsReadyToSubmit } from '@/components/auth/PasswordCreationField'
 import type { RecoveryCode } from '@/lib/crypto'
 
@@ -191,6 +192,8 @@ export default function SignupPage() {
             <p className="text-red-400 text-sm">{error}</p>
           </div>
         )}
+
+        <GoogleSignInButton />
 
         <form onSubmit={handleSignup} className="space-y-4">
           <div>

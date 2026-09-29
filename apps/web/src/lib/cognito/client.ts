@@ -4,6 +4,9 @@ import {
   AuthenticationDetails,
   CognitoUserSession,
   CognitoUserAttribute,
+  CognitoIdToken,
+  CognitoAccessToken,
+  CognitoRefreshToken,
 } from 'amazon-cognito-identity-js'
 
 /**
@@ -258,6 +261,32 @@ export function changePassword(oldPassword: string, newPassword: string): Promis
       user.changePassword(oldPassword, newPassword, (err) => (err ? reject(err) : resolve()))
     })
   })
+}
+
+/**
+ * Stores tokens from the Google (OAuth) sign-in the same way an SRP sign-in
+ * does, so `getCurrentSession()`, refresh and sign-out work unchanged. The
+ * username is the token's own (a linked account signs in as its original
+ * email/password user).
+ */
+export function adoptOAuthSession(tokens: { idToken: string; accessToken: string; refreshToken: string }): CognitoUserSession {
+  const session = new CognitoUserSession({
+    IdToken: new CognitoIdToken({ IdToken: tokens.idToken }),
+    AccessToken: new CognitoAccessToken({ AccessToken: tokens.accessToken }),
+    RefreshToken: new CognitoRefreshToken({ RefreshToken: tokens.refreshToken }),
+  })
+  const username = session.getAccessToken().payload.username as string
+  const user = new CognitoUser({ Username: username, Pool: userPool })
+  user.setSignInUserSession(session)
+  clearSessionCookie()
+  setSessionCookie(session)
+  return session
+}
+
+/** True when the signed-in account came from Google only (it has no Cognito password). */
+export function isFederatedOnly(session: CognitoUserSession): boolean {
+  const username = String(session.getAccessToken().payload.username ?? '')
+  return username.toLowerCase().startsWith('google_')
 }
 
 export function signOut(): void {

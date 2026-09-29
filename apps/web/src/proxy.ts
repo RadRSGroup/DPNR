@@ -253,5 +253,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|auth|_next|_vercel|.*\\..*).*)'],
+  // `auth` is no longer excluded (Session 83): /auth/callback is a real
+  // localized page now and needs the security headers like every other.
+  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
 }

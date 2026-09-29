@@ -1,7 +1,7 @@
 import { CURRENT_CONSENT_VERSION } from '@dpnr/shared-types'
 import { describe, it, expect, beforeEach } from 'vitest'
 import { mockClient } from 'aws-sdk-client-mock'
-import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb'
+import { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
 import type { PreTokenGenerationTriggerEvent } from 'aws-lambda'
 import { handler } from './pre-token-generation'
 
@@ -64,10 +64,15 @@ describe('Cognito pre-token-generation trigger', () => {
     }
   })
 
-  it('defaults every claim to its unconsented/unset form when no PROFILE item exists yet', async () => {
+  it('creates a missing PROFILE (first Google sign-in) and defaults every claim to its unset form', async () => {
     ddbMock.on(GetCommand).resolves({ Item: undefined })
+    ddbMock.on(PutCommand).resolves({})
+    ddbMock.on(UpdateCommand).resolves({ Attributes: { balance: 50 } })
 
     const result = await handler(tokenEvent('user-1'))
+
+    const profilePut = ddbMock.commandCalls(PutCommand).find((c) => c.args[0].input.Item?.sk === 'PROFILE')
+    expect(profilePut?.args[0].input.ConditionExpression).toBe('attribute_not_exists(pk)')
 
     expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride).toEqual({
       'custom:consent': 'false',

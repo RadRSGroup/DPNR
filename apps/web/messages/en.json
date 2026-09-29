@@ -1336,5 +1336,34 @@
       "breathe": "Breathe with me",
       "ready": "Continue when you're ready"
     }
+  },
+  "GoogleAuth": {
+    "continueWithGoogle": "Continue with Google",
+    "or": "or",
+    "signingIn": "Signing you in…",
+    "createTitle": "Create your DPNR password",
+    "createBody": "Google signs you in. This password locks your private space: your reflections are encrypted with it, and DPNR can't see or reset it. You'll enter it each time you sign in with Google.",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "createCta": "Create password",
+    "mismatch": "The passwords don't match.",
+    "tooShort": "Use at least 8 characters.",
+    "unlockTitle": "Unlock your space",
+    "unlockBody": "Enter your DPNR password to open your private space.",
+    "unlockCta": "Unlock",
+    "unlocking": "Unlocking…",
+    "wrongPassword": "That password doesn't match. Try again.",
+    "forgot": "Forgot it? Use your recovery code",
+    "recoverTitle": "Use your recovery code",
+    "recoverBody": "Enter the recovery code you saved when you created your password, then choose a new password.",
+    "recoveryCode": "Recovery code",
+    "newPassword": "New password",
+    "recoverCta": "Reset password",
+    "badCode": "That recovery code doesn't match. Check it and try again.",
+    "backToUnlock": "Back",
+    "errorTitle": "Google sign-in didn't finish",
+    "cancelled": "Sign-in was cancelled.",
+    "genericError": "Something went wrong. Please try again.",
+    "backToLogin": "Back to sign in"
   }
 }

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { Link } from '@/i18n/navigation'
-import { getCurrentSession, deleteCognitoUser, changePassword } from '@/lib/cognito/client'
+import { getCurrentSession, deleteCognitoUser, changePassword, isFederatedOnly } from '@/lib/cognito/client'
 import { changePasswordAndRewrapDek } from '@/lib/auth/keyBootstrap'
 import { logOut } from '@/lib/auth/logout'
 import { setAvatarUrlEverywhere } from '@/lib/useAvatarUrl'
@@ -173,7 +173,12 @@ export default function AccountPage() {
       } catch (err) {
         if (!(err instanceof ApiError && err.code === 'keys_not_found')) throw err
       }
-      await changePassword(currentPassword, newPassword)
+      // A Google-only account has no Cognito password: its DPNR password
+      // only protects the keys, so the re-wrap above is the whole change.
+      const session = await getCurrentSession()
+      if (!session || !isFederatedOnly(session)) {
+        await changePassword(currentPassword, newPassword)
+      }
       setCurrentPassword('')
       setNewPassword('')
       setConfirmNewPassword('')

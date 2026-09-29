@@ -1,6 +1,7 @@
-import { Duration, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib'
+import { Duration, RemovalPolicy, SecretValue, Stack, StackProps } from 'aws-cdk-lib'
 import * as cognito from 'aws-cdk-lib/aws-cognito'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
+import * as iam from 'aws-cdk-lib/aws-iam'
 import * as lambda from 'aws-cdk-lib/aws-lambda-nodejs'
 import { Runtime } from 'aws-cdk-lib/aws-lambda'
 import * as path from 'path'
@@ -21,10 +22,14 @@ export interface AuthStackProps extends StackProps {
  * two places consent could drift out of sync. The pre-token-generation
  * trigger reads DynamoDB directly instead — see docs/adr/0004-consent-claim-source-of-truth.md.
  *
- * Google OAuth federation is NOT configured yet — it needs a Google
- * Cloud Console project and OAuth client credentials, which is another
- * external-account setup step like AWS itself. Email/password only for
- * now; add the identity provider once those credentials exist.
+ * Google sign-in (Session 83): a Cognito domain (`dpnr-auth`), the Google
+ * identity provider (client id/secret from Secrets Manager
+ * `dpnr/google-oauth`, created by the user; GCP project
+ * `decision-room-498917`, client "DPNR Web (Cognito)") and the
+ * authorization-code flow on the existing web client. The web app skips the
+ * hosted UI (`identity_provider=Google`) and handles `/auth/callback`
+ * itself. Keys stay password-derived: a Google account sets a DPNR password
+ * once (user decision, "password after Google").
  */
 export class AuthStack extends Stack {
   public readonly userPool: cognito.UserPool
@@ -54,7 +59,21 @@ export class AuthStack extends Stack {
       entry: path.join(__dirname, '../lambda/auth/pre-token-generation.ts'),
       description: 'Injects the custom:consent claim from the PROFILE item into every issued JWT.',
     })
-    props.applicationTable.grantReadData(preTokenGenerationFn)
+    // Read/write: it also creates the PROFILE for a first Google sign-in,
+    // which has no confirmation step (ensure-profile.ts).
+    props.applicationTable.grantReadWriteData(preTokenGenerationFn)
+
+    const preSignUpFn = new lambda.NodejsFunction(this, 'PreSignUpFn', {
+      ...sharedLambdaProps,
+      entry: path.join(__dirname, '../lambda/auth/pre-signup.ts'),
+      description: 'Links a first Google sign-in to the existing account with the same verified email.',
+    })
+    // The pool's own ARN would be a circular reference (the pool names this
+    // function as its trigger), so scope to this account's pools in-region.
+    preSignUpFn.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['cognito-idp:ListUsers', 'cognito-idp:AdminLinkProviderForUser'],
+      resources: [this.formatArn({ service: 'cognito-idp', resource: 'userpool', resourceName: '*' })],
+    }))
 
     this.userPool = new cognito.UserPool(this, 'UserPool', {
       userPoolName: 'dpnr-users',
@@ -73,6 +92,7 @@ export class AuthStack extends Stack {
       },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       lambdaTriggers: {
+        preSignUp: preSignUpFn,
         postConfirmation: postConfirmationFn,
         preTokenGeneration: preTokenGenerationFn,
       },
@@ -96,12 +116,47 @@ export class AuthStack extends Stack {
       deletionProtection: props.isProduction,
     })
 
+    this.userPool.addDomain('Domain', {
+      cognitoDomain: { domainPrefix: 'dpnr-auth' },
+    })
+
+    const googleSecret = 'dpnr/google-oauth'
+    const google = new cognito.UserPoolIdentityProviderGoogle(this, 'Google', {
+      userPool: this.userPool,
+      // The client id isn't secret; it lives next to the secret so both
+      // come from one place. Resolved by CloudFormation at deploy time.
+      clientId: SecretValue.secretsManager(googleSecret, { jsonField: 'clientId' }).unsafeUnwrap(),
+      clientSecretValue: SecretValue.secretsManager(googleSecret, { jsonField: 'clientSecret' }),
+      scopes: ['openid', 'email', 'profile'],
+      attributeMapping: {
+        email: cognito.ProviderAttribute.GOOGLE_EMAIL,
+        emailVerified: cognito.ProviderAttribute.GOOGLE_EMAIL_VERIFIED,
+      },
+    })
+
+    const webOrigins = ['http://localhost:3000', 'https://dpnr-mvp.onrender.com']
+
     this.userPoolClient = this.userPool.addClient('WebClient', {
       generateSecret: false,
       authFlows: { userSrp: true },
+      // Authorization code + PKCE only (no implicit flow), for the Google
+      // redirect. Email/password sign-in still uses SRP directly.
+      oAuth: {
+        flows: { authorizationCodeGrant: true },
+        // COGNITO_ADMIN lets a Google-issued access token call the user's own
+        // Cognito APIs (change password on a linked account, delete account).
+        scopes: [cognito.OAuthScope.OPENID, cognito.OAuthScope.EMAIL, cognito.OAuthScope.PROFILE, cognito.OAuthScope.COGNITO_ADMIN],
+        callbackUrls: webOrigins.map((o) => `${o}/auth/callback`),
+        logoutUrls: webOrigins.map((o) => `${o}/login`),
+      },
+      supportedIdentityProviders: [
+        cognito.UserPoolClientIdentityProvider.COGNITO,
+        cognito.UserPoolClientIdentityProvider.GOOGLE,
+      ],
       accessTokenValidity: Duration.hours(1),
       idTokenValidity: Duration.hours(1),
       refreshTokenValidity: Duration.days(30),
     })
+    this.userPoolClient.node.addDependency(google)
   }
 }

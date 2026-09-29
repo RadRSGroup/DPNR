@@ -2,6 +2,7 @@ import type { PreTokenGenerationTriggerEvent } from 'aws-lambda'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, userPk, type UserProfileItem, hasCurrentConsent } from '@dpnr/shared-types'
+import { ensureProfile } from './ensure-profile'
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE_NAME = process.env.APPLICATION_TABLE_NAME as string
@@ -58,7 +59,15 @@ export const handler = async (
       })
     ),
   ])
-  const profile = profileResult.Item as UserProfileItem | undefined
+  let profile = profileResult.Item as UserProfileItem | undefined
+  // A Google sign-in creates the Cognito user with no confirmation step, so
+  // post-confirmation may never have run for it (Session 83). Create the
+  // profile here the first time; the claims below then read its defaults.
+  if (!profile) {
+    await ensureProfile(userId)
+    const reread = await ddb.send(new GetCommand({ TableName: TABLE_NAME, Key: { pk: userPk(userId), sk: Sk.profile() } }))
+    profile = reread.Item as UserProfileItem | undefined
+  }
   const onboarding = onboardingResult.Item as { completedAt?: string | null } | undefined
   // Current version + 18+ confirmed (Session 73), same rule as lib/consent.ts.
   const hasConsented = hasCurrentConsent(profile)

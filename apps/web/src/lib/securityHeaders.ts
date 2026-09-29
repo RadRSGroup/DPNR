@@ -9,6 +9,8 @@ export function buildSecurityHeaders(nonce: string): Record<string, string> {
   const apiOrigin = safeOrigin(process.env.NEXT_PUBLIC_DPNR_API_URL)
   const cognitoOrigin = cognitoIdpOrigin(process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID)
   const s3UploadOrigin = s3RegionalWildcard(process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID)
+  // Google sign-in exchanges its code at the Cognito domain's /oauth2/token.
+  const oauthOrigin = `https://${process.env.NEXT_PUBLIC_COGNITO_OAUTH_DOMAIN ?? 'dpnr-auth.auth.us-east-1.amazoncognito.com'}`
   // Verified live (2026-09-22, this slice): React dev mode genuinely needs
   // eval() for its debugging/stack-reconstruction tooling — confirmed via a
   // real CSP violation in the browser console ("React will never use
@@ -47,7 +49,7 @@ export function buildSecurityHeaders(nonce: string): Record<string, string> {
     // host here every upload was blocked by this directive (found live:
     // "violates ... connect-src"), since this header set first shipped.
     // Leftmost-label wildcard (the only valid position), same region.
-    `connect-src 'self'${cognitoOrigin ? ` ${cognitoOrigin}` : ''}${apiOrigin ? ` ${apiOrigin}` : ''}${s3UploadOrigin ? ` ${s3UploadOrigin}` : ''}`,
+    `connect-src 'self' ${oauthOrigin}${cognitoOrigin ? ` ${cognitoOrigin}` : ''}${apiOrigin ? ` ${apiOrigin}` : ''}${s3UploadOrigin ? ` ${s3UploadOrigin}` : ''}`,
     // Session 68: Focus Mode's Spotify embed (components/companion/
     // FocusMode.tsx). Only this one origin, and only framed — the embed is
     // loaded on click, so nothing reaches Spotify for users who don't use it.

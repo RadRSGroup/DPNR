@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl'
 import { signIn } from '@/lib/cognito/client'
 import { establishSessionTicket } from '@/lib/auth/keyBootstrap'
 import { resolveSafeNext } from '@/lib/navigation/safeNext'
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton'
 
 function LoginForm() {
   const t = useTranslations('Login')
@@ -73,6 +74,8 @@ function LoginForm() {
             <p className="text-red-400 text-sm">{error}</p>
           </div>
         )}
+
+        <GoogleSignInButton next={next} />
 
         <form onSubmit={handleEmailLogin} className="space-y-4">
           <div>

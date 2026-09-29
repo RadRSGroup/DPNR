@@ -1336,5 +1336,34 @@
       "breathe": "לנשום יחד",
       "ready": "להמשיך כשתרצו"
     }
+  },
+  "GoogleAuth": {
+    "continueWithGoogle": "המשך עם Google",
+    "or": "או",
+    "signingIn": "מחברים אתכם…",
+    "createTitle": "צרו סיסמת DPNR",
+    "createBody": "Google מחבר אתכם. הסיסמה הזו נועלת את המרחב הפרטי שלכם: ההרהורים שלכם מוצפנים בעזרתה, ו-DPNR לא יכול לראות או לאפס אותה. תזינו אותה בכל התחברות עם Google.",
+    "password": "סיסמה",
+    "confirmPassword": "אימות סיסמה",
+    "createCta": "יצירת סיסמה",
+    "mismatch": "הסיסמאות אינן תואמות.",
+    "tooShort": "השתמשו לפחות ב-8 תווים.",
+    "unlockTitle": "פתחו את המרחב שלכם",
+    "unlockBody": "הזינו את סיסמת ה-DPNR שלכם כדי לפתוח את המרחב הפרטי.",
+    "unlockCta": "פתיחה",
+    "unlocking": "פותחים…",
+    "wrongPassword": "הסיסמה אינה תואמת. נסו שוב.",
+    "forgot": "שכחתם? השתמשו בקוד השחזור",
+    "recoverTitle": "שימוש בקוד השחזור",
+    "recoverBody": "הזינו את קוד השחזור ששמרתם כשיצרתם את הסיסמה, ואז בחרו סיסמה חדשה.",
+    "recoveryCode": "קוד שחזור",
+    "newPassword": "סיסמה חדשה",
+    "recoverCta": "איפוס סיסמה",
+    "badCode": "קוד השחזור אינו תואם. בדקו אותו ונסו שוב.",
+    "backToUnlock": "חזרה",
+    "errorTitle": "ההתחברות עם Google לא הושלמה",
+    "cancelled": "ההתחברות בוטלה.",
+    "genericError": "משהו השתבש. נסו שוב.",
+    "backToLogin": "חזרה להתחברות"
   }
 }
