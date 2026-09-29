@@ -1,4 +1,5 @@
 import type { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb'
+import { createHash } from 'node:crypto'
 import { PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
 import { Sk, type CreditsTransactionItem } from '@dpnr/shared-types'
 import { HttpError } from './http'
@@ -126,4 +127,44 @@ export async function consumeCredits(
   await ddb.send(new PutCommand({ TableName: tableName, Item: txn }))
 
   return balanceAfter
+}
+
+/** How long an identical REFINE counts as the same billable action. */
+export const REFINE_DEDUPE_WINDOW_SECONDS = 15
+
+/**
+ * Claims the charge for one REFINE. Returns false when an identical REFINE
+ * (same session, step and input) was already charged in the last
+ * REFINE_DEDUPE_WINDOW_SECONDS, e.g. the client sending the same call twice
+ * (seen in production: pairs 3-240 ms apart). The duplicate still runs; it
+ * just isn't billed twice. The marker expires via the table's `ttl`.
+ */
+export async function claimRefineCharge(
+  ddb: DynamoDBDocumentClient,
+  tableName: string,
+  pk: string,
+  sessionId: string,
+  stepId: string,
+  input: unknown,
+  nowMs: number = Date.now(),
+): Promise<boolean> {
+  const inputHash = createHash('sha256').update(JSON.stringify(input ?? null)).digest('hex').slice(0, 32)
+  const nowSec = Math.floor(nowMs / 1000)
+  try {
+    await ddb.send(new PutCommand({
+      TableName: tableName,
+      Item: {
+        pk,
+        sk: Sk.refineCharge(sessionId, stepId, inputHash),
+        chargedAt: nowSec,
+        ttl: nowSec + REFINE_DEDUPE_WINDOW_SECONDS * 20,
+      },
+      ConditionExpression: 'attribute_not_exists(pk) OR chargedAt < :cutoff',
+      ExpressionAttributeValues: { ':cutoff': nowSec - REFINE_DEDUPE_WINDOW_SECONDS },
+    }))
+    return true
+  } catch (err) {
+    if (err instanceof Error && err.name === 'ConditionalCheckFailedException') return false
+    throw err
+  }
 }

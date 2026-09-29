@@ -12,6 +12,7 @@ import { ROOM_REFINE_COST } from '@dpnr/shared-types'
 import type { CompanionContextResponse, TwinListResponse, MirrorSummaryView } from '@dpnr/shared-types'
 import type { MirrorOpening } from './openings'
 import PatternPicker from './PatternPicker'
+import { uniquePatterns } from '@/lib/mirror-patterns'
 
 interface Props {
   userName: string
@@ -84,13 +85,14 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
 
   const sessionDates = mirrors ? mirrors.map((m) => new Date(m.createdAt)) : null
 
-  const patterns = (twin?.signals ?? [])
-    .filter((s) => s.domain === 'pattern' && s.status === tab)
-    .sort((a, b) => b.confidence - a.confidence)
-  // For the pattern picker (#33): confirmed first, then still exploring.
-  const ownPatterns = (twin?.signals ?? [])
-    .filter((s) => s.domain === 'pattern' && (s.status === 'confirmed' || s.status === 'candidate'))
-    .sort((a, b) => (a.status === b.status ? b.confidence - a.confidence : a.status === 'confirmed' ? -1 : 1))
+  // For the pattern picker (#33): confirmed first, then still exploring. One
+  // entry per pattern, so an exploring copy of a confirmed pattern is hidden.
+  const ownPatterns = uniquePatterns(
+    (twin?.signals ?? [])
+      .filter((s) => s.domain === 'pattern' && (s.status === 'confirmed' || s.status === 'candidate'))
+      .sort((a, b) => (a.status === b.status ? b.confidence - a.confidence : a.status === 'confirmed' ? -1 : 1)),
+  )
+  const patterns = ownPatterns.filter((s) => s.status === tab)
 
   const now = new Date()
   const weekStart = startOfWeek(now)

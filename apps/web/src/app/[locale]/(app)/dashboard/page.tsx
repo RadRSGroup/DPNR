@@ -8,6 +8,7 @@ import { Suspense } from 'react'
 import { useTranslations } from 'next-intl'
 import { ArrowRight, Compass, Plus } from 'lucide-react'
 import { getCurrentSession } from '@/lib/cognito/client'
+import { uniquePatterns } from '@/lib/mirror-patterns'
 import {
   getDashboard,
   getTwin,
@@ -126,9 +127,11 @@ function DashboardContent() {
   }
 
   const suggestedSpace = dashboard?.roadmap?.suggestedSpaces?.[0] as keyof typeof ROOM_LINK | undefined
-  const confirmedPatterns = (twin?.signals ?? [])
-    .filter((s) => s.domain === 'pattern' && s.status === 'confirmed')
-    .sort((a, b) => b.confidence - a.confidence)
+  const confirmedPatterns = uniquePatterns(
+    (twin?.signals ?? [])
+      .filter((s) => s.domain === 'pattern' && s.status === 'confirmed')
+      .sort((a, b) => b.confidence - a.confidence),
+  )
 
   const hour = new Date().getHours()
   const greeting = tc(hour < 12 ? 'greeting.morning' : hour < 18 ? 'greeting.afternoon' : 'greeting.evening')

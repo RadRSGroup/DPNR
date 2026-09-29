@@ -10,7 +10,7 @@ import {
 } from '@dpnr/shared-types'
 import { requireUserId, parseBody, jsonResponse, errorResponse, HttpError } from '../lib/http'
 import { requireConsent } from '../lib/consent'
-import { consumeCredits, grantCredits, ROOM_REFINE_COST } from '../lib/credits'
+import { claimRefineCharge, consumeCredits, grantCredits, ROOM_REFINE_COST } from '../lib/credits'
 import { isModelFailure } from '../lib/model-call'
 import { toLanguageInstruction, type Locale } from '../lib/locale'
 import { classifySafety, generateSafetyResponse, extractFreeTextForSafetyCheck } from '../lib/safety'
@@ -154,7 +154,10 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     if (safetyIntervention) {
       stepResult = { nextStepId: null, result: {} }
     } else {
-      const charged = body.action === 'REFINE'
+      // A duplicate of a REFINE charged moments ago runs but isn't billed again.
+      const charged =
+        body.action === 'REFINE' &&
+        (await claimRefineCharge(ddb, TABLE_NAME, pk, body.sessionId, body.stepId, body.input))
       if (charged) {
         await consumeCredits(ddb, TABLE_NAME, pk, ROOM_REFINE_COST, 'room_refine')
       }

@@ -11,6 +11,13 @@ export type RefineFn = (params: Record<string, unknown>) => Promise<Record<strin
  * instead of the old `/api/ai` route. `tokenCapReached` stays permanently false — the old per-user
  * token-budget gate (402 `token_cap_reached`) has no `/v1` equivalent yet (Credits is unbuilt).
  */
+/**
+ * Identical calls already in flight (same type + params). A screen that mounts
+ * twice, or two effects asking for the same suggestions, share one REFINE
+ * instead of sending (and paying for) it twice.
+ */
+const inFlight = new Map<string, Promise<Record<string, unknown> | null>>()
+
 export function useAI(onRefine: RefineFn) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -19,7 +26,13 @@ export function useAI(onRefine: RefineFn) {
     setLoading(true)
     setError(null)
     try {
-      const res = await onRefine(params)
+      const key = `${_type}:${JSON.stringify(params)}`
+      let pending = inFlight.get(key)
+      if (!pending) {
+        pending = onRefine(params).finally(() => inFlight.delete(key))
+        inFlight.set(key, pending)
+      }
+      const res = await pending
       if (res === null) {
         setError('AI call failed')
         return null
