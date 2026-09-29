@@ -44,6 +44,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
             signalType: item.signalType,
             direction: item.direction,
             strength: item.strength,
+            createdAt: item.createdAt,
           }
         })
     )

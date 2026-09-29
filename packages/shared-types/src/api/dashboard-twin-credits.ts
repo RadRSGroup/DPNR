@@ -125,10 +125,25 @@ export const TwinListResponseSchema = z.object({
       signalType: SignalTypeSchema.optional(),
       direction: SignalDirectionSchema.optional(),
       strength: z.number().min(0).max(1).optional(),
+      // ISO timestamp (2026-09-29), so Growth Tracker can list the signals
+      // behind its monthly counts with `confirmedThisMonth` below. Optional
+      // only so a frontend on an older backend still parses.
+      createdAt: z.string().optional(),
     })
   ),
 })
 export type TwinListResponse = z.infer<typeof TwinListResponseSchema>
+
+/**
+ * Growth Tracker's monthly window: confirmed signals created in the current
+ * calendar month (UTC). Shared by dashboard/handler.ts (the three counts)
+ * and the Growth page (the lists behind them) so the two can't drift apart.
+ * A signal without `createdAt` is left out.
+ */
+export function confirmedThisMonth<T extends { status: string; createdAt?: string }>(signals: T[], now: Date = new Date()): T[] {
+  const monthStart = `${now.toISOString().slice(0, 7)}-01`
+  return signals.filter((s) => s.status === 'confirmed' && s.createdAt != null && s.createdAt.slice(0, 10) >= monthStart)
+}
 
 /** POST /v1/twin/signals/{id}/confirm | reject — spec §5 Trust rules: never silently overwritten. */
 /**

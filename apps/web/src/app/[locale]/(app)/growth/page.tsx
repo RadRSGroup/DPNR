@@ -16,6 +16,7 @@ import StatTile from '@/components/shared/StatTile'
 import ArchetypeBadge from '@/components/shared/ArchetypeBadge'
 import CheckInModal from '@/components/shared/CheckInModal'
 import FeelBodyButton from '@/components/shared/FeelBodyButton'
+import MonthlySignalsSheet, { type MonthlyStat } from '@/components/growth/MonthlySignalsSheet'
 import { timeAgo } from '@/lib/format'
 
 /**
@@ -74,10 +75,13 @@ function GrowthTrackerContent() {
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null)
   const [decisions, setDecisions] = useState<DecisionsListResponse['decisions']>([])
   const [twin, setTwin] = useState<TwinListResponse | null>(null)
+  const [twinFailed, setTwinFailed] = useState(false)
   const [weeklyRecap, setWeeklyRecap] = useState<WeeklyRecapResponse | null>(null)
   const [valuesNeeds, setValuesNeeds] = useState<GrowthValuesNeedsResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [checkInOpen, setCheckInOpen] = useState(false)
+  // Which monthly count's list is open (the tiles below open it).
+  const [openStat, setOpenStat] = useState<MonthlyStat | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -94,7 +98,7 @@ function GrowthTrackerContent() {
 
       // Fetched separately, own failure boundary — same pattern Dashboard uses.
       getDecisionsList().then((r) => setDecisions(r.decisions)).catch(() => {})
-      getTwin().then(setTwin).catch(() => {})
+      getTwin().then(setTwin).catch(() => setTwinFailed(true))
       getWeeklyRecap().then(setWeeklyRecap).catch(() => {})
       getGrowthValuesNeeds().then(setValuesNeeds).catch(() => {})
     }
@@ -163,10 +167,16 @@ function GrowthTrackerContent() {
             {/* Alignment Score + this slice's real monthly counts. */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <StatTile label={t('stats.alignmentScore')} value={loading ? '…' : dashboard?.alignmentScore != null ? `${dashboard.alignmentScore}%` : '—'} />
-              <StatTile label={t('stats.areasGrowing')} value={loading ? '…' : String(dashboard?.areasGrowing ?? 0)} />
-              <StatTile label={t('stats.patternsShifting')} value={loading ? '…' : String(dashboard?.patternsShifting ?? 0)} />
-              <StatTile label={t('stats.insightsGained')} value={loading ? '…' : String(dashboard?.insightsGained ?? 0)} />
+              {(['areasGrowing', 'patternsShifting', 'insightsGained'] as const).map((stat) => (
+                <StatTile
+                  key={stat}
+                  label={t(`stats.${stat}`)}
+                  value={loading ? '…' : String(dashboard?.[stat] ?? 0)}
+                  onClick={loading ? undefined : () => setOpenStat(stat)}
+                />
+              ))}
             </div>
+            {openStat && <MonthlySignalsSheet stat={openStat} twin={twin} failed={twinFailed} onClose={() => setOpenStat(null)} />}
 
             {/* Domains of Life — same real aggregate Dashboard's "Life
                 Domains" card reads, rendered as rings here to match this

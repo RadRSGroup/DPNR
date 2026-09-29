@@ -14,6 +14,7 @@ import {
   type AlignmentScoreSnapshotItem,
   type LifeDomainSummaryItem,
   type DashboardResponse,
+  confirmedThisMonth,
 } from '@dpnr/shared-types'
 import { requireUserId, jsonResponse, errorResponse } from '../lib/http'
 import { getSessionCrypto } from '../lib/session-crypto'
@@ -157,12 +158,12 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (event) 
     const archetypes = aggregateArchetypes(twinSignals)
 
     // Growth Tracker (Slice 4): confirmed signals created this calendar
-    // month (UTC), same `today`/window convention as alignmentHistory above.
-    const monthStart = `${today.slice(0, 7)}-01`
-    const confirmedThisMonth = twinSignals.filter((s) => s.status === 'confirmed' && s.createdAt.slice(0, 10) >= monthStart)
-    const insightsGained = confirmedThisMonth.length
-    const patternsShifting = confirmedThisMonth.filter((s) => s.domain === 'pattern').length
-    const areasGrowing = new Set(confirmedThisMonth.map((s) => s.lifeDomain).filter((d): d is NonNullable<typeof d> => d != null)).size
+    // month (UTC). The window lives in shared-types so the Growth page's
+    // lists behind these numbers use the same filter.
+    const thisMonth = confirmedThisMonth(twinSignals)
+    const insightsGained = thisMonth.length
+    const patternsShifting = thisMonth.filter((s) => s.domain === 'pattern').length
+    const areasGrowing = new Set(thisMonth.map((s) => s.lifeDomain).filter((d): d is NonNullable<typeof d> => d != null)).size
 
     // Priority order per spec §2 Golden Path B step 3 ("Daily Card, relevant
     // continuation, upcoming commitment, Roadmap cue... only when useful"):

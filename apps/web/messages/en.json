@@ -256,6 +256,7 @@
       "patternsShifting": "Patterns Shifting",
       "insightsGained": "Insights Gained"
     },
+    "statLists": {"close": "Close", "loading": "Loading…", "empty": "Nothing confirmed yet this month.", "unavailable": "This list isn't available right now. Try again a little later.", "areasGrowing": "Life areas with at least one insight you confirmed this month.", "patternsShifting": "Patterns you confirmed this month.", "insightsGained": "Everything you confirmed this month."},
     "domains": { "title": "Domains of Life", "subtitle": "Where your attention has been: each area’s share of what you’ve confirmed" },
     "alignmentOverTime": { "title": "Alignment Over Time", "subtitle": "Your overall alignment trend" },
     "archetypes": { "title": "Your Archetypes", "subtitle": "The energies that show up for you" },
@@ -1060,7 +1061,7 @@
       },
       "s3": {
         "title": "3. Eligibility",
-        "body": "<p>You must be at least 16 years old to use the Service. By registering, you confirm that you meet this requirement.</p>"
+        "body": "<p>You must be at least 18 years old to use the Service. By registering, you confirm that you meet this requirement.</p>"
       },
       "s4": {
         "title": "4. User Accounts",
