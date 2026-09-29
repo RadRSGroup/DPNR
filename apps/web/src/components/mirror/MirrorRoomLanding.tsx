@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import { useLocale, useTranslations } from 'next-intl'
 import { ArrowRight, Check, Heart, Plus } from 'lucide-react'
 import { Link } from '@/i18n/navigation'
 import Sidebar from '@/components/layout/Sidebar'
@@ -13,6 +14,7 @@ import type { CompanionContextResponse, TwinListResponse, MirrorSummaryView } fr
 import type { MirrorOpening } from './openings'
 import PatternPicker from './PatternPicker'
 import { uniquePatterns } from '@/lib/mirror-patterns'
+import { useMirrorPatternLabels } from '@/lib/mirror-pattern-labels'
 
 interface Props {
   userName: string
@@ -45,15 +47,10 @@ interface Props {
  * Left out with reason: the reference's top bar (Focus Mode player, session
  * timer, help) belongs to an active session, not the landing.
  */
-const INSIGHTS = [
-  'Awareness is the first step. Choice is the next.',
-  'What you notice, you can begin to change.',
-  'A pattern seen clearly loses some of its hold.',
-  'Pause. The reaction is not the whole of you.',
-  'Curiosity is gentler than judgement, and it sees more.',
-]
+/** Count of `MirrorRoom.landing.insights.*` (0-based keys). */
+const INSIGHT_COUNT = 5
 
-const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 
 /** Recent Mirror Reflections shown before "Show more" (founder feedback 2026-09-27). */
 const RECENT_REFLECTIONS_SHOWN = 3
@@ -68,6 +65,9 @@ function startOfWeek(d: Date): Date {
 }
 
 export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) {
+  const t = useTranslations('MirrorRoom')
+  const locale = useLocale()
+  const labels = useMirrorPatternLabels()
   const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
   const [twin, setTwin] = useState<TwinListResponse | null>(null)
   const [mirrors, setMirrors] = useState<MirrorSummaryView[] | null>(null)
@@ -109,7 +109,7 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
     (sessionDates ?? []).filter((d) => d >= weekStart).map((d) => (d.getDay() + 6) % 7)
   )
   const thisWeek = (sessionDates ?? []).filter((d) => d >= weekStart).length
-  const insight = dailyCard?.text ?? INSIGHTS[Math.floor(now.getTime() / 86_400_000) % INSIGHTS.length]
+  const insight = dailyCard?.text ?? t(`landing.insights.${Math.floor(now.getTime() / 86_400_000) % INSIGHT_COUNT}`)
 
   return (
     <div className="lg:flex lg:min-h-screen">
@@ -124,14 +124,14 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
           <div className="max-w-[393px] lg:max-w-none mx-auto px-5 lg:px-8 pb-10 lg:pb-12">
             <div className="pt-14 lg:pt-10 pb-6">
               <h1 className="font-display text-3xl lg:text-4xl text-white">
-                Mirror Room
+                {t('title')}
               </h1>
               <p className="text-sm lg:text-base text-white/80 mt-3 leading-relaxed">
-                Notice what this moment reveals within you.
+                {t('landing.intro')}
                 <br />
-                Breathe and begin.
+                {t('landing.breathe')}
               </p>
-              {sourceTopicTitle && <p className="text-xs text-purple-300/70 mt-2">Exploring: {sourceTopicTitle}</p>}
+              {sourceTopicTitle && <p className="text-xs text-purple-300/70 mt-2">{t('landing.exploringTopic', { title: sourceTopicTitle })}</p>}
             </div>
 
             {/* Top row: welcome card | Today's Insight + week view */}
@@ -149,9 +149,9 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                     />
                   </div>
                   <div className="flex flex-col justify-center p-5 lg:p-8 sm:w-1/2">
-                    <h2 className="font-display text-2xl lg:text-3xl text-white leading-tight">Welcome to Mirror Room</h2>
+                    <h2 className="font-display text-2xl lg:text-3xl text-white leading-tight">{t('landing.welcomeTitle')}</h2>
                     <p className="text-white/70 text-sm mt-3 leading-relaxed">
-                      This is your space to pause, observe, and explore your inner patterns. The more you see, the more you&apos;re free to choose.
+                      {t('landing.welcomeBody')}
                     </p>
                     <div className="h-px bg-white/10 my-6" />
                     <button
@@ -159,16 +159,16 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                       className="self-start inline-flex items-center gap-3 rounded-full bg-white/95 hover:bg-white text-[var(--color-violet-950)] ps-5 pe-2 py-2 font-medium transition-colors"
                     >
                       <LotusIcon className="w-5 h-5 text-[var(--color-violet-600)]" />
-                      Start Mirror
+                      {t('landing.start')}
                       <span
                         className="inline-flex items-center gap-1 rounded-full bg-[var(--color-violet-500)]/15 text-[var(--color-violet-600)] text-xs px-2.5 py-1"
-                        title={`${ROOM_REFINE_COST} credit${ROOM_REFINE_COST === 1 ? '' : 's'} per refine`}
+                        title={t('landing.creditsPerRefine', { count: ROOM_REFINE_COST })}
                       >
                         <LotusIcon className="w-3.5 h-3.5" /> {ROOM_REFINE_COST}
                       </span>
                     </button>
                     <p className="text-[var(--color-text-tertiary)] text-xs mt-2">
-                      {ROOM_REFINE_COST} credit{ROOM_REFINE_COST === 1 ? '' : 's'} per refine
+                      {t('landing.creditsPerRefine', { count: ROOM_REFINE_COST })}
                     </p>
                   </div>
                 </div>
@@ -186,21 +186,21 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                     height={150}
                     className="absolute end-4 top-1/2 -translate-y-1/2 opacity-80 mix-blend-screen pointer-events-none hidden sm:block [mask-image:radial-gradient(circle,black_45%,transparent_72%)]"
                   />
-                  <p className="font-display text-xl text-white">Today&apos;s Insight</p>
+                  <p className="font-display text-xl text-white">{t('landing.insightTitle')}</p>
                   <span aria-hidden className="block font-display text-4xl leading-none text-[var(--color-magenta-500)] mt-3">&ldquo;</span>
                   <p className="text-white/85 text-sm leading-relaxed sm:max-w-[60%] mt-1">{insight}</p>
                   <button
                     onClick={() => onStart({ mode: 'situation' })}
                     className="mt-4 inline-flex items-center gap-2 text-sm text-[var(--color-magenta-500)] hover:text-pink-300 transition-colors"
                   >
-                    Keep reflecting <Heart className="w-4 h-4" />
+                    {t('landing.keepReflecting')} <Heart className="w-4 h-4" />
                   </button>
                 </Card>
 
                 {/* Private week view (replaces the reference's streak/points). */}
                 <Card className="lg:px-7 lg:py-6">
-                  <p className="font-display text-xl text-white">Your Week</p>
-                  <p className="text-sm text-white/70 mt-1">Just for you to notice. No streak to keep.</p>
+                  <p className="font-display text-xl text-white">{t('landing.weekTitle')}</p>
+                  <p className="text-sm text-white/70 mt-1">{t('landing.weekSubtitle')}</p>
                   <div className="flex justify-between gap-1 mt-5 max-w-md">
                     {WEEKDAYS.map((label, i) => {
                       const done = daysWithSession.has(i)
@@ -214,7 +214,7 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                                 : 'border-white/15 text-white/70'
                             }`}
                           >
-                            {label}
+                            {t(`landing.weekdays.${label}`)}
                           </span>
                           {done && (
                             <span className="absolute -bottom-1.5 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
@@ -231,15 +231,15 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                     ) : thisWeek > 0 ? (
                       <p className="flex items-baseline gap-2">
                         <span className="text-3xl font-light text-white">{thisWeek}</span>
-                        <span className="text-sm text-white/70">{thisWeek === 1 ? 'reflection' : 'reflections'} this week</span>
+                        <span className="text-sm text-white/70">{t('landing.reflectionsThisWeek', { count: thisWeek })}</span>
                       </p>
                     ) : (
-                      <p className="text-sm text-white/70">Your first reflection this week is here whenever you&apos;re ready.</p>
+                      <p className="text-sm text-white/70">{t('landing.firstThisWeek')}</p>
                     )}
                     {sessionDates !== null && sessionDates.length > 0 && (
                       <p className="flex items-center gap-2 text-sm text-white/70 shrink-0">
                         <LotusIcon className="w-5 h-5 text-[var(--color-violet-300)]" />
-                        {sessionDates.length} in total
+                        {t('landing.inTotal', { count: sessionDates.length })}
                       </p>
                     )}
                   </div>
@@ -250,33 +250,33 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
             {/* Bottom row: Start Your Reflection | Your Patterns */}
             <div className="grid gap-4 lg:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-stretch mt-4 lg:mt-6">
               <Card className="lg:px-6 lg:py-6">
-                <p className="font-display text-xl text-white">Start Your Reflection</p>
-                <p className="text-sm text-white/70 mt-1">Choose how you want to look within.</p>
+                <p className="font-display text-xl text-white">{t('landing.startTitle')}</p>
+                <p className="text-sm text-white/70 mt-1">{t('landing.startSubtitle')}</p>
                 <div className="grid sm:grid-cols-3 gap-3 mt-5">
                   <ModeCard
                     orb="/images/mirror/orb-pattern.webp"
-                    title="By Pattern"
-                    text="Choose a pattern to look at, or let DPNR help you notice one."
+                    title={t('landing.modes.pattern.title')}
+                    text={t('landing.modes.pattern.text')}
                     onClick={() => setPickerOpen(true)}
                   />
                   <ModeCard
                     orb="/images/mirror/orb-situation.webp"
-                    title="By Situation"
-                    text="Reflect on a current situation or recent experience."
+                    title={t('landing.modes.situation.title')}
+                    text={t('landing.modes.situation.text')}
                     onClick={() => onStart({ mode: 'situation' })}
                   />
                   <ModeCard
                     orb="/images/mirror/orb-archetype.webp"
-                    title="Trigger Archetypes"
-                    text="Notice which part of you takes over when you're triggered."
+                    title={t('landing.modes.archetype.title')}
+                    text={t('landing.modes.archetype.text')}
                     onClick={() => onStart({ mode: 'archetype' })}
                   />
                 </div>
               </Card>
 
               <Card className="lg:px-6 lg:py-6 flex flex-col">
-                <p className="font-display text-xl text-white">Your Patterns</p>
-                <p className="text-sm text-white/70 mt-1">See clearly. Understand deeply. Choose differently.</p>
+                <p className="font-display text-xl text-white">{t('landing.patternsTitle')}</p>
+                <p className="text-sm text-white/70 mt-1">{t('landing.patternsSubtitle')}</p>
                 <div className="flex gap-2 mt-4" role="tablist">
                   {(['confirmed', 'candidate'] as const).map((k) => (
                     <button
@@ -288,14 +288,14 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                         tab === k ? 'bg-[var(--color-violet-600)]/40 text-white' : 'text-white/60 hover:text-white'
                       }`}
                     >
-                      {k === 'confirmed' ? 'Active Patterns' : 'Exploring'}
+                      {t(`landing.tabs.${k}`)}
                     </button>
                   ))}
                 </div>
 
                 <div className="mt-3 flex-1">
                   {twin === null && twinFailed ? (
-                    <p className="text-sm text-[var(--color-text-tertiary)] mt-2">Your patterns couldn&apos;t load right now. Try again in a moment.</p>
+                    <p className="text-sm text-[var(--color-text-tertiary)] mt-2">{t('landing.patternsFailed')}</p>
                   ) : twin === null ? (
                     <span aria-hidden className="block h-3 w-2/3 rounded-full bg-white/[0.07] animate-soft-pulse mt-3" />
                   ) : patterns.length > 0 ? (
@@ -308,9 +308,9 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                             </span>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className="text-sm text-white truncate">{p.name ?? p.description}</p>
+                                <p className="text-sm text-white truncate">{p.name ? labels.name(p.name) : p.description}</p>
                                 <span className="shrink-0 rounded-full bg-[var(--color-violet-600)]/30 text-[var(--color-violet-200)] text-[10px] px-2 py-0.5">
-                                  {tab === 'confirmed' ? 'Active' : 'Exploring'}
+                                  {t(`tags.${tab}`)}
                                 </span>
                               </div>
                               {/* Name first, then the reading (2026-09-27). The old
@@ -320,7 +320,7 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                             </div>
                             <button
                               onClick={() => onStart({ mode: 'pattern', patternText: p.description, patternName: p.name, source: tab === 'confirmed' ? 'confirmed' : 'exploring' })}
-                              aria-label={`Explore: ${p.description}`}
+                              aria-label={t('landing.exploreAria', { description: p.description })}
                               className="w-8 h-8 shrink-0 rounded-full bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/70 transition-colors"
                             >
                               <ArrowRight className="w-4 h-4 rtl:-scale-x-100" />
@@ -332,8 +332,8 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                   ) : (
                     <p className="text-sm text-[var(--color-text-tertiary)] mt-2">
                       {tab === 'confirmed'
-                        ? 'Patterns show up here once you confirm the ones DPNR notices (on your Dashboard).'
-                        : 'Nothing new noticed right now. Patterns DPNR picks up from your sessions appear here first.'}
+                        ? t('landing.emptyConfirmed')
+                        : t('landing.emptyCandidate')}
                     </p>
                   )}
                 </div>
@@ -342,7 +342,7 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                   onClick={() => onStart({ mode: 'situation' })}
                   className="mt-4 self-center inline-flex items-center gap-2 text-sm text-[var(--color-violet-300)] hover:text-white transition-colors"
                 >
-                  <Plus className="w-4 h-4" /> Explore something new
+                  <Plus className="w-4 h-4" /> {t('landing.exploreNew')}
                 </button>
               </Card>
             </div>
@@ -351,12 +351,12 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                 page (mirror/[id]: read, continue, reopen). Read/continue
                 only here; nothing edits past evidence from this list. */}
             <Card className="mt-4 lg:mt-6 lg:px-6 lg:py-6">
-              <p className="font-display text-xl text-white">Recent Reflections</p>
-              <p className="text-sm text-white/70 mt-1">Come back to what you looked at.</p>
+              <p className="font-display text-xl text-white">{t('landing.recentTitle')}</p>
+              <p className="text-sm text-white/70 mt-1">{t('landing.recentSubtitle')}</p>
               {mirrors === null ? (
                 <span aria-hidden className="block h-3 w-1/2 rounded-full bg-white/[0.07] animate-soft-pulse mt-4" />
               ) : mirrors.length === 0 ? (
-                <p className="text-sm text-[var(--color-text-tertiary)] mt-3">Your reflections will appear here once you&apos;ve started your first one.</p>
+                <p className="text-sm text-[var(--color-text-tertiary)] mt-3">{t('landing.recentEmpty')}</p>
               ) : (
                 <>
                   <ul className={`mt-3 divide-y divide-white/[0.06] ${showAllReflections ? 'max-h-96 overflow-y-auto scrollbar-glass pe-1' : ''}`}>
@@ -367,11 +367,11 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                           className="group flex items-center gap-3 py-3 text-start"
                         >
                           <span className="w-16 shrink-0 text-xs text-[var(--color-text-tertiary)]">
-                            {new Date(m.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                            {new Date(m.createdAt).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
                           </span>
                           <span className="flex-1 min-w-0 text-sm text-white/85 truncate">{m.label}</span>
                           <span className="shrink-0 rounded-full bg-white/[0.06] text-white/60 text-[11px] px-2 py-0.5">
-                            {m.status === 'completed' ? 'Read' : 'Continue'}
+                            {m.status === 'completed' ? t('landing.read') : t('landing.resume')}
                           </span>
                           <ArrowRight className="w-4 h-4 shrink-0 text-white/40 group-hover:text-white/80 transition-colors rtl:-scale-x-100" />
                         </Link>
@@ -383,7 +383,7 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                       onClick={() => setShowAllReflections((v) => !v)}
                       className="mt-3 text-sm text-[var(--color-violet-300)] hover:text-white transition-colors"
                     >
-                      {showAllReflections ? 'Show less' : 'Show more'}
+                      {showAllReflections ? t('landing.showLess') : t('landing.showMore')}
                     </button>
                   )}
                 </>

@@ -44,6 +44,7 @@ const MIRROR_REOPEN_STEPS = ['SITUATION', 'AUTOMATIC_REACTION', 'PATTERN', 'LIFE
 export default function MirrorDetailPage() {
   const locale = useLocale()
   const tr = useTranslations('RoomsReopen')
+  const t = useTranslations('MirrorRoom')
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [session, setSession] = useState<MirrorRoomFullResponse | null>(null)
@@ -83,14 +84,14 @@ export default function MirrorDetailPage() {
 
           <div className="max-w-[393px] lg:max-w-2xl mx-auto px-5 lg:px-8 pt-14 lg:pt-8 pb-10 lg:pb-12">
             <Link href="/mirror/new" className="text-[var(--color-violet-400)] text-sm">
-              ← Mirror Room
+              {t('detail.backLink')}
             </Link>
 
-            {loading && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-12">Loading…</p>}
+            {loading && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-12">{t('detail.loading')}</p>}
 
             {!loading && notFound && (
               <div className="pt-12 text-center">
-                <p className="text-white/50">Reflection not found.</p>
+                <p className="text-white/50">{t('detail.notFound')}</p>
               </div>
             )}
 
@@ -102,12 +103,12 @@ export default function MirrorDetailPage() {
                       session.status === 'completed' ? 'text-emerald-400' : 'text-[var(--color-violet-400)]'
                     }`}
                   >
-                    {session.status === 'completed' ? '✓ Completed' : 'In progress'}
+                    {session.status === 'completed' ? t('detail.completed') : t('detail.inProgress')}
                     {' · '}
                     {formatDate(session.createdAt, locale)}
                   </p>
                   <h1 className="font-display text-xl lg:text-2xl text-white mt-1">
-                    {session.lifeDomain ? `Reflection — ${session.lifeDomain}` : 'Reflection'}
+                    {session.lifeDomain ? t('detail.titleWithDomain', { domain: session.lifeDomain }) : t('detail.title')}
                   </h1>
                 </div>
 
@@ -126,77 +127,77 @@ export default function MirrorDetailPage() {
                     href={`/mirror/new?resume=${session.mirrorId}`}
                     className="inline-flex items-center gap-2 rounded-full bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] px-4 py-2 text-sm text-white transition-colors"
                   >
-                    Continue →
+                    {t('detail.continue')}
                   </Link>
                 )}
 
                 {(session.situation || session.trigger) && (
                   <Card>
-                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-3">The moment</p>
+                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-3">{t('detail.sections.moment')}</p>
                     <div className="space-y-3">
-                      <Field label="Situation" value={session.situation} />
-                      <Field label="Trigger" value={session.trigger} />
+                      <Field label={t('detail.fields.situation')} value={session.situation} />
+                      <Field label={t('detail.fields.trigger')} value={session.trigger} />
                     </div>
                   </Card>
                 )}
 
                 {(session.thought || session.emotion || session.bodyResponse || session.emotionsFelt?.length || session.automaticReaction) && (
                   <Card>
-                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-3">In the moment</p>
+                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-3">{t('detail.sections.inTheMoment')}</p>
                     <div className="space-y-3">
-                      <Field label="Thought" value={session.thought} />
+                      <Field label={t('detail.fields.thought')} value={session.thought} />
                       <FeltSummary emotionsFelt={session.emotionsFelt} bodyPlacements={session.bodyPlacements} emotion={session.emotion} bodyResponse={session.bodyResponse} />
-                      <Field label="What you did" value={session.automaticReaction} />
+                      <Field label={t('detail.fields.whatYouDid')} value={session.automaticReaction} />
                     </div>
                   </Card>
                 )}
 
                 {(session.copingResponse || session.recurringPattern) && (
                   <Card>
-                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-3">The pattern</p>
+                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-3">{t('detail.sections.pattern')}</p>
                     <div className="space-y-3">
-                      <Field label="How you tried to cope" value={session.copingResponse} />
-                      <Field label="Recurring pattern" value={session.recurringPattern} />
+                      <Field label={t('detail.fields.coping')} value={session.copingResponse} />
+                      <Field label={t('detail.fields.recurring')} value={session.recurringPattern} />
                     </div>
                   </Card>
                 )}
 
                 {session.energyMoodEffect && (
                   <Card>
-                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-3">Life impact</p>
-                    <Field label="Effect on energy &amp; mood" value={session.energyMoodEffect} />
+                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-3">{t('detail.sections.lifeImpact')}</p>
+                    <Field label={t('detail.fields.energyMood')} value={session.energyMoodEffect} />
                   </Card>
                 )}
 
                 {(session.emotionUnderneath || session.payoff || session.deeperBelief || session.origin) && (
                   <Card>
-                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-3">Going deeper</p>
+                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-3">{t('detail.sections.deeper')}</p>
                     <div className="space-y-3">
-                      <Field label="Quieter underneath the feeling" value={session.emotionUnderneath} />
-                      <Field label="What the reaction protected or gave you" value={session.payoff} />
-                      <Field label="What it seemed to say about you" value={session.deeperBelief} />
-                      <Field label="Where it feels familiar from" value={session.origin} />
+                      <Field label={t('detail.fields.underneath')} value={session.emotionUnderneath} />
+                      <Field label={t('detail.fields.payoff')} value={session.payoff} />
+                      <Field label={t('detail.fields.belief')} value={session.deeperBelief} />
+                      <Field label={t('detail.fields.origin')} value={session.origin} />
                     </div>
                   </Card>
                 )}
 
                 {session.synthesis && (
                   <Card>
-                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">Synthesis</p>
+                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">{t('synthesis')}</p>
                     <p className="text-white/70 text-sm italic leading-relaxed">&quot;{session.synthesis}&quot;</p>
                   </Card>
                 )}
 
                 {session.support && (
                   <Card>
-                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">What would support you</p>
+                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">{t('detail.sections.support')}</p>
                     <p className="text-white/70 text-sm leading-relaxed">{session.support}</p>
                   </Card>
                 )}
 
                 {session.commitment && (
                   <Card>
-                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">Commitment</p>
+                    <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-2">{t('detail.sections.commitment')}</p>
                     <p className="text-white/70 text-sm leading-relaxed">{session.commitment}</p>
                   </Card>
                 )}

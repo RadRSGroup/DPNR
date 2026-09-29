@@ -22,11 +22,36 @@ export const DEFAULT_OPENING: MirrorOpening = { mode: 'situation' }
 export const TRIGGER_ARCHETYPES = ['Protector', 'Healer', 'Seeker', 'Visionary'] as const
 
 /**
+ * The pre-fill in the person's language (Step01Situation passes it from
+ * `MirrorRoom.step1.prefill*`). `reference` gets the English name and is
+ * expected to show its translated name; `own` gets the signal's own text.
+ */
+export interface PrefillCopy {
+  reference: (patternName: string) => string
+  own: (patternText: string) => string
+}
+
+/**
+ * The anchors as the person saw them (a translated reference-pattern or
+ * archetype name). Either the stored English anchor or its shown form keeps
+ * the entry, so a pre-fill written in Hebrew still counts.
+ */
+export interface ShownAnchors {
+  patternName?: string
+  archetype?: string
+}
+
+/**
  * What step 1 pre-fills for a pattern opening. The person's own reading
  * (their Twin signal) is quoted; a reference pattern is named — its general
  * description isn't about them, so it isn't written into their own words.
  */
-export function patternPrefill(opening: Extract<MirrorOpening, { mode: 'pattern' }>): string {
+export function patternPrefill(opening: Extract<MirrorOpening, { mode: 'pattern' }>, copy?: PrefillCopy): string {
+  if (copy) {
+    return opening.source === 'reference'
+      ? copy.reference(opening.patternName ?? opening.patternText)
+      : copy.own(opening.patternText)
+  }
   if (opening.source === 'reference') {
     return `A pattern that may be showing up for me: ${opening.patternName ?? opening.patternText}
 
@@ -49,8 +74,9 @@ function patternAnchor(opening: Extract<MirrorOpening, { mode: 'pattern' }>): st
  * step-1 text still contains it. If they deleted it, the entry falls back
  * to 'situation'.
  */
-export function entryFor(opening: MirrorOpening, situation: string, trigger: string, archetype?: string): MirrorEntry {
-  if (opening.mode === 'pattern' && situation.includes(patternAnchor(opening))) {
+export function entryFor(opening: MirrorOpening, situation: string, trigger: string, archetype?: string, shown?: ShownAnchors): MirrorEntry {
+  const shownPattern = opening.mode === 'pattern' && opening.source === 'reference' ? shown?.patternName : undefined
+  if (opening.mode === 'pattern' && (situation.includes(patternAnchor(opening)) || (!!shownPattern && situation.includes(shownPattern)))) {
     return {
       mode: 'pattern',
       patternDescription: opening.patternText.slice(0, 1000),
@@ -58,7 +84,7 @@ export function entryFor(opening: MirrorOpening, situation: string, trigger: str
       ...(opening.source ? { patternSource: opening.source } : {}),
     }
   }
-  if (opening.mode === 'archetype' && archetype && trigger.includes(archetype)) {
+  if (opening.mode === 'archetype' && archetype && (trigger.includes(archetype) || (!!shown?.archetype && trigger.includes(shown.archetype)))) {
     return { mode: 'archetype', archetype }
   }
   if (opening.mode === 'situation' && opening.helpIdentify) return { mode: 'situation', helpIdentify: true }

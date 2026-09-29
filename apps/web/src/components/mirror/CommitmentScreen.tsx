@@ -29,10 +29,11 @@ function addDays(days: number) {
  */
 export default function CommitmentScreen({ sessionTitle, initialSupport = '', onDone, onBack }: Props) {
   const t = useTranslations('MirrorDepth')
+  const tm = useTranslations('MirrorRoom')
   const [commitment, setCommitment] = useState('')
   const [support, setSupport] = useState(initialSupport)
 
-  const calendarTitle = commitment.trim() || `Mirror Room check-in: "${sessionTitle}"`
+  const calendarTitle = commitment.trim() || tm('commitment.calendarTitle', { title: sessionTitle })
   const calendarDate = addDays(7)
 
   return (
@@ -40,17 +41,17 @@ export default function CommitmentScreen({ sessionTitle, initialSupport = '', on
 
       <div className="pt-14 lg:pt-8 px-5 pb-4 text-center space-y-1">
         <h1 className="text-white text-lg font-medium">&quot;{sessionTitle}&quot;</h1>
-        <p className="text-white/50 text-sm">Last Step: Before You Leave</p>
+        <p className="text-white/50 text-sm">{tm('commitment.subtitle')}</p>
       </div>
 
       <div className="flex-1 px-5 space-y-5 overflow-y-auto no-scrollbar pb-4">
         <div className="bg-white/8 border border-white/12 rounded-3xl px-5 py-6 space-y-4 text-center">
           <p className="text-white/60 text-sm leading-relaxed">
-            You looked closely at a moment that got under your skin — the reaction, the pattern underneath it, what it touches in your life.
+            {tm('commitment.recap')}
           </p>
           <div className="w-8 h-px bg-white/15 mx-auto" />
           <p className="text-white/80 text-sm leading-relaxed">
-            That kind of honesty isn&apos;t easy. Before you go, take a moment with two gentle questions.
+            {tm('commitment.honesty')}
           </p>
         </div>
 
@@ -68,24 +69,24 @@ export default function CommitmentScreen({ sessionTitle, initialSupport = '', on
           </Dictatable>
         </div>
 
-        <p className="text-white font-medium text-sm text-center">What&apos;s one new possibility you&apos;d like to try from here?</p>
+        <p className="text-white font-medium text-sm text-center">{tm('commitment.possibilityQuestion')}</p>
 
         <Dictatable>
           <textarea
             value={commitment}
             onChange={e => setCommitment(e.target.value.slice(0, 5000))}
             rows={3}
-            placeholder='"Next time this happens, I could..." (optional)'
+            placeholder={tm('commitment.possibilityPlaceholder')}
             className="w-full bg-white/8 border border-white/15 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
           />
         </Dictatable>
 
         <div className="space-y-2">
-          <p className="text-[var(--color-text-tertiary)] text-xs text-center">Add a reminder</p>
+          <p className="text-[var(--color-text-tertiary)] text-xs text-center">{tm('commitment.addReminder')}</p>
           <CalendarButtons
             title={calendarTitle}
             date={calendarDate}
-            description={`Mirror Room check-in for: "${sessionTitle}"`}
+            description={tm('commitment.calendarDescription', { title: sessionTitle })}
           />
         </div>
       </div>
@@ -95,9 +96,9 @@ export default function CommitmentScreen({ sessionTitle, initialSupport = '', on
           onClick={onBack}
           className="flex-1 py-3.5 rounded-full border border-white/20 text-white/60 hover:text-white hover:border-white/35 text-sm font-medium transition-all"
         >
-          Back
+          {tm('commitment.back')}
         </button>
-        <InvertedButton onClick={() => onDone(commitment.trim(), support.trim())} className="flex-1 py-3.5" label="Done" />
+        <InvertedButton onClick={() => onDone(commitment.trim(), support.trim())} className="flex-1 py-3.5" label={tm('commitment.done')} />
       </div>
     </RoomScreenFrame>
   )
