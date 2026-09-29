@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 import { useTranslations } from 'next-intl'
 import { ArrowRight, ChevronDown, X } from 'lucide-react'
 import type { TwinListResponse } from '@dpnr/shared-types'
-import { REFERENCE_PATTERNS, findReferencePattern } from '@/lib/mirror-patterns'
+import { REFERENCE_PATTERNS, findReferencePattern, findSignalPattern } from '@/lib/mirror-patterns'
 import { useMirrorPatternLabels } from '@/lib/mirror-pattern-labels'
 import type { MirrorOpening } from './openings'
 
@@ -44,14 +44,17 @@ export default function PatternPicker({ signals, onChoose, onClose }: Props) {
   // still being explored. Never invented when the person has none.
   const suggested = signals.find((s) => s.status === 'confirmed') ?? signals[0]
   const others = signals.filter((s) => s !== suggested)
-  const ownNames = new Set(signals.map((s) => findReferencePattern(s.name)?.name).filter(Boolean))
+  const ownNames = new Set(signals.map((s) => findSignalPattern(s)?.name).filter(Boolean))
   const reference = REFERENCE_PATTERNS.filter((p) => !ownNames.has(p.name))
 
   function chooseSignal(s: Signal) {
     onChoose({
       mode: 'pattern',
       patternText: s.description,
-      patternName: s.name,
+      // A name the next steps can match: the signal's own when it matches a
+      // reference pattern, else the canonical id (a Hebrew-named signal found
+      // by its referencePattern), which they show translated.
+      patternName: findReferencePattern(s.name) ? s.name : (findSignalPattern(s)?.name ?? s.name),
       source: s.status === 'confirmed' ? 'confirmed' : 'exploring',
     })
   }
@@ -84,7 +87,7 @@ export default function PatternPicker({ signals, onChoose, onClose }: Props) {
                   ? t('picker.mayBeShowingUpNamed', { name: labels.name(suggested.name) })
                   : t('picker.mayBeShowingUpUnnamed')}
               </p>
-              <PatternDetails meaning={labels.meaning(findReferencePattern(suggested.name))} showsUp={suggested.description} own />
+              <PatternDetails meaning={labels.meaning(findSignalPattern(suggested))} showsUp={suggested.description} own />
               <button
                 onClick={() => chooseSignal(suggested)}
                 className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/95 hover:bg-white text-[var(--color-violet-950)] px-4 py-2 text-sm font-medium transition-colors"
@@ -107,7 +110,7 @@ export default function PatternPicker({ signals, onChoose, onClose }: Props) {
                     onToggle={() => setOpenKey(openKey === s.signalId ? null : s.signalId)}
                     onChoose={() => chooseSignal(s)}
                   >
-                    <PatternDetails meaning={labels.meaning(findReferencePattern(s.name))} showsUp={s.description} own />
+                    <PatternDetails meaning={labels.meaning(findSignalPattern(s))} showsUp={s.description} own />
                   </PatternRow>
                 ))}
               </ul>

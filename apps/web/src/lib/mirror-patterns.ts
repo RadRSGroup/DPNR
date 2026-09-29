@@ -54,17 +54,26 @@ export function findReferencePattern(name: string | undefined): ReferencePattern
 }
 
 /**
+ * A Twin signal's reference pattern: by its `referencePattern` id first (set
+ * by extraction, an English id whatever language the name is in), then by
+ * name for signals from before the id existed.
+ */
+export function findSignalPattern(signal: { name?: string; referencePattern?: string }): ReferencePattern | undefined {
+  return findReferencePattern(signal.referencePattern) ?? findReferencePattern(signal.name)
+}
+
+/**
  * One entry per pattern, in the given order (so sort strongest/confirmed
  * first). Twin extraction can propose the same pattern more than once
  * ("People-Pleasing", "people pleasing", or a reference alias); the UI shows
  * it once. Keys on the name (letters/digits in any script, so Hebrew names
  * work), falling back to the description when a signal has no name.
  */
-export function uniquePatterns<T extends { name?: string; description: string }>(signals: T[]): T[] {
+export function uniquePatterns<T extends { name?: string; referencePattern?: string; description: string }>(signals: T[]): T[] {
   const seen = new Set<string>()
   const out: T[] = []
   for (const s of signals) {
-    const ref = findReferencePattern(s.name)
+    const ref = findSignalPattern(s)
     const raw = ref?.name ?? s.name ?? s.description
     const key = raw.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '')
     if (!key || seen.has(key)) continue
