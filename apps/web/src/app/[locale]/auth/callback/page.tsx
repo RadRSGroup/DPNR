@@ -14,6 +14,7 @@ import {
 } from '@/lib/cognito/oauth'
 import { bootstrapKeysAtSignup, establishSessionTicket, recoverAndRewrapDek } from '@/lib/auth/keyBootstrap'
 import { ApiError, getUserKeys, updatePreferences } from '@/lib/api/v1-client'
+import { savedLocale } from '@/lib/saved-locale'
 import { resolveSafeNext } from '@/lib/navigation/safeNext'
 import type { RecoveryCode } from '@/lib/crypto'
 import RecoveryCodeReveal from '@/components/auth/RecoveryCodeReveal'
@@ -86,7 +87,9 @@ function CallbackFlow() {
     const { next, locale, isNew } = dest.current
     if (isNew) await updatePreferences({ preferredLanguage: locale }).catch(() => {})
     // New accounts go through consent / profile setup; proxy.ts routes them.
-    router.push(isNew ? '/consent' : next, { locale })
+    // Existing ones open in their saved language (this also sets the
+    // domain's locale cookie; see lib/saved-locale.ts).
+    router.push(isNew ? '/consent' : next, { locale: isNew ? locale : await savedLocale(locale) })
     router.refresh()
   }
 

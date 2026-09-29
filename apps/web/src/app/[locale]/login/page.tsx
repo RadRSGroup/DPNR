@@ -5,15 +5,17 @@ import { useRouter } from '@/i18n/navigation'
 import { useSearchParams } from 'next/navigation'
 import { Link } from '@/i18n/navigation'
 import { Suspense } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { signIn } from '@/lib/cognito/client'
 import { establishSessionTicket } from '@/lib/auth/keyBootstrap'
 import { resolveSafeNext } from '@/lib/navigation/safeNext'
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton'
+import { savedLocale } from '@/lib/saved-locale'
 
 function LoginForm() {
   const t = useTranslations('Login')
   const router = useRouter()
+  const locale = useLocale() as 'en' | 'he'
   const params = useSearchParams()
   // Untrusted until validated — see resolveSafeNext's own doc comment (DPNR-03).
   const next = resolveSafeNext(params.get('next'))
@@ -33,7 +35,8 @@ function LoginForm() {
       // Best-effort — a failure here must never block a successful sign-in;
       // nothing consumes session tickets server-side until Stage 4.
       await establishSessionTicket(password).catch(() => {})
-      router.push(next)
+      // Open in the saved language (this also sets the domain's locale cookie).
+      router.push(next, { locale: await savedLocale(locale) })
       router.refresh()
     } catch (err) {
       // err.message comes straight from the Cognito SDK and is English-only
