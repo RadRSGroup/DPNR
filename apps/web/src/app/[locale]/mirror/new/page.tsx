@@ -12,6 +12,8 @@ import Step04LifeImpact from '@/components/mirror/Step04LifeImpact'
 import Step05Synthesis from '@/components/mirror/Step05Synthesis'
 import CommitmentScreen from '@/components/mirror/CommitmentScreen'
 import CompletionScreen from '@/components/mirror/CompletionScreen'
+import DepthMoment, { type DepthMomentKind } from '@/components/mirror/DepthMoment'
+import ContainmentPause from '@/components/mirror/ContainmentPause'
 import { CreditsExhaustedModal } from '@/components/ui/CreditsExhaustedModal'
 import SafetyInterventionScreen from '@/components/shared/SafetyInterventionScreen'
 import Sidebar from '@/components/layout/Sidebar'
@@ -24,6 +26,14 @@ import type { RoomCommandResponse, MirrorRoomStepId, MirrorEntry, MirrorEmotionF
 
 /** WELCOME is a client-only intro screen, not a real backend step. */
 type MirrorPageStepId = 'WELCOME' | MirrorRoomStepId
+
+/**
+ * Client-only screens between backend steps (Mirror depth slice 1, #30/#31):
+ * a "stay a little longer / continue" moment after Steps 2 and 4, and a pause
+ * before the synthesis. The backend is already on the next step while one
+ * shows; nothing here is sent or saved.
+ */
+type Interlude = DepthMomentKind | 'pause'
 
 /** Mirror Room is linear — no lens/options branching, no skip actions on any step (see mirror-steps/*.ts's allowedActions). */
 const BACK_MAP: Record<MirrorRoomStepId, MirrorPageStepId | null> = {
@@ -88,6 +98,7 @@ function NewMirrorContent() {
   const [fatalError, setFatalError] = useState<string | null>(null)
   const [creditsExhausted, setCreditsExhausted] = useState(false)
   const [safetyIntervention, setSafetyIntervention] = useState<RoomCommandResponse['safetyIntervention']>(null)
+  const [interlude, setInterlude] = useState<Interlude | null>(null)
 
   useEffect(() => {
     async function checkAuth() {
@@ -261,7 +272,8 @@ function NewMirrorContent() {
 
   async function completeStep02(answers: FeltAnswers) {
     updateAnswers(answers)
-    await submitStepAndAdvance('AUTOMATIC_REACTION', { ...answers })
+    const res = await submitStepAndAdvance('AUTOMATIC_REACTION', { ...answers })
+    if (res?.nextStepId && !res.safetyIntervention) setInterlude('after_felt')
   }
 
   async function completeStep03(copingResponse: string, recurringPattern: string) {
@@ -271,7 +283,15 @@ function NewMirrorContent() {
 
   async function completeStep04(energyMoodEffect: string, lifeDomain: string) {
     updateAnswers({ energyMoodEffect, lifeDomain })
-    await submitStepAndAdvance('LIFE_IMPACT', { energyMoodEffect, lifeDomain })
+    const res = await submitStepAndAdvance('LIFE_IMPACT', { energyMoodEffect, lifeDomain })
+    if (res?.nextStepId && !res.safetyIntervention) setInterlude('after_impact')
+  }
+
+  /** Back from an in-between screen: to the step it followed (or, from the pause, to the depth moment). */
+  function interludeBack() {
+    if (interlude === 'pause') { setInterlude('after_impact'); return }
+    setInterlude(null)
+    setCurrentStepId(interlude === 'after_felt' ? 'AUTOMATIC_REACTION' : 'LIFE_IMPACT')
   }
 
   async function completeStep05(synthesis: string) {
@@ -360,6 +380,21 @@ function NewMirrorContent() {
           sourceTopicTitle={sourceTopicTitle}
         />
       )
+    }
+
+    if (interlude === 'after_felt' || interlude === 'after_impact') {
+      return (
+        <DepthMoment
+          key={interlude}
+          kind={interlude}
+          sessionTitle={sessionTitle}
+          onContinue={() => setInterlude(interlude === 'after_impact' ? 'pause' : null)}
+          onBack={interludeBack}
+        />
+      )
+    }
+    if (interlude === 'pause') {
+      return <ContainmentPause sessionTitle={sessionTitle} onContinue={() => setInterlude(null)} onBack={interludeBack} />
     }
 
     switch (currentStepId) {

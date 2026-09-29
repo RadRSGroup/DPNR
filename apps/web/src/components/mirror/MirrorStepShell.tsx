@@ -10,6 +10,8 @@ interface MirrorStepShellProps {
   onBack?: () => void
   /** Starting time budget in minutes — now the seed for a real countdown. */
   minutesLeft?: number
+  /** Names an in-between screen (a depth moment, the pause) next to the step count. */
+  screenLabel?: string
 }
 
 /**
@@ -54,6 +56,7 @@ export default function MirrorStepShell({
   children,
   onBack,
   minutesLeft = 12,
+  screenLabel,
 }: MirrorStepShellProps) {
   return (
     <RoomStepLayout
@@ -67,6 +70,7 @@ export default function MirrorStepShell({
       title={sessionTitle}
       onBack={onBack}
       minutesLeft={minutesLeft}
+      screenLabel={screenLabel}
     >
       {children}
     </RoomStepLayout>

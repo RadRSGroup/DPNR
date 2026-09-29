@@ -1289,5 +1289,40 @@
     "listJoin": " and ",
     "stay": "Stay with the lenses",
     "continueAnyway": "Continue"
+  },
+  "MirrorDepth": {
+    "choice": {
+      "label": "A moment to stay",
+      "title": "Would you like to stay with this a little longer?",
+      "body": "There's no right pace here. You can go a little deeper, or continue. Both are fine.",
+      "deeper": "Go a little deeper",
+      "continue": "Continue"
+    },
+    "deeper": {
+      "label": "A little deeper",
+      "hint": "Just notice what comes. You don't need to write anything down, and nothing here is saved.",
+      "continue": "Continue"
+    },
+    "prompts": {
+      "underneath": {
+        "title": "Is there something quieter underneath that feeling?",
+        "body": "Sometimes anger is covering hurt, or worry is covering care. Take a moment with whatever is there."
+      },
+      "payoff": {
+        "title": "What did that reaction protect you from, or give you, in that moment?",
+        "body": "Even a reaction that costs you something is usually trying to help."
+      },
+      "belief": {
+        "title": "What did this moment seem to say about you?",
+        "body": "Only notice the words that come. They're a thought, not a verdict."
+      }
+    },
+    "pause": {
+      "label": "A pause",
+      "title": "Before we bring it together, take a breath.",
+      "body": "You've looked closely at something that matters. Let it settle for a moment.",
+      "breathe": "Breathe with me",
+      "ready": "Continue when you're ready"
+    }
   }
 }

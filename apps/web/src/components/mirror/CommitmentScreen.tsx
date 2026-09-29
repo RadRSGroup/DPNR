@@ -20,6 +20,8 @@ function addDays(days: number) {
 /**
  * COMMITMENT — SUBMIT_STEP only, {commitment?} (genuinely optional), ends
  * the session. Adapted from components/decision/CommitmentScreen.tsx.
+ * Mirror depth slice 1 (#30/#31): Support + "new possibility" wording, softer
+ * than a task ("committing"), per Figma's closing stages. Still one field.
  */
 export default function CommitmentScreen({ sessionTitle, onDone, onBack }: Props) {
   const [commitment, setCommitment] = useState('')
@@ -42,9 +44,9 @@ export default function CommitmentScreen({ sessionTitle, onDone, onBack }: Props
           </p>
           <div className="w-8 h-px bg-white/15 mx-auto" />
           <p className="text-white/80 text-sm leading-relaxed">
-            That kind of honesty isn&apos;t easy. Before you go, take a moment to name one small thing you want to carry forward.
+            That kind of honesty isn&apos;t easy. Before you go, think about what would support you the next time this shows up.
           </p>
-          <p className="text-white font-medium text-sm">What are you committing to from here?</p>
+          <p className="text-white font-medium text-sm">What&apos;s one new possibility you&apos;d like to try from here?</p>
         </div>
 
         <Dictatable>
@@ -52,7 +54,7 @@ export default function CommitmentScreen({ sessionTitle, onDone, onBack }: Props
             value={commitment}
             onChange={e => setCommitment(e.target.value.slice(0, 5000))}
             rows={3}
-            placeholder='Type: "Next time this happens, I will..." (optional)'
+            placeholder='"Next time this happens, I could..." (optional)'
             className="w-full bg-white/8 border border-white/15 rounded-2xl px-4 py-3.5 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors"
           />
         </Dictatable>
