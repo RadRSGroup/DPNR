@@ -13,7 +13,7 @@ Definition Backlog separately lists *"Decision on whether any global Alignment/E
 enough value to justify keeping it"* as an open, unresolved question the spec's own authors haven't settled.
 
 `infra/cdk/lambda/lib/alignment-score.ts` computes a real 0–100 "Alignment Score" (60% commitment follow-
-through + 40% confirmed-values clarity), shown on Dashboard and charted daily on My Evolution Map, with no
+through + 40% confirmed-values clarity), shown on Dashboard and charted daily on Growth Tracker (corrected 2026-09-29; the chart was never on My Evolution Map), with no
 confidence gating at all — it returns a number the moment a single resolved commitment or single confirmed
 value signal exists. `docs/INTELLIGENCE_SPEC_AUDIT.md` flagged this as Critical Finding #3: the project had
 already shipped exactly the kind of global index the spec's own authors flag as undecided, with none of §12's
@@ -41,7 +41,7 @@ specific index):
 `DashboardResponseSchema` gained `alignmentScoreState` alongside the existing (now conditionally-null)
 `alignmentScore` field, so the frontend can render the correct honest message instead of a single generic
 "not enough data" fallback for every non-eligible case. `snapshot-alignment-score.ts` (the daily-history
-writer behind My Evolution Map's chart) now only writes a snapshot when `state === 'eligible'` — a
+writer behind the Growth Tracker chart) now only writes a snapshot when `state === 'eligible'` — a
 `developing`-state day correctly contributes no history point, same as before this ADR, just now for the
 right reason.
 

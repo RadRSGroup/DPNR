@@ -62,6 +62,7 @@ import type {
   ChatBackgroundUploadUrlResponse,
   UpdateOnboardingSnapshotRequest,
   OnboardingSnapshotResponse,
+  WeeklyRecapResponse,
   SessionSummariesResponse,
 } from '@dpnr/shared-types'
 import { getIdToken, clearConsentCookie } from '../cognito/client'
@@ -423,6 +424,17 @@ export async function rejectTwinSignal(signalId: string, followUp?: TwinRejectRe
     ...(followUp ? { body: JSON.stringify(followUp) } : {}),
   })
   return parseOrThrow<TwinSignalActionResponse>(res)
+}
+
+/**
+ * GET /v1/weekly-recap — this week's composed Weekly Recap (scheduled
+ * `compose-weekly-recap`). 404 `weekly_recap_not_ready` until one exists;
+ * returns null then, so callers can show an honest empty state.
+ */
+export async function getWeeklyRecap(): Promise<WeeklyRecapResponse | null> {
+  const res = await authedFetch('/v1/weekly-recap')
+  if (res.status === 404) return null
+  return parseOrThrow<WeeklyRecapResponse>(res)
 }
 
 /** GET /v1/commitments — every commitment the caller has, any status. */

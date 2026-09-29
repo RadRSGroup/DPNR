@@ -256,7 +256,7 @@
       "patternsShifting": "Patterns Shifting",
       "insightsGained": "Insights Gained"
     },
-    "domains": { "title": "Domains of Life", "subtitle": "Your alignment across key life areas" },
+    "domains": { "title": "Domains of Life", "subtitle": "Where your attention has been: each area’s share of what you’ve confirmed" },
     "alignmentOverTime": { "title": "Alignment Over Time", "subtitle": "Your overall alignment trend" },
     "archetypes": { "title": "Your Archetypes", "subtitle": "The energies that show up for you" },
     "valuesNeeds": {
@@ -267,13 +267,14 @@
       "nothingYet": "Nothing yet"
     },
     "comingSoon": "Coming soon",
+    "moving": {"title": "What’s moving", "subtitle": "How the patterns you’ve confirmed seem to be changing, as DPNR has seen them so far.", "groups": {"growing": "Growing", "easing": "Easing", "steady": "Steady", "mixed": "Mixed"}},
     "corePillars": {
       "title": "Core Pillars",
       "description": "Needs more real usage data before DPNR can compute a meaningful pillar-alignment score. Not built yet — this is an honest gap, not a bug."
     },
     "emotionalLandscape": {
       "title": "Emotional Landscape",
-      "description": "Needs a real emotion/sentiment-tracking model behind it, which doesn't exist yet. Not built yet — this is an honest gap, not a bug."
+      "description": "Will be built from the feelings you name in the Mirror and Decision rooms. Not built yet."
     },
     "recentDecisions": {
       "title": "Recent Decisions",
@@ -284,24 +285,33 @@
     },
     "decisionStatus": { "active": "Active", "completed": "Completed", "archived": "Archived" },
     "weeklyReflection": {
-      "title": "This Week's Reflection",
-      "empty": "Nothing yet this week — your next Daily Card will show up here."
+      "title": "This Week",
+      "empty": "Your weekly recap appears here once DPNR has a week of your reflections to look back on.",
+      "stoodOut": "What stood out",
+      "shifted": "What shifted",
+      "remainsActive": "Still active",
+      "suggestion": "For the week ahead"
     }
   },
   "EvolutionMap": {
     "title": "My Evolution Map",
     "subtitle": "Your personal roadmap to growth, alignment, and the life you're here to create.",
+    "direction": {"title": "Your direction", "subtitle": "What you told DPNR you want, in your own words.", "areas": "Areas that matter now", "moreOf": "More of"},
     "hero": { "title": "You set the goals. We guide the way.", "subtitle": "Track your progress, celebrate wins, and evolve intentionally." },
     "glance": {
       "lifeDomains": "Life Domains",
       "averageProgress": "Average Progress",
       "activeGoals": "Active Goals",
-      "milestonesAchieved": "Milestones Achieved"
+      "milestonesAchieved": "Milestones Achieved",
+      "areasInFocus": "Areas in Focus",
+      "nextReview": "Next Review"
     },
     "lifeDomains": {
       "title": "Life Domains",
       "empty": "Nothing here yet — complete a Decision Room or Mirror Room session and confirm a few signals in InnerSelf to start building your Life Domains picture.",
-      "subtitle": "Explore and grow in every area of your life"
+      "subtitle": "Your goals in each area, and what DPNR has confirmed there",
+      "goalsDone": "{done} of {total, plural, one {# goal} other {# goals}} done",
+      "noGoals": "No goals yet"
     },
     "focusAreas": {
       "subtitle": "What DPNR has confirmed with you here",
@@ -332,7 +342,9 @@
       "target": "Target: {date}",
       "ongoing": "Ongoing",
       "marking": "Marking…",
-      "markComplete": "Mark complete"
+      "markComplete": "Mark complete",
+      "reviewDue": "Review due since {date}",
+      "completed": "Completed ({count})"
     }
   },
   "Library": {
@@ -447,7 +459,7 @@
       "stillLearning": "Still learning this part of you",
       "alignmentScore": "Alignment Score",
       "phaseOf": "You're in a phase of",
-      "viewEvolution": "View My Evolution",
+      "viewEvolution": "See how you’re changing",
       "info": "About your InnerSelf",
       "phaseEmpty": "Your phase takes shape after your first session."
     },
@@ -517,6 +529,7 @@
         "protector": "Protector"
       }
     },
+    "whereNext": {"title": "Where to look next", "growth": {"title": "Growth Tracker", "body": "How you’re changing over time: trends, what’s moving, your week."}, "evolution": {"title": "My Evolution Map", "body": "Where you’re heading: your intention, goals and roadmap."}},
     "evolution": {
       "title": "My Evolution",
       "lastDays": "{count, plural, one {Last # day} other {Last # days}}",

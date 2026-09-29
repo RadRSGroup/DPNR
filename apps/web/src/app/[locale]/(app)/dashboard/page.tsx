@@ -31,7 +31,7 @@ import InnerSelfHero from '@/components/dashboard/InnerSelfHero'
 import LifeDomainsCarousel from '@/components/dashboard/LifeDomainsCarousel'
 import PatternsTrackCard from '@/components/dashboard/PatternsTrackCard'
 import ArchetypesCard from '@/components/dashboard/ArchetypesCard'
-import EvolutionCard from '@/components/dashboard/EvolutionCard'
+import WhereNextCard from '@/components/dashboard/WhereNextCard'
 import InsightCard from '@/components/dashboard/InsightCard'
 
 const ROOM_LINK: Record<'decision' | 'mirror' | 'library', { href: string; labelKey: string }> = {
@@ -244,7 +244,7 @@ function DashboardContent() {
             <div className="grid gap-4 lg:gap-5 md:grid-cols-2 2xl:grid-cols-3">
               <PatternsTrackCard patterns={confirmedPatterns} theme={roadmap?.theme ?? null} loading={loading} />
               <ArchetypesCard archetypes={dashboard?.archetypes ?? []} loading={loading} />
-              <EvolutionCard history={dashboard?.alignmentHistory ?? []} loading={loading} />
+              <WhereNextCard />
             </div>
 
             {!loading && twin && (

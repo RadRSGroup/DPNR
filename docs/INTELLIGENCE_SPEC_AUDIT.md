@@ -95,7 +95,7 @@ unilaterally.
 ### 3. The Dashboard/My Evolution "Alignment Score" is exactly the kind of global index the spec calls
 unresolved backlog, not an approved number — **RESOLVED, see ADR 0011**
 `infra/cdk/lambda/lib/alignment-score.ts` computes a single 0–100 number — `0.6 * commitment
-follow-through rate + 0.4 * values clarity` — shown on Dashboard and charted daily on My Evolution Map. Its
+follow-through rate + 0.4 * values clarity` — shown on Dashboard and charted daily on Growth Tracker (corrected 2026-09-29). Its
 own code comment already says "First pass, not product-reviewed." The spec's §11 "When a number must NOT
 appear" list includes "The number would imply 'how good' the user is at a life domain" and requires, before
 any number ships: an operationally-defined construct, defined evidence sources per component, **minimum

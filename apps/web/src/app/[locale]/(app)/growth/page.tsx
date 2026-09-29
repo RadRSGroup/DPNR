@@ -3,16 +3,13 @@ import Image from 'next/image'
 import { useState, useEffect, Suspense } from 'react'
 import { Link } from '@/i18n/navigation'
 import { useRouter } from '@/i18n/navigation'
-import { TrendingUp, Wind, Layers, Waves } from 'lucide-react'
+import { TrendingUp, Wind, Layers, Waves, ArrowUpRight, ArrowDownRight, Repeat, Shuffle } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { getCurrentSession } from '@/lib/cognito/client'
-import { getDashboard, getDecisionsList, getDailyCard, getGrowthValuesNeeds } from '@/lib/api/v1-client'
-import type { DashboardResponse, DecisionsListResponse, CompanionContextResponse, GrowthValuesNeedsResponse } from '@dpnr/shared-types'
-import { LIFE_DOMAIN_LABELS } from '@dpnr/shared-types'
+import { getDashboard, getDecisionsList, getGrowthValuesNeeds, getTwin, getWeeklyRecap } from '@/lib/api/v1-client'
+import type { DashboardResponse, DecisionsListResponse, GrowthValuesNeedsResponse, TwinListResponse, WeeklyRecapResponse, SignalDirection } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 import ProgressRing from '@/components/ui/ProgressRing'
-import DailyGuidanceCard from '@/components/companion/DailyGuidanceCard'
-import RoadmapTimelineCard from '@/components/shared/RoadmapTimelineCard'
 import AlignmentHistoryChart from '@/components/shared/AlignmentHistoryChart'
 import { DOMAIN_META } from '@/components/shared/domain-meta'
 import StatTile from '@/components/shared/StatTile'
@@ -42,6 +39,17 @@ import { timeAgo } from '@/lib/format'
  * (a radar-chart re-visualization of the same 5 concepts) is bundled under
  * this same honest gap for the same reason.
  *
+ * Page roles (founder-approved split, 2026-09-29; spec §13/§14/§15):
+ * Dashboard is "now", Growth Tracker is "how I'm changing over time", My
+ * Evolution Map is "the direction I chose". So this page carries the
+ * over-time views (alignment trend, what's moving, weekly recap, values &
+ * needs across decisions) and no longer repeats the Roadmap card, which
+ * belongs to Evolution Map and Dashboard. Domain rings here are each area's
+ * SHARE of confirmed signals (where attention has been), labelled as such.
+ * "What's moving" reads each confirmed signal's own `direction`, set by
+ * the Twin at confirm time; "This week" is the real composed Weekly Recap
+ * (it used to show the daily card under a weekly title).
+ *
  * Values & Needs Snapshot is real, added later: `GET
  * /v1/rooms/decisions/values-needs` tallies every `value`/`need`-typed tag
  * ever submitted across all of a person's past decisions (Decision Room's
@@ -49,13 +57,24 @@ import { timeAgo } from '@/lib/format'
  * aggregation, not a stub or a new taxonomy.
  */
 
+// How confirmed signals are moving, grouped for reading. Keys index
+// Growth.moving.groups.
+const MOVEMENT_GROUPS: { id: string; directions: SignalDirection[]; Icon: typeof Repeat; tint: string }[] = [
+  { id: 'growing', directions: ['emerging', 'increasing'], Icon: ArrowUpRight, tint: 'text-emerald-300/90' },
+  { id: 'easing', directions: ['decreasing'], Icon: ArrowDownRight, tint: 'text-sky-300/90' },
+  { id: 'steady', directions: ['recurring', 'stable'], Icon: Repeat, tint: 'text-amber-200/90' },
+  { id: 'mixed', directions: ['mixed'], Icon: Shuffle, tint: 'text-violet-300/90' },
+]
+
 function GrowthTrackerContent() {
   const t = useTranslations('Growth')
+  const tDomains = useTranslations('Dashboard.lifeDomains')
   const locale = useLocale()
   const router = useRouter()
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null)
   const [decisions, setDecisions] = useState<DecisionsListResponse['decisions']>([])
-  const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
+  const [twin, setTwin] = useState<TwinListResponse | null>(null)
+  const [weeklyRecap, setWeeklyRecap] = useState<WeeklyRecapResponse | null>(null)
   const [valuesNeeds, setValuesNeeds] = useState<GrowthValuesNeedsResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [checkInOpen, setCheckInOpen] = useState(false)
@@ -75,13 +94,25 @@ function GrowthTrackerContent() {
 
       // Fetched separately, own failure boundary — same pattern Dashboard uses.
       getDecisionsList().then((r) => setDecisions(r.decisions)).catch(() => {})
-      getDailyCard().then(setDailyCard).catch(() => {})
+      getTwin().then(setTwin).catch(() => {})
+      getWeeklyRecap().then(setWeeklyRecap).catch(() => {})
       getGrowthValuesNeeds().then(setValuesNeeds).catch(() => {})
     }
     load()
   }, [router])
 
   const recentDecisions = decisions.slice(0, 4)
+
+  // Confirmed signals the Twin has given a direction, grouped by how they're
+  // moving. Unconfirmed candidates never appear (the person hasn't agreed
+  // to them), and signals without a direction are simply left out.
+  const moving = (twin?.signals ?? []).filter(
+    (s): s is typeof s & { direction: SignalDirection } => s.status === 'confirmed' && s.direction != null
+  )
+  const movingGroups = MOVEMENT_GROUPS.map((g) => ({
+    ...g,
+    signals: moving.filter((s) => g.directions.includes(s.direction)).slice(0, 4),
+  })).filter((g) => g.signals.length > 0)
 
   return (
     <div className="relative min-h-screen">
@@ -167,7 +198,7 @@ function GrowthTrackerContent() {
                         <ProgressRing percent={d.percent} size={40} strokeWidth={4} colorClassName={meta.ringClass}>
                           <Icon className="w-3 h-3" style={{ color: meta.color }} />
                         </ProgressRing>
-                        <span className="text-sm text-white/80 flex-1">{LIFE_DOMAIN_LABELS[d.domain]}</span>
+                        <span className="text-sm text-white/80 flex-1">{tDomains(`labels.${d.domain}`)}</span>
                         <span className="text-xs text-[var(--color-text-tertiary)] shrink-0">{d.percent}%</span>
                       </div>
                     )
@@ -189,9 +220,29 @@ function GrowthTrackerContent() {
               </Card>
             )}
 
-            {/* Roadmap timeline — the exact same real card Dashboard shows,
-                shared via RoadmapTimelineCard so the two never drift apart. */}
-            {!loading && dashboard?.roadmap && <RoadmapTimelineCard roadmap={dashboard.roadmap} />}
+            {/* What's moving: confirmed signals by their Twin-set direction. */}
+            {!loading && movingGroups.length > 0 && (
+              <Card>
+                <p className="text-sm text-white mb-1">{t('moving.title')}</p>
+                <p className="text-xs text-[var(--color-text-tertiary)] mb-4">{t('moving.subtitle')}</p>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {movingGroups.map(({ id, Icon, tint, signals }) => (
+                    <div key={id}>
+                      <p className={`flex items-center gap-1.5 text-[11px] uppercase tracking-wide mb-2 ${tint}`}>
+                        <Icon className="w-3.5 h-3.5" aria-hidden /> {t(`moving.groups.${id}`)}
+                      </p>
+                      <ul className="space-y-1.5">
+                        {signals.map((s) => (
+                          <li key={s.signalId} className="text-sm text-white/75 leading-snug line-clamp-2">
+                            {s.name ?? s.description}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
 
             {/* Your Archetypes — same real aggregate Dashboard reads, titled
                 to match this screen's own reference label (the reference's
@@ -332,17 +383,25 @@ function GrowthTrackerContent() {
               )}
             </Card>
 
-            {!loading && dailyCard ? (
-              <DailyGuidanceCard dailyCard={dailyCard} title={t('weeklyReflection.title')} showImage={false} />
-            ) : (
-              !loading && (
-                <Card>
-                  <p className="text-sm text-white mb-2">{t('weeklyReflection.title')}</p>
-                  <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed">
-                    {t('weeklyReflection.empty')}
-                  </p>
-                </Card>
-              )
+            {/* This week: the real Weekly Recap, composed once a week. */}
+            {!loading && (
+              <Card>
+                <p className="text-sm text-white mb-1">{t('weeklyReflection.title')}</p>
+                {weeklyRecap ? (
+                  <div className="space-y-3 mt-3">
+                    {(['stoodOut', 'shifted', 'remainsActive', 'suggestion'] as const).map((key) =>
+                      weeklyRecap[key]?.trim() ? (
+                        <div key={key}>
+                          <p className="text-[11px] text-[var(--color-text-tertiary)] uppercase tracking-wide mb-0.5">{t(`weeklyReflection.${key}`)}</p>
+                          <p className="text-sm text-white/75 leading-relaxed">{weeklyRecap[key]}</p>
+                        </div>
+                      ) : null
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed mt-1">{t('weeklyReflection.empty')}</p>
+                )}
+              </Card>
             )}
           </div>
         </div>

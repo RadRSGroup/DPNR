@@ -66,7 +66,7 @@ export default function InnerSelfHero({ dashboard, loading = false }: { dashboar
           </div>
 
           <Link
-            href="/evolution-map"
+            href="/growth"
             className="mt-5 self-start inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-2 text-sm text-white/85 hover:border-white/45 hover:text-white transition-colors"
           >
             {t('viewEvolution')}
