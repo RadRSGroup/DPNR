@@ -145,7 +145,7 @@ export class ApiStack extends Stack {
       // is the real deployed alpha-testing frontend (added Session 47);
       // localhost:3000 stays for local dev.
       corsPreflight: {
-        allowOrigins: ['http://localhost:3000', 'https://dpnr-mvp.onrender.com'],
+        allowOrigins: ['http://localhost:3000', 'https://dpnr-mvp.onrender.com', 'https://app.be-dpnr.com'],
         allowMethods: [
           apigwv2.CorsHttpMethod.GET,
           apigwv2.CorsHttpMethod.POST,

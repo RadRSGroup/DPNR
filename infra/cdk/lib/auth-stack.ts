@@ -1,4 +1,5 @@
-import { Duration, RemovalPolicy, SecretValue, Stack, StackProps } from 'aws-cdk-lib'
+import { CfnOutput, Duration, RemovalPolicy, SecretValue, Stack, StackProps } from 'aws-cdk-lib'
+import * as acm from 'aws-cdk-lib/aws-certificatemanager'
 import * as cognito from 'aws-cdk-lib/aws-cognito'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 import * as iam from 'aws-cdk-lib/aws-iam'
@@ -120,6 +121,25 @@ export class AuthStack extends Stack {
       cognitoDomain: { domainPrefix: 'dpnr-auth' },
     })
 
+    // Custom sign-in domain (Session 83): Google's brand verification needs
+    // every consent-screen domain to be one DPNR owns, and amazoncognito.com
+    // can't be. Certificate requested in us-east-1 and validated by DNS in
+    // Squarespace; the `auth` CNAME points at the output below.
+    const authDomain = this.userPool.addDomain('CustomDomain', {
+      customDomain: {
+        domainName: 'auth.be-dpnr.com',
+        certificate: acm.Certificate.fromCertificateArn(
+          this,
+          'AuthDomainCert',
+          'arn:aws:acm:us-east-1:346866989957:certificate/0ece8433-5f47-4f09-a14f-d8e5a93a0aa1',
+        ),
+      },
+    })
+    new CfnOutput(this, 'AuthDomainCnameTarget', {
+      value: authDomain.cloudFrontEndpoint,
+      description: 'Squarespace DNS: CNAME auth.be-dpnr.com -> this value',
+    })
+
     const googleSecret = 'dpnr/google-oauth'
     const google = new cognito.UserPoolIdentityProviderGoogle(this, 'Google', {
       userPool: this.userPool,
@@ -134,7 +154,7 @@ export class AuthStack extends Stack {
       },
     })
 
-    const webOrigins = ['http://localhost:3000', 'https://dpnr-mvp.onrender.com']
+    const webOrigins = ['http://localhost:3000', 'https://dpnr-mvp.onrender.com', 'https://app.be-dpnr.com']
 
     this.userPoolClient = this.userPool.addClient('WebClient', {
       generateSecret: false,

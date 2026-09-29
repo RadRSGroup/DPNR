@@ -192,7 +192,7 @@ export class DataStack extends Stack {
       encryption: s3.BucketEncryption.S3_MANAGED,
       cors: [
         {
-          allowedOrigins: ['http://localhost:3000', 'https://dpnr-mvp.onrender.com'],
+          allowedOrigins: ['http://localhost:3000', 'https://dpnr-mvp.onrender.com', 'https://app.be-dpnr.com'],
           allowedMethods: [s3.HttpMethods.PUT],
           allowedHeaders: ['content-type'],
         },
