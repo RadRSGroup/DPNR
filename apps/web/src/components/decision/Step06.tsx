@@ -79,7 +79,7 @@ export default function Step06({ decisionTitle, options, initialValues, initialN
       setOptionIdx(0)
     } else {
       const pick = (round: Round) => Object.fromEntries(options.map((o) => [o.label, selected[o.label]?.[round] ?? []]))
-      onComplete(pick('values'), pick('needs'))
+      return onComplete(pick('values'), pick('needs'))
     }
   }
 

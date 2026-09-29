@@ -48,7 +48,7 @@ export default function Step04({ decisionTitle, options, initialLens, completedL
   const [reminding, setReminding] = useState(false)
   function handleContinue() {
     if (remaining.length > 0 && !reminding) setReminding(true)
-    else onContinue()
+    else return onContinue()
   }
 
   return (

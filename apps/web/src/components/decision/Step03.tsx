@@ -60,7 +60,7 @@ export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initia
   function handleContinue() {
     if (!hasEmotion || !hasBody || !reflection || !response) return
     if (response === 'refine' && !userRefinement.trim()) return
-    onComplete(felt(), reflection, response, response === 'refine' ? userRefinement.trim() : undefined)
+    return onComplete(felt(), reflection, response, response === 'refine' ? userRefinement.trim() : undefined)
   }
 
   const textarea = 'w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-fuchsia-500/60 transition-colors'

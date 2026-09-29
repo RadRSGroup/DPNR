@@ -26,7 +26,7 @@ export default function Step01({ initialTitle = '', initialSubtitle, onRefine, o
 
   function handleContinue() {
     if (!title.trim()) return
-    onComplete(title.trim(), subtitle)
+    return onComplete(title.trim(), subtitle)
   }
 
   return (

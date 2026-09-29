@@ -63,7 +63,7 @@ export default function Step02AutomaticReaction({ sessionTitle, initial, onRefin
 
   function handleContinue() {
     if (!readyToContinue) return
-    onComplete({ ...felt(), automaticReaction: automaticReaction.trim() })
+    return onComplete({ ...felt(), automaticReaction: automaticReaction.trim() })
   }
 
   const textarea = 'w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/60 transition-colors'

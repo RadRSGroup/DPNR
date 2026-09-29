@@ -25,7 +25,7 @@ export default function Step04LifeImpact({
 
   function handleContinue() {
     if (!energyMoodEffect.trim() || !lifeDomain.trim()) return
-    onComplete(energyMoodEffect.trim(), lifeDomain.trim())
+    return onComplete(energyMoodEffect.trim(), lifeDomain.trim())
   }
 
   return (

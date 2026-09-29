@@ -35,7 +35,7 @@ export default function Step01Situation({ initialSituation = '', initialTrigger 
 
   function handleContinue() {
     if (!situation.trim() || !trigger.trim()) return
-    onComplete(situation.trim(), trigger.trim(), entryFor(opening, situation, trigger, archetype))
+    return onComplete(situation.trim(), trigger.trim(), entryFor(opening, situation, trigger, archetype))
   }
 
   return (

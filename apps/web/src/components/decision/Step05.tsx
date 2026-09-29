@@ -96,7 +96,7 @@ export default function Step05({ decisionTitle, options, lens, initialTags, onRe
       setSectionIdx(i => i + 1)
       setOptionIdx(0)
     } else {
-      onComplete(tagsByOption)
+      return onComplete(tagsByOption)
     }
   }
 

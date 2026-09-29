@@ -55,7 +55,7 @@ export default function Step03Pattern({
 
   function handleContinue() {
     if (!copingResponse.trim() || !recurringPattern.trim()) return
-    onComplete(copingResponse.trim(), recurringPattern.trim())
+    return onComplete(copingResponse.trim(), recurringPattern.trim())
   }
 
   return (

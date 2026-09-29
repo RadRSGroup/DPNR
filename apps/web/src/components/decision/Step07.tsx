@@ -89,7 +89,7 @@ export default function Step07({
 
   function handleReflectNext() {
     const projections = Object.fromEntries(options.map((o) => [o.label, selectedByOption[o.label] ?? []]))
-    onComplete(projections, chosenLean ?? undefined, reflectionNote.trim() || undefined)
+    return onComplete(projections, chosenLean ?? undefined, reflectionNote.trim() || undefined)
   }
 
   /* ── Phase: projections ── */
