@@ -67,7 +67,12 @@
         "empty": "עדיין אין כאן כלום. מה יעזור לחלק הזה של היום?",
         "error": "לא הצלחנו לשמור. נסו שוב.",
         "limit": "אפשר לשמור עד {max} טקסים.",
-        "loadError": "לא הצלחנו לטעון את הטקסים כרגע."
+        "loadError": "לא הצלחנו לטעון את הטקסים כרגע.",
+        "addRitual": "הוספת טקס",
+        "saveRitual": "שמירת הטקס",
+        "done": "סיום",
+        "added": "נוסף לטקסים של {time}.",
+        "more": "+{count} נוספים"
       },
       "playlists": {
         "eyebrow": "מוזיקה",
@@ -192,7 +197,10 @@
       "creditsUnit": "קרדיטים",
       "outOfCredits": "אין לכם קרדיטים",
       "runningLow": "היתרה נמוכה",
-      "buyCredits": "רכישת קרדיטים"
+      "buyCredits": "רכישת קרדיטים",
+      "choosePlan": "בחירת מסלול",
+      "viewHistory": "להיסטוריה",
+      "description": "השתמשו בקרדיטים כדי להעמיק עם הרהורים, הכוונה וכלי AI."
     },
     "earn": {
       "title": "הרוויחו עוד קרדיטים",
@@ -202,15 +210,26 @@
       "creditsEarned": "{count, plural, one {+# קרדיט} other {+# קרדיטים}}"
     },
     "plans": {
-      "choosePlan": { "title": "בחרו את המסלול שלכם", "subtitle": "עוד קרדיטים. עוד תובנות. עוד אתם." },
-      "buyPackages": { "title": "רכישת חבילות קרדיטים", "subtitle": "חבילות קרדיטים חד-פעמיות. השתמשו בהן מתי שתרצו." },
+      "choosePlan": { "title": "בחרו את המסלול שלכם", "subtitle": "המנוי נותן לכם גישה ל-DPNR, וגם קרדיטים בכל חודש." },
+      "buyPackages": { "title": "רכישת חבילות קרדיטים", "subtitle": "רוצים להעמיק עוד? הוסיפו קרדיטים למסלול הנוכחי שלכם." },
       "loading": "טוען…",
       "subscriptionsComingSoon": "מסלולים יגיעו בקרוב — התמחור עדיין לא סופי.",
       "packsComingSoon": "חבילות קרדיטים יגיעו בקרוב — התמחור עדיין לא סופי.",
       "perMonth": "/ לחודש",
       "creditsCount": "{count, plural, one {# קרדיט} other {# קרדיטים}}",
       "comingSoonButton": "בקרוב",
-      "purchaseUnavailableTitle": "הרכישה עדיין לא זמינה — פרטי תשלום אמיתיים טרם הוגדרו."
+      "purchaseUnavailableTitle": "הרכישה עדיין לא זמינה — פרטי תשלום אמיתיים טרם הוגדרו.",
+      "free": { "name": "חינם", "detail": "גישה בסיסית, עם קרדיטים לתחילת הדרך בהצטרפות" },
+      "currentPlan": "המסלול הנוכחי",
+      "monthlyCredits": "{count, plural, one {קרדיט אחד לחודש} other {# קרדיטים לחודש}}",
+      "packsNote": "קרדיטים נוספים מתווספים למסלול שלכם, להרהורים והכוונה מעמיקים יותר. הם לא מחליפים מנוי."
+    },
+    "gift": {
+      "title": "מתנה ושיתוף קרדיטים",
+      "subtitle": "תנו מתנה של צמיחה. שתפו קרדיטים עם מישהו שאכפת לכם ממנו.",
+      "send": "שליחת מתנה",
+      "tagline": "עזרו למישהו להתחיל את המסע שלו.",
+      "unavailableTitle": "שליחת קרדיטים במתנה עדיין לא זמינה."
     },
     "transactions": {
       "title": "העסקאות האחרונות שלכם",
@@ -334,7 +353,13 @@
       "shelfTitle": "שיטת DPNR",
       "minRead": "{minutes} דק׳ קריאה",
       "reflect": "להתבוננות",
-      "next": "הבא בשיטת DPNR"
+      "next": "הבא בשיטת DPNR",
+      "carouselLabel": "שיטת DPNR",
+      "slideLabel": "{current} מתוך {total}: {title}",
+      "goToSlide": "להצגת שקופית {current} מתוך {total}",
+      "previousSlide": "השקופית הקודמת",
+      "nextSlide": "השקופית הבאה",
+      "learnMore": "לקריאה נוספת"
     },
     "shelves": {
       "knowYourself": "הכירו את עצמכם",
@@ -1365,5 +1390,42 @@
     "cancelled": "ההתחברות בוטלה.",
     "genericError": "משהו השתבש. נסו שוב.",
     "backToLogin": "חזרה להתחברות"
+  },
+  "Felt": {
+    "emotions": {
+      "Anger": "כעס",
+      "Sadness": "עצב",
+      "Fear": "פחד",
+      "Uncertainty": "חוסר ודאות",
+      "Excitement": "התרגשות",
+      "Calm": "רוגע",
+      "Hope": "תקווה",
+      "Joy": "שמחה",
+      "Guilt": "אשמה",
+      "Overwhelm": "הצפה",
+      "Grief": "אבל",
+      "Anxiety": "חרדה"
+    },
+    "areas": {
+      "Head": "ראש",
+      "Throat": "גרון",
+      "Shoulders": "כתפיים",
+      "Chest": "חזה",
+      "Arms": "זרועות",
+      "Hands": "ידיים",
+      "Stomach": "בטן",
+      "Gut": "קרביים",
+      "Legs": "רגליים"
+    },
+    "somethingElse": "משהו אחר",
+    "customPlaceholder": "איך הייתם קוראים לתחושה במילים שלכם",
+    "addCustom": "הוספה",
+    "removeCustom": "הסרת {label}",
+    "bodyQuestion": "איפה הרגשתם את זה בגוף?",
+    "bodyHintMany": "בחרו תחושה, ואז הקישו איפה היא ישבה. הקשה נוספת מסירה אותה.",
+    "bodyHintOne": "הקישו איפה זה ישב. הקשה נוספת מסירה.",
+    "feelingToPlace": "התחושה למיקום",
+    "whatYouFelt": "מה הרגשתם",
+    "whereBodyFelt": "איפה הגוף הרגיש את זה"
   }
 }

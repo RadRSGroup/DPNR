@@ -1,7 +1,5 @@
 'use client'
 import { useSyncExternalStore } from 'react'
-import { Search } from 'lucide-react'
-import { useTranslations } from 'next-intl'
 import LanguageSelector from '@/components/shared/LanguageSelector'
 import AccountMenu from '@/components/layout/AccountMenu'
 import TimeTodayIndicator from '@/components/companion/TimeTodayIndicator'
@@ -61,21 +59,16 @@ export function useClock(): Date | null {
  * (docs/reference-screens/chat/CHAT UX.png / docs/reference-screens/chat/CHAT UX 2.png), not a relocation of anything
  * that exists elsewhere. The mockups'
  * "12 min today" is TimeTodayIndicator (Session 70): a real count, kept in
- * this browser (lib/time-on-dpnr.ts). The search input is a real, focusable control but doesn't run a
- * query yet (§3.7) — no search index exists anywhere in this codebase.
+ * this browser (lib/time-on-dpnr.ts). The mockups' search bar was removed
+ * (founder, 2026-09-29).
  */
 export default function TopBar() {
-  const t = useTranslations('Companion.topBar')
   const now = useClock()
 
   return (
     <div className="hidden lg:flex items-center gap-4 pb-4">
-      <div className="flex-1 flex items-center gap-2 liquid-glass rounded-full px-4 py-2 text-white/40 text-sm max-w-xs">
-        <Search className="w-4 h-4 shrink-0" />
-        <span className="flex-1 truncate">{t('searchPlaceholder')}</span>
-        <kbd className="text-[10px] border border-white/15 rounded px-1.5 py-0.5">⌘K</kbd>
-      </div>
-
+      {/* The "Search anything" bar was removed at the founder's request
+          (Living Feedback Log, 2026-09-29): it never ran a query. */}
       <div className="flex-1" />
 
       {/* Fixed min-width so the avatar doesn't shift right once `now`

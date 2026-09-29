@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { BodyArea, BodyPlacement, EmotionFelt } from '@dpnr/shared-types'
 import { BODY_AREAS, BODY_MEDIA } from '@/lib/body-map'
+import { useFeltLabels } from '@/lib/felt-labels'
 
 interface Props {
   emotions: EmotionFelt[]
@@ -24,6 +25,7 @@ interface Props {
  * checked before the video is shown.
  */
 export default function BodyMap({ emotions, placements, onChange }: Props) {
+  const labels = useFeltLabels()
   const [active, setActive] = useState(emotions[0]?.label ?? '')
   const [ready, setReady] = useState(false)
   const [still, setStill] = useState(false)
@@ -82,14 +84,14 @@ export default function BodyMap({ emotions, placements, onChange }: Props) {
   return (
     <div className="space-y-4 animate-settle-in">
       <div className="space-y-1">
-        <p className="text-white/70 text-sm leading-relaxed">Where did you feel it in your body?</p>
+        <p className="text-white/70 text-sm leading-relaxed">{labels.t('bodyQuestion')}</p>
         <p className="text-[var(--color-text-tertiary)] text-xs leading-relaxed">
-          {emotions.length > 1 ? 'Choose a feeling, then tap where it sat. Tap again to remove it.' : 'Tap where it sat. Tap again to remove it.'}
+          {emotions.length > 1 ? labels.t('bodyHintMany') : labels.t('bodyHintOne')}
         </p>
       </div>
 
       {emotions.length > 1 && (
-        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Feeling to place">
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={labels.t('feelingToPlace')}>
           {emotions.map((e) => {
             const on = e.label === activeLabel
             return (
@@ -103,7 +105,7 @@ export default function BodyMap({ emotions, placements, onChange }: Props) {
                 style={on ? { borderColor: e.color, backgroundColor: `${e.color}26` } : undefined}
               >
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: e.color }} aria-hidden />
-                {e.label}
+                {labels.emotion(e.label)}
               </button>
             )
           })}
@@ -156,9 +158,9 @@ export default function BodyMap({ emotions, placements, onChange }: Props) {
               <button
                 type="button"
                 onClick={() => toggle(area)}
-                aria-label={area}
+                aria-label={labels.area(area)}
                 aria-pressed={mine}
-                title={area}
+                title={labels.area(area)}
                 className={`relative block h-7 w-7 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${
                   mine ? 'border-white/80' : 'border-transparent hover:border-white/50'
                 }`}
@@ -189,7 +191,7 @@ export default function BodyMap({ emotions, placements, onChange }: Props) {
                 {here.map((p) => (
                   <span key={p.emotion} className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: colorOf(p.emotion) }} aria-hidden />
                 ))}
-                {area}
+                {labels.area(area)}
               </button>
             )
           })}

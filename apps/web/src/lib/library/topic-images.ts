@@ -76,13 +76,8 @@ export function themeCover(theme: ExploreTheme): string {
   return `/images/library/themes/${theme.toLowerCase()}.webp`
 }
 
-export const LIBRARY_HEADER_IMAGE = '/images/library/header.webp'
-
 /** The designer's "For You" art: one shared card, the topic name set bold in the middle. */
 export const FOR_YOU_IMAGE = '/images/library/for-you.webp'
-
-/** The designer's 8 Start Here cards, one per Start Here slot, in order. */
-export const START_HERE_IMAGES = Array.from({ length: 8 }, (_, i) => `/images/library/start-here/${i + 1}.webp`)
 
 /**
  * Pull a Card backgrounds, one per card topic, reusing the Library's own

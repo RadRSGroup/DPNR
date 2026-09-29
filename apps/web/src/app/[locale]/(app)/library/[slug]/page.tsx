@@ -61,7 +61,9 @@ export default function LibraryTopicPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
       </div>
 
-      <div className="max-w-[393px] lg:max-w-2xl mx-auto px-5 lg:px-8 pb-10 pt-14 lg:pt-8">
+      {/* Wider on iPad and desktop (founder, 2026-09-29: "too narrow compared
+          to the screen"); two columns on desktop so lines stay readable. */}
+      <div className="max-w-[393px] md:max-w-3xl lg:max-w-6xl mx-auto px-5 md:px-8 pb-10 pt-14 lg:pt-8">
         <Link href="/library" className="inline-flex items-center gap-1.5 text-[var(--color-text-tertiary)] hover:text-white/60 text-xs mb-6">
           <ArrowLeft className="w-3.5 h-3.5 rtl:-scale-x-100" /> {t('title')}
         </Link>
@@ -70,25 +72,32 @@ export default function LibraryTopicPage() {
         {!loading && error && <p className="text-[var(--color-text-tertiary)] text-sm text-center pt-8">{t('topic.loadError')}</p>}
 
         {!loading && topic && (
-          <div className="space-y-4">
-            <TopicCover slug={topic.slug} theme={topic.exploreTheme} />
+          <div className="space-y-4 md:space-y-5">
+            <TopicCover
+              slug={topic.slug}
+              theme={topic.exploreTheme}
+              className="h-48 md:h-64 lg:h-80"
+              sizes="(min-width: 1024px) 1152px, (min-width: 768px) 768px, 100vw"
+            />
             <div>
               <p className="text-[var(--color-violet-400)] text-xs uppercase tracking-wide mb-1">
                 {t(`themes.${topic.exploreTheme}`)}{topic.level ? ` · ${topic.level}` : ''}
               </p>
-              <h1 className="font-display text-xl lg:text-2xl text-white">{topic.title}</h1>
+              <h1 className="font-display text-xl md:text-2xl lg:text-3xl text-white">{topic.title}</h1>
             </div>
 
-            <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{topic.body}</p>
+            <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-10 space-y-4 md:space-y-5 lg:space-y-0">
+            <div className="space-y-4 md:space-y-5 min-w-0">
+            <p className="text-white/70 text-sm md:text-base leading-relaxed whitespace-pre-wrap">{topic.body}</p>
 
             {topic.expandTheLens && (
-              <p className="text-white/60 text-sm leading-relaxed whitespace-pre-wrap">{topic.expandTheLens}</p>
+              <p className="text-white/60 text-sm md:text-base leading-relaxed whitespace-pre-wrap">{topic.expandTheLens}</p>
             )}
 
             {topic.personalizedExplanation && (
               <Card className="bg-[var(--color-violet-900)]/20 border-[var(--color-violet-600)]/30">
                 <p className="text-[var(--color-violet-300)] text-xs uppercase tracking-wide mb-1">{t('topic.forYou')}</p>
-                <p className="text-white/70 text-sm leading-relaxed">{topic.personalizedExplanation}</p>
+                <p className="text-white/70 text-sm md:text-base leading-relaxed">{topic.personalizedExplanation}</p>
               </Card>
             )}
 
@@ -103,6 +112,9 @@ export default function LibraryTopicPage() {
                 <BulletList items={topic.possibleRoots} />
               </div>
             )}
+            </div>
+
+            <div className="space-y-4 md:space-y-5 min-w-0">
 
             {topic.reflectionQuestions && topic.reflectionQuestions.length > 0 && (
               <TopicSection title={t('topic.personalReflection')} items={topic.reflectionQuestions} />
@@ -151,6 +163,8 @@ export default function LibraryTopicPage() {
                 ))}
               </div>
             )}
+            </div>
+            </div>
           </div>
         )}
       </div>
@@ -171,7 +185,7 @@ function BulletList({ items }: { items: string[] }) {
   return (
     <ul className="space-y-1.5">
       {items.map((item, i) => (
-        <li key={i} className="text-white/70 text-sm leading-relaxed flex gap-2">
+        <li key={i} className="text-white/70 text-sm md:text-base leading-relaxed flex gap-2">
           <span className="text-[var(--color-violet-400)]/60 shrink-0">·</span>
           <span>{item}</span>
         </li>

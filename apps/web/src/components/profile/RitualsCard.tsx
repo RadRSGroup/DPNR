@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslations } from 'next-intl'
-import { Sunrise, Sun, Moon, ChevronRight, Pencil, Trash2, X } from 'lucide-react'
+import { Sunrise, Sun, Moon, ChevronRight, Pencil, Trash2, X, Plus, Check } from 'lucide-react'
 import { RITUAL_TEXT_MAX, RITUALS_MAX, type RitualTimeOfDay, type RitualView } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 import { listRituals, createRitual, updateRitual, deleteRitual, ApiError } from '@/lib/api/v1-client'
@@ -17,10 +17,18 @@ const TIMES: { id: RitualTimeOfDay; Icon: typeof Sun; tint: string }[] = [
 /**
  * My Profile → My Rituals (founder feedback #16, Session 74): compact and
  * light by design ("personal and lightweight, not a dashboard"). The person
- * writes their own rituals, grouped Morning / Afternoon / Evening; tapping a
- * row opens that group to add, edit or remove. No reminders: there's no
- * scheduling/notification infrastructure (flagged to the user, not built).
+ * writes their own rituals, grouped Morning / Afternoon / Evening. No
+ * reminders: there's no scheduling/notification infrastructure (flagged to
+ * the user, not built).
+ *
+ * Viewing and adding are separate steps (founder, 2026-09-29: after adding,
+ * an empty row kept reopening, and the card only showed counts). The card
+ * lists the rituals themselves; a group opens in view mode with an explicit
+ * "Add a ritual" action, and saving one confirms it and returns to the list
+ * instead of offering another empty field. An empty group opens straight
+ * into adding.
  */
+const PREVIEW_PER_GROUP = 3
 export default function RitualsCard() {
   const t = useTranslations('Account.profile.rituals')
   const [rituals, setRituals] = useState<RitualView[] | null>(null)
@@ -33,7 +41,7 @@ export default function RitualsCard() {
       .catch(() => setLoadFailed(true))
   }, [])
 
-  const countFor = (time: RitualTimeOfDay) => (rituals ?? []).filter((r) => r.timeOfDay === time).length
+  const ritualsFor = (time: RitualTimeOfDay) => (rituals ?? []).filter((r) => r.timeOfDay === time)
 
   return (
     <Card className="p-4 lg:p-5">
@@ -44,21 +52,38 @@ export default function RitualsCard() {
         <p className="text-[var(--color-text-tertiary)] text-xs mt-3">{t('loadError')}</p>
       ) : (
         <ul className="mt-3 divide-y divide-white/8">
-          {TIMES.map(({ id, Icon, tint }) => (
-            <li key={id}>
-              <button
-                type="button"
-                onClick={() => setOpen(id)}
-                disabled={rituals === null}
-                className="flex w-full items-center gap-3 py-2.5 text-start transition-colors hover:text-white disabled:opacity-60"
-              >
-                <Icon aria-hidden className={`h-4 w-4 shrink-0 ${tint}`} strokeWidth={1.75} />
-                <span className="flex-1 text-sm text-white/85">{t(id)}</span>
-                <span className="text-xs text-[var(--color-text-tertiary)]">{rituals === null ? '…' : t('count', { count: countFor(id) })}</span>
-                <ChevronRight aria-hidden className="h-3.5 w-3.5 text-white/30 rtl:-scale-x-100" />
-              </button>
-            </li>
-          ))}
+          {TIMES.map(({ id, Icon, tint }) => {
+            const mine = ritualsFor(id)
+            return (
+              <li key={id}>
+                <button
+                  type="button"
+                  onClick={() => setOpen(id)}
+                  disabled={rituals === null}
+                  className="w-full py-2.5 text-start transition-colors hover:text-white disabled:opacity-60"
+                >
+                  <span className="flex items-center gap-3">
+                    <Icon aria-hidden className={`h-4 w-4 shrink-0 ${tint}`} strokeWidth={1.75} />
+                    <span className="flex-1 text-sm text-white/85">{t(id)}</span>
+                    <span className="text-xs text-[var(--color-text-tertiary)]">{rituals === null ? '…' : t('count', { count: mine.length })}</span>
+                    <ChevronRight aria-hidden className="h-3.5 w-3.5 text-white/30 rtl:-scale-x-100" />
+                  </span>
+                  {mine.length > 0 && (
+                    <span className="mt-1.5 block ps-7 space-y-1">
+                      {mine.slice(0, PREVIEW_PER_GROUP).map((r) => (
+                        <span key={r.ritualId} className="block truncate text-xs text-white/65">{r.text}</span>
+                      ))}
+                      {mine.length > PREVIEW_PER_GROUP && (
+                        <span className="block text-xs text-[var(--color-text-tertiary)]">
+                          {t('more', { count: mine.length - PREVIEW_PER_GROUP })}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </button>
+              </li>
+            )
+          })}
         </ul>
       )}
       {open && rituals && (
@@ -80,6 +105,9 @@ function RitualsSheet({ time, rituals, onChange, onClose }: {
   onClose: () => void
 }) {
   const t = useTranslations('Account.profile.rituals')
+  // Opens straight into adding only when this group has nothing yet.
+  const [adding, setAdding] = useState(() => !rituals.some((r) => r.timeOfDay === time))
+  const [justAdded, setJustAdded] = useState(false)
   const [draft, setDraft] = useState('')
   const [editing, setEditing] = useState<{ id: string; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
@@ -111,6 +139,8 @@ function RitualsSheet({ time, rituals, onChange, onClose }: {
     const created = await createRitual({ timeOfDay: time, text })
     onChange([...rituals, created])
     setDraft('')
+    setAdding(false)
+    setJustAdded(true)
   })
 
   const saveEdit = () => run(async () => {
@@ -136,6 +166,12 @@ function RitualsSheet({ time, rituals, onChange, onClose }: {
             <X className="h-4 w-4" />
           </button>
         </div>
+
+        {justAdded && (
+          <p role="status" className="flex items-center gap-1.5 text-sm text-emerald-300/90 animate-fade-in">
+            <Check aria-hidden className="h-4 w-4" /> {t('added', { time: t(time) })}
+          </p>
+        )}
 
         {mine.length === 0 ? (
           <p className="text-[var(--color-text-tertiary)] text-sm leading-relaxed">{t('empty')}</p>
@@ -175,27 +211,61 @@ function RitualsSheet({ time, rituals, onChange, onClose }: {
           </ul>
         )}
 
-        <div className="space-y-2">
-          <Dictatable>
-            <textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value.slice(0, RITUAL_TEXT_MAX))}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); add() } }}
-              placeholder={t('addPlaceholder')}
-              rows={2}
-              className="w-full resize-none rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60"
-            />
-          </Dictatable>
-          {error && <p className="text-red-400/90 text-xs">{error}</p>}
-          <button
-            type="button"
-            onClick={add}
-            disabled={busy || !draft.trim()}
-            className="w-full rounded-2xl bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] py-2.5 text-sm text-white transition-colors disabled:opacity-40"
-          >
-            {t('add')}
-          </button>
-        </div>
+        {adding ? (
+          <div className="space-y-2">
+            <Dictatable>
+              <textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value.slice(0, RITUAL_TEXT_MAX))}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); add() } }}
+                placeholder={t('addPlaceholder')}
+                rows={2}
+                autoFocus
+                className="w-full resize-none rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-[var(--color-violet-500)]/60"
+              />
+            </Dictatable>
+            {error && <p className="text-red-400/90 text-xs">{error}</p>}
+            <div className="flex gap-2">
+              {mine.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { setAdding(false); setDraft(''); setError(null) }}
+                  className="flex-1 rounded-2xl border border-white/15 py-2.5 text-sm text-white/70 hover:text-white transition-colors"
+                >
+                  {t('cancel')}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={add}
+                disabled={busy || !draft.trim()}
+                className="flex-1 rounded-2xl bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] py-2.5 text-sm text-white transition-colors disabled:opacity-40"
+              >
+                {t('saveRitual')}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {error && <p className="text-red-400/90 text-xs">{error}</p>}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => { setAdding(true); setJustAdded(false) }}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-2xl border border-[var(--color-violet-500)]/50 py-2.5 text-sm text-white hover:bg-white/5 transition-colors"
+              >
+                <Plus aria-hidden className="h-4 w-4" /> {t('addRitual')}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 rounded-2xl bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] py-2.5 text-sm text-white transition-colors"
+              >
+                {t('done')}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>,
     document.body

@@ -1,5 +1,6 @@
 import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
+import LocaleSync from '@/components/shared/LocaleSync'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -7,6 +8,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <main className="flex-1 min-w-0 pb-20 lg:pb-0">{children}</main>
       <MobileNav />
+      <LocaleSync />
     </div>
   )
 }

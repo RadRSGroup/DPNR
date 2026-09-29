@@ -35,7 +35,7 @@ async function main() {
       priceMinorUnits: plan.priceMinorUnits,
       currency: plan.currency,
       ...('billingFrequency' in plan ? { billingFrequency: plan.billingFrequency } : {}),
-      active: true,
+      active: 'active' in plan ? plan.active : true,
     })
 
     await ddb.send(new PutCommand({ TableName: TABLE_NAME, Item: item }))

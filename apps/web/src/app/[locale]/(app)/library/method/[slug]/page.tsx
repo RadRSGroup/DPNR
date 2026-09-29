@@ -28,7 +28,8 @@ export default function MethodPiecePage() {
     getCurrentSession().then((session) => { if (!session) router.push('/login') }).catch(() => {})
   }, [router])
 
-  // Lets Featured Today move on to the next unread piece (see readMethodSlugs).
+  // Read state is kept per browser (readMethodSlugs); nothing reads it since
+  // Featured Today was replaced by the carousel, but it stays cheap and local.
   useEffect(() => {
     if (piece) markMethodRead(piece.slug)
   }, [piece])
@@ -40,7 +41,7 @@ export default function MethodPiecePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--color-bg-base)]" />
       </div>
 
-      <div className="max-w-[393px] lg:max-w-2xl mx-auto px-5 lg:px-8 pb-10 pt-14 lg:pt-8">
+      <div className="max-w-[393px] md:max-w-3xl lg:max-w-4xl mx-auto px-5 md:px-8 pb-10 pt-14 lg:pt-8">
         <Link href="/library" className="inline-flex items-center gap-1.5 text-[var(--color-text-tertiary)] hover:text-white/60 text-xs mb-6">
           <ArrowLeft className="w-3.5 h-3.5 rtl:-scale-x-100" /> {t('title')}
         </Link>
@@ -50,7 +51,7 @@ export default function MethodPiecePage() {
         ) : (
           <article className="space-y-5">
             <div className="relative overflow-hidden rounded-[var(--radius-card-lg)] ring-1 ring-white/10 aspect-[16/7]">
-              <Image src={piece.image} alt="" fill priority sizes="(min-width: 1024px) 672px, 100vw" className="object-cover" />
+              <Image src={piece.image} alt="" fill priority sizes="(min-width: 1024px) 896px, (min-width: 768px) 768px, 100vw" className="object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
               <span className="absolute bottom-3 start-4 liquid-glass rounded-full px-2.5 py-0.5 text-[11px] text-white/85">
                 {t('method.shelfTitle')} · {t('method.minRead', { minutes: readingMinutes(piece) })}
@@ -66,12 +67,12 @@ export default function MethodPiecePage() {
               <section key={i} className="space-y-2.5">
                 {section.heading && <h2 className="text-white/50 text-xs uppercase tracking-wide pt-1">{section.heading}</h2>}
                 {section.paragraphs?.map((para, j) => (
-                  <p key={j} className="text-white/75 text-sm leading-relaxed">{para}</p>
+                  <p key={j} className="text-white/75 text-sm md:text-base leading-relaxed">{para}</p>
                 ))}
                 {section.bullets && (
                   <ul className="space-y-1.5">
                     {section.bullets.map((item, j) => (
-                      <li key={j} className="flex gap-2 text-white/70 text-sm leading-relaxed">
+                      <li key={j} className="flex gap-2 text-white/70 text-sm md:text-base leading-relaxed">
                         <span className="text-[var(--color-violet-400)] shrink-0">•</span>{item}
                       </li>
                     ))}
@@ -84,7 +85,7 @@ export default function MethodPiecePage() {
                         <span className="shrink-0 w-6 h-6 rounded-full bg-[var(--color-violet-600)]/30 border border-[var(--color-violet-500)]/40 text-[var(--color-violet-300)] text-xs flex items-center justify-center mt-0.5">
                           {j + 1}
                         </span>
-                        <p className="text-white/70 text-sm leading-relaxed">
+                        <p className="text-white/70 text-sm md:text-base leading-relaxed">
                           <span className="text-white">{step.title}</span> {step.text}
                         </p>
                       </li>
@@ -96,7 +97,7 @@ export default function MethodPiecePage() {
 
             <Card className="bg-[var(--color-violet-900)]/20 border-[var(--color-violet-600)]/30">
               <p className="text-[var(--color-violet-300)] text-xs uppercase tracking-wide mb-1">{t('method.reflect')}</p>
-              <p className="text-white/80 text-sm leading-relaxed">{piece.reflection}</p>
+              <p className="text-white/80 text-sm md:text-base leading-relaxed">{piece.reflection}</p>
             </Card>
 
             <div>

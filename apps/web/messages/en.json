@@ -67,7 +67,12 @@
         "empty": "Nothing here yet. What would help this part of your day?",
         "error": "Could not save. Please try again.",
         "limit": "You can keep up to {max} rituals.",
-        "loadError": "Your rituals couldn't load right now."
+        "loadError": "Your rituals couldn't load right now.",
+        "addRitual": "Add a ritual",
+        "saveRitual": "Save ritual",
+        "done": "Done",
+        "added": "Added to your {time} rituals.",
+        "more": "+{count} more"
       },
       "playlists": {
         "eyebrow": "Music",
@@ -192,7 +197,10 @@
       "creditsUnit": "Credits",
       "outOfCredits": "Out of credits",
       "runningLow": "Running low",
-      "buyCredits": "Buy Credits"
+      "buyCredits": "Buy Credits",
+      "choosePlan": "Choose a Plan",
+      "viewHistory": "View History",
+      "description": "Use your credits to go deeper with reflections, guidance, and AI tools."
     },
     "earn": {
       "title": "Earn More Credits",
@@ -202,15 +210,26 @@
       "creditsEarned": "{count, plural, one {+# Credit} other {+# Credits}}"
     },
     "plans": {
-      "choosePlan": { "title": "Choose Your Plan", "subtitle": "More credits. More insights. More you." },
-      "buyPackages": { "title": "Buy Credit Packages", "subtitle": "One-time credit packs. Use whenever you need." },
+      "choosePlan": { "title": "Choose Your Plan", "subtitle": "Your subscription gives you access to DPNR, plus monthly credits." },
+      "buyPackages": { "title": "Buy Credit Packages", "subtitle": "Need more depth? Add extra credits to your current plan." },
       "loading": "Loading…",
       "subscriptionsComingSoon": "Plans are coming soon — pricing hasn't been finalized yet.",
       "packsComingSoon": "Credit packs are coming soon — pricing hasn't been finalized yet.",
       "perMonth": "/ month",
       "creditsCount": "{count, plural, one {# credit} other {# credits}}",
       "comingSoonButton": "Coming soon",
-      "purchaseUnavailableTitle": "Purchasing isn't available yet — real payment credentials aren't set up."
+      "purchaseUnavailableTitle": "Purchasing isn't available yet — real payment credentials aren't set up.",
+      "free": { "name": "Free", "detail": "Limited access, with starter credits when you join" },
+      "currentPlan": "Current Plan",
+      "monthlyCredits": "{count, plural, one {# credit / month} other {# credits / month}}",
+      "packsNote": "Extra credits add to your plan for deeper reflections and guidance. They don't replace a subscription."
+    },
+    "gift": {
+      "title": "Gift & Share Credits",
+      "subtitle": "Give the gift of growth. Share credits with someone you care about.",
+      "send": "Send a Gift",
+      "tagline": "Help someone begin their journey.",
+      "unavailableTitle": "Gifting credits isn't available yet."
     },
     "transactions": {
       "title": "Your Recent Transactions",
@@ -334,7 +353,13 @@
       "shelfTitle": "The DPNR Method",
       "minRead": "{minutes} min read",
       "reflect": "Reflect",
-      "next": "Next in The DPNR Method"
+      "next": "Next in The DPNR Method",
+      "carouselLabel": "The DPNR Method",
+      "slideLabel": "{current} of {total}: {title}",
+      "goToSlide": "Show slide {current} of {total}",
+      "previousSlide": "Previous slide",
+      "nextSlide": "Next slide",
+      "learnMore": "Learn more"
     },
     "shelves": {
       "knowYourself": "Know Yourself",
@@ -1365,5 +1390,42 @@
     "cancelled": "Sign-in was cancelled.",
     "genericError": "Something went wrong. Please try again.",
     "backToLogin": "Back to sign in"
+  },
+  "Felt": {
+    "emotions": {
+      "Anger": "Anger",
+      "Sadness": "Sadness",
+      "Fear": "Fear",
+      "Uncertainty": "Uncertainty",
+      "Excitement": "Excitement",
+      "Calm": "Calm",
+      "Hope": "Hope",
+      "Joy": "Joy",
+      "Guilt": "Guilt",
+      "Overwhelm": "Overwhelm",
+      "Grief": "Grief",
+      "Anxiety": "Anxiety"
+    },
+    "areas": {
+      "Head": "Head",
+      "Throat": "Throat",
+      "Shoulders": "Shoulders",
+      "Chest": "Chest",
+      "Arms": "Arms",
+      "Hands": "Hands",
+      "Stomach": "Stomach",
+      "Gut": "Gut",
+      "Legs": "Legs"
+    },
+    "somethingElse": "Something else",
+    "customPlaceholder": "Name the feeling in your own words",
+    "addCustom": "Add",
+    "removeCustom": "Remove {label}",
+    "bodyQuestion": "Where did you feel it in your body?",
+    "bodyHintMany": "Choose a feeling, then tap where it sat. Tap again to remove it.",
+    "bodyHintOne": "Tap where it sat. Tap again to remove it.",
+    "feelingToPlace": "Feeling to place",
+    "whatYouFelt": "What you felt",
+    "whereBodyFelt": "Where your body felt it"
   }
 }

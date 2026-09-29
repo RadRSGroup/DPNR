@@ -85,3 +85,18 @@ export const FOCUS_MOODS = FOCUS_PLAYLISTS.flatMap((p) => {
   const spotifyId = spotifyPlaylistId(p.url)
   return spotifyId ? [{ ...p, spotifyId }] : []
 })
+
+/**
+ * The founder's artwork for each playlist (Drive → My Profile → playlist
+ * images, 2026-09-29), stored as `public/images/playlists/<id>.webp`. Most
+ * are round on transparency, two are square; every surface shows them in a
+ * circle so they read as one set.
+ */
+export function playlistArt(id: string): string {
+  return `/images/playlists/${id}.webp`
+}
+
+/** The founder's numbering of the collection (the Drive file names 1–8). */
+export const PLAYLIST_DISPLAY_ORDER = [
+  'deep-focus', 'ignite', 'desire', 'feel-it', 'remember', 'come-home', 'ground-me', 'good-life',
+] as const

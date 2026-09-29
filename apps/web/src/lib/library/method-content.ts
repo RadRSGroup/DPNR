@@ -41,8 +41,8 @@ export const DPNR_METHOD: MethodPiece[] = [
   {
     slug: `how-dpnr-works`,
     title: `How the DPNR Method Works`,
-    tagline: `Why the inside creates the outside, and what that means for real change.`,
-    image: `/images/library/header.webp`,
+    tagline: `A short introduction to the philosophy, science, and experience behind DPNR.`,
+    image: `/images/library/method/how-dpnr-works.webp`,
     sections: [
       {
         paragraphs: [
@@ -84,7 +84,7 @@ export const DPNR_METHOD: MethodPiece[] = [
     slug: `values-boundaries-needs-behavior`,
     title: `Values, Boundaries, Needs, Behavior`,
     tagline: `The four layers underneath everything you do, and how they connect.`,
-    image: `/images/library/themes/need-art.webp`,
+    image: `/images/library/method/values-boundaries-needs-behavior.webp`,
     sections: [
       {
         paragraphs: [
@@ -125,7 +125,7 @@ export const DPNR_METHOD: MethodPiece[] = [
     slug: `cause-and-effect`,
     title: `Cause and Effect: Living From the Inside Out`,
     tagline: `Are you reacting to what happens, or acting from what matters?`,
-    image: `/images/library/themes/patterns-art.webp`,
+    image: `/images/library/method/cause-and-effect.webp`,
     sections: [
       {
         paragraphs: [
@@ -169,7 +169,7 @@ export const DPNR_METHOD: MethodPiece[] = [
     slug: `asking-why`,
     title: `Asking Why Until You Reach the Root`,
     tagline: `A simple practice for getting underneath a problem to the layer you can act on.`,
-    image: `/images/library/themes/me-art.webp`,
+    image: `/images/library/method/asking-why.webp`,
     sections: [
       {
         paragraphs: [
@@ -214,7 +214,7 @@ export const DPNR_METHOD: MethodPiece[] = [
     slug: `the-journey`,
     title: `The Stages of the DPNR Journey`,
     tagline: `From noticing to lasting change: how growth tends to unfold.`,
-    image: `/images/library/themes/choose-art.webp`,
+    image: `/images/library/method/the-journey.webp`,
     sections: [
       {
         paragraphs: [
@@ -250,7 +250,7 @@ export const DPNR_METHOD: MethodPiece[] = [
     slug: `the-core-question`,
     title: `Will I Be Loved If I Do What’s Right for Me?`,
     tagline: `The question at the heart of DPNR.`,
-    image: `/images/library/themes/repair-art.webp`,
+    image: `/images/library/method/the-core-question.webp`,
     sections: [
       {
         paragraphs: [
