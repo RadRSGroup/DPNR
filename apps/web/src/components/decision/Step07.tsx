@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import StepShell from './StepShell'
 import PrimaryButton from '@/components/ui/PrimaryButton'
 import { useAI, RefineFn } from '@/lib/useAI'
@@ -31,6 +32,7 @@ export default function Step07({
   initialSelected, initialChosenLean, initialReflectionNote,
   onRefine, onComplete, onBack, onSkip
 }: Step07Props) {
+  const t = useTranslations('DecisionRoom')
   const [phase, setPhase] = useState<Phase>('projections')
   const [optionIdx, setOptionIdx] = useState(0)
   const [statementsByOption, setStatementsByOption] = useState<PerOption<string[]>>(initialSelected ?? {})
@@ -102,14 +104,14 @@ export default function Step07({
 
           {/* The prompt as an intentional transition, not body text (#12). */}
           <div key={currentOption} className="animate-settle-in py-2 lg:py-4">
-            <RoomHeading eyebrow={`Future Projection · Option ${currentOption}`} title={`Imagine your life one year from now, having chosen Option ${currentOption}.`} as="h2">
-              Which of these futures feel true? Choose any that resonate, or add your own.
+            <RoomHeading eyebrow={t('step07.eyebrow', { option: currentOption })} title={t('step07.title', { option: currentOption })} as="h2">
+              {t('step07.body')}
             </RoomHeading>
           </div>
 
           <div className="flex-1 space-y-2 no-scrollbar overflow-y-auto">
             {loading && statements.length === 0 ? (
-              <AiThinking shape="cards" count={3} label="Imagining your future…" />
+              <AiThinking shape="cards" count={3} label={t('step07.imagining')} />
             ) : (
               statements.map((s, i) => (
                 <button
@@ -148,7 +150,7 @@ export default function Step07({
                   value={custom}
                   onChange={e => setCustomByOption(prev => ({ ...prev, [currentOption]: e.target.value }))}
                   onKeyDown={e => e.key === 'Enter' && addCustom()}
-                  placeholder="Something else?"
+                  placeholder={t('step07.somethingElse')}
                   className="w-full bg-white/5 border border-white/10 rounded-full px-3 py-2 text-white text-sm placeholder-[var(--color-text-tertiary)] focus:outline-none focus:border-purple-500/50"
                 />
                 </Dictatable>
@@ -156,14 +158,14 @@ export default function Step07({
                   onClick={addCustom}
                   className="px-3 py-2 rounded-full bg-purple-900/30 border border-purple-700/40 text-purple-400 text-xs hover:bg-purple-800/40 transition-colors"
                 >
-                  Add
+                  {t('add')}
                 </button>
               </div>
             )}
           </div>
 
           <PrimaryButton
-            label={!isLastOption ? `Next: Option ${options[optionIdx + 1].label}` : 'Reflect on your decision'}
+            label={!isLastOption ? t('step07.nextOption', { option: options[optionIdx + 1].label }) : t('step07.reflectCta')}
             onClick={handleProjectionsNext}
             disabled={loading && statements.length === 0}
           />
@@ -177,8 +179,8 @@ export default function Step07({
     return (
       <StepShell step={7} decisionTitle={decisionTitle} onBack={() => setPhase('projections')} onSkip={handleReflectNext}>
         <div className="flex-1 flex flex-col space-y-6 pt-2">
-          <RoomHeading eyebrow="Future Projection · Reflect" title={options.length > 2 ? "You've mapped all three paths." : "You've mapped both paths."} as="h2">
-            Now let it settle. Which option leans closer to your truth?
+          <RoomHeading eyebrow={t('step07.reflectEyebrow')} title={options.length > 2 ? t('step07.mappedThree') : t('step07.mappedBoth')} as="h2">
+            {t('step07.reflectBody')}
           </RoomHeading>
 
           {/* Option lean selector */}
@@ -196,10 +198,10 @@ export default function Step07({
                       : 'border-white/10 bg-white/5 hover:border-white/20'
                   }`}
                 >
-                  <p className="text-[var(--color-amber-300)] text-[11px] uppercase tracking-[0.18em]">Option {label}</p>
+                  <p className="text-[var(--color-amber-300)] text-[11px] uppercase tracking-[0.18em]">{t('optionLabel', { label })}</p>
                   <p className="text-white/80 text-sm leading-snug line-clamp-3">{opt.content}</p>
                   {projSelected.length > 0 && (
-                    <p className="text-[var(--color-text-tertiary)] text-xs">{projSelected.length} futures resonated</p>
+                    <p className="text-[var(--color-text-tertiary)] text-xs">{t('step07.futuresResonated', { count: projSelected.length })}</p>
                   )}
                 </button>
               )
@@ -214,17 +216,17 @@ export default function Step07({
                 : 'border-white/10 text-[var(--color-text-tertiary)] hover:border-white/20 hover:text-white/60'
             }`}
           >
-            Still undecided, and that&apos;s okay
+            {t('step07.undecided')}
           </button>
 
           {/* One-line reflection */}
           <div className="space-y-2">
-            <p className="text-white/70 text-sm text-center">In one sentence, what feels true right now? <span className="text-[var(--color-text-tertiary)]">(optional)</span></p>
+            <p className="text-white/70 text-sm text-center">{t('step07.oneSentence')} <span className="text-[var(--color-text-tertiary)]">{t('step07.optional')}</span></p>
             <Dictatable>
               <textarea
                 value={reflectionNote}
                 onChange={e => setReflectionNote(e.target.value.slice(0, 5000))}
-                placeholder="Something in me knows..."
+                placeholder={t('step07.reflectPlaceholder')}
                 rows={2}
                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-[var(--color-text-tertiary)] text-sm resize-none focus:outline-none focus:border-purple-500/50 transition-colors"
               />
@@ -232,7 +234,7 @@ export default function Step07({
           </div>
 
           <PrimaryButton
-            label="Continue"
+            label={t('continue')}
             onClick={handleReflectNext}
             disabled={!chosenLean}
           />

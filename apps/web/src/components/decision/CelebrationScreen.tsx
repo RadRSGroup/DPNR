@@ -1,17 +1,11 @@
 'use client'
+import { useTranslations } from 'next-intl'
 import RoomScreenFrame from '@/components/shared/RoomScreenFrame'
 import InvertedButton from '@/components/ui/InvertedButton'
 import { useAvatarUrl } from '@/lib/useAvatarUrl'
 
-const AFFIRMATIONS = [
-  'You showed up for yourself today. That takes real courage.',
-  'Every decision made with awareness is a step toward your truest self.',
-  'Clarity is a gift you\'ve given yourself today.',
-  'You did the inner work. That matters more than you know.',
-  'Slowing down to listen to yourself is never time wasted.',
-  'The courage to look within is the beginning of all wisdom.',
-  'You chose to understand yourself better. That is everything.',
-]
+// DecisionRoom.affirmations.0–6 in messages.
+const AFFIRMATION_COUNT = 7
 
 interface Props {
   userName: string
@@ -20,11 +14,12 @@ interface Props {
 }
 
 export default function CelebrationScreen({ userName, decisionTitle, onContinue }: Props) {
+  const t = useTranslations('DecisionRoom')
   const firstName = userName.includes('@')
     ? userName.split('@')[0]
     : userName.split(' ')[0] || userName
 
-  const affirmation = AFFIRMATIONS[Math.floor(decisionTitle.length % AFFIRMATIONS.length)]
+  const affirmation = t(`affirmations.${Math.floor(decisionTitle.length % AFFIRMATION_COUNT)}`)
   // Founder feedback 2026-09-28 #18: the person's own photo inside the glowing ring. Personal, not a reward.
   const avatarUrl = useAvatarUrl()
 
@@ -50,10 +45,10 @@ export default function CelebrationScreen({ userName, decisionTitle, onContinue 
         {/* Heading */}
         <div className="space-y-2">
           <h1 className="font-display text-white text-3xl lg:text-4xl tracking-tight">
-            Well done{firstName ? `, ${firstName}` : ''}
+            {firstName ? t('celebration.wellDoneName', { name: firstName }) : t('celebration.wellDone')}
           </h1>
           <p className="text-purple-300/70 text-sm">
-            You&apos;ve completed your decision journey.
+            {t('celebration.completed')}
           </p>
         </div>
 
@@ -65,13 +60,13 @@ export default function CelebrationScreen({ userName, decisionTitle, onContinue 
         </div>
 
         {/* CTA */}
-        <InvertedButton onClick={onContinue} className="w-full py-4 shadow-lg" label="See your summary" />
+        <InvertedButton onClick={onContinue} className="w-full py-4 shadow-lg" label={t('celebration.seeSummary')} />
 
         <button
           onClick={onContinue}
           className="text-[var(--color-text-tertiary)] text-xs hover:text-white/50 transition-colors"
         >
-          Skip
+          {t('skip')}
         </button>
       </div>
     </RoomScreenFrame>

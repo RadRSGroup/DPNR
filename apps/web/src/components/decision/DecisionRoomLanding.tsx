@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from '@/i18n/navigation'
-import { useLocale } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { Search, Telescope, Heart, Target, CheckCircle2, ArrowRight, ArrowRightCircle, Clock, PieChart, Plus, History, Layers } from 'lucide-react'
 import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
@@ -14,13 +14,14 @@ import { getDailyCard, getDecisionsList } from '@/lib/api/v1-client'
 import type { CompanionContextResponse, DecisionsListResponse } from '@dpnr/shared-types'
 import { timeAgo } from '@/lib/format'
 
+// Labels and copy: DecisionRoom.phases.{phase} and DecisionRoom.landing.journey.{key}.
 const JOURNEY = [
-  { label: 'Define', icon: Search, copy: 'Get clear on what this decision is really about.' },
-  { label: 'Explore', icon: Telescope, copy: 'Look at all perspectives, options and possibilities.' },
-  { label: 'Feel', icon: Heart, copy: 'Tune into your body, emotions and inner knowing.' },
-  { label: 'Align', icon: Target, copy: 'Check what truly matters and what feels aligned.' },
-  { label: 'Decide', icon: CheckCircle2, copy: 'Choose with confidence and inner peace.' },
-  { label: 'Act', icon: ArrowRightCircle, copy: 'Create your next aligned action.' },
+  { key: 'define', phase: 1, icon: Search },
+  { key: 'explore', phase: 2, icon: Telescope },
+  { key: 'feel', phase: 3, icon: Heart },
+  { key: 'align', phase: 4, icon: Target },
+  { key: 'decide', phase: 5, icon: CheckCircle2 },
+  { key: 'act', phase: 6, icon: ArrowRightCircle },
 ]
 
 interface Props {
@@ -69,6 +70,7 @@ interface Props {
  */
 export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props) {
   const locale = useLocale()
+  const t = useTranslations('DecisionRoom')
   const router = useRouter()
   const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
   const [decisions, setDecisions] = useState<DecisionsListResponse['decisions']>([])
@@ -109,18 +111,18 @@ export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props
             <div className="pt-14 lg:pt-8 pb-6 flex items-center justify-between gap-4">
               <div>
                 <h1 className="font-display text-3xl lg:text-4xl text-white">
-                  Decision Room
+                  {t('roomLabel')}
                 </h1>
                 <p className="text-sm lg:text-base text-[var(--color-text-secondary)] mt-2">
-                  Make aligned choices with clarity and confidence.
+                  {t('landing.subtitle')}
                 </p>
-                {sourceTopicTitle && <p className="text-xs text-purple-300/70 mt-2">Exploring: {sourceTopicTitle}</p>}
+                {sourceTopicTitle && <p className="text-xs text-purple-300/70 mt-2">{t('landing.exploring', { title: sourceTopicTitle })}</p>}
               </div>
               <button
                 onClick={onStart}
                 className="hidden lg:inline-flex items-center gap-2 rounded-2xl border border-white/20 hover:border-white/40 bg-white/[0.03] px-5 py-3 text-sm text-white transition-colors"
               >
-                <Plus className="w-4 h-4" aria-hidden /> New Decision
+                <Plus className="w-4 h-4" aria-hidden /> {t('landing.newDecision')}
               </button>
             </div>
 
@@ -148,25 +150,25 @@ export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r rtl:lg:bg-gradient-to-l from-[var(--color-bg-base)]/90 via-[var(--color-bg-base)]/30 to-transparent" />
                     <div className="absolute inset-0 flex flex-col justify-end lg:justify-center p-5 lg:p-12 lg:max-w-[52%]">
-                      <h2 className="font-display text-2xl lg:text-4xl text-white leading-tight">Welcome to Your Decision Room</h2>
+                      <h2 className="font-display text-2xl lg:text-4xl text-white leading-tight">{t('landing.heroTitle')}</h2>
                       <span aria-hidden className="hidden lg:block h-px w-52 my-5 bg-gradient-to-r rtl:bg-gradient-to-l from-transparent via-[var(--color-violet-400)] to-transparent" />
                       <p className="text-white/75 text-sm lg:text-base mt-2 lg:mt-0 max-w-sm leading-relaxed">
-                        A space to get clear, explore deeply, and choose what truly aligns with you.
+                        {t('landing.heroBody')}
                       </p>
                     </div>
                   </div>
                 </Card>
 
                 <Card className="lg:px-7 lg:py-6">
-                  <p className="text-white text-lg lg:text-xl">Your Decision Journey</p>
-                  <p className="text-[var(--color-text-secondary)] text-sm lg:text-base mt-1 mb-5">A simple process to move from confusion to clarity.</p>
+                  <p className="text-white text-lg lg:text-xl">{t('landing.journeyTitle')}</p>
+                  <p className="text-[var(--color-text-secondary)] text-sm lg:text-base mt-1 mb-5">{t('landing.journeySubtitle')}</p>
                   {/* #20/#21 (2026-09-28): phase copy readable (it was 11px), and a
                       restrained warm accent on hover (desktop) or tap/focus
                       (touch). The copy never outgrows the phase title. */}
                   <ol className="grid grid-cols-3 lg:grid-cols-6 gap-y-5">
                     {JOURNEY.map((j, i) => (
                       <li
-                        key={j.label}
+                        key={j.key}
                         tabIndex={0}
                         onClick={() => setActivePhase((p) => (p === i ? null : i))}
                         aria-describedby={`journey-copy-${i}`}
@@ -196,14 +198,14 @@ export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props
                         >
                           {i + 1}
                         </span>
-                        <p className="text-white text-sm lg:text-base mt-1.5">{j.label}</p>
+                        <p className="text-white text-sm lg:text-base mt-1.5">{t(`phases.${j.phase}`)}</p>
                         <p
                           id={`journey-copy-${i}`}
                           className={`text-xs lg:text-[13px] mt-1 leading-snug hidden lg:block transition-colors lg:group-hover:text-[var(--color-amber-300)] lg:group-focus-visible:text-[var(--color-amber-300)] ${
                             activePhase === i ? 'text-[var(--color-amber-300)]' : 'text-white/60'
                           }`}
                         >
-                          {j.copy}
+                          {t(`landing.journey.${j.key}`)}
                         </p>
                       </li>
                     ))}
@@ -211,7 +213,7 @@ export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props
                   {/* Phones have no room for six descriptions under the icons: the
                       tapped phase's copy shows here instead. */}
                   <p aria-live="polite" className="lg:hidden mt-4 min-h-[2.5rem] text-center text-sm leading-snug text-[var(--color-amber-300)]">
-                    {activePhase !== null ? JOURNEY[activePhase].copy : <span className="text-white/45">Tap a phase to see what it&apos;s about.</span>}
+                    {activePhase !== null ? t(`landing.journey.${JOURNEY[activePhase].key}`) : <span className="text-white/45">{t('landing.tapPhase')}</span>}
                   </p>
                 </Card>
 
@@ -224,10 +226,10 @@ export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props
                     className="hidden md:block absolute start-1/2 top-1/2 -translate-x-1/2 rtl:translate-x-1/2 -translate-y-1/2 opacity-60 mix-blend-screen pointer-events-none [mask-image:radial-gradient(ellipse,black_35%,transparent_70%)]"
                   />
                   <div className="relative">
-                    <p className="text-[var(--color-violet-300)] text-sm mb-2">Step 1 of 7</p>
-                    <p className="font-display text-white text-2xl">Name the Decision</p>
+                    <p className="text-[var(--color-violet-300)] text-sm mb-2">{t('landing.stepEyebrow')}</p>
+                    <p className="font-display text-white text-2xl">{t('stepLabels.1')}</p>
                     <p className="text-white/65 text-sm mt-2 max-w-xs leading-relaxed">
-                      Let&apos;s start by getting clear on what this decision is really about.
+                      {t('landing.stepBody')}
                     </p>
                   </div>
                   <div className="relative mt-5 lg:mt-0 flex flex-col items-start lg:items-center gap-3 shrink-0">
@@ -235,10 +237,10 @@ export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props
                       onClick={onStart}
                       className="inline-flex items-center gap-2 rounded-2xl bg-[var(--color-violet-600)] hover:bg-[var(--color-violet-500)] px-6 py-3.5 text-sm font-medium text-white shadow-[var(--shadow-glow-violet)] transition-colors"
                     >
-                      Start Step 1 <ArrowRight className="w-4 h-4 rtl:-scale-x-100" />
+                      {t('landing.start')} <ArrowRight className="w-4 h-4 rtl:-scale-x-100" />
                     </button>
                     <p className="text-white/60 text-xs flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5" /> Takes about 25 minutes
+                      <Clock className="w-3.5 h-3.5" /> {t('landing.duration')}
                     </p>
                   </div>
                 </Card>
@@ -248,14 +250,14 @@ export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props
               <div className="space-y-4 lg:space-y-6 mt-4 lg:mt-0">
                 <Card className="lg:px-5">
                   <div className="flex items-center gap-2">
-                    <p className="text-base text-white">Recent Decisions</p>
+                    <p className="text-base text-white">{t('landing.recentTitle')}</p>
                     <History className="w-4 h-4 text-white/60" aria-hidden />
                   </div>
-                  <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5 mb-3">Your past decisions</p>
+                  <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5 mb-3">{t('landing.recentSubtitle')}</p>
                   {decisionsLoading ? (
                     <span aria-hidden className="block h-3 w-2/3 rounded-full bg-white/[0.07] animate-soft-pulse" />
                   ) : recentDecisions.length === 0 ? (
-                    <p className="text-[var(--color-text-tertiary)] text-xs">Once you start a decision here, it&apos;ll show up in this list.</p>
+                    <p className="text-[var(--color-text-tertiary)] text-xs">{t('landing.recentEmpty')}</p>
                   ) : (
                     <div className="space-y-2">
                       {recentDecisions.map((d) => (
@@ -271,10 +273,10 @@ export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props
                           <p className="mt-1.5 text-[11px] flex items-center gap-1 text-white/60">
                             {d.status === 'completed' ? (
                               <>
-                                <CheckCircle2 className="w-3.5 h-3.5 text-[var(--color-violet-300)]" /> Completed
+                                <CheckCircle2 className="w-3.5 h-3.5 text-[var(--color-violet-300)]" /> {t('landing.completed')}
                               </>
                             ) : (
-                              'In progress'
+                              t('landing.inProgress')
                             )}
                           </p>
                         </button>
@@ -286,45 +288,45 @@ export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props
                 <Card className="lg:px-5">
                   <div className="flex items-center gap-2">
                     <PieChart className="w-4 h-4 text-[var(--color-violet-300)]" />
-                    <p className="text-base text-white">Options Overview</p>
+                    <p className="text-base text-white">{t('landing.overviewTitle')}</p>
                   </div>
                   {decisionsLoading ? (
                     <span aria-hidden className="block h-3 w-2/3 rounded-full bg-white/[0.07] animate-soft-pulse mt-3" />
                   ) : optionsOverview ? (
                     <>
                       <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5 mb-4">
-                        Across {optionsOverview.totalWithLean} decision{optionsOverview.totalWithLean === 1 ? '' : 's'} that reached Future Projection
+                        {t('landing.overviewAcross', { count: optionsOverview.totalWithLean })}
                       </p>
                       <div className="space-y-2">
-                        <OverviewRow label="Leaning toward an option" pct={optionsOverview.leaningTowardChoicePct} barClass="bg-[var(--color-violet-500)]" />
-                        <OverviewRow label="Still weighing both" pct={100 - optionsOverview.leaningTowardChoicePct} barClass="bg-[var(--color-violet-300)]/60" />
+                        <OverviewRow label={t('landing.leaning')} pct={optionsOverview.leaningTowardChoicePct} barClass="bg-[var(--color-violet-500)]" />
+                        <OverviewRow label={t('landing.weighing')} pct={100 - optionsOverview.leaningTowardChoicePct} barClass="bg-[var(--color-violet-300)]/60" />
                       </div>
                     </>
                   ) : (
                     <p className="text-[var(--color-text-tertiary)] text-xs mt-2">
-                      This fills in once a decision reaches Future Projection (step 7).
+                      {t('landing.overviewEmpty')}
                     </p>
                   )}
                 </Card>
 
                 <Card className="lg:px-5">
-                  <p className="text-base text-white mb-3">Today&apos;s Guidance</p>
+                  <p className="text-base text-white mb-3">{t('landing.guidanceTitle')}</p>
                   <div className="relative rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-4">
                     <span aria-hidden className="block font-display text-3xl leading-none text-[var(--color-violet-300)]">&ldquo;</span>
                     <p className="text-white/85 text-sm leading-relaxed mt-1">
-                      {dailyCard ? dailyCard.text : 'Your daily guidance arrives after a conversation or two.'}
+                      {dailyCard ? dailyCard.text : t('landing.guidanceEmpty')}
                     </p>
                   </div>
                   <button
                     onClick={() => setCardOpen(true)}
                     className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[var(--color-violet-600)]/20 hover:bg-[var(--color-violet-600)]/35 py-3 text-sm text-white/90 transition-colors"
                   >
-                    <Layers className="w-4 h-4" /> Pull a New Card
+                    <Layers className="w-4 h-4" /> {t('landing.pullCard')}
                   </button>
                 </Card>
 
                 <div className="lg:hidden">
-                  <PrimaryButton label="Start Step 1" onClick={onStart} />
+                  <PrimaryButton label={t('landing.start')} onClick={onStart} />
                 </div>
               </div>
             </div>
@@ -333,7 +335,7 @@ export default function DecisionRoomLanding({ onStart, sourceTopicTitle }: Props
       </main>
       <MobileNav />
       {cardOpen && (
-        <BottomSheet onClose={() => setCardOpen(false)} closeLabel="Close">
+        <BottomSheet onClose={() => setCardOpen(false)} closeLabel={t('close')}>
           <PullACard />
         </BottomSheet>
       )}

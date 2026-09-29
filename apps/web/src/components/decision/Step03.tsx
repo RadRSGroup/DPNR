@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import StepShell from './StepShell'
 import RoomScreenFrame from '@/components/shared/RoomScreenFrame'
@@ -35,6 +36,7 @@ export type UserResponse = 'accurate' | 'refine' | 'not_sure' | 'partly_true'
  */
 export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initialReflection, onRefine, onComplete, onBack, onSkip }: Step03Props) {
   const router = useRouter()
+  const t = useTranslations('DecisionRoom')
   const [emotionsFelt, setEmotionsFelt] = useState<EmotionFelt[]>(initialFelt.emotionsFelt)
   const [bodyPlacements, setBodyPlacements] = useState<BodyPlacement[]>(initialFelt.bodyPlacements)
   const [emotion, setEmotion] = useState(initialFelt.emotion)
@@ -78,7 +80,7 @@ export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initia
             className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white text-lg"
           >✕</button>
           <div className="flex items-center gap-2">
-            <span className="text-[var(--color-text-tertiary)] text-xs">Decision Room</span>
+            <span className="text-[var(--color-text-tertiary)] text-xs">{t('roomLabel')}</span>
           </div>
           <div className="w-8 h-8" />
         </div>
@@ -87,7 +89,7 @@ export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initia
         <div className="text-center px-6 pt-4 pb-3">
           <h2 className="text-white text-lg font-light">&quot;{decisionTitle}&quot;</h2>
           <p className="text-[var(--color-amber-300)] text-xs mt-2 uppercase tracking-[0.18em]">
-            Step 3 of 6 · Body Emotion Mapping
+            {t('stepOf', { step: 3, total: 6, label: t('stepLabels.3') })}
           </p>
         </div>
 
@@ -95,19 +97,19 @@ export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initia
         <div className="flex-1 overflow-y-auto no-scrollbar px-5 space-y-4 pb-4 animate-settle-in">
           <div className="bg-white/[0.05] border border-white/12 rounded-2xl px-4 py-4 space-y-3">
             <FeltSummary emotionsFelt={emotionsFelt} bodyPlacements={bodyPlacements} emotion={emotion} bodyResponse={bodyResponse} />
-            <p className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.2em]">A word from us</p>
+            <p className="text-[var(--color-amber-300)] text-xs uppercase tracking-[0.2em]">{t('aWordFromUs')}</p>
             <p className="text-white/85 text-sm lg:text-base leading-relaxed">{reflection}</p>
           </div>
 
           {/* Do You Agree? */}
           <div className="space-y-3">
-            <p className="text-white/70 text-sm text-center">Does this feel accurate?</p>
+            <p className="text-white/70 text-sm text-center">{t('doesThisFeelAccurate')}</p>
             <div className="grid grid-cols-2 gap-2">
               {([
-                ['accurate', 'Accurate'],
-                ['refine', 'Refine this'],
-                ['not_sure', 'Not sure'],
-                ['partly_true', 'Partly True'],
+                ['accurate', t('agreement.accurate')],
+                ['refine', t('agreement.refine')],
+                ['not_sure', t('agreement.notSure')],
+                ['partly_true', t('agreement.partlyTrue')],
               ] as [UserResponse, string][]).map(([val, lbl]) => (
                 <button
                   key={val}
@@ -132,7 +134,7 @@ export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initia
             </div>
             {response === 'refine' && (
               <div className="pt-1 space-y-1 animate-settle-in">
-                <p className="text-[var(--color-text-tertiary)] text-xs">Add or edit to make it yours:</p>
+                <p className="text-[var(--color-text-tertiary)] text-xs">{t('step03.refineHint')}</p>
                 <Dictatable>
                   <textarea
                     autoFocus
@@ -152,7 +154,7 @@ export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initia
           <button
             onClick={() => setReflection(null)}
             className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-all"
-            aria-label="Back"
+            aria-label={t('back')}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M11 4L6 9L11 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
@@ -162,14 +164,14 @@ export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initia
             onClick={onSkip}
             className="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-all text-xs"
           >
-            Skip
+            {t('skip')}
           </button>
           <button
             onClick={handleContinue}
             disabled={!response || (response === 'refine' && !userRefinement.trim())}
             className="flex-1 h-12 rounded-full bg-gradient-to-r from-fuchsia-700 to-purple-600 text-white text-sm font-medium hover:from-fuchsia-600 hover:to-purple-500 transition-all shadow-lg shadow-fuchsia-900/40 disabled:opacity-40 disabled:pointer-events-none"
           >
-            Keep Exploring
+            {t('keepExploring')}
           </button>
         </div>
       </RoomScreenFrame>
@@ -182,15 +184,15 @@ export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initia
       <div className="flex-1 flex flex-col space-y-6 pt-2">
         <div className="space-y-3">
           <div className="space-y-1">
-            <p className="text-white/70 text-sm leading-relaxed">What do you feel when you hold this decision?</p>
-            <p className="text-[var(--color-text-tertiary)] text-xs">Choose any that fit. There&apos;s no right answer.</p>
+            <p className="text-white/70 text-sm leading-relaxed">{t('step03.prompt')}</p>
+            <p className="text-[var(--color-text-tertiary)] text-xs">{t('step03.hint')}</p>
           </div>
           <EmotionChips emotionsFelt={emotionsFelt} setEmotionsFelt={setEmotionsFelt} setBodyPlacements={setBodyPlacements} />
           <Dictatable>
             <textarea
               value={emotion}
               onChange={e => setEmotion(e.target.value.slice(0, 5000))}
-              placeholder={emotionsFelt.length ? 'Anything to add, in your own words? (optional)' : 'Or name the feeling in your own words...'}
+              placeholder={emotionsFelt.length ? t('step03.emotionAddPlaceholder') : t('step03.emotionPlaceholder')}
               rows={2}
               className={textarea}
             />
@@ -203,15 +205,15 @@ export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initia
 
         <div className="space-y-2">
           {emotionsFelt.length === 0 && (
-            <p className="text-white/70 text-sm leading-relaxed">Where do you feel it in your body?</p>
+            <p className="text-white/70 text-sm leading-relaxed">{t('step03.bodyQuestion')}</p>
           )}
           <Dictatable>
             <textarea
               value={bodyResponse}
               onChange={e => setBodyResponse(e.target.value.slice(0, 5000))}
               placeholder={bodyPlacements.length
-                ? 'How does it feel there? Tight, heavy, hot... (optional)'
-                : 'Tight chest, clenched jaw, a knot in your stomach...'}
+                ? t('step03.bodyAddPlaceholder')
+                : t('step03.bodyPlaceholder')}
               rows={2}
               className={textarea}
             />
@@ -219,7 +221,7 @@ export default function Step03({ decisionTitle, initialFelt = EMPTY_FELT, initia
         </div>
 
         <PrimaryButton
-          label="Map My Feelings"
+          label={t('step03.mapFeelings')}
           onClick={handleMapFeelings}
           disabled={!hasEmotion || !hasBody}
           loading={loading}

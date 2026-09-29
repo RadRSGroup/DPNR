@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl'
 import type { DecisionOption, OptionLabel } from '@/lib/types'
 
 /**
@@ -42,6 +43,7 @@ export function OptionContext({
   options: DecisionOption[]
   active?: OptionLabel
 }) {
+  const t = useTranslations('DecisionRoom')
   const three = options.length > 2
   return (
     <div className={`grid gap-2 lg:gap-3 ${three ? 'grid-cols-3' : 'grid-cols-2'}`}>
@@ -57,7 +59,7 @@ export function OptionContext({
                 : 'border-white/12 bg-white/[0.04]'
             } ${isActive ? '' : 'opacity-50'}`}
           >
-            <p className="text-[var(--color-amber-300)] text-[11px] uppercase tracking-[0.18em]">Option {opt.label}</p>
+            <p className="text-[var(--color-amber-300)] text-[11px] uppercase tracking-[0.18em]">{t('optionLabel', { label: opt.label })}</p>
             <p className={`text-white/85 ${three ? 'text-xs lg:text-sm' : 'text-sm'} leading-snug mt-1 line-clamp-3 break-words`}>{opt.content}</p>
           </div>
         )
