@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { ChevronDown } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import type { TwinListResponse } from '@dpnr/shared-types'
+import { useMirrorPatternLabels } from '@/lib/mirror-pattern-labels'
 
 const ORBS = ['/images/mirror/pattern-orb-1.webp', '/images/mirror/pattern-orb-2.webp', '/images/mirror/pattern-orb-3.webp', '/images/mirror/pattern-orb-4.webp']
 
@@ -29,6 +30,7 @@ export default function PatternsTrackCard({
   loading?: boolean
 }) {
   const t = useTranslations('Dashboard.patterns')
+  const patternLabels = useMirrorPatternLabels()
   return (
     <Card className="flex flex-col lg:px-5">
       <p className="text-white text-base">{t('title')}</p>
@@ -37,7 +39,7 @@ export default function PatternsTrackCard({
       {patterns.length > 0 ? (
         <ul className="space-y-1.5">
           {patterns.slice(0, 4).map((p, i) => {
-            return <PatternRow key={p.signalId} name={p.name} description={p.description} orb={ORBS[i % ORBS.length]} />
+            return <PatternRow key={p.signalId} name={p.name ? patternLabels.name(p.name) : p.name} description={p.description} orb={ORBS[i % ORBS.length]} />
           })}
         </ul>
       ) : loading ? (

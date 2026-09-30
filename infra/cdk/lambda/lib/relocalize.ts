@@ -42,6 +42,9 @@ export interface Candidate {
   stampAttr: 'createdAt' | 'updatedAt'
   stampValue: string
   fields: Record<string, string>
+  // Fields an existing translation into this language already has right,
+  // kept when the translation is rewritten.
+  keep: Record<string, string>
   needsReferencePattern: boolean
 }
 
@@ -110,7 +113,6 @@ export async function gatherCandidates(deps: RelocalizeDeps, pk: string, locale:
     stampValue: string,
     needsReferencePattern = false
   ) => {
-    if (item.translated?.lang === locale) return
     let value: Record<string, unknown>
     try {
       value = await crypto.decryptField<Record<string, unknown>>(item.content)
@@ -120,9 +122,27 @@ export async function gatherCandidates(deps: RelocalizeDeps, pk: string, locale:
     // Per field, not per item: an older insight can have a Hebrew
     // description but an English name (extraction used to prefer the
     // English reference-pattern names), and only the English field needs work.
-    const fields = Object.fromEntries(Object.entries(textFields(value, keys)).filter(([, text]) => textLanguage(text) !== locale))
+    let shown = textFields(value, keys)
+    let existing: Record<string, string> = {}
+    // An existing translation into `locale` counts, unless the model left a
+    // field untranslated (it once kept an English pattern name as is).
+    if (item.translated?.lang === locale) {
+      try {
+        existing = textFields(await crypto.decryptField<Record<string, unknown>>(item.translated.content), keys)
+        shown = { ...shown, ...existing }
+      } catch {
+        // unreadable translation: redo it from the original
+      }
+    }
+    const fields = Object.fromEntries(Object.entries(shown).filter(([, text]) => textLanguage(text) !== locale))
     if (Object.keys(fields).length === 0) return
-    candidates.push({ id: String(candidates.length), kind, key: { pk: item.pk, sk: item.sk }, stampAttr, stampValue, fields, needsReferencePattern })
+    // Retranslate from the original text of those fields, not a stale copy.
+    for (const k of Object.keys(fields)) {
+      const orig = value[k]
+      if (typeof orig === 'string') fields[k] = orig
+    }
+    const keep = Object.fromEntries(Object.entries(existing).filter(([k, text]) => !(k in fields) && textLanguage(text) === locale))
+    candidates.push({ id: String(candidates.length), kind, key: { pk: item.pk, sk: item.sk }, stampAttr, stampValue, fields, keep, needsReferencePattern })
   }
 
   if (card) await consider(card, 'daily_card', ['text'], 'createdAt', card.createdAt)
@@ -171,7 +191,7 @@ export function parseTranslation(result: Record<string, unknown> | string, batch
 }
 
 async function writeTranslation(deps: RelocalizeDeps, c: Candidate, t: TranslatedItem, locale: Locale): Promise<boolean> {
-  const translated: TranslatedContent = { lang: locale, content: await deps.crypto.encryptField(t.fields) }
+  const translated: TranslatedContent = { lang: locale, content: await deps.crypto.encryptField({ ...c.keep, ...t.fields }) }
   const names: Record<string, string> = { '#stamp': c.stampAttr }
   const values: Record<string, unknown> = { ':t': translated, ':stamp': c.stampValue }
   let update = 'SET translated = :t'

@@ -5,6 +5,7 @@ import { confirmTwinSignal, rejectTwinSignal } from '@/lib/api/v1-client'
 import type { TwinSignalDomain, TwinListResponse, TwinRejectReason } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 import Dictatable from '@/components/ui/Dictatable'
+import { useMirrorPatternLabels } from '@/lib/mirror-pattern-labels'
 
 type Signal = TwinListResponse['signals'][number]
 
@@ -52,6 +53,7 @@ export default function TwinCalibrationCard({
   limit?: number
 }) {
   const t = useTranslations('Dashboard.calibration')
+  const patternLabels = useMirrorPatternLabels()
   const [failedId, setFailedId] = useState<string | null>(null)
   const [phases, setPhases] = useState<Record<string, Phase>>({})
   const timers = useRef<number[]>([])
@@ -190,7 +192,7 @@ export default function TwinCalibrationCard({
           return (
             <div key={signal.signalId}>
               <span className="inline-block text-[10px] font-semibold tracking-widest uppercase text-[var(--color-violet-300)] bg-[var(--color-violet-900)]/40 border border-[var(--color-violet-800)]/60 rounded-full px-2 py-0.5 mb-2">
-                {signal.name ?? t(`domains.${signal.domain satisfies TwinSignalDomain}`)}
+                {signal.name ? patternLabels.name(signal.name) : t(`domains.${signal.domain satisfies TwinSignalDomain}`)}
               </span>
               <p className="text-white text-sm leading-relaxed mb-3">{signal.description}</p>
               <div className="flex items-center gap-2">

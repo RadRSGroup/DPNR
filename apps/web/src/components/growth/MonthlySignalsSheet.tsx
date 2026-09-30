@@ -4,6 +4,7 @@ import { confirmedThisMonth, type TwinListResponse, type SignalDirection, type L
 import BottomSheet from '@/components/ui/BottomSheet'
 import Card from '@/components/ui/Card'
 import { DOMAIN_META } from '@/components/shared/domain-meta'
+import { useMirrorPatternLabels } from '@/lib/mirror-pattern-labels'
 
 export type MonthlyStat = 'areasGrowing' | 'patternsShifting' | 'insightsGained'
 
@@ -46,7 +47,8 @@ export default function MonthlySignalsSheet({
   const thisMonth = confirmedThisMonth(all)
   const items = stat === 'patternsShifting' ? thisMonth.filter((s) => s.domain === 'pattern') : thisMonth
 
-  const label = (s: Signal) => s.name ?? s.description
+  const patternLabels = useMirrorPatternLabels()
+  const label = (s: Signal) => (s.name ? patternLabels.name(s.name) : s.description)
 
   let content: React.ReactNode
   if (!twin) {

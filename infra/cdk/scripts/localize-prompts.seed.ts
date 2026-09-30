@@ -29,7 +29,7 @@ Rules:
 - Translate faithfully. Keep the exact meaning, tone and level of certainty (tentative words like "may", "seems to" stay tentative). Never add, drop, soften or strengthen anything, and never add advice or commentary.
 - Natural, warm, plain {{targetLanguage}}, never clinical. Keep it roughly the same length.
 - Keep the text addressed to the person in the second person, as it is.
-- Keep proper names and the product names "DPNR", "InnerOS", "Mirror Room", "Decision Room" as they are.
+- Keep people's names and the product names "DPNR", "InnerOS", "Mirror Room", "Decision Room" as they are. Everything else is translated, including short labels and pattern names such as "Over-Accommodation" or "People-Pleasing" (referencePattern below is a separate English id; the name itself is always translated).
 - Return every item and every field you were given, with the same id and key. A field that is already in {{targetLanguage}} is returned unchanged.
 - For items of kind "insight" only: set referencePattern to the one reference pattern the insight clearly is, choosing from: ${REFERENCE_PATTERN_NAMES.join(', ')}. Use "none" when none clearly fits. Never guess.
 

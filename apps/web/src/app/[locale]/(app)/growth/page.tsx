@@ -16,6 +16,7 @@ import StatTile from '@/components/shared/StatTile'
 import ArchetypeBadge from '@/components/shared/ArchetypeBadge'
 import CheckInModal from '@/components/shared/CheckInModal'
 import FeelBodyButton from '@/components/shared/FeelBodyButton'
+import { useMirrorPatternLabels } from '@/lib/mirror-pattern-labels'
 import MonthlySignalsSheet, { type MonthlyStat } from '@/components/growth/MonthlySignalsSheet'
 import { timeAgo } from '@/lib/format'
 
@@ -70,6 +71,8 @@ const MOVEMENT_GROUPS: { id: string; directions: SignalDirection[]; Icon: typeof
 function GrowthTrackerContent() {
   const t = useTranslations('Growth')
   const tDomains = useTranslations('Dashboard.lifeDomains')
+  // Reference-pattern names shown translated (an insight's stored name can be the English id).
+  const patternLabels = useMirrorPatternLabels()
   const locale = useLocale()
   const router = useRouter()
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null)
@@ -244,7 +247,7 @@ function GrowthTrackerContent() {
                       <ul className="space-y-1.5">
                         {signals.map((s) => (
                           <li key={s.signalId} className="text-sm text-white/75 leading-snug line-clamp-2">
-                            {s.name ?? s.description}
+                            {s.name ? patternLabels.name(s.name) : s.description}
                           </li>
                         ))}
                       </ul>

@@ -71,6 +71,7 @@ describe('parseTranslation', () => {
       stampAttr: 'updatedAt' as const,
       stampValue: 'u1',
       fields: { name: 'Avoidance', description: 'You may delay.' },
+      keep: {},
       needsReferencePattern: true,
     },
     {
@@ -80,6 +81,7 @@ describe('parseTranslation', () => {
       stampAttr: 'createdAt' as const,
       stampValue: 'c',
       fields: { text: 'Hi' },
+      keep: {},
       needsReferencePattern: false,
     },
   ]
@@ -191,5 +193,36 @@ describe('gatherCandidates: mixed-language items', () => {
     const found = await gatherCandidates(deps(), pk, 'he', now)
     expect(found).toHaveLength(1)
     expect(found[0].fields).toEqual({ name: 'Over-Accommodation' })
+  })
+})
+
+
+describe('relocalizeUser: a translation that left a field in English', () => {
+  it('retranslates only that field from the original and keeps the rest', async () => {
+    ddbMock.on(QueryCommand, SIGNALS).resolves({
+      Items: [
+        {
+          pk, sk: 's6', domain: 'pattern', status: 'confirmed', updatedAt: 'u6', referencePattern: 'Over-Accommodation',
+          content: blob({ name: 'Over-Accommodation', description: 'You may reshape yourself.' }),
+          translated: { lang: 'he', content: blob({ name: 'Over-Accommodation', description: 'ייתכן שאתם משנים את עצמכם.' }) },
+        },
+      ],
+    })
+    ddbMock.on(UpdateCommand).resolves({})
+    let sent = ''
+    const result = await relocalizeUser(
+      deps(async (_v, vars) => {
+        sent = vars.itemsJson
+        return { items: [{ id: '0', fields: [{ key: 'name', text: 'הסתגלות יתר' }] }] }
+      }),
+      pk,
+      'he',
+      'male'
+    )
+    expect(JSON.parse(sent)[0].fields).toEqual({ name: 'Over-Accommodation' })
+    expect(result.written).toBe(1)
+    const input = ddbMock.commandCalls(UpdateCommand)[0].args[0].input
+    const written = input.ExpressionAttributeValues?.[':t'] as { content: EncryptedBlob }
+    expect(JSON.parse(written.content.ciphertext)).toEqual({ description: 'ייתכן שאתם משנים את עצמכם.', name: 'הסתגלות יתר' })
   })
 })
