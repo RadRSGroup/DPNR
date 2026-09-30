@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl'
 import { ArrowRight, Info } from 'lucide-react'
 import { Link } from '@/i18n/navigation'
 import Card from '@/components/ui/Card'
-import type { DashboardResponse } from '@dpnr/shared-types'
+import type { DashboardResponse, GenderIdentity } from '@dpnr/shared-types'
 
 /**
  * "My InnerSelf" hero, laid out like the designer's Dashboard reference:
@@ -20,8 +20,26 @@ import type { DashboardResponse } from '@dpnr/shared-types'
  * ring"). It is driven only by the existing state, never by a number:
  * developing gets slightly longer, brighter light than insufficient. No
  * progress arc, no spinner speed, nothing that reads as a score.
+ *
+ * The art follows the profile's gender (founder's Drive → Dashboard →
+ * "Malebanner", Session 86): male gets the male figure, female and
+ * unspecified keep the original. `gender` is null until preferences load;
+ * the art waits for it rather than flashing the other figure first.
  */
-export default function InnerSelfHero({ dashboard, loading = false }: { dashboard: DashboardResponse | null; loading?: boolean }) {
+const HERO_ART = {
+  male: '/images/dashboard/inner-self-hero-male.webp',
+  default: '/images/dashboard/inner-self-hero.webp',
+}
+
+export default function InnerSelfHero({
+  dashboard,
+  loading = false,
+  gender,
+}: {
+  dashboard: DashboardResponse | null
+  loading?: boolean
+  gender: GenderIdentity | null
+}) {
   const t = useTranslations('Dashboard.innerSelf')
   const eligible = dashboard?.alignmentScoreState === 'eligible' && dashboard.alignmentScore != null
   const score = eligible ? dashboard!.alignmentScore! : 0
@@ -29,14 +47,19 @@ export default function InnerSelfHero({ dashboard, loading = false }: { dashboar
   return (
     <Card className="relative overflow-hidden !p-0 min-h-[220px] lg:min-h-[250px]">
       <div className="absolute inset-0 -z-0">
-        <Image
-          src="/images/dashboard/inner-self-hero.webp"
-          alt=""
-          fill
-          sizes="(min-width: 1024px) 60vw, 100vw"
-          className="object-cover object-[65%_center] opacity-90"
-          preload
-        />
+        {gender && (
+          // The fade sits on a wrapper: its keyframes end at opacity 1, which would override the art's 90%.
+          <div key={gender} className="absolute inset-0 animate-fade-in">
+            <Image
+              src={gender === 'male' ? HERO_ART.male : HERO_ART.default}
+              alt=""
+              fill
+              sizes="(min-width: 1024px) 60vw, 100vw"
+              className="object-cover object-[65%_center] opacity-90"
+              preload
+            />
+          </div>
+        )}
         {/* Keep the score side and the phase side readable over the art. */}
         <div className="absolute inset-0 bg-gradient-to-r rtl:bg-gradient-to-l from-[var(--color-bg-base)] via-[var(--color-bg-base)]/40 to-[var(--color-bg-base)]/80" />
       </div>

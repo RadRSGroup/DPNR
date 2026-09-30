@@ -19,7 +19,7 @@ import {
   updateRoadmapLifecycle,
 } from '@/lib/api/v1-client'
 import { displayFirstName } from '@/lib/displayName'
-import type { DashboardResponse, TwinListResponse, CompanionContextResponse } from '@dpnr/shared-types'
+import type { DashboardResponse, TwinListResponse, CompanionContextResponse, GenderIdentity } from '@dpnr/shared-types'
 import Card from '@/components/ui/Card'
 import RoadmapTimelineCard from '@/components/shared/RoadmapTimelineCard'
 import TwinCalibrationCard from '@/components/shared/TwinCalibrationCard'
@@ -66,6 +66,8 @@ function DashboardContent() {
   const justCompleted = params.get('completed') === 'true'
 
   const [firstName, setFirstName] = useState('')
+  // Picks the InnerSelf hero art; null until preferences answer.
+  const [gender, setGender] = useState<GenderIdentity | null>(null)
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null)
   const [twin, setTwin] = useState<TwinListResponse | null>(null)
   const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
@@ -85,6 +87,7 @@ function DashboardContent() {
         // one above stays if this fails or none is set.
         loadPreferences().then((p) => {
           if (p?.firstName) setFirstName(p.firstName)
+          setGender(p?.genderIdentity ?? 'unspecified')
         })
         // Own failure boundary — a daily-card hiccup shouldn't take down the
         // rest of the Dashboard. Started now so it runs alongside the rest.
@@ -222,7 +225,7 @@ function DashboardContent() {
         <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_330px] lg:gap-6 lg:items-start">
           {/* Main column */}
           <div className="space-y-4 lg:space-y-5 min-w-0">
-            <InnerSelfHero dashboard={dashboard} loading={loading} />
+            <InnerSelfHero dashboard={dashboard} loading={loading} gender={gender} />
 
             <RoadmapTimelineCard roadmap={roadmap} actions={lifecycleActions} loading={loading} />
 
