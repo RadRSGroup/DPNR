@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { preload } from "react-dom";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -9,48 +9,18 @@ import GlobalMusicPlayer from "@/components/layout/GlobalMusicPlayer";
 import TimeOnDpnrTracker from "@/components/layout/TimeOnDpnrTracker";
 import VisitGate from "@/components/layout/VisitGate";
 
-// All fonts are self-hosted from `src/fonts/` (variable .woff2 files built
-// from google/fonts' OFL sources, subset to Latin + Hebrew — licences in
-// `src/fonts/OFL.md`). They used to come from `next/font/google`, which
-// downloads from Google at build time; Render's build started failing on
-// those downloads (Session 65: "Module not found: Can't resolve
-// '@vercel/turbopack-next/internal/font/google/font'" on Frank Ruhl Libre,
-// twice in a row), so the build no longer depends on that network call.
-const inter = localFont({ src: "../../fonts/Inter.woff2", weight: "100 900", variable: "--font-sans" });
-const playfair = localFont({
-  src: "../../fonts/PlayfairDisplay.woff2",
-  weight: "400 900",
-  variable: "--font-display",
-  adjustFontFallback: "Times New Roman",
-});
-// Handwritten face for Pull a Card's question text, matching the designer's
-// card reference. Latin-only (no Google handwritten face has legible Hebrew),
-// so it's loaded for English only; Hebrew cards use `--font-display` instead
-// (PullACard's `rtl:font-display`). Not preloaded: it's used by one widget
-// only, so it loads when that widget renders instead of on every page. The
-// other four stay preloaded for both locales (user's call, Session 65 —
-// preload is static per font, not per visitor, so the alternative was
-// picking one language to favour).
-const handlee = localFont({ src: "../../fonts/Handlee.woff2", weight: "400", variable: "--font-hand", preload: false });
-
-// Hebrew-capable pairing, chosen to echo the existing Inter/Playfair Display
-// feel rather than match them glyph-for-glyph (Playfair has no Hebrew
-// glyphs at all — see docs/HEBREW_LOCALIZATION_PLAN.md §5). Heebo is a
-// clean, modern Hebrew+Latin sans (extends Roboto) standing in for Inter;
-// Frank Ruhl Libre is a classic, literary Hebrew serif — the closest
-// available analogue to Playfair's editorial elegance for headings.
-// Deliberately reuse the SAME `--font-sans`/`--font-display` variable names
-// as the Latin pair (only one of each is ever present in `fontVariables`
-// below, so there's no collision) — every existing component that consumes
-// `--font-display` via Tailwind's `font-display` utility keeps working
-// unchanged for both locales instead of needing a per-component locale check.
-const heebo = localFont({ src: "../../fonts/Heebo.woff2", weight: "100 900", variable: "--font-sans" });
-const frankRuhlLibre = localFont({
-  src: "../../fonts/FrankRuhlLibre.woff2",
-  weight: "300 900",
-  variable: "--font-display",
-  adjustFontFallback: "Times New Roman",
-});
+// Fonts are declared in globals.css (@font-face, served from public/fonts).
+// Only the current locale's pair is preloaded: next/font/local, used before
+// Session 86, preloads per layout file, so every page preloaded all four
+// faces whatever its language (the Session 65 trade-off). Hebrew pairing:
+// Heebo (a Hebrew+Latin sans extending Roboto) stands in for Inter, Frank
+// Ruhl Libre (a literary Hebrew serif) for Playfair Display, which has no
+// Hebrew glyphs (docs/HEBREW_LOCALIZATION_PLAN.md §5). Handlee (Pull a Card,
+// English only) is never preloaded: one widget uses it.
+const PRELOADED_FONTS: Record<"en" | "he", string[]> = {
+  en: ["/fonts/Inter-v1.woff2", "/fonts/PlayfairDisplay-v1.woff2"],
+  he: ["/fonts/Heebo-v1.woff2", "/fonts/FrankRuhlLibre-v1.woff2"],
+};
 
 // "Workshop Rooms" is deliberately reserved for the /rooms hub specifically,
 // not top-level branding (see rooms/page.tsx's own doc comment) — this
@@ -92,14 +62,16 @@ export default async function RootLayout({
   setRequestLocale(locale);
 
   const dir = locale === "he" ? "rtl" : "ltr";
-  const fontVariables =
-    locale === "he"
-      ? `${heebo.variable} ${frankRuhlLibre.variable} ${heebo.className}`
-      : `${inter.variable} ${playfair.variable} ${handlee.variable} ${inter.className}`;
+  const fontLocale = locale === "he" ? "he" : "en";
+  // Fonts are always fetched in CORS mode, so the preload must be too or the
+  // browser downloads the file twice.
+  for (const href of PRELOADED_FONTS[fontLocale]) {
+    preload(href, { as: "font", type: "font/woff2", crossOrigin: "anonymous" });
+  }
 
   return (
     <html lang={locale} dir={dir}>
-      <body className={`${fontVariables} bg-[#0a0a0f] text-white min-h-screen`}>
+      <body className={`fonts-${fontLocale} bg-[#0a0a0f] text-white min-h-screen`}>
         <NextIntlClientProvider>
           {children}
           {/* Outside every page so the music and the time count survive navigation (Session 70). */}

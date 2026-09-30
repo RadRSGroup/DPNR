@@ -7,7 +7,7 @@ import { Infinity as InfinityIcon, Eye, HeartHandshake, Repeat, Plus, Target, Ch
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getDashboard, getTwin, getCommitments, createCommitment, completeCommitment, getOnboardingSnapshot } from '@/lib/api/v1-client'
 import type { DashboardResponse, TwinListResponse, CommitmentsResponse, LifeDomainCategory, OnboardingSnapshotResponse } from '@dpnr/shared-types'
-import { LIFE_DOMAIN_IDS } from '@dpnr/shared-types'
+import { LIFE_DOMAIN_IDS } from '@dpnr/shared-types/constants'
 import Card from '@/components/ui/Card'
 import ProgressRing from '@/components/ui/ProgressRing'
 import RoadmapTimelineCard from '@/components/shared/RoadmapTimelineCard'

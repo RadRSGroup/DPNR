@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link, useRouter } from '@/i18n/navigation'
 import { usePathname } from '@/i18n/navigation'
 import { Wallet, ChevronRight, LogOut } from 'lucide-react'
 import RingLogo from '@/components/icons/RingLogo'
-import { getCredits } from '@/lib/api/v1-client'
+import { useCreditsBalance } from '@/lib/useCreditsBalance'
 import { logOut } from '@/lib/auth/logout'
 import { Avatar } from './AccountMenu'
 import MobileHeader from './MobileHeader'
@@ -18,15 +18,8 @@ export default function Sidebar() {
   const t = useTranslations('Nav')
   const pathname = usePathname()
   const router = useRouter()
-  const [credits, setCredits] = useState<number | null>(null)
+  const credits = useCreditsBalance()
   const [loggingOut, setLoggingOut] = useState(false)
-
-  useEffect(() => {
-    getCredits().then((c) => setCredits(c.balance)).catch(() => {
-      // Sidebar renders on every page, including ones with no session yet
-      // (e.g. mid-redirect) — a failed fetch just leaves the generic label.
-    })
-  }, [])
 
   async function handleLogOut() {
     if (loggingOut) return

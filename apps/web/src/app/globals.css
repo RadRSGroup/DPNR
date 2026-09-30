@@ -1,6 +1,47 @@
 @import "tailwindcss";
 
 /*
+ * Fonts — self-hosted from public/fonts (variable .woff2 files built from
+ * google/fonts' OFL sources, subset to Latin + Hebrew; licences in
+ * public/fonts/OFL.md). They used to go through next/font/local, which can
+ * only preload per layout file, so every page preloaded all four faces
+ * (~370 KB) whatever its language. Now [locale]/layout.tsx preloads only its
+ * locale's pair. A face is only downloaded where it's used, so declaring all
+ * of them here costs nothing. The "Fallback" faces are the metric overrides
+ * next/font had generated (same numbers), so swapping in the real font
+ * doesn't shift the layout. File names carry a version because
+ * next.config.ts serves /fonts as immutable: change a font → bump -vN.
+ */
+@font-face { font-family: "inter"; src: url("/fonts/Inter-v1.woff2") format("woff2"); font-display: swap; font-weight: 100 900; }
+@font-face { font-family: "inter Fallback"; src: local("Arial"); ascent-override: 89.79%; descent-override: 22.36%; line-gap-override: 0%; size-adjust: 107.89%; }
+@font-face { font-family: "playfair"; src: url("/fonts/PlayfairDisplay-v1.woff2") format("woff2"); font-display: swap; font-weight: 400 900; }
+@font-face { font-family: "playfair Fallback"; src: local("Times New Roman"); ascent-override: 97.38%; descent-override: 22.59%; line-gap-override: 0%; size-adjust: 111.11%; }
+/* Pull a Card's handwritten question text: Latin-only, English only (Hebrew cards use --font-display), never preloaded. */
+@font-face { font-family: "handlee"; src: url("/fonts/Handlee-v1.woff2") format("woff2"); font-display: swap; font-weight: 400; }
+@font-face { font-family: "handlee Fallback"; src: local("Arial"); ascent-override: 105.86%; descent-override: 45.45%; line-gap-override: 0%; size-adjust: 88.23%; }
+@font-face { font-family: "heebo"; src: url("/fonts/Heebo-v1.woff2") format("woff2"); font-display: swap; font-weight: 100 900; }
+@font-face { font-family: "heebo Fallback"; src: local("Arial"); ascent-override: 104.26%; descent-override: 41.88%; line-gap-override: 0%; size-adjust: 100.51%; }
+@font-face { font-family: "frankRuhlLibre"; src: url("/fonts/FrankRuhlLibre-v1.woff2") format("woff2"); font-display: swap; font-weight: 300 900; }
+@font-face { font-family: "frankRuhlLibre Fallback"; src: local("Times New Roman"); ascent-override: 88.94%; descent-override: 31.04%; line-gap-override: 0%; size-adjust: 107.6%; }
+
+/*
+ * One class per locale on <body>. Both pairs reuse the SAME --font-sans /
+ * --font-display names, so every `font-display` utility works in both
+ * languages without a per-component locale check.
+ */
+.fonts-en {
+  --font-sans: "inter", "inter Fallback";
+  --font-display: "playfair", "playfair Fallback";
+  --font-hand: "handlee", "handlee Fallback";
+  font-family: var(--font-sans);
+}
+.fonts-he {
+  --font-sans: "heebo", "heebo Fallback";
+  --font-display: "frankRuhlLibre", "frankRuhlLibre Fallback";
+  font-family: var(--font-sans);
+}
+
+/*
  * Raw palette — static values only (Tailwind v4 generates utilities from
  * these at build time, so nothing here can reference a runtime-switchable
  * variable). Gives every page bg-violet-500 / text-amber-400 / etc.

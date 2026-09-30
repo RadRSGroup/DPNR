@@ -1,15 +1,9 @@
 import { useTranslations } from 'next-intl'
 import Card from '@/components/ui/Card'
-import {
-  OnboardingSnapshotFeedbackSchema,
-  LIFE_DOMAIN_LABELS,
-  type OnboardingCurrentState,
-  type OnboardingDesiredState,
-  type LifeDomainCategory,
-  type InteractionMode,
-} from '@dpnr/shared-types'
+import type { OnboardingCurrentState, OnboardingDesiredState, LifeDomainCategory, InteractionMode } from '@dpnr/shared-types'
+import { ONBOARDING_SNAPSHOT_FEEDBACK, LIFE_DOMAIN_LABELS } from '@dpnr/shared-types/constants'
 
-const SNAPSHOT_FEEDBACK_OPTIONS = OnboardingSnapshotFeedbackSchema.options
+const SNAPSHOT_FEEDBACK_OPTIONS = ONBOARDING_SNAPSHOT_FEEDBACK
 const OPTION_BUTTON_UNSELECTED = 'border-white/10 text-white/70 hover:border-white/20 hover:text-white/90'
 
 interface Props {

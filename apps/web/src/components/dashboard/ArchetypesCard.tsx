@@ -2,7 +2,8 @@
 import Image from 'next/image'
 import { useTranslations } from 'next-intl'
 import Card from '@/components/ui/Card'
-import { ArchetypeSchema, type Archetype, type DashboardResponse } from '@dpnr/shared-types'
+import type { Archetype, DashboardResponse } from '@dpnr/shared-types'
+import { ARCHETYPE_IDS } from '@dpnr/shared-types/constants'
 import { ARCHETYPE_META } from '@/components/shared/archetype-meta'
 import InfoPopover from '@/components/ui/InfoPopover'
 
@@ -20,7 +21,7 @@ import InfoPopover from '@/components/ui/InfoPopover'
 export default function ArchetypesCard({ archetypes, loading = false }: { archetypes: DashboardResponse['archetypes']; loading?: boolean }) {
   const t = useTranslations('Dashboard.archetypes')
   const byArchetype = new Map(archetypes.map((a) => [a.archetype, a.percent]))
-  const order = (ArchetypeSchema.options as Archetype[])
+  const order = ([...ARCHETYPE_IDS] as Archetype[])
     .slice()
     .sort((a, b) => (byArchetype.get(b) ?? -1) - (byArchetype.get(a) ?? -1))
 

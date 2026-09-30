@@ -8,7 +8,7 @@ import { Wallet, Target, Hexagon, ArrowUpRight, ArrowDownRight, ArrowRight, Gift
 import { getCurrentSession } from '@/lib/cognito/client'
 import { getCredits, getCreditsTransactions, getPlans } from '@/lib/api/v1-client'
 import type { CreditsResponse, CreditsTransactionsResponse, PlanSummary } from '@dpnr/shared-types'
-import { EARN_COMMITMENT_COMPLETED_CREDITS, EARN_REFLECTION_COMPLETED_CREDITS } from '@dpnr/shared-types'
+import { EARN_COMMITMENT_COMPLETED_CREDITS, EARN_REFLECTION_COMPLETED_CREDITS } from '@dpnr/shared-types/constants'
 import Card from '@/components/ui/Card'
 
 /**

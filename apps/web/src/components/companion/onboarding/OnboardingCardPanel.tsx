@@ -1,20 +1,11 @@
 import { useTranslations } from 'next-intl'
 import Card from '@/components/ui/Card'
-import {
-  OnboardingCurrentStateSchema,
-  OnboardingDesiredStateSchema,
-  ONBOARDING_ACTIVE_DOMAIN_OPTIONS,
-  ONBOARDING_INTERACTION_PREFERENCE_OPTIONS,
-  INTERACTION_PREFERENCE_TO_MODE,
-  type OnboardingCurrentState,
-  type OnboardingDesiredState,
-  type OnboardingActiveDomainOption,
-  type OnboardingInteractionPreferenceOption,
-} from '@dpnr/shared-types'
+import type { OnboardingCurrentState, OnboardingDesiredState, OnboardingActiveDomainOption, OnboardingInteractionPreferenceOption } from '@dpnr/shared-types'
+import { ONBOARDING_CURRENT_STATES, ONBOARDING_DESIRED_STATES, ONBOARDING_ACTIVE_DOMAIN_OPTIONS, ONBOARDING_INTERACTION_PREFERENCE_OPTIONS, INTERACTION_PREFERENCE_TO_MODE } from '@dpnr/shared-types/constants'
 import type { CardStep } from './useOnboardingFlow'
 
-const CURRENT_STATE_OPTIONS = OnboardingCurrentStateSchema.options
-const DESIRED_STATE_OPTIONS = OnboardingDesiredStateSchema.options
+const CURRENT_STATE_OPTIONS = ONBOARDING_CURRENT_STATES
+const DESIRED_STATE_OPTIONS = ONBOARDING_DESIRED_STATES
 
 const OPTION_BUTTON_BASE = 'rounded-xl border text-sm font-medium transition-all disabled:opacity-50'
 const OPTION_BUTTON_SELECTED =

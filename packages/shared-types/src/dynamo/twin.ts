@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { LIFE_DOMAIN_IDS, ARCHETYPE_IDS, type LifeDomainCategory } from '../constants'
 import { EncryptedBlobSchema, TranslatedContentSchema } from './crypto'
 
 /**
@@ -143,22 +144,6 @@ export const SignalDirectionSchema = z.enum([
 ])
 export type SignalDirection = z.infer<typeof SignalDirectionSchema>
 
-/**
- * Life Domains taxonomy — the Intelligence Spec's 8 (§4), in the spec's
- * order. Replaced the original 7 in Session 83; mapping and migration in
- * `docs/LIFE_DOMAINS_MIGRATION.md`.
- */
-export const LIFE_DOMAIN_IDS = [
-  'self_inner_world',
-  'relationships',
-  'health_body',
-  'work_purpose',
-  'money_abundance',
-  'growth_expansion',
-  'home_lifestyle',
-  'meaning_spirituality',
-] as const
-export type LifeDomainCategory = (typeof LIFE_DOMAIN_IDS)[number]
 
 /**
  * Pre-Session-83 ids -> their spec domain. Every parse maps them, so an item
@@ -177,19 +162,9 @@ export function normalizeLifeDomain(value: unknown): unknown {
 
 export const LifeDomainCategorySchema = z.preprocess(normalizeLifeDomain, z.enum(LIFE_DOMAIN_IDS))
 
-export const LIFE_DOMAIN_LABELS: Record<LifeDomainCategory, string> = {
-  self_inner_world: 'Self & Inner World',
-  relationships: 'Relationships & Connection',
-  health_body: 'Health & Body',
-  work_purpose: 'Work, Purpose & Contribution',
-  money_abundance: 'Money & Abundance',
-  growth_expansion: 'Growth & Expansion',
-  home_lifestyle: 'Home & Lifestyle',
-  meaning_spirituality: 'Meaning & Spirituality',
-}
 
 /** Archetype taxonomy (Session 19) — same reference, "Leading Archetypes". */
-export const ArchetypeSchema = z.enum(['healer', 'seeker', 'visionary', 'protector'])
+export const ArchetypeSchema = z.enum(ARCHETYPE_IDS)
 export type Archetype = z.infer<typeof ArchetypeSchema>
 
 export const ARCHETYPE_LABELS: Record<Archetype, string> = {

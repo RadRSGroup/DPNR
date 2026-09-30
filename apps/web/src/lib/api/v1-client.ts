@@ -66,6 +66,7 @@ import type {
   SessionSummariesResponse,
 } from '@dpnr/shared-types'
 import { getIdToken, clearConsentCookie } from '../cognito/client'
+import { markCreditsStale, publishCreditsBalance } from '../credits-balance'
 
 const API_URL = process.env.NEXT_PUBLIC_DPNR_API_URL!
 
@@ -126,8 +127,12 @@ async function parseOrThrow<T>(res: Response): Promise<T> {
 /** POST /v1/rooms/{decision,mirror} — the single flow-engine command contract (MVP_ARCHITECTURE.md §4). */
 export async function submitRoomCommand(request: RoomCommandRequest): Promise<RoomCommandResponse> {
   const path = request.flowId === 'DECISION' ? '/v1/rooms/decision' : '/v1/rooms/mirror'
-  const res = await authedFetch(path, { method: 'POST', body: JSON.stringify(request) })
-  return parseOrThrow<RoomCommandResponse>(res)
+  try {
+    const res = await authedFetch(path, { method: 'POST', body: JSON.stringify(request) })
+    return await parseOrThrow<RoomCommandResponse>(res)
+  } finally {
+    markCreditsStale() // REFINE charges a credit
+  }
 }
 
 /** GET /v1/rooms/session-summaries — Decision/Mirror session summaries in a date range (Summary for my therapist, Session 70). */
@@ -305,7 +310,9 @@ export async function getDashboard(): Promise<DashboardResponse> {
 /** GET /v1/credits — current ledger balance, used by /account (real, live since Session 11 — no prior caller). */
 export async function getCredits(): Promise<CreditsResponse> {
   const res = await authedFetch('/v1/credits')
-  return parseOrThrow<CreditsResponse>(res)
+  const credits = await parseOrThrow<CreditsResponse>(res)
+  publishCreditsBalance(credits.balance) // keeps the Sidebar in step with /wallet and /account
+  return credits
 }
 
 export async function getCreditsTransactions(): Promise<CreditsTransactionsResponse> {
@@ -321,8 +328,12 @@ export async function sendDailyCardFeedback(request: DailyCardFeedbackRequest): 
 
 /** POST /v1/companion/message — one chat turn; may come back with a navigation directive. */
 export async function sendCompanionMessage(request: CompanionMessageRequest): Promise<CompanionMessageResponse> {
-  const res = await authedFetch('/v1/companion/message', { method: 'POST', body: JSON.stringify(request) })
-  return parseOrThrow<CompanionMessageResponse>(res)
+  try {
+    const res = await authedFetch('/v1/companion/message', { method: 'POST', body: JSON.stringify(request) })
+    return await parseOrThrow<CompanionMessageResponse>(res)
+  } finally {
+    markCreditsStale() // each message charges a credit
+  }
 }
 
 /** GET /v1/companion/context — recent turns, used by /companion to resume the active chat on load. `sessionId` targets a specific conversation instead of the pointer's active one; `fresh` (first Main Chat load of a visit) returns an empty thread with a greeting built from the last conversation. */
@@ -463,8 +474,12 @@ export async function createCommitment(request: CreateCommitmentRequest): Promis
 
 /** POST /v1/commitments/{id}/complete — used by My Evolution Map's Goals & Dreams and My Wallet's "Weekly Goal Achieved" tile. */
 export async function completeCommitment(commitmentId: string): Promise<CompleteCommitmentResponse> {
-  const res = await authedFetch(`/v1/commitments/${encodeURIComponent(commitmentId)}/complete`, { method: 'POST' })
-  return parseOrThrow<CompleteCommitmentResponse>(res)
+  try {
+    const res = await authedFetch(`/v1/commitments/${encodeURIComponent(commitmentId)}/complete`, { method: 'POST' })
+    return await parseOrThrow<CompleteCommitmentResponse>(res)
+  } finally {
+    markCreditsStale() // completing a goal can grant earned credits
+  }
 }
 
 /** GET /v1/plans — active credit-pack/subscription catalog, used by My Wallet. Honestly empty until real PlanItems are seeded (blocked on a pricing decision). */

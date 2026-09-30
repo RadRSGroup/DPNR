@@ -1,6 +1,7 @@
 'use client'
 import { useTranslations } from 'next-intl'
-import { confirmedThisMonth, type TwinListResponse, type SignalDirection, type LifeDomainCategory } from '@dpnr/shared-types'
+import type { TwinListResponse, SignalDirection, LifeDomainCategory } from '@dpnr/shared-types'
+import { confirmedThisMonth } from '@dpnr/shared-types/constants'
 import BottomSheet from '@/components/ui/BottomSheet'
 import Card from '@/components/ui/Card'
 import { DOMAIN_META } from '@/components/shared/domain-meta'

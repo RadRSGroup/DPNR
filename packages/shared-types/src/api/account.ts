@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PREFERRED_NAME_MAX_LENGTH } from '../constants'
 import { SessionTicketPurposeSchema } from '../dynamo/global-tables'
 import { GenderIdentitySchema, ChatBackgroundSchema } from '../dynamo/account'
 
@@ -214,8 +215,6 @@ export type ConsentResponse = z.infer<typeof ConsentResponseSchema>
  * user filled it in or explicitly skipped it — this is what stops
  * `proxy.ts`'s gate from showing it again.
  */
-/** Session 70 — the profile's `firstName` cap. */
-export const PREFERRED_NAME_MAX_LENGTH = 40
 
 export const UpdatePreferencesRequestSchema = z
   .object({

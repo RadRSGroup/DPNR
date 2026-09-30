@@ -2,18 +2,8 @@ import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { getOnboardingSnapshot, updateOnboardingSnapshot } from '@/lib/api/v1-client'
 import { markOnboardingCompleteLocally } from '@/lib/cognito/client'
-import {
-  ACTIVE_DOMAIN_TO_LIFE_DOMAIN,
-  INTERACTION_PREFERENCE_TO_MODE,
-  type OnboardingCurrentState,
-  type OnboardingDesiredState,
-  type OnboardingSnapshotFeedback,
-  type OnboardingActiveDomainOption,
-  type OnboardingInteractionPreferenceOption,
-  type LifeDomainCategory,
-  type InteractionMode,
-  type UpdateOnboardingSnapshotRequest,
-} from '@dpnr/shared-types'
+import type { OnboardingCurrentState, OnboardingDesiredState, OnboardingSnapshotFeedback, OnboardingActiveDomainOption, OnboardingInteractionPreferenceOption, LifeDomainCategory, InteractionMode, UpdateOnboardingSnapshotRequest } from '@dpnr/shared-types'
+import { ACTIVE_DOMAIN_TO_LIFE_DOMAIN, INTERACTION_PREFERENCE_TO_MODE } from '@dpnr/shared-types/constants'
 
 const MODE_TO_INTERACTION_PREFERENCE = Object.fromEntries(
   Object.entries(INTERACTION_PREFERENCE_TO_MODE).map(([label, mode]) => [mode, label])

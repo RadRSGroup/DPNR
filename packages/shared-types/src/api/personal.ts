@@ -1,12 +1,7 @@
 import { z } from 'zod'
+import { RITUAL_TEXT_MAX, JOURNAL_TITLE_MAX, JOURNAL_BODY_MAX } from '../constants'
 import { RitualTimeOfDaySchema } from '../dynamo/personal'
 
-/** Limits shared by the API and the UI. */
-export const RITUAL_TEXT_MAX = 280
-export const RITUALS_MAX = 30
-export const JOURNAL_TITLE_MAX = 120
-export const JOURNAL_BODY_MAX = 20000
-export const JOURNAL_PAGE_SIZE = 20
 
 /** GET /v1/rituals, POST /v1/rituals, PUT/DELETE /v1/rituals/{id}. */
 export const RitualViewSchema = z.object({

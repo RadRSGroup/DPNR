@@ -1,118 +1,17 @@
 import { z } from 'zod'
 import { EncryptedBlobSchema } from './crypto'
-import { LifeDomainCategorySchema, type LifeDomainCategory } from './twin'
-import { InteractionModeSchema, type InteractionMode } from './session'
+import { LifeDomainCategorySchema } from './twin'
+import { ONBOARDING_CURRENT_STATES, ONBOARDING_DESIRED_STATES, ONBOARDING_SNAPSHOT_FEEDBACK } from '../constants'
+import { InteractionModeSchema } from './session'
 
-/**
- * First-Time Onboarding, Slice A (`docs/FIRST_TIME_ONBOARDING_PLAN.md` §3/§4,
- * source spec `docs/reference-screens/platform_photos/DPNR_First_Time_Onboarding_MVP_Implementation_Guide_v3.pdf`
- * §5.2 "Card 1 — Current State"). Verbatim from the doc — no existing
- * equivalent anywhere in the schema (checked `TwinSignalDomainSchema`,
- * Decision Room's free-text `values_needs_tags`/`fear_desire_tags` prompts —
- * neither is a fixed enum), so this ships as a new, small, literal enum
- * rather than reusing something that doesn't really fit. The doc's own
- * seventh option, "Something else…", is stored as a plain enum value here —
- * any elaboration on it belongs in the separate `currentIntention` free-text
- * field, not a second free-text slot on this one.
- */
-export const OnboardingCurrentStateSchema = z.enum([
-  'growing',
-  'changing',
-  'figuring_things_out',
-  'pretty_good',
-  'stuck_somewhere',
-  'a_lot_right_now',
-  'something_else',
-])
+/** Option lists and mappings live in `../constants` (Zod-free, for the web client). */
+export const OnboardingCurrentStateSchema = z.enum(ONBOARDING_CURRENT_STATES)
 export type OnboardingCurrentState = z.infer<typeof OnboardingCurrentStateSchema>
 
-/**
- * DESIRED_STATES (doc §5.4 "Card 3 — More Of"), verbatim — same
- * no-existing-equivalent reasoning as `OnboardingCurrentStateSchema` above.
- */
-export const OnboardingDesiredStateSchema = z.enum([
-  'clarity',
-  'peace',
-  'energy',
-  'connection',
-  'confidence',
-  'freedom',
-  'direction',
-  'fun',
-  'courage',
-  'space',
-])
+export const OnboardingDesiredStateSchema = z.enum(ONBOARDING_DESIRED_STATES)
 export type OnboardingDesiredState = z.infer<typeof OnboardingDesiredStateSchema>
 
-/**
- * ACTIVE_DOMAINS (doc §5.3 "Card 2 — Life in Focus"), the doc's own 10
- * card-label options — kept only as a typed option list for Slice B's card
- * UI to render; never stored verbatim (see `ACTIVE_DOMAIN_TO_LIFE_DOMAIN`
- * below and `OnboardingSnapshotItemSchema.activeDomains`).
- */
-export const ONBOARDING_ACTIVE_DOMAIN_OPTIONS = [
-  'Me', 'Love', 'Family', 'Friends', 'Work', 'Money', 'Body', 'Growth', 'Purpose', 'Fun',
-] as const
-export type OnboardingActiveDomainOption = (typeof ONBOARDING_ACTIVE_DOMAIN_OPTIONS)[number]
-
-/**
- * ACTIVE_DOMAINS -> the existing, reused `LifeDomainCategorySchema`
- * (dynamo/twin.ts), per `FIRST_TIME_ONBOARDING_PLAN.md` §3/§5.3 — not the
- * doc's own 10-value list, to avoid a 4th/5th independent life-domain
- * taxonomy on top of the three already flagged as unreconciled tech debt
- * (`docs/AGENT_LOG.md` Sessions 45/46, `INTELLIGENCE_SPEC_AUDIT.md` §4).
- * Several source options collapse onto the same category
- * (Love/Family/Friends -> relationships, Work/Purpose -> work_purpose) —
- * expected, not a bug, and already the plan doc's own example. Growth and
- * Fun moved to the spec's own domains in Session 83
- * (`docs/LIFE_DOMAINS_MIGRATION.md`): Growth -> growth_expansion, Fun ->
- * home_lifestyle (the spec lists recreation there).
- */
-export const ACTIVE_DOMAIN_TO_LIFE_DOMAIN: Record<OnboardingActiveDomainOption, LifeDomainCategory> = {
-  Me: 'self_inner_world',
-  Love: 'relationships',
-  Family: 'relationships',
-  Friends: 'relationships',
-  Work: 'work_purpose',
-  Money: 'money_abundance',
-  Body: 'health_body',
-  Growth: 'growth_expansion',
-  Purpose: 'work_purpose',
-  Fun: 'home_lifestyle',
-}
-
-/**
- * INTERACTION_PREFERENCE (doc §5.5 "Card 4 — How Should I Meet You?") — the
- * doc's own 6 card-label options, kept as a typed option list for the same
- * reason as `ONBOARDING_ACTIVE_DOMAIN_OPTIONS` above.
- */
-export const ONBOARDING_INTERACTION_PREFERENCE_OPTIONS = [
-  'Help me understand it',
-  'Give me perspective',
-  'Ask me the right question',
-  'Help me make a move',
-  'Just give me space to talk',
-  'Depends on the moment',
-] as const
-export type OnboardingInteractionPreferenceOption = (typeof ONBOARDING_INTERACTION_PREFERENCE_OPTIONS)[number]
-
-/**
- * INTERACTION_PREFERENCE -> the existing, reused `InteractionModeSchema`
- * (dynamo/session.ts) — fully specified by the plan doc's own §3 mapping,
- * no ambiguous case here. `share`/`decide`/`regulate` are simply never
- * chosen directly at onboarding; still reachable later via the existing
- * per-turn classifier (`classify_interaction_mode`).
- */
-export const INTERACTION_PREFERENCE_TO_MODE: Record<OnboardingInteractionPreferenceOption, InteractionMode> = {
-  'Help me understand it': 'understand',
-  'Give me perspective': 'explore_pattern',
-  'Ask me the right question': 'learn',
-  'Help me make a move': 'act',
-  'Just give me space to talk': 'be_heard',
-  'Depends on the moment': 'unknown',
-}
-
-export const OnboardingSnapshotFeedbackSchema = z.enum(['yes', 'partly', 'not_quite'])
+export const OnboardingSnapshotFeedbackSchema = z.enum(ONBOARDING_SNAPSHOT_FEEDBACK)
 export type OnboardingSnapshotFeedback = z.infer<typeof OnboardingSnapshotFeedbackSchema>
 
 /**

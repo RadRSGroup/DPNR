@@ -9,7 +9,8 @@ import { markProfileSetupCompleteLocally } from '@/lib/cognito/client'
 import { resolveSafeNext } from '@/lib/navigation/safeNext'
 import GenderSelector from '@/components/shared/GenderSelector'
 import AvatarUpload from '@/components/shared/AvatarUpload'
-import { PREFERRED_NAME_MAX_LENGTH, type GenderIdentity } from '@dpnr/shared-types'
+import type { GenderIdentity } from '@dpnr/shared-types'
+import { PREFERRED_NAME_MAX_LENGTH } from '@dpnr/shared-types/constants'
 
 /**
  * Session 51 — dedicated, one-time post-signin screen (gender + optional
