@@ -117,8 +117,11 @@ export async function gatherCandidates(deps: RelocalizeDeps, pk: string, locale:
     } catch {
       return // unreadable (e.g. an old key): nothing we can translate
     }
-    const fields = textFields(value, keys)
-    if (Object.keys(fields).length === 0 || textLanguage(fields) === locale) return
+    // Per field, not per item: an older insight can have a Hebrew
+    // description but an English name (extraction used to prefer the
+    // English reference-pattern names), and only the English field needs work.
+    const fields = Object.fromEntries(Object.entries(textFields(value, keys)).filter(([, text]) => textLanguage(text) !== locale))
+    if (Object.keys(fields).length === 0) return
     candidates.push({ id: String(candidates.length), kind, key: { pk: item.pk, sk: item.sk }, stampAttr, stampValue, fields, needsReferencePattern })
   }
 

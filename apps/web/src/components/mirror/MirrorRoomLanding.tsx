@@ -66,6 +66,14 @@ function startOfWeek(d: Date): Date {
 
 export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) {
   const t = useTranslations('MirrorRoom')
+  // list-mirrors.ts builds "Reflection — <area>" on the server; the area
+  // is the person's own words, the prefix is ours, so only it is translated.
+  const reflectionLabel = (label: string) =>
+    label === 'Reflection'
+      ? t('landing.reflectionLabel')
+      : label.startsWith('Reflection — ')
+        ? t('landing.reflectionLabelArea', { area: label.slice('Reflection — '.length) })
+        : label
   const locale = useLocale()
   const labels = useMirrorPatternLabels()
   const [dailyCard, setDailyCard] = useState<CompanionContextResponse['dailyCard']>(null)
@@ -369,7 +377,7 @@ export default function MirrorRoomLanding({ onStart, sourceTopicTitle }: Props) 
                           <span className="w-16 shrink-0 text-xs text-[var(--color-text-tertiary)]">
                             {new Date(m.createdAt).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
                           </span>
-                          <span className="flex-1 min-w-0 text-sm text-white/85 truncate">{m.label}</span>
+                          <span className="flex-1 min-w-0 text-sm text-white/85 truncate">{reflectionLabel(m.label)}</span>
                           <span className="shrink-0 rounded-full bg-white/[0.06] text-white/60 text-[11px] px-2 py-0.5">
                             {m.status === 'completed' ? t('landing.read') : t('landing.resume')}
                           </span>

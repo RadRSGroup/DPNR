@@ -1897,7 +1897,9 @@
       "read": "Read",
       "resume": "Continue",
       "showMore": "Show more",
-      "showLess": "Show less"
+      "showLess": "Show less",
+      "reflectionLabel": "Reflection",
+      "reflectionLabelArea": "Reflection — {area}"
     },
     "steps": {
       "labels": {

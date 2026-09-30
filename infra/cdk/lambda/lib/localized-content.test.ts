@@ -41,3 +41,14 @@ describe('readLocalized', () => {
     expect((await readLocalized<{ text: string }>(crypto, broken, 'he')).text).toBe('You seem to pause before deciding.')
   })
 })
+
+
+describe('readLocalized: mixed-language items', () => {
+  it('applies a partial translation over an original that is already partly in that language', async () => {
+    const mixed = {
+      content: blob({ name: 'Over-Accommodation', description: 'נראה שאתם מתאימים את עצמכם.' }),
+      translated: { lang: 'he' as const, content: blob({ name: 'הסתגלות יתר' }) },
+    }
+    expect(await readLocalized(crypto, mixed, 'he')).toEqual({ name: 'הסתגלות יתר', description: 'נראה שאתם מתאימים את עצמכם.' })
+  })
+})

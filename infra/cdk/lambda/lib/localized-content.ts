@@ -9,7 +9,7 @@ import type { Locale } from './locale'
  * stores a translated copy in `translated`; readers show whichever matches
  * the screen.
  *
- * The original's language is detected, not stored: nothing written before
+ * Each field's language is detected, not stored: nothing written before
  * 2026-09-29 records its language, and the app has exactly two, one of
  * which uses its own script. Text with any Hebrew letter is Hebrew.
  */
@@ -38,7 +38,9 @@ export async function readLocalized<T extends object>(
   locale: Locale
 ): Promise<T> {
   const original = await crypto.decryptField<T>(item.content)
-  if (item.translated?.lang !== locale || textLanguage(original) === locale) return original
+  // The translation holds only the fields that were not already in its
+  // language (lib/relocalize.ts), so it always applies when it matches.
+  if (item.translated?.lang !== locale) return original
   try {
     const translated = await crypto.decryptField<Partial<T>>(item.translated.content)
     return { ...original, ...translated }

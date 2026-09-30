@@ -179,3 +179,17 @@ describe('relocalizeUser', () => {
     expect(ddbMock.commandCalls(UpdateCommand)).toHaveLength(0)
   })
 })
+
+
+describe('gatherCandidates: mixed-language items', () => {
+  it('sends only the fields not yet in the target language', async () => {
+    ddbMock.on(QueryCommand, SIGNALS).resolves({
+      Items: [
+        { pk, sk: 's5', domain: 'pattern', status: 'confirmed', updatedAt: 'u5', content: blob({ name: 'Over-Accommodation', description: 'נראה שאתם מתאימים את עצמכם יותר מדי.' }) },
+      ],
+    })
+    const found = await gatherCandidates(deps(), pk, 'he', now)
+    expect(found).toHaveLength(1)
+    expect(found[0].fields).toEqual({ name: 'Over-Accommodation' })
+  })
+})

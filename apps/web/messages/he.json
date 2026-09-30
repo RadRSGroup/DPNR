@@ -1897,7 +1897,9 @@
       "read": "לקריאה",
       "resume": "להמשך",
       "showMore": "להציג עוד",
-      "showLess": "להציג פחות"
+      "showLess": "להציג פחות",
+      "reflectionLabel": "רפלקציה",
+      "reflectionLabelArea": "רפלקציה — {area}"
     },
     "steps": {
       "labels": {
