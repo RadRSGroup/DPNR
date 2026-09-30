@@ -2180,6 +2180,7 @@
     }
   },
   "Shared": {
+    "moreBelow": "More below",
     "humanOS": "Your Human Operating System",
     "thinking": "Thinking...",
     "returnToDashboard": "Return to Dashboard",

@@ -2180,6 +2180,7 @@
     }
   },
   "Shared": {
+    "moreBelow": "יש עוד למטה",
     "humanOS": "מערכת ההפעלה האנושית שלכם",
     "thinking": "חושבים...",
     "returnToDashboard": "חזרה ללוח הבקרה",

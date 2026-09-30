@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 /**
  * A scroll area that makes "there's more below" visible (founder feedback
@@ -9,6 +10,7 @@ import { ChevronDown } from 'lucide-react'
  * cue scrolls one comfortable step. Nothing moves on its own.
  */
 export default function ScrollCue({ className = '', children }: { className?: string; children: React.ReactNode }) {
+  const t = useTranslations('Shared')
   const ref = useRef<HTMLDivElement>(null)
   const [more, setMore] = useState(false)
 
@@ -46,7 +48,7 @@ export default function ScrollCue({ className = '', children }: { className?: st
           more ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       >
-        More below <ChevronDown className="w-3.5 h-3.5" aria-hidden />
+        {t('moreBelow')} <ChevronDown className="w-3.5 h-3.5" aria-hidden />
       </button>
     </div>
   )

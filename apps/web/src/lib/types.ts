@@ -89,17 +89,4 @@ export const PRESET_TAGS: Record<TagType, string[]> = {
   ],
 }
 
-export const STEP_LABELS: Record<number, string> = {
-  1: 'Name the Decision',
-  2: 'Map the Options',
-  3: 'Body Emotion Mapping',
-  4: 'Choose Your Lens',
-  5: 'Deep Exploration',
-  6: 'Values & Needs',
-  7: 'Future Projection',
-  8: 'Session Summary',
-  9: 'Insight',
-  10: 'From Clarity to Action',
-}
-
 export const TOTAL_STEPS = 7
